@@ -19,6 +19,7 @@ template/.render.lock
 # make.mjs --round writes to ../promo-video-skill-tests/<round>/<slug>/ (outside the repo);
 # anything else that lands in promo/ or tests/ (except the regression fixtures) stays local.
 promo/
+/promo-video-skill-tests/
 tests/*
 !tests/rules/
 !tests/validate/

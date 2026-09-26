@@ -3,7 +3,9 @@
 // 一条命令出片：校验 → 机器自查 → 复制素材 → 配乐 → 渲染（带布局 / 汉字探针）→ 拼图 + 检查帧 → manifest.json
 //   node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5,6] [--no-bgm] [--keep] [--queue-timeout 20]
 //   node scripts/make.mjs <storyboard.json> (--out <目录> | --round ...) --verify     核对目录里的成片是否还对应这份分镜
-//     --out      输出目录（一个目录放一份分镜，否则输出会互相覆盖）
+//     --out      输出目录（一个目录放一份分镜，否则输出会互相覆盖）。不许落在仓库里（promo/ 除外），否则退出码 2；
+//                人工确认过可加 --allow-in-repo
+//     --brief    简报文件路径：逐条核对 meta.facts 的数字 / quote 是否出自简报（文件不存在直接退出码 2）
 //     --round    测试用：产物放到【仓库外】<仓库同级>/promo-video-skill-tests/<轮次>/<片名>/（设 PROMO_TEST_DIR 可换根目录）；
 //                片名默认取 storyboard 所在目录名，文件名不是 storyboard.json 时取文件名。开跑第一行会打印实际输出目录。
 //                --out 和 --round 必须给一个；不要自己按秒生成时间戳目录
@@ -82,6 +84,27 @@ const stills = opt('--stills')
   ?.split(',')
   .map((x) => Number(x.trim()))
   .filter((x) => Number.isFinite(x) && x >= 0);
+// --brief 传的是简报文件路径；validate() 要的是简报原文，这里读出来再传（读不到就直接停，不静默跳过核对）
+let briefText;
+if (opt('--brief')) {
+  const briefPath = path.resolve(opt('--brief'));
+  if (!fs.existsSync(briefPath)) {
+    console.log(`--brief 指定的简报文件不存在：${briefPath}\n${USAGE}`);
+    process.exit(EXIT.USAGE);
+  }
+  briefText = fs.readFileSync(briefPath, 'utf8').replace(/^﻿/, '');
+}
+// 输出目录不许落在仓库里（仓库已公开，一次 git add -A 就会把 mp4 带上去）。
+// 例外：已被 .gitignore 忽略的 promo/；人手动确认过可加 --allow-in-repo。
+{
+  const rel = path.relative(ROOT, outDir);
+  const inRepo = !rel.startsWith('..') && !path.isAbsolute(rel);
+  const inPromo = inRepo && (rel === 'promo' || rel.startsWith(`promo${path.sep}`));
+  if (inRepo && !inPromo && !argv.includes('--allow-in-repo')) {
+    console.log(`输出目录在仓库里面：${outDir}\n测试 / 渲染产物请放仓库外：--out 给仓库外的绝对路径，或用 --round <轮次>（默认放仓库外的 promo-video-skill-tests/）。确需放仓库内请加 --allow-in-repo。\nOutput folder is inside the repo; pass an absolute --out outside it, or use --round.`);
+    process.exit(EXIT.USAGE);
+  }
+}
 if (opt('--stills') !== undefined && !stills?.length) {
   console.log(`--stills 要给秒数，逗号分隔，如 --stills 0,1.5,6\n${USAGE}`);
   process.exit(EXIT.USAGE);
@@ -116,9 +139,6 @@ try {
 } catch (e) {
   console.error(`未出片：输出目录准备失败——${e.message}\nNot delivered: could not prepare the output folder (${e.message})`);
   process.exit(EXIT.INTERNAL);
-}
-if (!path.relative(ROOT, outDir).startsWith('..') && !path.isAbsolute(path.relative(ROOT, outDir))) {
-  log('⚠ 输出目录在仓库里面：测试 / 渲染产物请放仓库外（--round 默认就放仓库外的 promo-video-skill-tests/）');
 }
 
 // 顺手清掉 template/public/_run 里崩掉的旧任务留下的素材目录（目录名末尾是 pid；进程已不在且超过 2 小时）
@@ -203,7 +223,7 @@ process.on('exit', () => state.lock?.release());
 
 // ---------------- 1. 校验 ----------------
 const parsed = parseFile(sbPath);
-const r = parsed.error ? {errors: [parsed.error], warnings: [], slots: [], total: 0, beat: 0.5, assets: []} : validate(parsed.sb, {baseDir: path.dirname(sbPath), brief: opt('--brief') ? path.resolve(opt('--brief')) : undefined});
+const r = parsed.error ? {errors: [parsed.error], warnings: [], slots: [], total: 0, beat: 0.5, assets: []} : validate(parsed.sb, {baseDir: path.dirname(sbPath), brief: briefText});
 r.sb = parsed.sb;
 const report = formatReport(r, sbFile);
 console.log(report);
