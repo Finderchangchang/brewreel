@@ -1,10 +1,12 @@
-# promo-video-skill
+# Distill Video · 蒸馏视频
 
-[中文版 → README.md](README.md)
+**Current version v0.2.0** ([changelog](CHANGELOG.en.md)) | repo `promo-video-skill` | [中文版 → README.md](README.md)
 
 Author: **Liu Weijie (柳伟杰)** — GitHub [@Finderchangchang](https://github.com/Finderchangchang). If you redistribute, fork or use this commercially, please keep `LICENSE` and `NOTICE` and credit the source.
 
-> **Early preview**: testing and bug-fixing are still ongoing. Issues about false-positive rules, rendering problems and general feedback are very welcome.
+> **Preview**: testing and bug-fixing are still ongoing. Issues about false-positive rules, rendering problems and general feedback are very welcome.
+
+**Why "Distill Video"**: a strong model first gets a video style right; its layout, motion, pacing and rules are then "distilled" into ready-made components and a validator, so a low-cost model like DeepSeek only has to fill in a storyboard to get a video at the same level. Three styles are distilled so far, and the distillation method itself is open-sourced in `distill/`, so anyone can distill a new style from a reference video.
 
 One line: a skill for AI coding assistants (Claude Code / Codex / opencode…) that standardizes "write a storyboard → get a vertical promo video." A cheap model only writes one `storyboard.json`; fixed Remotion components draw the frames; a validator blocks hard rules and industry-compliance red lines; one command renders the final video (1080×1920, with original music and sound effects).
 

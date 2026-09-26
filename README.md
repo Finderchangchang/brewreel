@@ -1,10 +1,12 @@
-# promo-video-skill
+# 蒸馏视频 · Distill Video
 
-[English version → README.en.md](README.en.md)
+**当前版本 v0.2.0**（[更新日志](CHANGELOG.md)）｜仓库名 `promo-video-skill`｜[English version → README.en.md](README.en.md)
 
 作者：**柳伟杰**（GitHub [@Finderchangchang](https://github.com/Finderchangchang)）。转载、二次开发或商用请保留 `LICENSE` 与 `NOTICE` 并注明出处。
 
-> **早期预览版**：测试和修复仍在进行中，欢迎提 issue 反馈误伤规则、渲染问题和体验建议。
+> **预览版**：测试和修复仍在进行中，欢迎提 issue 反馈误伤规则、渲染问题和体验建议。
+
+**为什么叫"蒸馏视频"**：先让强模型把一种视频风格做到位，再把它的版式、动效、节奏和规则"蒸馏"成现成组件和校验脚本；之后 DeepSeek 这类便宜模型只要填分镜，就能出同一水准的片子。现在已蒸出 3 种风格，蒸馏方法本身也开源在 `distill/`，任何人都能拿一支参考视频蒸出新风格。
 
 一句话：给 AI 编程助手（Claude Code / Codex / opencode…）用的 skill，把「写分镜 → 出竖版宣传短片」这件事标准化——便宜模型只写一份 `storyboard.json`，固定的 Remotion 组件负责画面，校验脚本拦硬性规则和行业合规红线，一条命令出片（1080×1920，带原创配乐和音效）。
 
