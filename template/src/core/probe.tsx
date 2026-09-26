@@ -11,6 +11,8 @@ import {continueRender, delayRender, useCurrentFrame} from 'remotion';
 // 文字块 = 最近的「非行内」祖先元素里所有文字的并集；带底色的块（角标、胶囊）用它自己的外框。
 // han = 整个画面 DOM（含背景层）里所有含汉字的文字节点，不管此刻是否可见（vis 标出是否可见）：
 //   组件写死的中文哪怕这一帧正在淡入、透明度还很低，也能抓到。
+// 纯装饰的背景字（插画城市楼顶的多语言招呼牌这类，不承载内容、会随世界滚出画面）：在外层元素上加 data-probe-skip，
+//   里面的文字不参与版式和语言检查。承载分镜内容的字一律不许加。
 // ============================================================
 export type ProbeBlock = {id: number; text: string; x0: number; y0: number; x1: number; y1: number; box: boolean; clip: null | [number, number, number, number]; anc: number[]};
 export type ProbeHan = {text: string; vis: boolean};
@@ -46,7 +48,7 @@ const scanHan = (scope: Element): ProbeHan[] => {
     const txt = (n.textContent ?? '').trim();
     if (!txt || !HAN_RE.test(txt)) continue;
     const parent = n.parentElement;
-    if (!parent || /^(STYLE|SCRIPT)$/i.test(parent.tagName)) continue;
+    if (!parent || /^(STYLE|SCRIPT)$/i.test(parent.tagName) || parent.closest('[data-probe-skip]')) continue;
     const {vis} = visibility(n, parent, scope.parentElement);
     const key = txt.slice(0, 24);
     out.set(key, (out.get(key) ?? false) || vis);
@@ -69,7 +71,7 @@ const measure = (root: HTMLElement): ProbeBlock[] => {
     const txt = (n.textContent ?? '').trim();
     if (!txt) continue;
     const parent = n.parentElement;
-    if (!parent) continue;
+    if (!parent || parent.closest('[data-probe-skip]')) continue;
     const {vis, range} = visibility(n, parent, root.parentElement);
     if (!vis || !range) continue;
     // 所属文字块

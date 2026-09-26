@@ -20,11 +20,12 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    |---|---|---|
    | `cards` (default) | ready | single-benefit products, how-it-works flows, UI demos, physical stores; all six industries |
    | `quiz` | ready | products with a common misconception that can become a multiple-choice question (foreign phrases, misunderstood features, dishes with misleading names). Templates in `styles/quiz/recipes.md`, samples in `styles/quiz/examples/`. `meta.theme` is `blue-lime` or `cream-tomato` (omitted: food gets `cream-tomato`, everything else `blue-lime`); clip lines must not give the answer away |
-   | `journey` | in development, don't use yet | products with many clear categories (content platforms, feature-rich software, multi-category stores, course catalogs) |
+   | `journey` | available | products with many clear categories (content platforms, feature-rich software, multi-category stores, course catalogs, a sightseeing route). One district per category / feature / stop; templates and per-beat fields in `styles/journey/recipes.md`, examples in `styles/journey/examples/`. Default `meta.aspect: "4:5"`, `9:16` also works; pick the backdrop with `opening.params.skyline` (`modern` / `street` / `oldtown`; old-town travel must use `oldtown`) and district props that match the content; prices, times and totals must be copied from `meta.facts` |
 
    - When unsure, use `cards` and don't write `meta.style`. Styles in development are blocked by validation.
    - `meta.aspect`: `9:16` (default, 1080x1920) or `4:5` (1080x1350). `cards` supports 9:16 only; leave it out.
    - Steps 1–12 below describe `cards`. With another style, its `recipes.md` decides the shots and fields; industry compliance, `meta.facts`, the Don't list and the render command stay the same.
+   - **Style shots keep every field inside `params`**; the top level of a shot is only `type`, `dur` and `params`. Example (journey): `{"type": "district", "dur": 4, "params": {"category": "Budget alerts", "title": "Three days before month end, a nudge", "scene": "phone"}}`. `meta.theme` is the cards palette; other styles follow their own recipes. Drop optional fields such as `cta` entirely when unused instead of writing an empty string.
 1. **Set the industry and language.**
    - `meta.industry`: `software` (default) / `food` / `ecommerce` (physical goods) / `education` / `beauty` / `travel` (travel & lodging). Pick the wrong industry and both the allowed shots and the compliance rules will be wrong.
    - `meta.lang`: `zh` (default) / `en`. Set `en` when the video needs English captions or the audience is English-speaking (usage details in step 5).
@@ -65,7 +66,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Holiday, promotion, launch → `festival-red`
    - Premium, minimal, design-forward → `mono-premium`
    If there's a brand color, set `meta.brandColor` (#RRGGBB) — it only swaps the accent color.
-5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, an 18-shot overview table is at the top). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
+5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, an 18-shot overview table is at the top; with quiz / journey use that style's shots and keep their fields inside `params`, see step 0). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
    **At least one shot must demonstrate the core action** (the `meta.action` from step 2). The allowed shots depend on the industry; validation blocks the video otherwise:
    - **software, education (UI products)**: `chat` with messages + panel (question → answer); or `mockApp` with `input` (what the user typed/asked) + a result (dashboard's `stat`, editor's `items`/`done`); use `phone` if you have a screenshot.
      - A messaging/reply product needs chat (or a real phone screenshot); a product that isn't about chatting must not be shown as a chat.

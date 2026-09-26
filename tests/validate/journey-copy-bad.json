@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "title": "style-test journey-copy-bad.json：类别名截断、钩子照搬、标题无停顿、编造活动日期、字段写在顶层",
+    "product": "小账本",
+    "style": "journey",
+    "aspect": "9:16",
+    "action": "拍小票 → 自动记账 → 预算提醒",
+    "notices": ["限时体验：9月16日至9月30日"],
+    "facts": [{"id": "f1", "text": "共 5 个功能", "source": "产品说明（示例）"}]
+  },
+  "shots": [
+    {"type": "opening", "params": {"headline": "5 个账本街", "kicker": "跟橘团逛一圈", "skyline": "modern"}},
+    {"type": "district", "params": {"category": "拍照记", "title": "拍一张小票就能拍照记账", "scene": "phone"}},
+    {"type": "district", "params": {"category": "预算提", "title": "月底预算提醒不再超支", "scene": "launch"}},
+    {"type": "district", "params": {"category": "家庭共享", "title": "一本账本全家看各自消费各自记", "scene": "home"}},
+    {"type": "district", "category": "年度报告", "title": "一年花了多少钱，一张图看清", "scene": "observatory"},
+    {"type": "district", "params": {"category": "数据导出", "title": "账本数据，随时导出", "scene": "stack"}},
+    {"type": "finale", "params": {"slogan": "记账这件事，交给它"}}
+  ]
+}

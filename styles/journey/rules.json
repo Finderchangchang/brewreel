@@ -1,8 +1,11 @@
 {
   "style": "journey",
-  "note": "草稿：风格负责人实现 Film 和镜头后把街区数（4–6）、相邻街区笑点不重复、收尾数字要有 facts 等规则补齐；跨字段规则写进 styles/journey/checks.mjs。格式见 scripts/lib/styles.mjs 的 runStyleRules 注释",
+  "note": "声明式规则：总时长、镜头数、必有镜头、次数、先后。字段的必填、字数、枚举在 template/src/styles/journey/shots/*.spec.json；跨字段规则 J1–J17（街区 4–6 个、相邻街区类型不同、类别名不重复、钩子大字带数字、片尾产品名/获取方式照抄 meta、数据来自 meta.facts、街区夹在钩子和片尾之间、价格和时间来自 meta.facts、钩子数字有依据、夜景街放最后、街区配得上背景天际线、古城题材用古城背景、类别名别截断、钩子别照搬、长标题加停顿、片尾要有数字或获取方式、提示条日期有出处）在 styles/journey/checks.mjs。格式见 scripts/lib/styles.mjs 的 runStyleRules 注释",
   "level": "block",
-  "durationRange": [15, 40],
-  "shotCount": {"min": 1, "max": 9},
+  "durationRange": [16, 40],
+  "shotCount": {"min": 5, "max": 8},
+  "requiredShots": ["opening", "district", "finale"],
+  "maxCount": {"opening": 1, "finale": 1},
+  "order": ["opening", "district", "finale"],
   "noAdjacentSame": false
 }

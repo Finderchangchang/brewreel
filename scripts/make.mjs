@@ -300,10 +300,17 @@ if (!noBgm && !stills && fs.existsSync(bgmScript)) {
 } else if (!stills) log(noBgm ? '按 --no-bgm 静音' : '没有 scripts/make_bgm.py，静音');
 
 // ---------------- 探针帧 ----------------
-// 检查帧：第 0 帧 + 每镜「结束前 0.45 秒」（此时本镜动画已演完、还没开始退场）——版式在这些帧上判
+// 检查帧：第 0 帧 + 每镜「结束前 0.45 秒」（此时本镜动画已演完、还没开始退场）——版式在这些帧上判。
+// 镜头 spec 写了 checkBeat 的，改抽「本镜第 checkBeat 拍」：一镜到底的风格里主要信息在镜中间就收起了
+// （journey 的广告牌第 6.4 拍收起，镜尾那一帧上根本没有广告牌），要在它停稳的时刻查
 const lastFrame = Math.max(0, Math.round(r.total * FPS) - 1);
 const frameOf = (sec) => Math.min(Math.round(sec * FPS), lastFrame);
-const checkTimes = [0, ...r.slots.map((s) => Math.max(s.start + s.dur / 2, s.end - 0.45))];
+const checkSecOf = (s) => {
+  const cb = specs[s.type]?.checkBeat;
+  if (typeof cb === 'number' && cb > 0) return Math.min(s.end - 0.1, s.start + cb * r.beat);
+  return Math.max(s.start + s.dur / 2, s.end - 0.45);
+};
+const checkTimes = [0, ...r.slots.map(checkSecOf)];
 const checkFrames = stills ? stills.map(frameOf) : checkTimes.map(frameOf);
 // 英文片的汉字扫描：每半拍一帧（覆盖每一拍）+ 每镜 25% / 50% / 75%，组件在任何一拍冒出的写死中文都能抓到
 const hanFrames = new Set(checkFrames);
@@ -429,7 +436,9 @@ if (!stills && (!fs.existsSync(videoPath) || fs.statSync(videoPath).size < 1024)
 
 // ---------------- 4b. 布局 / 汉字自查：渲染时探针打出的文字包围盒 ----------------
 const probed = parseProbeLog(probeLogs.join('\n'));
-const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS, geo: styleId === DEFAULT_STYLE ? null : geo});
+// mustShow：镜头 spec 声明「检查帧上必须看得见」的字段（journey 的广告牌标题和类别名），看不见就是空牌子或错过了时刻
+const mustShow = r.slots.map((s) => ({i: s.i, frame: frameOf(checkSecOf(s)), fields: Array.isArray(specs[s.type]?.mustShow) ? specs[s.type].mustShow : []})).filter((x) => x.fields.length);
+const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS, geo: styleId === DEFAULT_STYLE ? null : geo, mustShow});
 fs.writeFileSync(path.join(outDir, 'layout.json'), JSON.stringify([...probed.values()].filter((o) => checkFrames.includes(o.frame)), null, 1), 'utf8');
 const missingProbe = [...new Set(checkFrames)].filter((f) => !probed.has(f));
 const layoutLines = [];
@@ -498,7 +507,7 @@ state.sheet = sheetOk ? sheetPath : null;
 // 检查帧：先从成片里抽（和观众看到的一致），抽不出来的用 Remotion 单帧补
 const wanted = [{name: '00-frame0.png', sec: 0, frame: 0}];
 for (const s of r.slots) {
-  const mid = Math.max(s.start + s.dur / 2, s.end - 0.45);
+  const mid = checkSecOf(s);
   wanted.push({name: `${String(s.i + 1).padStart(2, '0')}-${s.type}-${mid.toFixed(1)}s.png`, sec: mid, frame: frameOf(mid)});
 }
 const missing = [];

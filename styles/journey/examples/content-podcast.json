@@ -1,0 +1,24 @@
+{
+  "meta": {
+    "title": "journey 样例 (a)：内容平台的栏目巡游（4:5，5 站，街巷背景）",
+    "product": "听潮播客",
+    "style": "journey",
+    "aspect": "4:5",
+    "action": "听众打开 App → 按频道挑一期节目，通勤路上听完",
+    "disclaimer": "演示画面，数据为示例",
+    "demoData": true,
+    "facts": [
+      {"id": "f1", "text": "已上线 1200 期节目（示例数字）", "source": "示例数据"},
+      {"id": "f2", "text": "分 5 个频道", "source": "示例数据"}
+    ]
+  },
+  "shots": [
+    {"type": "opening", "params": {"headline": "5 个频道", "kicker": "跟橘团一口气听完", "go": "出发！", "skyline": "street"}},
+    {"type": "district", "params": {"category": "早间快讯", "title": "三分钟，听完昨晚的科技新闻", "scene": "cafe", "tag": "每天更新"}},
+    {"type": "district", "params": {"category": "新节目", "title": "每周五，上线一档新访谈", "scene": "launch", "tag": "刚刚上线"}},
+    {"type": "district", "params": {"category": "职场技能", "title": "三十集，讲透表格常用函数", "scene": "factory", "source": "配套练习文件"}},
+    {"type": "district", "params": {"category": "设计聊天", "title": "和插画师聊聊，怎么接到商单", "scene": "studio"}},
+    {"type": "district", "params": {"category": "深夜电台", "title": "睡前半小时，只放轻音乐", "scene": "neon", "bubble": "晚安，明天见"}},
+    {"type": "finale", "params": {"slogan": "路上的时间，听点好的", "stats": [{"value": "1200", "unit": "期节目"}, {"value": "5", "unit": "个频道"}], "sub": "示例数据", "refs": ["f1", "f2"]}}
+  ]
+}

@@ -676,8 +676,14 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       err(W('type'), `公共镜头 ${type} 只按 9:16 设计，${aspect} 画幅不能用`, `换成「${styleId}」风格的专属镜头，或把 meta.aspect 改成 9:16`);
     if (!isCards && SM.captionLayer === 'none' && shot.caption !== undefined && spec.caption !== 'none')
       err(W('caption'), `「${styleId}」风格不用全局字幕，caption 不能写`, '删掉 caption，要上屏的字写进这一镜的 params');
-    for (const k of Object.keys(shot)) if (!['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note'].includes(k))
+    // 把 params 里的字段写到了镜头顶层（便宜模型常见：{"type":"district","headline":…}）：合并成一条错，不按字段一条条报
+    const SHOT_KEYS = ['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note'];
+    const paramKeys = Object.keys(spec.params?.properties ?? {});
+    const misplaced = Object.keys(shot).filter((k) => !SHOT_KEYS.includes(k) && paramKeys.includes(k));
+    for (const k of Object.keys(shot)) if (!SHOT_KEYS.includes(k) && !misplaced.includes(k))
       err(W(k), '多了一个不认识的字段', '每一镜只能有 type、dur 或 beats、caption、mood、params、note（时长字段叫 dur，单位秒）');
+    if (misplaced.length)
+      err(W('params'), `${misplaced.join('、')} 写在了镜头顶层，这些是 params 里的字段`, `整镜写成 {"type": "${type}", "dur": ${spec.dur?.default ?? 3}, "params": {${misplaced.map((k) => `"${k}": …`).join(', ')}}}：${isCards ? '' : '风格镜头的字段一律写在 params 里；'}改完再校验一次，剩下的字段问题会逐条报出来`);
     // 时长
     if (shot.dur !== undefined && (typeof shot.dur !== 'number' || !(shot.dur > 0))) err(W('dur'), `时长 ${JSON.stringify(shot.dur)} 不对`, '写正数秒，例如 3 或 2.5');
     if (shot.beats !== undefined && (typeof shot.beats !== 'number' || !(shot.beats > 0))) err(W('beats'), `拍数 ${JSON.stringify(shot.beats)} 不对`, '写正整数，例如 6');
@@ -704,8 +710,9 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       }
     } else if (spec.caption === 'required') err(W('caption'), '缺少字幕（这一镜必填）', type === 'hook' ? 'hook 的 caption 就是封面大标题，写用户痛点，{} 里放最扎心的几个字' : '补上 caption');
     // 参数
-    if (shot.params === undefined) err(W('params'), '缺少 params', '补上 "params": {...}，字段见 shots.md');
-    else {
+    if (shot.params === undefined) {
+      if (!misplaced.length) err(W('params'), '缺少 params', '补上 "params": {...}，字段见 shots.md');
+    } else if (!misplaced.length) {
       checkValue(spec.params, shot.params, W('params'));
       if (shot.params && typeof shot.params === 'object') crossCheck(type, shot.params, (f) => W(`params.${f}`), err, warn);
     }
@@ -1230,6 +1237,10 @@ export function checkSpecs(specs = loadSpecs()) {
       if (s.dur && !(s.dur.min <= s.dur.default && s.dur.default <= s.dur.max)) problems.push(`${tag}：dur 要满足 min ≤ default ≤ max`);
       if (!['required', 'optional', 'none'].includes(s.caption)) problems.push(`${tag}：caption 只能是 required / optional / none`);
       if (st.manifest.captionLayer === 'none' && s.caption !== 'none') problems.push(`${tag}：这个风格 captionLayer 是 none，镜头的 caption 只能是 none`);
+      // 可选：checkBeat = make.mjs 在本镜第几拍抽检查帧；mustShow = 检查帧上必须看得见的字段（见 scripts/lib/layout-check.mjs）
+      if (s.checkBeat !== undefined && !(typeof s.checkBeat === 'number' && s.checkBeat > 0)) problems.push(`${tag}：checkBeat 要是正数（本镜第几拍抽检查帧）`);
+      if (s.mustShow !== undefined && !(Array.isArray(s.mustShow) && s.mustShow.every((x) => typeof x === 'string' && /^params\.\w+$/.test(x) && s.params?.properties?.[x.slice(7)])))
+        problems.push(`${tag}：mustShow 要是 params 里已有字段的列表，如 ["params.title"]`);
       for (const c of s.sfx ?? []) if (!SFX_KINDS.includes(c.kind)) problems.push(`${tag}：音效 ${c.kind} 不存在（可用：${SFX_KINDS.join(' ')}）`);
       if (!s.example?.params) continue;
       const first = st.manifest.firstShot;

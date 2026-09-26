@@ -14,6 +14,7 @@ import {assetTruth, usableMerchantAssets, usedMerchantPhotos, isSpecSelfTest} fr
 import {compareDirection} from './compare.mjs';
 import {coreActionSurface} from './core-action.mjs';
 import {priceConditions} from './price-conditions.mjs';
+import {PROMO_RE} from './promo-words.mjs';
 
 const F = mkFinding;
 const cite = (fix, source) => (source ? `${fix}（依据：${source}）` : fix);
@@ -142,17 +143,26 @@ export function discountMath(sb, ctx) {
   return out;
 }
 
-const PROMO_RE = /限时|半价|第二[杯件份]|\d(\.\d)?折|买.送|满\d+减|秒杀|活动价|特价|今日|倒计时/;
+// 促销字眼表在 promo-words.mjs（没有依赖的叶子模块，风格的 checks.mjs 也从那里引，免得循环 import）
 
 // ---- promoHasPeriod：出现促销字眼要有起止日期 ----
 export function promoHasPeriod(sb, ctx, rules) {
   const out = [];
-  const hasPromoWord = indexTexts(sb, ctx).some((t) => PROMO_RE.test(t.text));
-  if (!hasPromoWord) return out;
+  const hit = indexTexts(sb, ctx).find((t) => PROMO_RE.test(t.text));
+  if (!hit) return out;
+  // 报出具体是哪个词、在哪；先让删词，确有活动才写期限——以前只说「写清活动时间」，模型就编了一条活动日期来过校验
+  const word = PROMO_RE.exec(hit.text)[0];
   const priceCards = shotsOfType(sb, 'priceCard');
   const hasPeriod = priceCards.some(({shot}) => shot.params?.period && String(shot.params.period).trim());
-  const noticeHasDate = (ctx.meta?.notices ?? []).some((n) => /\d+月\d+日/.test(n)) || (ctx.meta?.disclaimer && /\d+月\d+日/.test(ctx.meta.disclaimer));
-  if (!hasPeriod && !noticeHasDate) out.push(F('block', 'shots', '出现促销字眼，但没有写活动起止日期', cite('在 priceCard.params.period 或 meta.notices 里写清"活动时间：X月X日—X月X日"', '《规范促销行为暂行规定》第五、六条')));
+  const DATE_RE = /\d{1,2}\s*月\s*\d{1,2}\s*日/g;
+  const noticeDates = [...(ctx.meta?.notices ?? []), ctx.meta?.disclaimer].filter((n) => typeof n === 'string').flatMap((n) => n.match(DATE_RE) ?? []);
+  const factText = (Array.isArray(ctx.meta?.facts) ? ctx.meta.facts : []).map((f) => `${f?.text ?? ''} ${f?.quote ?? ''}`).join(' ').replace(/\s+/g, '');
+  if (!hasPeriod && !noticeDates.length)
+    out.push(F('block', 'shots', `出现促销字眼「${word}」（在 ${hit.where}），但没有写活动起止日期`, cite(`如果不是真实促销，删掉「${word}」（换成不带促销意味的说法）；确有活动，先把简报里的活动起止日期原样抄进 meta.facts，再写进 priceCard.params.period 或 meta.notices（"活动时间：X月X日—X月X日"）。不要为了过校验编日期`, '《规范促销行为暂行规定》第五、六条')));
+  else if (!hasPeriod)
+    for (const d of noticeDates)
+      if (!factText.includes(d.replace(/\s+/g, '')))
+        out.push(F('block', 'meta.notices', `促销字眼「${word}」的活动日期「${d}」在 meta.facts 里找不到（没有简报依据）`, `不是真实活动就删掉这条提示和「${word}」；真有活动，把简报原句抄进 meta.facts（带 source）`));
   if (rules.flags?.promoRequiresLimits) {
     const hasLimits = priceCards.some(({shot}) => Array.isArray(shot.params?.limits) && shot.params.limits.length);
     if (!hasLimits) out.push(F('block', 'shots', '促销价还需要至少 1 条 limits（如"限堂食"）', '在 priceCard.params.limits 里补一条'));

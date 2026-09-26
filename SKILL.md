@@ -20,11 +20,12 @@ metadata:
    |---|---|---|
    | `cards` 卡片信息流（默认） | 可用 | 单一卖点、要讲流程、要演示界面、实物门店；六个行业都支持 |
    | `quiz` 答题互动 | 可用 | 有常见误解、能出一道选择题的产品（外语短语、功能被误会、菜名名不副实、反常识知识点）。三套模板见 `styles/quiz/recipes.md`，样例在 `styles/quiz/examples/`。`meta.theme` 可选 `blue-lime` / `cream-tomato`（不写：餐饮用 `cream-tomato`，其余用 `blue-lime`）；clip 台词不许说出答案 |
-   | `journey` 角色漫游 | 开发中，先别用 | 内容多、类别清楚的产品（内容平台、功能多的软件、多门店多品类、课程体系） |
+   | `journey` 角色漫游 | 可用 | 内容多、类别清楚的产品（内容平台、功能多的软件、多门店多品类、课程体系、一条游线）。一站一个类别 / 功能 / 景点；三套模板和每拍字段见 `styles/journey/recipes.md`，样例在 `styles/journey/examples/`。默认 `meta.aspect: "4:5"`，也可 `9:16`；背景 `opening.params.skyline` 选 `modern` / `street` / `oldtown`（古城古镇题材必须 oldtown），街区道具要和内容对得上；价格、时间、总量数字只能抄 `meta.facts` |
 
    - 拿不准就用 `cards`，不用写 `meta.style`。开发中的风格校验会拦。
    - `meta.aspect`：`9:16`（默认，1080x1920）或 `4:5`（1080x1350）。`cards` 只支持 9:16，不用写。
    - 下面第 1–12 步是 `cards` 的写法。用别的风格时，镜头和字段以那个风格的 `recipes.md` 为准；行业合规、`meta.facts`、禁止事项、出片命令照旧。
+   - **风格镜头的字段一律写在 `params` 里**，镜头顶层只有 `type`、`dur`、`params`。例（journey）：`{"type": "district", "dur": 4, "params": {"category": "预算提醒", "title": "月底前三天，提醒你收手", "scene": "phone"}}`。`meta.theme` 是 cards 的配色，别的风格按它自己的 recipes 写或不写；`cta` 这类可选字段不需要就整个删掉，不要写空字符串。
 1. **定行业和语言**。
    - `meta.industry`：`software`（默认）/ `food`（餐饮）/ `ecommerce`（电商实物）/ `education`（教培）/ `beauty`（美业）/ `travel`（文旅住宿）。选错行业，能用的镜头和合规规则都会不对。
    - `meta.lang`：`zh`（默认）/ `en`。视频要出英文字幕、用户是英文用户，就写 `en`（用法见第 5 步）。
@@ -65,7 +66,7 @@ metadata:
    - 节日、促销、上新 → `festival-red`
    - 高端、极简、设计 → `mono-premium`
    有品牌色就写 `meta.brandColor`（#RRGGBB），它只换强调色。
-5. **挑 5–9 个镜头**（镜头说明看 `<SKILL>/shots.md`，18 个镜头一览表在最上面）。`hook` 必须第 1 镜（2–3 秒），`endCard` 必须最后 1 镜（4 秒）。
+5. **挑 5–9 个镜头**（镜头说明看 `<SKILL>/shots.md`，18 个镜头一览表在最上面；用 quiz / journey 时镜头换成那个风格的，字段照第 0 步写进 `params`）。`hook` 必须第 1 镜（2–3 秒），`endCard` 必须最后 1 镜（4 秒）。
    **必须有一镜演示核心动作**（第 2 步写的 `meta.action`），按行业用不同的镜头，校验会拦：
    - **software、education（界面类）**：`chat` 写 messages + panel（提问 → 回答）；或 `mockApp` 写 input（用户输入/提问）+ 结果（dashboard 的 stat、editor 的 items、done）；有截图用 `phone`。
      - 核心动作是发消息/回复的产品 → 必须有 chat（或 phone 真截图）；不是聊天类的产品 → 别用 chat 演。

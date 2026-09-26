@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {validate, parseFile} from './validate.mjs';
+import {listStyles} from './lib/styles.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIR = path.join(ROOT, 'tests', 'validate');
@@ -18,9 +19,26 @@ const DIR = path.join(ROOT, 'tests', 'validate');
 const CASES = [
   // 风格包 / 画幅（2026-09）：不写 style = cards；写错风格名、用开发中的风格、cards 用 4:5 都要拦；显式写 cards + 9:16 不误伤
   {file: 'style-unknown-bad.json', rule: 'meta.style 写了不存在的风格', level: 'errors', expect: true, match: '没有叫「nope」的风格'},
-  {file: 'style-draft-bad.json', rule: '开发中的风格（status 不是 stable）不能出片', level: 'errors', expect: true, match: '还在开发中'},
+  // draftStyle：把 meta.style 换成当前任意一个开发中的风格；所有风格都 stable 时这条记为「跳过」（不算失败）
+  {file: 'style-draft-bad.json', rule: '开发中的风格（status 不是 stable）不能出片', level: 'errors', expect: true, match: '还在开发中', draftStyle: true},
   {file: 'style-aspect-bad.json', rule: 'cards 只支持 9:16，写 4:5 要拦', level: 'errors', expect: true, match: '不支持 4:5'},
   {file: 'style-cards-ok.json', rule: '显式写 style: cards + aspect: 9:16 和不写一样', level: 'errors', expect: false, match: '风格'},
+  // journey 风格（2026-09）：价格 / 时间 / 钩子里的总量都要在 meta.facts 里；文旅样例不误报
+  {file: 'journey-facts-bad.json', rule: 'journey：价格不在 meta.facts 里要拦', level: 'errors', expect: true, match: '「10 元」是价格或时间'},
+  {file: 'journey-facts-bad.json', rule: 'journey：钩子数字既不是街区数也不在 facts 里要拦', level: 'errors', expect: true, match: '钩子大字里的「30」'},
+  {file: 'journey-travel-ok.json', rule: 'journey：价格时间都抄自 facts 时不误报', level: 'errors', expect: false, match: '价格或时间'},
+  {file: 'journey-travel-ok.json', rule: 'journey：古镇写了 oldtown 背景 + 古城街区时不误报', level: 'errors', expect: false, match: '背景'},
+  // journey 第 2 轮（2026-09）：背景天际线和街区要配套、古镇题材必须古城背景、类别名截断 / 钩子照搬 / 标题无停顿提醒、活动日期不能编、字段写在顶层合并成一条
+  {file: 'journey-oldtown-bad.json', rule: 'journey：古镇题材用现代城市背景要拦', level: 'errors', expect: true, match: '题材是「古镇」，背景却是现代城市'},
+  {file: 'journey-skyline-bad.json', rule: 'journey：古城背景里用发射场要拦', level: 'errors', expect: true, match: '「launch」的道具和古城背景'},
+  {file: 'journey-skyline-bad.json', rule: 'journey：古城背景写对了就不再报题材不符', level: 'errors', expect: false, match: '题材是「古镇」'},
+  {file: 'journey-copy-bad.json', rule: 'journey：类别名被截成半个词要提醒', level: 'warnings', expect: true, match: '「预算提」像被截断的词'},
+  {file: 'journey-copy-bad.json', rule: 'journey：钩子「N 个 XX 街」要提醒', level: 'warnings', expect: true, match: '钩子大字「5 个账本街」读不通'},
+  {file: 'journey-copy-bad.json', rule: 'journey：长标题没有停顿要提醒', level: 'warnings', expect: true, match: '没有停顿'},
+  {file: 'journey-copy-bad.json', rule: '促销报错写出触发词，并先让删词', level: 'errors', expect: true, match: '活动日期「9月16日」在 meta.facts 里找不到'},
+  {file: 'journey-copy-bad.json', rule: '字段写在镜头顶层合并成一条错', level: 'errors', expect: true, match: 'category、title、scene 写在了镜头顶层'},
+  {file: 'journey-copy-bad.json', rule: '字段写在镜头顶层时不再逐个报「不认识的字段」', level: 'errors', expect: false, match: '多了一个不认识的字段'},
+  {file: 'journey-copy-bad.json', rule: 'journey：片尾没有数字也没有获取方式要提醒', level: 'warnings', expect: true, match: '落版只剩一句口号'},
   // quiz 风格（2026-09）：陷阱项 = 钩子误解；错误选项不写数字；中文片里的英文台词可以用半角标点
   {file: 'quiz-trap-bad.json', rule: 'quiz：钩子误解必须原样是一个选项', level: 'errors', expect: true, match: '不在选项里'},
   {file: 'quiz-number-bad.json', rule: 'quiz：错误选项不许写阿拉伯数字', level: 'errors', expect: true, match: '错误选项「隔夜泡 12 小时」写了具体数字'},
@@ -103,13 +121,24 @@ const flatten = (list) => list.map((e) => `${e.where}｜${e.problem}｜${e.fix}`
 
 let pass = 0;
 let fail = 0;
+let skip = 0;
 const fails = [];
+const skips = [];
+const draftId = listStyles().find((x) => x.manifest.status !== 'stable')?.id;
 for (const c of CASES) {
   const file = path.join(DIR, c.file);
   let r;
   try {
     const parsed = parseFile(file);
     if (parsed.error) throw new Error(`JSON 解析失败：${parsed.error.problem}`);
+    if (c.draftStyle) {
+      if (!draftId) {
+        skip++;
+        skips.push(`[SKIP] ${c.rule}（${c.file}）：现在没有开发中的风格`);
+        continue;
+      }
+      parsed.sb.meta.style = draftId;
+    }
     const brief = c.brief ? fs.readFileSync(path.join(DIR, c.brief), 'utf8') : null;
     r = validate(parsed.sb, {baseDir: DIR, brief});
   } catch (e) {
@@ -132,7 +161,8 @@ for (const c of CASES) {
   }
 }
 
-console.log(`用例：${CASES.length}，通过：${pass}，失败：${fail}`);
+console.log(`用例：${CASES.length}，通过：${pass}，失败：${fail}${skip ? `，跳过：${skip}` : ''}`);
+for (const x of skips) console.log(x);
 if (fails.length) {
   console.log('\n失败明细：');
   for (const f of fails) console.log(f + '\n');

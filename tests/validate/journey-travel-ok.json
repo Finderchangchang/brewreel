@@ -1,0 +1,27 @@
+{
+  "meta": {
+    "title": "journey 测试：文旅古镇游线，价格时间都抄自 facts、古城背景（不应误报）",
+    "product": "青溪古镇",
+    "style": "journey",
+    "aspect": "9:16",
+    "industry": "travel",
+    "action": "游客按游线走 → 早市、城门、石桥、扎染、灯会一站接一站",
+    "disclaimer": "演示画面，价格时间为示例",
+    "demoData": true,
+    "facts": [
+      {"id": "f1", "text": "早市 6:30–10:00 营业，米糕 8 元一份", "source": "游客中心 2026-09 公告（示例）"},
+      {"id": "f2", "text": "扎染体验 68 元/人，约 1 小时，含材料", "source": "游客中心 2026-09 公告（示例）"},
+      {"id": "f4", "text": "灯会 19:00–22:00 开放，雨天取消", "source": "游客中心 2026-09 公告（示例）"},
+      {"id": "f5", "text": "游线共 5 站，步行为主", "source": "游客中心游线图（示例）"}
+    ]
+  },
+  "shots": [
+    {"type": "opening", "params": {"headline": "5 站慢游", "kicker": "跟橘团逛古镇", "go": "走起！", "skyline": "oldtown"}},
+    {"type": "district", "params": {"category": "石板早市", "title": "米糕 8 元一份，热乎的", "scene": "market", "source": "早市 6:30–10:00"}},
+    {"type": "district", "params": {"category": "东门城楼", "title": "清晨人少，城门下好拍照", "scene": "gate"}},
+    {"type": "district", "params": {"category": "三孔石桥", "title": "站在桥上，看船从脚下过", "scene": "bridge"}},
+    {"type": "district", "params": {"category": "扎染手作", "title": "扎染体验 68 元/人，约 1 小时", "scene": "teahouse", "source": "含材料"}},
+    {"type": "district", "params": {"category": "夜游灯会", "title": "灯会 19:00–22:00，雨天取消", "scene": "lantern"}},
+    {"type": "finale", "params": {"slogan": "慢慢走，古镇等你", "stats": [{"value": "5", "unit": "站游线"}], "sub": "步行为主", "refs": ["f5"]}}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "title": "journey 样例 (b)：软件产品的功能巡游（9:16，6 站）",
+    "product": "拾光笔记",
+    "style": "journey",
+    "aspect": "9:16",
+    "action": "用户把网页、截图、语音存进来 → 自动分好类，随时搜到",
+    "disclaimer": "演示画面，数据为示例",
+    "demoData": true,
+    "facts": [
+      {"id": "f1", "text": "内置 120 个模板", "source": "2026-09 产品说明"},
+      {"id": "f2", "text": "支持 6 种内容格式", "source": "2026-09 产品说明"}
+    ]
+  },
+  "shots": [
+    {"type": "opening", "params": {"headline": "6 个功能", "kicker": "跟橘团一口气逛完", "go": "出发！", "skyline": "modern"}},
+    {"type": "district", "params": {"category": "网页剪藏", "title": "看到好文章，一键存进来不怕丢", "scene": "stack", "tag": "编辑推荐"}},
+    {"type": "district", "params": {"category": "语音速记", "title": "走路时说一句，回家就是整理好的文字", "scene": "phone"}},
+    {"type": "district", "params": {"category": "自动分类", "title": "存进来的东西，自己找到该去的文件夹", "scene": "factory", "source": "按内容自动归档"}},
+    {"type": "district", "params": {"category": "截图识字", "title": "截图里的字，也能搜到", "scene": "studio"}},
+    {"type": "district", "params": {"category": "灵感白板", "title": "零散的想法，拖到一块板上连成线", "scene": "observatory"}},
+    {"type": "district", "params": {"category": "全文搜索", "title": "半年前存的一句话，一搜就在", "scene": "neon"}},
+    {"type": "finale", "params": {"brand": "拾光笔记", "slogan": "存得进，也找得回", "stats": [{"value": "120", "unit": "个模板"}, {"value": "6", "unit": "种格式"}], "sub": "2026-09 产品说明", "refs": ["f1", "f2"]}}
+  ]
+}

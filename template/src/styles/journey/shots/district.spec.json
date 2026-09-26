@@ -1,26 +1,35 @@
 {
   "type": "district",
-  "purpose": "一个街区（骨架占位）：角色从左向右穿过，路牌写类别名，头顶广告牌写一条代表内容的标题",
+  "purpose": "一个街区（一镜到底里的一站，8 拍）：第 0 拍路牌经过角色、右上类别胶囊切换；第 0.3 拍头顶广告牌边升起边弹出「类别标签 + 标题」，一直停到第 7.2 拍（文字框钳在安全区里）；第 3–6 拍这个街区的笑点（道具正好到角色面前，镜头减速，角色换表情，配拟声字和气泡）；第 6–7 拍恢复巡航",
   "tips": [
-    "一个街区 = 一个内容类别；category 写类别名，title 写这个类别里最有代表性的一条内容",
-    "相邻街区别用同一个 tone"
+    "一个街区 = 一个内容类别 / 功能 / 卖点；category 写完整的类别名（2–6 字，4 字最好，全片不重复），不要为了凑字数截成半个词（「预算提醒」不能写成「预算提」）；title 写这个类别里最有代表性的一条内容（≤20 字，会排成 2 行，每行约 12 字），超过 10 字要在意群之间加逗号",
+    "scene 选街区，相邻不要一样，道具要和这一站的内容对得上（看 recipes.md 的 scene 表）。现代城市 / 街巷：stack 资料塔（文档、长文）/ launch 发射场（新品、上线）/ factory 工坊（自动化、整理）/ studio 摄影棚（图片、设计、拍照）/ observatory 天文台（数据、研究）/ neon 霓虹街（夜间、搜索，只放最后一站）/ phone 手机街（App 操作、扫码拍照记录、提醒）/ home 住家（家庭、共享、社区）/ cafe 咖啡馆（饮品、休闲、办公）/ market 集市（吃的、买的、逛摊）。古城（opening.skyline: oldtown）：gate 城门（打卡拍照）/ bridge 石桥（河、桥、水乡）/ teahouse 茶馆（茶、老铺、手作体验）/ lantern 灯会（夜市、灯会，只放最后一站）/ market 集市（早市、小吃）",
+    "天色自动走：前面白天，倒数第二站黄昏，最后一站夜晚；不用填",
+    "bubble（角色台词，≤10 字）和 burst（拟声字，≤5 字）不写就用这种街区的默认词；想写就写成对这个类别的反应，如「原来这么快」",
+    "tag 是广告牌上的小标签（如「本周上新」），source 是广告牌底下的一行小字出处（如「来自用户投稿」），都可以不写；不许写网址和账号"
   ],
-  "dur": {"default": 4, "min": 3, "max": 5},
-  "mood": 0.3,
+  "dur": {"default": 4, "min": 3.5, "max": 5},
+  "mood": 0.35,
   "caption": "none",
   "exit": "none",
   "params": {
     "type": "object",
-    "required": ["category", "title"],
+    "required": ["category", "title", "scene"],
     "properties": {
-      "category": {"type": "string", "maxLen": 6, "minLen": 1, "description": "类别名（路牌），如「数据报表」"},
-      "title": {"type": "string", "maxLen": 18, "minLen": 2, "description": "广告牌上的代表内容标题"},
-      "tone": {"type": "integer", "minimum": 0, "maximum": 5, "description": "街区主色序号 0–5"}
+      "category": {"type": "string", "maxLen": 6, "minLen": 2, "description": "类别名（完整的词，4 字最好）：写在路牌、右上胶囊、广告牌标签和片尾 chips 上，如「数据报表」"},
+      "title": {"type": "string", "maxLen": 20, "minLen": 4, "description": "广告牌标题：这个类别里的一条代表内容，如「周一早上不用再手拼周报」"},
+      "scene": {"type": "string", "enum": ["stack", "launch", "factory", "studio", "observatory", "neon", "phone", "home", "cafe", "market", "gate", "bridge", "teahouse", "lantern"], "description": "街区类型（楼群 + 道具 + 笑点），要和这一站的内容对得上"},
+      "tag": {"type": "string", "maxLen": 6, "minLen": 1, "description": "可选：广告牌上的第二个小标签，如「本周上新」"},
+      "source": {"type": "string", "maxLen": 14, "minLen": 2, "description": "可选：广告牌底部一行小字（出处、适用范围），不写网址和账号"},
+      "bubble": {"type": "string", "maxLen": 10, "minLen": 1, "description": "可选：角色台词气泡（笑点之后弹出），默认用街区类型自带的一句"},
+      "burst": {"type": "string", "maxLen": 5, "minLen": 1, "description": "可选：拟声字（笑点那一拍弹出，自带音效），默认用街区类型自带的"}
     }
   },
-  "sfx": [{"at": 0, "kind": "whoosh", "vol": 0.25}],
+  "sfx": [{"at": 0, "kind": "tick", "vol": 0.14}],
   "example": {
     "dur": 4,
-    "params": {"category": "数据报表", "title": "周一早上不用再手拼周报", "tone": 0}
-  }
+    "params": {"category": "数据报表", "title": "周一早上不用再手拼周报", "scene": "launch", "tag": "本周上新"}
+  },
+  "checkBeat": 3.2,
+  "mustShow": ["params.title", "params.category"]
 }

@@ -111,10 +111,13 @@ A storyboard picks its look with `meta.style`; without it you get the default `c
 
 ![quiz style preview](docs/images/style-quiz.png)
 
-`journey` (a mascot travels through an illustrated city in one continuous shot, one district per content category, 4:5) is still in development; validation blocks it for now.
+**`journey`** (ready, 4:5 by default, 9:16 supported): our own mascot, a red-panda cub on a hover board, crosses a flat-illustrated city in one continuous take. One district per content category, an overhead billboard pops a representative title, three backdrops (modern city, low-rise street, or an old town with white walls, tile roofs and a stone bridge) and 14 district types picked by content (docs, launch, workshop, studio, data, night street, phone, home, cafe, market, city gate, stone bridge, teahouse, lanterns), each with its own gag; the sky goes from day to night, and at the end the whole city zooms into the product screen with a brand card and stats. Fits products with many clear categories: channels of a content platform, features of an app, stops on a sightseeing route. See [`styles/journey/`](styles/journey/README.md); per-beat fields and length limits are in `styles/journey/recipes.md` (Chinese); three sample storyboards are in `styles/journey/examples/`.
+
+![journey style preview](docs/images/style-journey.png)
 
 **Choosing `meta.style`**:
 - The product has a point people commonly get wrong, it can be asked as "What do you think X means?", and there is exactly one right answer → `quiz`.
+- The product has 4–6 clear categories / features / stops worth touring in one go → `journey`.
 - Everything else (selling points, flows, UI demos, stores and physical products, price lists) → `cards`, i.e. leave it out.
 - `quiz` only supports 9:16. Its own shots (question, reveal, meaning card, etc.) can only be used in `quiz`, and it does not mix with the 18 `cards` shots; validation blocks a storyboard that mixes them.
 
@@ -126,7 +129,7 @@ A storyboard picks its look with `meta.style`; without it you get the default `c
 
 - **Use**: make films with an existing style.
 - **Remix (reskin)**: `node scripts/gen-styles.mjs --new <id>` scaffolds a new style; copy over the shots and `tokens.json` you want to keep from the source style, then change palette, fonts and characters. For a color-only variant, editing `themes` in `tokens.json` is enough.
-- **Create (distill)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown → replicate → componentize → cheap-model test → review and fix, ending in a new style. `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` was made this way, with a quiz-style short video as the reference.
+- **Create (distill)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown → replicate → componentize → cheap-model test → review and fix, ending in a new style. `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` and `journey` were made this way, with a quiz-style short video and a character-journey short video as their references.
 
 Reference videos and their stills, extracted frames, characters, brand names, URLs and film clips never go into the repo. Keep the raw breakdown outside the repo; the repo only holds breakdown text you wrote, characters and scenes you drew, and sample content you wrote. Steps and the PR checklist: [CONTRIBUTING.en.md](CONTRIBUTING.en.md).
 
@@ -183,6 +186,23 @@ The QA review listed 10 problems. Items 1–9 are fixed; item 10 is only partly 
 - Also added Q11–Q13: in a quantity question every option must be a quantity; UI mockups (screen / phone) must include the real on-screen text; a film clip requires the "listen again" beat.
 
 After the fixes, all 5 sample storyboards in `styles/quiz/examples/` were re-validated and rendered: `make.mjs` exited 0 each time, the last line was always `交付：…` ("delivered"), and both the layout check and the blank-frame check passed. The cheap model has not yet re-run a scored round after the fixes, so the scores above are still from before them.
+
+**Testing the journey style** (new in this release): same method as quiz. A cheap model read only `SKILL.md` and the docs in `styles/journey/`, then wrote 3 storyboards from scratch and rendered them: a software feature tour (app-tour), a content-platform channel tour (content-site) and a sightseeing route (city-walk). A person scored each out of 10 for "style" and "overall". Results before the fixes:
+
+| Storyboard | Style | Overall |
+|---|---|---|
+| Software feature tour (app-tour) | 5.5 | 4 |
+| Content-platform channel tour (content-site) | 7 | 5.5 |
+| Sightseeing route (city-walk) | 5 | 3.5 |
+
+None of the three reached 7. The QA review listed 10 problems and all 10 were addressed; item 10 (colours) is only partly done: the review asked for a softer palette overall, but the style spec forbids copying the reference video's colours, so the palette was only partly softened. Main changes:
+- **Props that didn't match the subject** (item 1): a new backdrop option, `opening.params.skyline`: `modern` city (default) / `street` (low-rise lanes) / `oldtown` (white walls, tile roofs, a stone bridge over a canal), plus new districts such as market, city gate, stone bridge, teahouse and lanterns. Validation now blocks an old-town subject that doesn't use `oldtown`, and districts whose props don't fit the backdrop (e.g. a launch pad in the old town).
+- **Billboards were never checked**: in a one-take film the billboard folds away mid-shot, and the check frame used to be taken at the end of the shot, where it is already gone. `make.mjs` now takes the check frame on the beat set by the shot spec's `checkBeat`, when the billboard has settled. The billboard title and category name must be visible on that frame (`mustShow`), and another district's category name in the same frame also counts as an error; either one refuses delivery.
+- **Numbers without a source**: prices and opening hours on screen must be copied from `meta.facts`, and the number in the hook must be either the district count or backed by the facts. When a promo word appears, the error now names the word and first says to delete it, asking for dates only if the promotion is real; a promotion date in a notice that isn't in the facts is blocked too (the model used to invent a date to get past validation).
+- **Copy warnings**: a category name cut off mid-word, a hook like "5 ledger streets" that doesn't read, a long title with no pause, and an end card with only a slogan (no number and no way to get the product) each raise a warning.
+- **Fields in the wrong place**: fields that belong in `params` but were written at the top level of a shot now produce one merged error with the correct shape, instead of one error per field.
+
+After the fixes, the 3 sample storyboards in `styles/journey/examples/` (a podcast platform at 4:5, a notes app at 9:16, an old-town route at 9:16) were re-validated and rendered; all passed validation and `make.mjs`'s delivery checks. Nobody has listened to the music and sound effects yet. The cheap model has not re-run a scored round after the fixes either, so the scores above are still from before them.
 
 **Main remaining limitations** (issues with concrete counter-examples are welcome):
 
