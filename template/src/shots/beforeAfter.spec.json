@@ -1,0 +1,49 @@
+{
+  "type": "beforeAfter",
+  "purpose": "前后对比滑块：美发/美甲/美睫专用，同一位顾客做之前和做完的对比，擦除滑杆切换。只有美业开放：_base 默认把它列进 disabledShots，美业规则里再开启。",
+  "tips": [
+    "必须有 consent:true（顾客书面授权）和 retouched:false（未修图）；source=ai 的素材一律拒绝（beforeAfterConsent，行业规则实现）",
+    "缺照片、consent 不为 true、retouched 不为 false 时校验一律报错，建议改用 steps 镜头展示过程",
+    "subVertical 取 skincare 时校验拒绝（不在这个镜头的适用范围，医美相关不做）",
+    "固定角标「顾客授权实拍 · 未修图」，模型不能改；擦除过程 1 秒，每一侧至少停 1.5 秒"
+  ],
+  "dur": {"default": 3, "min": 2, "max": 4},
+  "mood": 0.15,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["before", "after", "consent", "retouched", "subVertical"],
+    "properties": {
+      "before": {
+        "type": "object",
+        "required": ["src"],
+        "properties": {"src": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp"]}, "label": {"type": "string", "maxLen": 4}}
+      },
+      "after": {
+        "type": "object",
+        "required": ["src"],
+        "properties": {"src": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp"]}, "label": {"type": "string", "maxLen": 4}}
+      },
+      "consent": {"type": "boolean", "description": "必须为 true：顾客已书面授权"},
+      "retouched": {"type": "boolean", "description": "必须为 false：未修图"},
+      "sameAngle": {"type": "boolean", "description": "建议 true：同一机位拍摄"},
+      "subVertical": {"type": "string", "enum": ["hair", "nail", "lash"], "description": "取 skincare 时校验拒绝"},
+      "caption2": {"type": "string", "maxLen": 12, "description": "卡片内的一句说明（和镜头级 caption 分开，避免和字幕带重复）"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.5, "kind": "whoosh", "vol": 0.22}, {"at": 1.5, "kind": "thud", "vol": 0.24}],
+  "example": {
+    "mood": 0.15,
+    "dur": 3,
+    "industry": "beauty",
+    "params": {
+      "before": {"src": "sample-screen.png", "label": "做之前"},
+      "after": {"src": "sample-screen.png", "label": "做完"},
+      "consent": true,
+      "retouched": false,
+      "sameAngle": true,
+      "subVertical": "hair"
+    }
+  }
+}

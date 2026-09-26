@@ -1,0 +1,81 @@
+{
+  "type": "photoShot",
+  "purpose": "实拍照片或短视频：放商家实拍的菜品/商品/作品/房间/公区/后厨片段，叠上菜名、价签、卖点。非软件行业的主力镜头；没有照片时不画拟真实物、不调用 AI 生图，换成本行业的插画信息卡兜底（见 template/src/illust）。",
+  "tips": [
+    "layout=hero 单张全屏缓推（media 1 项）/ clip 单段视频（1 项）/ grid 2–4 张拼贴 / callouts 商品图加引线圈注（配 callouts 字段）/ tour 2–5 张依次出现",
+    "media 每项要写 source（merchant 商家实拍 / ai AI生成 / drawn 代码绘制插画）和 tag（实拍 / 示意 / 效果图）；source=ai 时 tag 必须是「效果图」，画面会自动加「AI生成 · 效果示意」角标",
+    "refs 指向 meta.facts 里条目的 id，给「现熬」「开了10年」这类说法当依据；没有依据就别写这类说法",
+    "没有照片时不要用这个镜头硬凑：按行业换成插画信息卡（features/steps/quickList 挂 illust 图标），或直接跳过这一镜",
+    "确实要用插画兜底某一张时，这一项写 \"source\": \"drawn\"，不用给 src，改给 illust（如 \"food/bowl\"）；不写 illust 就按 meta.industry 出一张默认插画",
+    "月份/季节相关的画面（如「10月实拍」）要给对应 media 项写 month（1–12）"
+  ],
+  "dur": {"default": 2.5, "min": 1.2, "max": 12},
+  "mood": 0.3,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["layout", "media"],
+    "properties": {
+      "layout": {"type": "string", "enum": ["hero", "clip", "grid", "callouts", "tour"], "description": "hero 单张缓推 / clip 单段视频 / grid 2–4 张拼贴 / callouts 引线圈注 / tour 依次出现"},
+      "media": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 5,
+        "description": "hero/clip/callouts 各 1 项；grid 2–4 项；tour 2–5 项",
+        "items": {
+          "type": "object",
+          "required": ["source", "tag"],
+          "properties": {
+            "src": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp", "mp4"], "description": "商家实拍/AI生成的图或视频；source=drawn 时不填 src，改填 illust"},
+            "kind": {"type": "string", "enum": ["image", "video"], "description": "不写按扩展名判断"},
+            "source": {"type": "string", "enum": ["merchant", "ai", "drawn"], "description": "merchant 商家实拍 / ai AI 生成 / drawn 代码绘制（插画兜底，不需要 src）"},
+            "illust": {"type": "string", "format": "illust", "description": "source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 meta.industry 给默认图"},
+            "tag": {"type": "string", "enum": ["实拍", "示意", "效果图"], "description": "source=ai 时必须是「效果图」"},
+            "month": {"type": "integer", "minimum": 1, "maximum": 12, "description": "季节/天气景观画面必填，渲染成「N月实拍」"},
+            "label": {"type": "string", "maxLen": 8, "description": "房型/位置名/款式名"},
+            "retouched": {"type": "boolean", "description": "是否修过图，默认 false"},
+            "trimStart": {"type": "number", "minimum": 0, "description": "视频专用：截取起点（秒）"},
+            "trimEnd": {"type": "number", "minimum": 0, "description": "视频专用：截取终点（秒）"},
+            "keepAudio": {"type": "boolean", "description": "视频专用：是否保留原声"},
+            "speed": {"type": "number", "minimum": 0.8, "maximum": 1.5, "description": "视频专用：播放速度"}
+          }
+        }
+      },
+      "title": {"type": "string", "maxLen": 10, "description": "菜名/商品名/房型名"},
+      "tagline": {"type": "string", "maxLen": 12},
+      "badge": {"type": "string", "maxLen": 4, "description": "如「招牌」「新品」"},
+      "price": {"type": "number", "minimum": 0, "description": "画面角上的小价签，数值必须和 brief 一致"},
+      "unit": {"type": "string", "maxLen": 4},
+      "roomType": {"type": "string", "maxLen": 10, "description": "文旅专用：一镜只放一个房型，后面的 priceCard 要对得上"},
+      "callouts": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 4,
+        "description": "仅 layout=callouts 使用",
+        "items": {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": {"type": "string", "maxLen": 8},
+            "x": {"type": "number", "minimum": 0, "maximum": 1080},
+            "y": {"type": "number", "minimum": 0, "maximum": 1920}
+          }
+        }
+      },
+      "refs": {"type": "array", "items": {"type": "string"}, "description": "指向 meta.facts 里条目的 id"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.3, "kind": "swish", "vol": 0.2}],
+  "example": {
+    "mood": 0.3,
+    "dur": 2.5,
+    "params": {
+      "layout": "hero",
+      "media": [{"src": "sample-screen.png", "source": "merchant", "tag": "实拍", "label": "招牌款"}],
+      "title": "招牌菜一份",
+      "tagline": "现点现做",
+      "badge": "招牌"
+    }
+  }
+}

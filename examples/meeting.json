@@ -1,0 +1,82 @@
+{
+  "meta": {
+    "title": "会议速记 宣传片（演示走查：截图圈注 → 数字 → 步骤 → 片尾）",
+    "product": "会议速记",
+    "theme": "business-blue",
+    "disclaimer": "演示画面，内容为模拟",
+    "action": "说话开会 → 自动生成纪要和待办",
+    "cta": "官网申请免费试用",
+    "facts": [{"id": "f1", "text": "整理一份会议纪要：手写约 40 分钟，用会议速记约 3 分钟（示例数据）"}]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "一小时的会，\n{纪要还没人写}",
+      "mood": 0.8,
+      "params": {"visual": "icon", "icon": "doc", "text": "会开完了，然后呢？", "badge": "录音自动出纪要", "tone": "warn"}
+    },
+    {
+      "type": "phone",
+      "dur": 4,
+      "caption": "说一句话，\n{纪要就写好了}",
+      "mood": 0.3,
+      "params": {
+        "src": "assets/meeting-screen.png",
+        "focus": [
+          {"area": "upper", "label": "自动写好纪要", "style": "zoom"},
+          {"area": "middle", "label": "一句话就能生成", "style": "box"}
+        ]
+      },
+      "note": "截图是用 Screen 合成渲的 mockApp 示意图，见 SKILL.md「没有真截图时」"
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "谁做什么，\n{自动分好了}",
+      "mood": 0.25,
+      "params": {
+        "kind": "list",
+        "title": "会后待办",
+        "items": [
+          {"icon": "check", "text": "补齐回归测试", "value": "小王", "tone": "warn"},
+          {"icon": "doc", "text": "改上线文案", "value": "小李", "tone": "neutral"},
+          {"icon": "calendar", "text": "周三发布", "value": "全员", "tone": "good"}
+        ],
+        "highlight": 0
+      }
+    },
+    {
+      "type": "counter",
+      "dur": 3,
+      "caption": "写纪要，\n{从 40 分钟到 3 分钟}",
+      "mood": 0.15,
+      "params": {"from": 40, "to": 3, "showFrom": true, "suffix": "分钟", "label": "整理一份会议纪要", "sub": "示例数据，以实际为准", "icon": "clock", "tone": "good"}
+    },
+    {
+      "type": "steps",
+      "dur": 4,
+      "caption": "点一下录音，\n{剩下的交给它}",
+      "mood": 0.1,
+      "params": {
+        "items": [
+          {"title": "开会点录音", "desc": "手机放桌上就行", "icon": "phone"},
+          {"title": "自动出纪要", "desc": "要点待办都标好", "icon": "sparkle"},
+          {"title": "一键发出去", "desc": "参会的人都收到", "icon": "send"}
+        ]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "会议速记",
+        "slogan": "开完会，\n{纪要就好了}",
+        "points": ["录音自动出纪要", "待办自动分给人"],
+        "cta": "官网申请免费试用",
+        "icon": "doc"
+      }
+    }
+  ]
+}

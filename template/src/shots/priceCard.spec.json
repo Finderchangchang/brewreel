@@ -1,0 +1,76 @@
+{
+  "type": "priceCard",
+  "purpose": "价格卡/价目表：把明码标价的排版规则做进组件里，模型只填数字和条件。layout=card 单个房型/套餐/商品；menu 2–6 项的价目表。",
+  "tips": [
+    "items[].itemId 对应 brief 价格表里的 id，行业规则会按它核对价格（priceMatchesBrief）；不允许 0、1、9.9 这类噱头价",
+    "from=true（价格后带「起」）时，card 布局必须给 fromNote，menu 布局必须给 addOns",
+    "compare（划线价）要给 basis 和 evidence；画面上不出现「原价」二字，显示 basis 本身（如「厂商建议零售价」）",
+    "footnote 是各行业固定文案，模型不要自己改写；不确定就删掉这个字段，等行业规则按 requiredNotices 兜底"
+  ],
+  "dur": {"default": 3, "min": 2, "max": 4.5},
+  "mood": 0.15,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["layout", "items"],
+    "properties": {
+      "layout": {"type": "string", "enum": ["card", "menu"], "description": "card 单个房型/套餐/商品 / menu 2–6 项价目表"},
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 6,
+        "items": {
+          "type": "object",
+          "required": ["itemId", "price", "unit"],
+          "properties": {
+            "itemId": {"type": "string", "maxLen": 20, "description": "对应 brief 价格表里的 id"},
+            "name": {"type": "string", "maxLen": 10, "description": "card 布局 ≤10 字，menu 布局建议 ≤8 字"},
+            "price": {"type": "number", "minimum": 0},
+            "unit": {"type": "string", "maxLen": 4, "description": "碗/杯/只/晚/次/位/人/张/套"},
+            "from": {"type": "boolean", "description": "价格后是否带「起」"},
+            "fromNote": {"type": "string", "maxLen": 12},
+            "note": {"type": "string", "maxLen": 12}
+          }
+        }
+      },
+      "label": {"type": "string", "enum": ["售价", "到手价", "券后价", "团购价", "套餐价", "活动价", "门票"]},
+      "people": {"type": "string", "maxLen": 6, "description": "如「2–3人」"},
+      "includes": {"type": "array", "maxItems": 6, "items": {"type": "string", "maxLen": 8}},
+      "excludes": {"type": "string", "maxLen": 14, "description": "另收的费用或不含的项目；行业要求必填时没有就写「无其他收费」"},
+      "limits": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLen": 14}},
+      "conditions": {"type": "string", "maxLen": 16, "description": "到手价/券后价的条件、周末加价"},
+      "period": {"type": "string", "maxLen": 16, "description": "活动起止日期"},
+      "addOns": {
+        "type": "array",
+        "maxItems": 4,
+        "items": {"type": "object", "required": ["cond", "extra"], "properties": {"cond": {"type": "string", "maxLen": 8}, "extra": {"type": "string", "maxLen": 8}}}
+      },
+      "compare": {
+        "type": "object",
+        "required": ["price", "basis", "evidence"],
+        "properties": {
+          "price": {"type": "number", "minimum": 0},
+          "basis": {"type": "string", "enum": ["前7日最低成交价", "单点合计", "厂商建议零售价", "吊牌价", "平日价"]},
+          "evidence": {"type": "string", "format": "note", "maxLen": 60, "description": "划线价的依据，不上屏"}
+        }
+      },
+      "gift": {"type": "object", "required": ["name", "qty"], "properties": {"name": {"type": "string", "maxLen": 8}, "qty": {"type": "integer", "minimum": 1}}},
+      "footnote": {"type": "string", "maxLen": 24},
+      "refs": {"type": "array", "items": {"type": "string"}, "description": "指向 meta.facts 里条目的 id；卡片上写了「现做」「手打」这类需要依据的说法时用它放行"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.22}, {"at": 0.35, "kind": "swish", "vol": 0.2}, {"at": 0.6, "kind": "thud", "vol": 0.3}],
+  "example": {
+    "mood": 0.15,
+    "dur": 3,
+    "params": {
+      "layout": "card",
+      "items": [{"itemId": "deal-1", "name": "双人套餐", "price": 59, "unit": "份", "note": "含两菜一汤"}],
+      "label": "团购价",
+      "people": "2人",
+      "includes": ["主菜两份", "例汤一份"],
+      "limits": ["限堂食"]
+    }
+  }
+}

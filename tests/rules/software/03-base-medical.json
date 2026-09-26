@@ -1,0 +1,53 @@
+{
+  "name": "_base 医疗用语规则同样管软件行业",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "测试助手",
+      "theme": "tech-dark",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "3秒",
+          "sub": "自动整理"
+        },
+        "caption": "文件乱糟糟\n{3秒}整理好"
+      },
+      {
+        "type": "features",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "治疗失眠效果好"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "测试助手",
+          "slogan": "整理\n{更省心}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "B-medical"
+    ]
+  }
+}

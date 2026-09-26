@@ -1,0 +1,49 @@
+{
+  "type": "steps",
+  "purpose": "1-2-3 流程：一张流程卡，左边节点竖排、连线上的光点一步步跑下去，每到一步节点点亮、文字滑入，全部走完每个节点打 ✓。表现「上手很简单」。",
+  "tips": [
+    "用在卖点之后、片尾之前，讲「怎么用」",
+    "title ≤8 字，动词开头（如「打开聊天」「点悬浮球」「挑一条填入」）；desc ≤14 字补充结果",
+    "icon 可选：写了就在节点里画图标（序号变成角标），不写就在节点里画大号序号",
+    "3 步最好看，最多 4 步；时长约「步数 × 1 秒 + 1.5 秒」",
+    "标题里别写「第一步」「步骤1」：序号会自动画，且「第一」会被广告法检查拦下"
+  ],
+  "dur": {"default": 4, "min": 2.5, "max": 7},
+  "mood": 0.2,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["items"],
+    "properties": {
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 4,
+        "description": "步骤，按顺序依次点亮",
+        "items": {
+          "type": "object",
+          "required": ["title"],
+          "properties": {
+            "title": {"type": "string", "maxLen": 8, "minLen": 1, "description": "步骤标题，≤8 字，动词开头"},
+            "desc": {"type": "string", "maxLen": 14, "description": "一句补充，≤14 字"},
+            "icon": {"type": "string", "format": "icon", "description": "节点图标（不填就显示序号）"}
+          }
+        }
+      }
+    }
+  },
+  "sfx": [{"at": 0.02, "kind": "pop", "vol": 0.24}, {"at": 1.02, "kind": "tick", "vol": 0.32}, {"at": 2.02, "kind": "tick", "vol": 0.32}, {"at": 2.5, "kind": "ding", "vol": 0.24}],
+  "example": {
+    "caption": "照常聊天，\n{点一下就有建议}",
+    "mood": 0.2,
+    "dur": 4,
+    "params": {
+      "items": [
+        {"title": "打开聊天", "desc": "照常聊天就行", "icon": "chat"},
+        {"title": "点悬浮球", "desc": "一秒出分析", "icon": "sparkle"},
+        {"title": "挑一条填入", "desc": "改两个字就能发", "icon": "send"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "name": "火锅品类漏收费说明 + 量大管饱进人工复核",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "巷口火锅",
+      "theme": "festival-red",
+      "industry": "food",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "¥99",
+          "sub": "双人火锅"
+        },
+        "caption": "周末吃火锅\n{去哪家}"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "h1",
+              "name": "双人火锅套餐",
+              "price": 99,
+              "unit": "份"
+            }
+          ]
+        },
+        "caption": "火锅锅底另收费吗"
+      },
+      {
+        "type": "quickList",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "量大管饱吃得开心"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口火锅",
+          "slogan": "锅气十足\n{管饱}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "要求写清另收费用"
+    ],
+    "human": [
+      "F-portion"
+    ]
+  }
+}

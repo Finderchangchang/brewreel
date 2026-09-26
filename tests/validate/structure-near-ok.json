@@ -1,0 +1,12 @@
+{
+  "meta": {"title": "结构不太像样例-正例", "product": "示例", "theme": "fresh-light", "action": "拍照识别，自动填好结果",
+    "facts": [{"id": "f1", "text": "示例数据"}]},
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "手忙脚乱的排版，\n{到底要怎么办}", "params": {"visual": "stat", "text": "0", "sub": "还没整理"}},
+    {"type": "mockApp", "dur": 4, "caption": "拍一下文件，\n{自动分好类}", "params": {"kind": "editor", "title": "整理", "input": "拍照：合同", "button": "识别", "items": [{"text": "合同草稿"}, {"text": "分类：法务"}], "done": "已归档"}},
+    {"type": "features", "dur": 5, "caption": "它还能\n{做这些事}", "params": {"items": [{"icon": "doc", "title": "自动归档", "desc": "拍一下就分好类"}, {"icon": "search", "title": "随时能搜", "desc": "按关键词找回来"}, {"icon": "lock", "title": "本地存储", "desc": "文件只在你手机里"}]}},
+    {"type": "steps", "dur": 4.5, "caption": "上手\n{只要三步}", "params": {"items": [{"title": "拍下文件", "desc": "合同、票据都行"}, {"title": "自动分类", "desc": "按类型归好档"}, {"title": "随手搜索", "desc": "关键词秒找到"}]}},
+    {"type": "meter", "dur": 4, "caption": "整理得怎么样，\n{一眼就看到}", "params": {"value": 9, "max": 10, "label": "整洁度", "higherIs": "good", "from": 3}},
+    {"type": "endCard", "dur": 4, "params": {"brand": "示例", "slogan": "整理这件事，\n{交给它就好}", "points": ["拍照自动归档"]}}
+  ]
+}

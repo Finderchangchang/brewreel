@@ -1,0 +1,53 @@
+{
+  "id": "food",
+  "name": "餐饮",
+  "version": "2026-09-26",
+  "note": "堂食门店、咖啡茶饮、小吃快餐。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
+  "enabledShots": ["hook", "photoShot", "priceCard", "storeCard", "reviewCard", "credCard", "meter", "features", "steps", "counter", "endCard"],
+  "flags": {"promoRequiresLimits": true},
+  "mediaPolicy": {
+    "shots": ["photoShot", "storeCard", "hook"],
+    "allowSources": ["merchant", "drawn"],
+    "blockAiWhen": {"platform": "douyin"},
+    "requireAtLeastOnePhotoWhen": {"platform": "douyin"}
+  },
+  "patterns": [
+    {"id": "B-pseudo", "level": "block", "scope": "text", "regex": "富氢|纳米|量子|石墨烯|负离子", "message": "伪科技词，本行业按拦截处理", "fix": "删掉，没有检测依据就不能写", "source": "抖音开放平台《团购审核规则指引》"},
+    {"id": "F-health", "level": "block", "scope": "text", "regex": "免疫力|增免疫|润肠|清肠|通便|减肥|瘦身|燃脂|刮油|美容养颜|养颜|抗衰老|延缓衰老|补肾|壮阳|丰胸|助眠|改善睡眠|安神|护肝|养肝|养胃|护胃|暖胃|驱寒|补气血|调理身体|杀菌", "message": "普通食品不得声称保健功能", "fix": "删掉，改写成能兑现的口味或分量卖点", "source": "《食品安全法》第七十三条；《食品安全法实施条例》第三十八条；北京市市场监管局《普通食品广告别「翻车」》（2025-10）"},
+    {"id": "F-superlative", "level": "block", "scope": "text", "regex": "最正宗|最好吃|最地道|全城第一|全网第一|第一家|唯一|顶级|No\\.?1|TOP ?1|销量冠军|天下第一|全城最", "message": "餐饮极限词", "fix": "换成具体可证实的说法，如「牛骨汤每天熬4小时」", "source": "《广告法》第九条第（三）项"},
+    {"id": "F-honor", "level": "block", "scope": "text", "regex": "中华老字号|老字号|非遗|米其林|黑珍珠|必吃榜|金字招牌|获奖|榜单|十佳", "unless": {"refsIn": "facts"}, "message": "荣誉类说法需要依据", "fix": "refs 指向 meta.facts 里的证明条目；「中华老字号」还要求有商务部认定证明", "source": "《中华老字号示范创建管理办法》（2023）第四条；《反不正当竞争法》（2025 修订）第九条"},
+    {"id": "F-years", "level": "block", "scope": "text", "regex": "开了\\d+年|\\d+年老店|开店第\\d+年|排队.{0,3}(小时|分钟)", "unless": [{"refsIn": "facts"}, {"shotHas": "source"}], "message": "年限/排队时长需要依据", "fix": "refs 指向 meta.facts 里的证明条目（如营业执照成立日期）", "source": "《广告法》第十一条"},
+    {"id": "F-fresh", "level": "block", "scope": "text", "regex": "现做|现炒|现熬|现包|现烤|手工|手打|鲜榨|现切|现萃|自熬|自家卤|自制", "unless": {"refsIn": "facts"}, "message": "「现做」类说法需要依据", "fix": "refs 指向 meta.facts 里的证明条目（如后厨视频、采购单）；用了预制菜的品项不能写", "source": "《广告法》第二十八条"},
+    {"id": "F-sugar", "level": "block", "scope": "text", "regex": "0糖|零糖|无糖|0卡|零卡|低卡|0脂|低脂|鲜奶|纯牛奶|零添加|无添加", "unless": {"refsIn": "facts"}, "message": "成分说法需要依据", "fix": "refs 指向 meta.facts 里的检测或配方依据", "source": "市场监管总局办公厅《关于加强现制现售奶茶果蔬汁监督管理的通知》（2018）"},
+    {"id": "F-cert", "level": "block", "scope": "text", "regex": "有机|绿色食品|清真", "unless": {"refsIn": "facts"}, "message": "认证类说法需要依据", "fix": "refs 指向 meta.facts 里的认证证明"},
+    {"id": "F-mincharge", "level": "block", "scope": "text", "regex": "最低消费|低消|包间.{0,4}起订", "message": "最低消费限制", "fix": "删掉，改成清楚的套餐或按位价格", "source": "《餐饮业促进和经营管理办法》（商务部、国家发展改革委令 2025 年第 3 号）第十六条"},
+    {"id": "F-waste", "level": "block", "scope": "text", "regex": "大胃王|暴饮暴食|吃到撑|撑死|吃到吐|扶墙|胡吃海塞|点满一桌|吃不完.{0,3}(没事|无所谓)|越多越划算", "message": "宣扬浪费/过量饮食", "fix": "删掉，改成按需点餐的说法", "source": "《反食品浪费法》第二十二、七、二十八条"},
+    {"id": "F-wild", "level": "block", "scope": "text", "regex": "野味|野生动物|穿山甲|果子狸|竹鼠|蛇肉|蛇羹", "message": "涉及野生动物", "fix": "整段删掉", "source": "《野生动物保护法》（2022 修订）第三十一、三十二条"},
+    {"id": "F-clash", "level": "block", "scope": "text", "regex": "相克", "message": "食物相克类说法", "fix": "删掉", "source": "视频号运营规范 5.13.3"},
+    {"id": "F-portion", "level": "human", "scope": "text", "regex": "量大管饱|分量足", "message": "容易被认定宣扬多吃，建议改写成具体分量", "fix": "改成具体分量说法，如「一份 6 颗」", "source": "《反食品浪费法》第二十二条（尺度未核实）"},
+    {"id": "F-nourish", "level": "human", "scope": "text", "regex": "养生|滋补|温补|祛湿|清热|下火|药膳", "message": "容易被认定暗示功效，各地执法尺度不一", "fix": "人工判断是否要删；不写进钩子和价签更保险", "source": "未核实"}
+  ],
+  "checks": [
+    {"fn": "priceHasUnit"},
+    {"fn": "extraFeesRequired"},
+    {"fn": "discountMath"},
+    {"fn": "routeHasMode"},
+    {"fn": "textShotRatio"},
+    {"fn": "firstPhotoWithin3s"},
+    {"fn": "credVerbatim"},
+    {"fn": "reviewVerbatim"}
+  ],
+  "requiredNotices": [
+    {"id": "N-photo", "text": "图片仅供参考 以实物为准", "when": {"hasShot": "photoShot"}},
+    {"id": "N-deal", "text": "以团购详情页为准", "when": {"platform": "douyin"}}
+  ],
+  "shotRules": {
+    "priceCard": {"footnote": "以团购详情页为准", "forbidCompareWhen": {"platform": "douyin"}}
+  },
+  "humanReview": [
+    {"text": "不盗用网图和他人菜品图", "source": "抖音生活服务低质内容评估规范（2024-05）；抖音探店规范（2023-02）"},
+    {"text": "有酒水时不做举杯、饮用的特写"},
+    {"text": "片尾建议加「按需点餐 拒绝浪费」，不强制"},
+    {"text": "「图片仅供参考」只能覆盖光线/摆盘造成的细微差别，不能为菜品和实物的实质性差异免责", "source": "《广告法》第二十八条"}
+  ]
+}

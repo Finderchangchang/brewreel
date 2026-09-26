@@ -1,0 +1,42 @@
+{
+  "name": "医美项目整份拒绝",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "栗言发型工作室",
+      "theme": "warm-emotion",
+      "industry": "beauty",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "变美",
+          "sub": "咨询"
+        },
+        "caption": "想做水光针变美"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "剪对方向\n{才好打理}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "医美"
+    ]
+  }
+}

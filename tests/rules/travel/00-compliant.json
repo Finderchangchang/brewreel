@@ -1,0 +1,96 @@
+{
+  "name": "沉浸看房结构：季节照片标月份、交通写清方式、价格卡自带周末加价提示",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "松溪小住",
+      "theme": "fresh-light",
+      "industry": "travel",
+      "durationRange": [
+        3,
+        60
+      ],
+      "notices": [
+        "景观视天气与季节而定",
+        "周末及节假日价格另计，以下单页为准"
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "山景房",
+          "sub": "民宿"
+        },
+        "caption": "推开窗\n整片山景就在眼前"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "tour",
+          "media": [
+            {
+              "source": "merchant",
+              "tag": "实拍",
+              "month": 10
+            }
+          ]
+        },
+        "caption": "10月稻田正黄\n窗外就是这片景"
+      },
+      {
+        "type": "storeCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "map",
+          "name": "松溪小住",
+          "routes": [
+            {
+              "to": "高铁站",
+              "mode": "驾车",
+              "minutes": 25
+            }
+          ]
+        },
+        "caption": "高铁站驾车约25分钟"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "r1",
+              "name": "山景大床房",
+              "price": 368,
+              "unit": "晚"
+            }
+          ],
+          "footnote": "周末及节假日价格另计，以下单页为准"
+        },
+        "caption": "山景大床房\n周日至周四368元"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "松溪小住",
+          "slogan": "推窗见山\n{枕溪而眠}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

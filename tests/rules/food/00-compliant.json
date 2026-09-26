@@ -1,0 +1,114 @@
+{
+  "name": "团购套餐带货（抖音挂团购），对齐 test-brief 的合规版本",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "巷口牛肉面",
+      "theme": "warm-emotion",
+      "industry": "food",
+      "platform": "douyin",
+      "durationRange": [
+        3,
+        60
+      ],
+      "notices": [
+        "图片仅供参考 以实物为准",
+        "以团购详情页为准"
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "text": "牛腱自家卤制，后厨视频为证"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "¥59",
+          "sub": "双人套餐"
+        },
+        "caption": "两人套餐59元\n吃到招牌两样"
+      },
+      {
+        "type": "photoShot",
+        "dur": 2.5,
+        "mood": 0.3,
+        "params": {
+          "layout": "hero",
+          "media": [
+            {
+              "source": "merchant",
+              "tag": "实拍",
+              "label": "招牌款"
+            }
+          ],
+          "title": "红烧牛肉面",
+          "refs": [
+            "f1"
+          ]
+        },
+        "caption": "牛腱自家卤\n炖足4小时"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "d1",
+              "name": "双人套餐",
+              "price": 59,
+              "unit": "份"
+            }
+          ],
+          "label": "团购价",
+          "limits": [
+            "限堂食"
+          ],
+          "excludes": "无其他收费",
+          "footnote": "以团购详情页为准"
+        },
+        "caption": "双人套餐\n含招牌两样"
+      },
+      {
+        "type": "storeCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "name": "巷口牛肉面",
+          "landmark": "地铁桂园站B口",
+          "hours": "10:00-21:30",
+          "routes": [
+            {
+              "to": "桂园站B口",
+              "mode": "步行",
+              "minutes": 3
+            }
+          ]
+        },
+        "caption": "桂园站B口\n步行3分钟就到"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口牛肉面",
+          "slogan": "吃饱\n{不将就}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

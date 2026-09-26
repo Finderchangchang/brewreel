@@ -1,0 +1,50 @@
+{
+  "type": "features",
+  "purpose": "卖点卡：2–4 张带图标的卖点卡按拍依次弹入，黄色聚光框跟着「当前讲到的那张」移动。grid：2 张并排 / 3 张一横两方 / 4 张 2x2；stack：竖排横条。",
+  "tips": [
+    "产品出场后用来讲「它能做什么」；每张卡只讲一个卖点",
+    "title ≤8 字说是什么（名词短语），desc ≤16 字说带来什么好处（用户能感到的结果）",
+    "icon 从图标清单里挑最贴切的；不同卡尽量用不同图标",
+    "3 张最好看；时长约「张数 × 1 秒 + 1.5 秒」，4 张给 5–6 秒",
+    "desc 较长、想让每条都读清楚时用 layout: stack"
+  ],
+  "dur": {"default": 4, "min": 2.5, "max": 7},
+  "mood": 0.2,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["items"],
+    "properties": {
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 4,
+        "description": "卖点卡，按顺序每 1–2 拍弹出一张",
+        "items": {
+          "type": "object",
+          "required": ["icon", "title"],
+          "properties": {
+            "icon": {"type": "string", "format": "icon", "description": "卡片图标（图标清单里的名字）"},
+            "title": {"type": "string", "maxLen": 8, "minLen": 1, "description": "卖点标题，≤8 字，如「读懂语气」"},
+            "desc": {"type": "string", "maxLen": 16, "description": "一句好处，≤16 字，如「看出对方话里的情绪」"}
+          }
+        }
+      },
+      "layout": {"type": "string", "enum": ["grid", "stack"], "description": "grid 网格（默认）/ stack 竖排横条"}
+    }
+  },
+  "sfx": [{"at": 0.02, "kind": "pop", "vol": 0.25}, {"at": 1.02, "kind": "pop", "vol": 0.25}, {"at": 2.02, "kind": "pop", "vol": 0.3}],
+  "example": {
+    "caption": "看懂语气，\n{回复也帮你想好}",
+    "mood": 0.2,
+    "dur": 4,
+    "params": {
+      "items": [
+        {"icon": "search", "title": "读懂语气", "desc": "看出对方话里的真实情绪"},
+        {"icon": "chat", "title": "给出回复", "desc": "三条候选，挑一条就行"},
+        {"icon": "shield", "title": "不替你发", "desc": "发不发永远由你决定"}
+      ]
+    }
+  }
+}

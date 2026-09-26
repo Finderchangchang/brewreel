@@ -1,0 +1,77 @@
+{
+  "type": "mockApp",
+  "purpose": "没有截图时的模拟产品界面（中性样式、会动）：dashboard 数据面板 / list 列表 / editor 生成文档 / form 填表提交。",
+  "tips": [
+    "有真截图就用 phone；没有才用 mockApp",
+    "dashboard：stat 写一个大数字（会从 0 滚上去）+ series 写 5–8 个数（折线/柱子会长出来）+ items 写 2–3 行指标（value 写数值），highlight 点中异常那一行；产品是「问一句就出数」这类，input 写用户问的那句话（先打字提问，再出数）",
+    "list：items 写 3–5 行条目，value 写状态标签（≤4 字最好看，如「待处理」），highlight 点中那一行后标签变完成态；input 可写搜索词",
+    "editor：input 写用户输入的一句需求，button 写按钮（如「生成」），items 写生成出来的 3–5 行文字（第 1 行是标题）；done 写完成提示",
+    "form：items 写 2–5 个表单项（text 字段名，value 填入的值），button 写提交按钮，done 写提交后的提示",
+    "title 写产品里真实的页面名，不写第三方 App 名",
+    "stat/items 里出现「已售」「月售」「%」「好评率」这类数据类说法时，补 source 字段写来源和统计截止日期（不上屏，只过校验）"
+  ],
+  "dur": {"default": 4, "min": 2.5, "max": 8},
+  "mood": 0.3,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["kind", "title"],
+    "properties": {
+      "kind": {"type": "string", "enum": ["dashboard", "list", "editor", "form"], "description": "界面类型：dashboard 数据面板 / list 列表 / editor 生成文档 / form 表单"},
+      "title": {"type": "string", "maxLen": 10, "minLen": 1, "description": "界面顶栏标题，如「今日概览」"},
+      "items": {
+        "type": "array",
+        "minItems": 0,
+        "maxItems": 5,
+        "description": "行：dashboard 指标（只显示前 3 行）/ list 条目 / editor 生成的文字行（第 1 行是标题）/ form 表单项",
+        "items": {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "icon": {"type": "string", "format": "icon", "description": "行首图标（dashboard/list/form 用）"},
+            "text": {"type": "string", "maxLen": 12, "minLen": 1, "description": "行文字 / 字段名，≤12 字（dashboard/list 行尾有 value 时 ≤10 字）"},
+            "value": {"type": "string", "maxLen": 6, "description": "行尾的值：指标数值 / 状态标签 / 表单填入的内容，≤6 字"},
+            "tone": {"type": "string", "enum": ["good", "warn", "bad", "neutral"], "description": "值的颜色：good 绿 / warn 橙 / bad 红 / neutral 灰"}
+          }
+        }
+      },
+      "highlight": {"type": "integer", "minimum": 0, "maximum": 4, "description": "dashboard/list/editor：被点中并高亮的行号（从 0 数）"},
+      "stat": {
+        "type": "object",
+        "required": ["value", "label"],
+        "description": "dashboard 顶部的大数字",
+        "properties": {
+          "value": {"type": "string", "maxLen": 6, "minLen": 1, "description": "如「128」「+36%」「3.2万」，数字部分会滚动"},
+          "label": {"type": "string", "maxLen": 8, "minLen": 1, "description": "数字说明，如「今日新增订单」"},
+          "live": {"type": "string", "maxLen": 4, "description": "可选：右上角状态角标文字，如「实时」/「Live」。不写就不画这个角标，不要默认当作实时数据；lang=en 时写英文，不要写中文"}
+        }
+      },
+      "series": {"type": "array", "minItems": 2, "maxItems": 12, "description": "dashboard 图表数据，5–8 个数最好看，如 [3, 5, 4, 7, 9]", "items": {"type": "number"}},
+      "chart": {"type": "string", "enum": ["line", "bar"], "description": "dashboard 图表：line 折线（默认）/ bar 柱状"},
+      "input": {"type": "string", "maxLen": 12, "description": "editor：输入框里打出的需求；list：搜索框里打出的词；dashboard：顶部提问框里打出的问题（先问后出数）"},
+      "button": {"type": "string", "maxLen": 4, "description": "主按钮文字，如「生成」「提交」「新建」"},
+      "done": {"type": "string", "maxLen": 6, "description": "editor/form：完成后的提示，如「已生成」「提交成功」"},
+      "source": {"type": "string", "format": "note", "maxLen": 40, "description": "不上屏：stat/items 里写了「已售」「%」这类数据类说法时，填数据来源和统计截止日期（如「数据来源：内部后台，统计至2026年9月」）"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "whoosh", "vol": 0.26}, {"at": 1.0, "kind": "pop", "vol": 0.18}, {"at": 2.5, "kind": "tap", "vol": 0.35}],
+  "example": {
+    "caption": "数据一目了然，\n{异常自动标红}",
+    "mood": 0.3,
+    "dur": 4,
+    "params": {
+      "kind": "dashboard",
+      "title": "今日概览",
+      "source": "数据来源：内部后台，统计至2026年9月",
+      "stat": {"value": "1,286", "label": "今日新增订单"},
+      "series": [32, 41, 38, 52, 49, 63, 78],
+      "items": [
+        {"icon": "trend", "text": "转化率", "value": "+12%", "tone": "good"},
+        {"icon": "clock", "text": "平均响应", "value": "3 分钟", "tone": "neutral"},
+        {"icon": "alert", "text": "待处理投诉", "value": "2 条", "tone": "bad"}
+      ],
+      "highlight": 2
+    }
+  }
+}

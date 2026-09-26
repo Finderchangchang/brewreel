@@ -1,0 +1,27 @@
+{
+  "meta": {"title": "省心记账 宣传片", "product": "省心记账", "theme": "fresh-light", "disclaimer": "演示画面，数据为示例"},
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "工资刚到手，\n月底又{见底了}", "mood": 0.85,
+     "params": {"visual": "stat", "text": "¥ 0.00", "sub": "这个月花哪了", "badge": "拍张小票就记好", "tone": "bad"}},
+    {"type": "quickList", "dur": 3.5, "caption": "每一笔都花了，\n却{一笔都想不起}", "mood": 0.8,
+     "params": {"title": "本月去向不明", "items": [
+       {"text": "外卖", "tag": "¥860", "tone": "bad", "icon": "bell"},
+       {"text": "奶茶咖啡", "tag": "¥326", "tone": "warn", "icon": "heart"},
+       {"text": "忘关的自动续费", "tag": "¥98", "tone": "bad", "icon": "calendar"},
+       {"text": "深夜打车", "tag": "¥410", "tone": "warn", "icon": "clock"}]}},
+    {"type": "compare", "dur": 4.5, "caption": "记账这件事，\n{别再靠毅力}", "mood": 0.45,
+     "params": {"mode": "lr",
+       "left": {"title": "手动记账", "items": ["每笔手动输入", "分类全靠猜", "三天就放弃"], "tone": "bad", "icon": "doc", "stat": "5 分钟", "level": 8},
+       "right": {"title": "省心记账", "items": ["拍小票自动识别", "自动分好类", "月底一键复盘"], "tone": "good", "icon": "bolt", "stat": "10 秒", "level": 2},
+       "meterLabel": "麻烦程度", "verdict": "记一笔只要十秒"}},
+    {"type": "features", "dur": 4.5, "caption": "三件事，\n{它替你盯着}", "mood": 0.2,
+     "params": {"layout": "grid", "items": [
+       {"icon": "image", "title": "拍照识别", "desc": "小票、截图都能认"},
+       {"icon": "chart", "title": "自动分类", "desc": "吃穿住行一目了然"},
+       {"icon": "bell", "title": "超支提醒", "desc": "快超预算先提醒你"}]}},
+    {"type": "counter", "dur": 3, "caption": "月底一看，\n{居然还有结余}", "mood": 0.1,
+     "params": {"to": 1260, "prefix": "¥", "label": "本月比上月多存下", "sub": "示例数据，因人而异", "icon": "money", "tone": "good"}},
+    {"type": "endCard", "dur": 4, "mood": 0,
+     "params": {"brand": "省心记账", "slogan": "花出去的每一笔，\n{心里都有数}", "points": ["拍小票自动记账", "账本只存在你手机里"], "cta": "应用商店搜 省心记账", "icon": "money"}}
+  ]
+}

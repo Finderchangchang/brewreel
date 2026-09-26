@@ -1,0 +1,57 @@
+{
+  "type": "quickList",
+  "purpose": "快切列表：3–6 行白卡按拍左右交替飞入，每行右边「盖章」出判定：分数滚动落定（可带判词），或一个彩色标签砸下来；左边色条按语气色长满。适合「这些场景都能用 / 这些话都能看懂」。",
+  "tips": [
+    "text ≤10 字，写用户熟悉的具体场景或原话，越短越有冲击力",
+    "每行右边二选一：score（数字，配合顶层 max 显示成「8/9」，tag 写在数字下面当判词）或只写 tag（≤4 字彩色标签）",
+    "tone 决定颜色：bad 红 / warn 橙 / good 绿 / neutral 灰；不写 = 品牌色。好坏混着排更有节奏",
+    "列举「别人说的话」时设 quote: true，每行画成头像 + 灰气泡；列举功能/场景时不设，每行画成图标 + 粗字",
+    "3–4 行 3 秒；5–6 行给 4 秒"
+  ],
+  "dur": {"default": 3, "min": 2, "max": 6},
+  "mood": 0.6,
+  "caption": "optional",
+  "exit": "fade",
+  "params": {
+    "type": "object",
+    "required": ["items"],
+    "properties": {
+      "title": {"type": "string", "maxLen": 8, "description": "列表上方的小标题胶囊，≤8 字（可不写，字幕已经说了就别写）"},
+      "items": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 6,
+        "description": "列表行，每拍弹出一行",
+        "items": {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": {"type": "string", "maxLen": 10, "minLen": 1, "description": "行文字，≤10 字"},
+            "tag": {"type": "string", "maxLen": 4, "description": "判词/标签，≤4 字；有 score 时写在数字下面，没有 score 时是彩色标签"},
+            "tone": {"type": "string", "enum": ["good", "warn", "bad", "neutral"], "description": "颜色：bad 红 / warn 橙 / good 绿 / neutral 灰；不写 = 品牌色"},
+            "icon": {"type": "string", "format": "icon", "description": "行首图标（不填按 tone 自动选；quote 为 true 时不用）"},
+            "score": {"type": "number", "minimum": 0, "maximum": 999, "description": "分数（可带 1 位小数），从 0 滚动到这个数"}
+          }
+        }
+      },
+      "max": {"type": "integer", "minimum": 1, "maximum": 100, "description": "分数满分，写了就显示成「分数/满分」，如 9 → 「8/9」"},
+      "quote": {"type": "boolean", "description": "true = 每行画成头像 + 灰气泡（列举别人说的话）；默认 false = 图标 + 粗字"}
+    }
+  },
+  "sfx": [{"at": 0.01, "kind": "swish", "vol": 0.12}, {"at": 0.2, "kind": "pop", "vol": 0.22}, {"at": 0.51, "kind": "swish", "vol": 0.12}, {"at": 0.7, "kind": "thud", "vol": 0.32}],
+  "example": {
+    "caption": "这些话，\n它先帮你{看一眼}",
+    "mood": 0.6,
+    "dur": 3,
+    "params": {
+      "quote": true,
+      "max": 9,
+      "items": [
+        {"text": "随便", "score": 5, "tag": "留神", "tone": "warn"},
+        {"text": "我没生气", "score": 8, "tag": "很危险", "tone": "bad"},
+        {"text": "你忙你的吧", "score": 7, "tag": "偏危险", "tone": "bad"},
+        {"text": "哈哈哈好", "score": 2, "tag": "安全", "tone": "good"}
+      ]
+    }
+  }
+}

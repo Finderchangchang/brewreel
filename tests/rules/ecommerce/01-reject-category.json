@@ -1,0 +1,42 @@
+{
+  "name": "保健食品品类整份拒绝",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "测试杯子",
+      "theme": "tech-dark",
+      "industry": "ecommerce",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "认证",
+          "sub": "蓝帽子"
+        },
+        "caption": "这是蓝帽子认证产品"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "测试杯子",
+          "slogan": "喝口热的\n{再出发}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "属于拒绝品类"
+    ]
+  }
+}

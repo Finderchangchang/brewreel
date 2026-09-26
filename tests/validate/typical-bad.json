@@ -1,0 +1,13 @@
+{
+  "meta": {"title": "典型错误", "product": "X", "theme": "tech-blue", "disclaimer": "演示"},
+  "shots": [
+    {"type": "chat", "dur": 3, "caption": "最好用的聊天助手来了", "params": {"messages": [{"from": "peer", "text": "这句话特别特别特别特别特别长超过十八个字了"}]}},
+    {"type": "hook", "caption": "{一}二{三}", "params": {"visual": "icon"}},
+    {"type": "mockApp", "dur": 4, "params": {"variant": "list", "title": "列表"}},
+    {"type": "meter", "dur": 3, "params": {"value": 12, "max": 9, "label": "风险", "icon": "rocket"}},
+    {"type": "compare", "dur": 4, "params": {"left": {"title": "以前", "items": ["慢"], "stat": "1 小时"}, "right": {"title": "现在", "items": ["快"]}}},
+    {"type": "counter", "dur": 3, "params": {"to": 3, "showFrom": true, "label": "访问 www.x.com 下载"}},
+    {"type": "steps", "dur": 3, "caption": "第一步就很简单", "params": {"items": [{"title": "第一步"}, {"title": "b"}]}},
+    {"type": "endCard", "dur": 4, "caption": "片尾不该有字幕", "params": {"brand": "x", "slogan": "扫码下载"}}
+  ]
+}

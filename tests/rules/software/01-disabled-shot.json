@@ -1,0 +1,57 @@
+{
+  "name": "_base 默认禁用 beforeAfter，软件行业也不例外（它是美业专属）",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "测试助手",
+      "theme": "tech-dark",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "3秒",
+          "sub": "自动整理"
+        },
+        "caption": "文件乱糟糟\n{3秒}整理好"
+      },
+      {
+        "type": "beforeAfter",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "before": {
+            "src": "a.jpg"
+          },
+          "after": {
+            "src": "b.jpg"
+          },
+          "consent": true,
+          "retouched": false,
+          "subVertical": "hair"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "测试助手",
+          "slogan": "整理\n{更省心}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "不开放镜头 beforeAfter"
+    ]
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "name": "变身对比结构：已授权前后对比、起价列清加价项、生活美容声明齐全",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "栗言发型工作室",
+      "theme": "warm-emotion",
+      "industry": "beauty",
+      "durationRange": [
+        3,
+        60
+      ],
+      "notices": [
+        "生活美容 · 不提供医疗美容服务"
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "steps",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "洗护"
+            },
+            {
+              "text": "剪裁"
+            },
+            {
+              "text": "吹造型"
+            }
+          ]
+        },
+        "caption": "洗护到造型\n全程看得见"
+      },
+      {
+        "type": "beforeAfter",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "before": {
+            "src": "b1.jpg",
+            "label": "之前"
+          },
+          "after": {
+            "src": "a1.jpg",
+            "label": "之后"
+          },
+          "consent": true,
+          "retouched": false,
+          "sameAngle": true,
+          "subVertical": "hair",
+          "caption2": "顾客授权实拍"
+        }
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "menu",
+          "items": [
+            {
+              "itemId": "dye",
+              "name": "染发",
+              "price": 298,
+              "unit": "次",
+              "from": true
+            }
+          ],
+          "addOns": [
+            {
+              "cond": "及肩以下",
+              "extra": "+80元"
+            },
+            {
+              "cond": "及腰",
+              "extra": "+160元"
+            }
+          ],
+          "label": "售价"
+        },
+        "caption": "染发298元起\n加价写清楚"
+      },
+      {
+        "type": "storeCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "name": "栗言发型工作室",
+          "landmark": "玉林商圈",
+          "hours": "10:00-21:00"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "剪对方向\n{才好打理}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

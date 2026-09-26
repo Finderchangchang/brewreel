@@ -1,0 +1,44 @@
+{
+  "type": "credCard",
+  "purpose": "人或荣誉的资历卡：只放能证明的资历/荣誉，用来替代「名师」「金牌」这类说法。",
+  "tips": [
+    "layout=person（讲师/手艺人：name+role+years+creds）/ honor（荣誉/证书：title+issuer+year+refs）",
+    "person.creds 每条必须逐字出自 brief 的资历字段，模型不能自己补写（credVerbatim，行业规则实现）；honor.refs 必填，指向 meta.facts",
+    "公共禁用词：医生/医师/专家/教授/主任/院长/皮肤科/名师/金牌/王牌/顶级/大咖/权威/第一，以及国家机关名称（各行业还会追加，行业规则里拦）",
+    "没有照片时：person 用首字圆标 + 对应工具图标，不用 AI 生成人脸冒充本人；honor 用徽章图形，不模仿米其林/黑珍珠等官方标识"
+  ],
+  "dur": {"default": 3, "min": 1.5, "max": 6},
+  "mood": 0.15,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["layout"],
+    "properties": {
+      "layout": {"type": "string", "enum": ["person", "honor"]},
+      "name": {"type": "string", "maxLen": 6, "description": "person 布局：称呼即可"},
+      "role": {"type": "string", "maxLen": 12},
+      "years": {"type": "integer", "minimum": 0, "maximum": 80, "description": "从业年限"},
+      "creds": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLen": 16}},
+      "skills": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLen": 6}},
+      "photo": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp"], "description": "person 布局选填，要求顾客/本人已同意（consent）；honor 布局是证书或牌匾实拍"},
+      "title": {"type": "string", "maxLen": 12, "description": "honor 布局：荣誉名称"},
+      "issuer": {"type": "string", "maxLen": 12, "description": "honor 布局：颁发方"},
+      "year": {"type": "integer", "minimum": 1900, "maximum": 2100},
+      "refs": {"type": "array", "items": {"type": "string"}, "description": "honor 布局必填，指向 meta.facts 里的条目 id"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.35, "kind": "swish", "vol": 0.18}],
+  "example": {
+    "mood": 0.15,
+    "dur": 3,
+    "params": {
+      "layout": "person",
+      "name": "陈师傅",
+      "role": "面点主厨",
+      "years": 12,
+      "creds": ["中式面点职业技能等级证书"],
+      "skills": ["手打", "熬汤"]
+    }
+  }
+}

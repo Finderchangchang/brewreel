@@ -1,0 +1,84 @@
+{
+  "name": "痛点解决结构：实拍+条件齐全+无违规词",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "暖屿保温杯",
+      "theme": "tech-dark",
+      "industry": "ecommerce",
+      "platform": "douyin",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "6小时",
+          "sub": "实测保温"
+        },
+        "caption": "咖啡放到中午\n就凉了"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "callouts",
+          "media": [
+            {
+              "source": "merchant",
+              "tag": "实拍"
+            }
+          ],
+          "callouts": [
+            {
+              "text": "内胆316钢"
+            },
+            {
+              "text": "一键弹盖"
+            }
+          ]
+        },
+        "caption": "316不锈钢内胆\n一键弹盖"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "p1",
+              "name": "保温杯",
+              "price": 59,
+              "unit": "只"
+            }
+          ],
+          "label": "券后价",
+          "conditions": "需领取20元店铺券"
+        },
+        "caption": "券后59元\n一只焕新用"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "暖屿保温杯",
+          "slogan": "喝口热的\n{再出发}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

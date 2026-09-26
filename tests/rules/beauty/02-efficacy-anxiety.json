@@ -1,0 +1,55 @@
+{
+  "name": "功效宣称+容貌焦虑",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "栗言发型工作室",
+      "theme": "warm-emotion",
+      "industry": "beauty",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "features",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "做完显年轻十岁告别黄脸婆"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "剪对方向\n{才好打理}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "BE-efficacy",
+      "BE-anxiety"
+    ]
+  }
+}

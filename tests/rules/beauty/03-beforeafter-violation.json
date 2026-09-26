@@ -1,0 +1,59 @@
+{
+  "name": "前后对比缺授权、未标注未修图",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "栗言发型工作室",
+      "theme": "warm-emotion",
+      "industry": "beauty",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "beforeAfter",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "before": {
+            "src": "b1.jpg"
+          },
+          "after": {
+            "src": "a1.jpg"
+          },
+          "consent": false,
+          "retouched": true,
+          "subVertical": "lash"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "剪对方向\n{才好打理}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "没有 consent",
+      "retouched 必须明确为 false"
+    ]
+  }
+}

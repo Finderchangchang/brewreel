@@ -1,0 +1,84 @@
+{
+  "name": "老板原话：原价/扣1/不醉不归/隔壁家/电话",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "巷口牛肉面",
+      "theme": "warm-emotion",
+      "industry": "food",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "¥59",
+          "sub": "双人套餐"
+        },
+        "caption": "两人套餐\n{只要59元}"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "d1",
+              "name": "双人套餐",
+              "price": 59,
+              "unit": "份"
+            }
+          ]
+        },
+        "caption": "原价68现在只要59"
+      },
+      {
+        "type": "quickList",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "评论区扣1送啤酒"
+            },
+            {
+              "text": "啤酒不醉不归"
+            },
+            {
+              "text": "隔壁家都是料理包"
+            },
+            {
+              "text": "电话13800005678可订座"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口牛肉面",
+          "slogan": "吃饱\n{不将就}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "含原价类字眼",
+      "B-induce",
+      "B-alcohol",
+      "B-rival",
+      "B-contact"
+    ]
+  }
+}

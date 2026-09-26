@@ -1,0 +1,128 @@
+{
+  "name": "干货技巧引流：大纲课时自洽、演示号码打星号、资历走人工复核",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "青禾职场课堂",
+      "theme": "business-blue",
+      "industry": "education",
+      "durationRange": [
+        3,
+        60
+      ],
+      "disclaimer": "演示数据为虚构"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "1键拆分",
+          "sub": "Ctrl+E"
+        },
+        "caption": "姓名电话混一列"
+      },
+      {
+        "type": "mockApp",
+        "dur": 5,
+        "mood": 0.3,
+        "params": {
+          "variant": "sheet",
+          "keys": [
+            "Ctrl+E"
+          ],
+          "before": [
+            "张三 138****0000"
+          ],
+          "after": [
+            "张三",
+            "138****0000"
+          ],
+          "demoNote": "演示数据为虚构"
+        },
+        "caption": "同一张表\n两种做法"
+      },
+      {
+        "type": "factSheet",
+        "dur": 6,
+        "mood": 0.3,
+        "params": {
+          "layout": "syllabus",
+          "title": "课程大纲",
+          "rows": [
+            {
+              "no": "1",
+              "name": "录入",
+              "lessons": 5
+            },
+            {
+              "no": "2",
+              "name": "函数",
+              "lessons": 8
+            },
+            {
+              "no": "3",
+              "name": "清洗",
+              "lessons": 6
+            },
+            {
+              "no": "4",
+              "name": "透视表",
+              "lessons": 7
+            },
+            {
+              "no": "5",
+              "name": "AI助手",
+              "lessons": 6
+            },
+            {
+              "no": "6",
+              "name": "周报",
+              "lessons": 4
+            }
+          ],
+          "facts": [
+            {
+              "label": "总课时",
+              "value": "36节"
+            }
+          ]
+        },
+        "caption": "6章36节"
+      },
+      {
+        "type": "credCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "person",
+          "name": "林老师",
+          "role": "财务数据分析",
+          "years": 9,
+          "creds": [
+            "全国计算机等级考试二级证书"
+          ],
+          "skills": [
+            "Excel",
+            "透视表"
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "青禾职场课堂",
+          "slogan": "技能变现\n{先学会用}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

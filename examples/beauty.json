@@ -1,0 +1,152 @@
+{
+  "meta": {
+    "title": "拾光美甲工作室 宣传片（报价拆解 + 工艺展示，无实拍照片场景）",
+    "product": "拾光美甲工作室",
+    "industry": "beauty",
+    "theme": "warm-emotion",
+    "disclaimer": "情景演示，对话为模拟",
+    "notices": ["生活美容 · 不提供医疗美容服务"],
+    "action": "顾客说出款式和顾虑 → 先测甲面定方案，再分步做光疗甲",
+    "facts": [
+      {"id": "f1", "text": "猫眼渐变款198元起，加价项：贴钻+30元起、手绘+50元起、延甲+80元（示例数据，实际以到店报价为准）"},
+      {"id": "f2", "text": "光疗甲正常养护下大约能维持3周（示例数据，因个人甲面和生活习惯而异）"}
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "她只问了一句\n会不会{伤甲}",
+      "mood": 0.75,
+      "params": {
+        "visual": "bubble",
+        "text": "甲面薄，会不会伤甲",
+        "sub": "到店必问",
+        "badge": "先答疑虑再开工",
+        "tone": "warn"
+      }
+    },
+    {
+      "type": "photoShot",
+      "dur": 4,
+      "caption": "先挑颜色，\n{工位独立不拼台}",
+      "mood": 0.35,
+      "params": {
+        "layout": "tour",
+        "media": [
+          {"source": "drawn", "illust": "beauty/polish", "tag": "示意", "label": "先挑色胶"},
+          {"source": "drawn", "illust": "beauty/chair", "tag": "示意", "label": "独立工位"}
+        ],
+        "title": "到店环境示意",
+        "tagline": "色号以到店色板为准"
+      }
+    },
+    {
+      "type": "steps",
+      "dur": 4,
+      "caption": "测甲面、上色、封层，\n{过程看得见}",
+      "mood": 0.3,
+      "params": {
+        "items": [
+          {"title": "先测甲面", "desc": "薄厚定养护方案", "icon": "shield"},
+          {"title": "分层上色", "desc": "光疗胶薄涂更服帖", "icon": "sparkle"},
+          {"title": "打磨封层", "desc": "边缘磨圆，戴得久", "icon": "check"}
+        ]
+      }
+    },
+    {
+      "type": "chat",
+      "dur": 6,
+      "caption": ["怕伤甲、怕很快脱？\n先{问清楚}再开工", "先测甲面，\n{再定方案}"],
+      "mood": 0.5,
+      "params": {
+        "peer": "顾客",
+        "messages": [
+          {"from": "peer", "text": "甲面薄，会不会伤甲"},
+          {"from": "peer", "text": "做完多久会脱"}
+        ],
+        "panel": {
+          "title": "常见问题",
+          "icon": "shield",
+          "verdict": "先测甲面，选温和方案",
+          "tone": "good",
+          "tags": ["先测甲面", "温和养护"],
+          "replies": ["先测甲面，再选厚度", "光疗胶大约能戴3周", "卸甲同步做养护"]
+        }
+      }
+    },
+    {
+      "type": "priceCard",
+      "dur": 4,
+      "caption": "猫眼渐变款198元起，\n{加价写清楚}",
+      "mood": 0.15,
+      "params": {
+        "layout": "menu",
+        "items": [
+          {"itemId": "basic", "name": "基础光疗甲", "price": 128, "unit": "次"},
+          {"itemId": "french", "name": "法式美甲", "price": 168, "unit": "次"},
+          {"itemId": "gradient", "name": "猫眼渐变款", "price": 198, "unit": "次", "from": true}
+        ],
+        "addOns": [
+          {"cond": "贴钻", "extra": "30元起"},
+          {"cond": "手绘", "extra": "50元起"},
+          {"cond": "延甲", "extra": "80元"}
+        ],
+        "label": "售价"
+      }
+    },
+    {
+      "type": "quickList",
+      "dur": 4,
+      "caption": "含什么、不含什么，\n{先说清楚}",
+      "mood": 0.45,
+      "params": {
+        "items": [
+          {"text": "基础修甲养护", "tag": "含", "tone": "good", "icon": "check"},
+          {"text": "色胶+封层", "tag": "含", "tone": "good", "icon": "check"},
+          {"text": "旧甲胶卸除", "tag": "另计", "tone": "warn", "icon": "alert"},
+          {"text": "贴钻/手绘", "tag": "加钱", "tone": "warn", "icon": "alert"}
+        ]
+      }
+    },
+    {
+      "type": "features",
+      "dur": 3,
+      "caption": "工具、预约、用料，\n{一次说明白}",
+      "mood": 0.2,
+      "params": {
+        "items": [
+          {"icon": "shield", "title": "一客一套工具", "desc": "每位顾客独立消毒"},
+          {"icon": "check", "title": "全程预约制", "desc": "单人工位不并单"},
+          {"icon": "doc", "title": "用料可核验", "desc": "甲油胶已核对注册信息"}
+        ]
+      }
+    },
+    {
+      "type": "storeCard",
+      "dur": 3,
+      "caption": "安福路商圈，\n{步行就能到}",
+      "mood": 0.15,
+      "params": {
+        "layout": "card",
+        "name": "拾光美甲工作室",
+        "landmark": "安福路商圈",
+        "hours": "11:00–20:00 周二店休",
+        "routes": [{"to": "地铁站", "mode": "步行", "minutes": 6}],
+        "basis": "导航估算",
+        "badges": ["预约制", "一客一套消毒"]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "拾光美甲工作室",
+        "slogan": "选好想要的款式，\n{到店安心做}",
+        "points": ["价目表同屏列清楚", "一人一位不并单"],
+        "icon": "star"
+      }
+    }
+  ]
+}

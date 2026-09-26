@@ -1,0 +1,54 @@
+{
+  "name": "软件产品片：沿用既有 11 个镜头，不触发任何行业规则",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "测试助手",
+      "theme": "tech-dark",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "3秒",
+          "sub": "自动整理"
+        },
+        "caption": "文件乱糟糟\n{3秒}整理好"
+      },
+      {
+        "type": "mockApp",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "kind": "editor",
+          "items": [
+            {
+              "text": "自动分类完成"
+            }
+          ]
+        },
+        "caption": "拖进去\n{自动分类}"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "测试助手",
+          "slogan": "整理\n{更省心}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

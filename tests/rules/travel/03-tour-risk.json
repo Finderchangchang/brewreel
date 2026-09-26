@@ -1,0 +1,55 @@
+{
+  "name": "行程类无资质+高风险项目宣称零风险",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "松溪小住",
+      "theme": "fresh-light",
+      "industry": "travel",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "两日游",
+          "sub": "周边"
+        },
+        "caption": "两日游\n含导游讲解"
+      },
+      {
+        "type": "features",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "零风险漂流体验"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "松溪小住",
+          "slogan": "推窗见山\n{枕溪而眠}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "T-tour",
+      "T-risk-abs"
+    ]
+  }
+}

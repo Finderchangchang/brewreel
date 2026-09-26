@@ -1,0 +1,59 @@
+{
+  "type": "storeCard",
+  "purpose": "门店、位置和到店指引：讲清楚店在哪、几点开门、怎么过来，以及平台内怎么操作。schema 里不设电话/微信/二维码/网址/门牌号字段。",
+  "tips": [
+    "layout=photo 门头实拍（photo.source 必须是 merchant）/ map 代码画的示意路线图（不模仿高德/百度/腾讯地图界面，不画国界省界市界轮廓）/ card 纯信息卡",
+    "landmark 写地铁口/商场楼层/镇村名，不写门牌号；basis 默认「导航估算」，画面会自动加小字「时间为导航估算，以实际路况为准」",
+    "cta 按平台取预设值：抖音「点视频定位看团购」，视频号「点定位看路线」（具体按钮位置和文案未核实，先按行业规则的 platform 段覆盖）",
+    "美业 disclaimer 默认「生活美容 · 不提供医疗美容服务」"
+  ],
+  "dur": {"default": 3, "min": 2.5, "max": 4},
+  "mood": 0.2,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["layout", "name"],
+    "properties": {
+      "layout": {"type": "string", "enum": ["photo", "map", "card"]},
+      "name": {"type": "string", "maxLen": 10},
+      "landmark": {"type": "string", "maxLen": 14},
+      "hours": {"type": "string", "maxLen": 14},
+      "photo": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp"]},
+      "routes": {
+        "type": "array",
+        "maxItems": 4,
+        "items": {
+          "type": "object",
+          "required": ["to", "mode", "minutes"],
+          "properties": {
+            "to": {"type": "string", "maxLen": 8},
+            "mode": {"type": "string", "enum": ["步行", "驾车", "打车", "公交", "地铁", "骑行", "接驳车"]},
+            "minutes": {"type": "number", "minimum": 0, "maximum": 300},
+            "km": {"type": "number", "minimum": 0}
+          }
+        }
+      },
+      "basis": {"type": "string", "enum": ["导航估算", "实测"]},
+      "parking": {"type": "string", "maxLen": 10},
+      "pickup": {"type": "string", "maxLen": 12, "description": "接站收费的要写明金额"},
+      "badges": {"type": "array", "maxItems": 4, "items": {"type": "string", "maxLen": 8}},
+      "cta": {"type": "string", "maxLen": 10},
+      "disclaimer": {"type": "string", "maxLen": 16},
+      "refs": {"type": "array", "items": {"type": "string"}, "description": "指向 meta.facts 里条目的 id；badges 里写了「现做」这类需要依据的说法时用它放行"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.4, "kind": "swish", "vol": 0.18}],
+  "example": {
+    "mood": 0.2,
+    "dur": 3,
+    "params": {
+      "layout": "card",
+      "name": "巷口面馆",
+      "landmark": "地铁2号线桂园站B口",
+      "hours": "10:00–21:30",
+      "routes": [{"to": "地铁站", "mode": "步行", "minutes": 3}],
+      "basis": "导航估算"
+    }
+  }
+}

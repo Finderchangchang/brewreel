@@ -1,0 +1,48 @@
+{
+  "id": "beauty",
+  "name": "美业",
+  "version": "2026-09-26",
+  "note": "美发、美甲、美睫、皮肤清洁护理（生活美容）。不含医美；纹绣/半永久/医美项目一律拒绝。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
+  "enabledShots": ["hook", "chat", "steps", "beforeAfter", "photoShot", "priceCard", "storeCard", "quickList", "features", "compare", "credCard", "factSheet", "reviewCard", "endCard"],
+  "disabledShots": [],
+  "mediaPolicy": {"shots": ["photoShot", "hook"], "allowSources": ["merchant", "drawn"]},
+  "rejectBrief": [
+    {"regex": "医美|轻医美|医疗美容级|注射|玻尿酸|肉毒|水光针|微针|光子嫩肤|激光|强脉冲光|IPL|射频|热玛吉|超声刀|皮秒|点阵|刷酸|果酸换肤|化学焕肤|溶脂|埋线|吸脂|植发|割双眼皮|隆鼻|隆胸|纹眉|纹绣|半永久|美瞳线|纹唇|漂唇|雾眉|纹身", "message": "属于医美或纹绣/半永久项目，本行业（生活美容）不支持", "source": "《医疗美容服务管理办法》第二条；十一部门指导意见（国市监广发〔2023〕22 号）；抖音开放平台《团购审核规则指引》"}
+  ],
+  "patterns": [
+    {"id": "BE-medical", "level": "block", "scope": "text", "regex": "疗程|医用|医学级|药妆|械字号|杀菌|抑菌|解毒|淋巴排毒|活血|化瘀|祛湿|疏通经络|经络调理|细胞再生|干细胞", "message": "医疗用语", "fix": "改成服务名称，如「护理」「次」", "source": "《广告法》第十七条；《化妆品监督管理条例》第四十三条；《北京市化妆品广告发布指引》（2025-06-27）"},
+    {"id": "BE-disease", "level": "block", "scope": "text", "regex": "灰指甲|甲癣|甲沟炎|嵌甲|痤疮|湿疹|皮炎|银屑|白癜风|脂溢|斑秃|脱发症|皮肤病", "message": "疾病名称", "fix": "删掉，生活美容不能宣称治疗疾病"},
+    {"id": "BE-efficacy", "level": "block", "scope": "text", "regex": "美白|祛斑|淡斑|去斑|祛痘|除痘|去痘|痘印|祛疤|去疤|防脱|生发|育发|增发|白发变黑|白转黑|减肥|瘦身|瘦脸|溶脂|丰胸|逆龄|冻龄|返老还童|抗衰|减龄|年轻\\d+岁|年轻[一二三四五六七八九十]+岁", "message": "功效宣称超出生活美容范围", "fix": "染发、烫发这类服务名称可以保留；其余功效类说法删掉", "source": "《化妆品监督管理条例》第十六条；抖音团购审核指引"},
+    {"id": "BE-guarantee", "level": "block", "scope": "text", "regex": "零伤害|无伤害|不伤(甲|发|睫|皮|肤)|无副作用|无刺激|永久|永不|一次见效|立竿见影|立即见效|100%|保证|包(好|退|满意)", "message": "保证类用语", "fix": "删掉，「永久拉直」这类服务名称走 rules.allowlist 单独放行，不能用 meta.allowWords 豁免", "source": "《广告法》第四条、第九条第（三）项、第二十八条"},
+    {"id": "BE-anxiety", "level": "block", "scope": "text", "regex": "黄脸婆|显老|没人要|没人爱|被嫌弃|嫌弃你|丑哭|土肥圆|大饼脸|男朋友都跑", "message": "制造容貌焦虑", "fix": "改成正向的场景描述", "source": "《广告法》第九条第（七）项"},
+    {"id": "BE-doctor", "level": "block", "scope": "text", "regex": "医生|医师|皮肤科|专家|教授|主任|院长(亲荐|推荐)|院线专用|机构专供|医院同款|临床", "message": "医疗背书", "fix": "删掉；画面不出现白大褂、针管、十字", "source": "《广告法》第十七条；视频号《美妆个护类目宣传规范》（2024-07-01，经第三方转述）"},
+    {"id": "BE-free", "level": "block", "scope": "text", "regex": "免费(做|体验)|白送|0元做", "message": "噱头低价补充", "fix": "删掉"}
+  ],
+  "checks": [
+    {"fn": "beforeAfterConsent"},
+    {"fn": "fromNeedsNote"},
+    {"fn": "priceHasUnit"},
+    {"fn": "giftHasQty"},
+    {"fn": "credVerbatim"},
+    {"fn": "reviewVerbatim"},
+    {"fn": "chatDisclaimer"},
+    {"fn": "rejectBrief"}
+  ],
+  "requiredNotices": [
+    {"id": "N-nomedical", "text": "生活美容 · 不提供医疗美容服务", "when": {"hasShot": "storeCard"}}
+  ],
+  "shotRules": {
+    "priceCard": {"footnote": "近7日成交价，仅供参考"}
+  },
+  "sub": {
+    "skincare": {
+      "disabledShots": ["beforeAfter"]
+    }
+  },
+  "humanReview": [
+    {"text": "「头疗」「修复」「舒缓」「紧致」属于灰区词，建议改写成「护理」，计量写「次」"},
+    {"text": "顾客出镜和好评截图要取得书面同意，并对昵称头像打码", "source": "《广告法》第三十三条；《民法典》第一千零一十九条"},
+    {"text": "办卡充值必须签书面合同，视频里不写施压话术", "source": "《消费者权益保护法实施条例》第二十二条"},
+    {"text": "达人探店挂团购时标「广告」"}
+  ]
+}

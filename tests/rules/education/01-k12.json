@@ -1,0 +1,42 @@
+{
+  "name": "K12 品类整份拒绝",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "青禾职场课堂",
+      "theme": "business-blue",
+      "industry": "education",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "拆分",
+          "sub": "Ctrl+E"
+        },
+        "caption": "这是给初中生准备的入门课"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "青禾职场课堂",
+          "slogan": "技能变现\n{先学会用}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "K12"
+    ]
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "type": "meter",
+  "purpose": "仪表 / 评分：指针从起点弹簧摆到目标值，落定那一拍数字弹一下 + 重音 + 判词胶囊弹出，下一拍浮出一句结论。最适合当「会动的主角」量化一个判断。",
+  "tips": [
+    "用来量化一个判断：危险程度、匹配度、健康分、效率、满意度等；一镜只量一件事",
+    "higherIs=bad：越高越红（危险、风险、麻烦）；higherIs=good：越高越绿（评分、匹配度、效率）",
+    "value 不要超过 max（超过会被当成 max）；max ≤10 的整数时 gauge 会画带数字的分段，看得最清楚",
+    "from 可以让指针从一个旧值摆到新值（如风险从 8 降到 2），不写就从 0 开始",
+    "word 是数字下的 2–4 字判词（如「很危险」「很合拍」），note 是卡片底部一句解释",
+    "style：gauge 半圆仪表（默认，最有冲击力）/ ring 圆环（百分比、完成度）/ bar 横条（0–100 分）"
+  ],
+  "dur": {"default": 3, "min": 2, "max": 6},
+  "mood": 0.7,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["value", "label"],
+    "properties": {
+      "value": {"type": "number", "minimum": 0, "maximum": 1000, "description": "目标值（不超过 max）"},
+      "max": {"type": "number", "minimum": 1, "maximum": 1000, "description": "满分，默认 10。用 1–10 的整数效果最好，百分比写 100"},
+      "from": {"type": "number", "minimum": 0, "maximum": 1000, "description": "指针起点，默认 0；写旧值可演「从 8 降到 2」"},
+      "label": {"type": "string", "maxLen": 8, "minLen": 1, "description": "仪表名，如「危险程度」「匹配度」"},
+      "unit": {"type": "string", "maxLen": 3, "description": "单位，如「分」「%」；不写就显示「/满分」"},
+      "style": {"type": "string", "enum": ["gauge", "ring", "bar"], "description": "gauge 半圆分段仪表（默认）/ ring 圆环 / bar 横条"},
+      "higherIs": {"type": "string", "enum": ["good", "bad"], "description": "数值越高越好（绿）还是越坏（红），默认 bad"},
+      "word": {"type": "string", "maxLen": 4, "description": "数字下的判词胶囊，如「很危险」「很合拍」"},
+      "note": {"type": "string", "maxLen": 14, "description": "卡片底部的一句解释，如「对方在确认你在不在乎」"},
+      "icon": {"type": "string", "format": "icon", "description": "仪表名前的图标，默认 bad→alert、good→star"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.4, "kind": "swish", "vol": 0.22}, {"at": 1.0, "kind": "thud", "vol": 0.42}],
+  "example": {
+    "caption": "这句话的火药味，\n{比你想的重}",
+    "mood": 0.9,
+    "dur": 3,
+    "params": {"value": 8, "max": 9, "label": "危险程度", "style": "gauge", "higherIs": "bad", "word": "很危险", "note": "对方在确认你在不在乎"}
+  }
+}

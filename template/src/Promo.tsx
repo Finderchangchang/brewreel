@@ -1,0 +1,120 @@
+import React from 'react';
+import {AbsoluteFill, Sequence, useCurrentFrame} from 'remotion';
+import type {Shot, Storyboard, ThemeName} from './schema';
+import {FONT} from './core/font';
+import {Placeholder} from './core/kit';
+import {Background, Bgm, Captions, Disclaimer, MoodFlash, Notices, SfxTrack, Watermark, collectSfx} from './core/layers';
+import {FPS} from './core/safe';
+import {ThemeProvider, resolveTheme} from './core/theme';
+import {Slot, beatOf, schedule, totalDur} from './core/timeline';
+import {LayoutProbe} from './core/probe';
+import {moduleOf, specOf} from './shots';
+
+export const framesOf = (sb: Storyboard) => Math.max(1, Math.round(totalDur(schedule(sb, specOf)) * FPS));
+
+/** 旧镜退场帧数：4 帧内淡出并下移；新镜在旧镜淡出一半（第 2 帧）后才开始显形，第 4 帧完全出来，两镜的卡片不会叠在一起 */
+export const OUT_FRAMES = 4;
+const OUT = OUT_FRAMES / FPS;
+
+// 单个镜头的外壳：本地时间 + 统一退场（push / fade 都是 4 帧淡出 + 下移；none 不退场）+ 非首镜的短暂延后显形
+const ShotHost: React.FC<{slot: Slot; beat: number; sb: Storyboard; isLast: boolean}> = ({slot, beat, sb, isLast}) => {
+  const t = useCurrentFrame() / FPS;
+  const mod = moduleOf(slot.shot.type);
+  const spec = specOf(slot.shot.type);
+  const exit = isLast ? 'none' : spec?.exit ?? 'push';
+  const p = exit === 'none' ? 0 : Math.min(1, Math.max(0, (t - slot.dur) / OUT));
+  const enter = slot.i === 0 ? 1 : Math.min(1, Math.max(0, (t - OUT / 2) / (OUT / 2)));
+  const style: React.CSSProperties = exit === 'none' ? {opacity: enter} : {opacity: enter * (1 - p), transform: `translateY(${p * 48}px)`};
+  const Comp = mod?.default;
+  return (
+    <AbsoluteFill style={style}>
+      {Comp ? (
+        <Comp
+          params={slot.shot.params || {}}
+          t={t}
+          dur={slot.dur}
+          beat={beat}
+          index={slot.i}
+          isLast={isLast}
+          caption={slot.shot.caption}
+          mood={slot.mood}
+          meta={sb.meta}
+        />
+      ) : (
+        <Placeholder type={`未知镜头 ${slot.shot.type}`} t={t} />
+      )}
+    </AbsoluteFill>
+  );
+};
+
+export const Promo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
+  const theme = resolveTheme(sb.meta?.theme, sb.meta?.brandColor);
+  const slots = schedule(sb, specOf);
+  const frames = Math.max(1, Math.round(totalDur(slots) * FPS));
+  const beat = beatOf(sb);
+  const cues = collectSfx(slots, moduleOf, specOf, beat);
+  return (
+    <ThemeProvider theme={theme}>
+      <AbsoluteFill style={{fontFamily: FONT, overflow: 'hidden', background: theme.bgBot[0]}}>
+        <Background slots={slots} />
+        <LayoutProbe frames={sb.__probe}>
+        {slots.map((s) => {
+          const isLast = s.i === slots.length - 1;
+          const from = Math.round(s.start * FPS);
+          const len = Math.max(1, Math.round(s.dur * FPS) + (isLast ? 0 : OUT_FRAMES));
+          return (
+            <Sequence key={s.i} from={from} durationInFrames={len} name={`${s.i + 1}-${s.shot.type}`}>
+              <ShotHost slot={s} beat={beat} sb={sb} isLast={isLast} />
+            </Sequence>
+          );
+        })}
+        <MoodFlash slots={slots} />
+        <Captions slots={slots} beat={beat} lang={sb.meta?.lang} />
+        <Disclaimer text={sb.meta?.disclaimer} lang={sb.meta?.lang} />
+        <Notices items={sb.meta?.notices} lang={sb.meta?.lang} />
+        <Watermark logo={sb.meta?.logo} slots={slots} />
+        </LayoutProbe>
+        <SfxTrack cues={cues} />
+        <Bgm sb={sb} frames={frames} />
+      </AbsoluteFill>
+    </ThemeProvider>
+  );
+};
+
+// ---------------- ShotLab：单镜自测。props 只给 type 就用 spec.example ----------------
+export type LabProps = {type: string; theme?: ThemeName; brandColor?: string; params?: Record<string, unknown>; caption?: string | string[]; dur?: number; mood?: number};
+
+export const labStoryboard = (p: LabProps): Storyboard => {
+  const spec = specOf(p.type);
+  const ex = spec?.example ?? {params: {}};
+  const shot: Shot = {
+    type: p.type as Shot['type'],
+    dur: p.dur ?? ex.dur ?? spec?.dur.default ?? 3,
+    caption: p.caption ?? ex.caption,
+    mood: p.mood ?? ex.mood,
+    params: p.params ?? ex.params,
+  };
+  return {meta: {title: 'lab', product: 'lab', theme: p.theme ?? 'warm-emotion', brandColor: p.brandColor, disclaimer: '演示场景，内容为模拟'}, shots: [shot]};
+};
+
+export const ShotLab: React.FC<LabProps> = (p) => <Promo {...labStoryboard(p)} />;
+
+// ---------------- Screen：把一个镜头（通常是 mockApp）渲成「App 截图」，给 phone 镜头当示意素材 ----------------
+// 没有字幕、免责、音效；中性底色 + 顶栏。用法见 SHOT_API.md 第 9 节。
+export const ShotScreen: React.FC<LabProps> = (p) => {
+  const sb = labStoryboard({...p, caption: undefined});
+  sb.shots[0].caption = undefined;
+  const theme = resolveTheme(sb.meta.theme, sb.meta.brandColor);
+  const slots = schedule(sb, specOf);
+  return (
+    <ThemeProvider theme={theme}>
+      <AbsoluteFill style={{fontFamily: FONT, overflow: 'hidden', background: theme.dark ? '#10131c' : '#F2F4F7'}}>
+        <div style={{position: 'absolute', left: 0, right: 0, top: 0, height: 150, background: theme.accent}} />
+        {/* 镜头主体区 y 560–1340（中心 950）放大 1.1 倍、上移到顶栏下。不能再大：phone 镜头按屏幕比例裁掉截图左右各约 100px */}
+        <div style={{position: 'absolute', left: 0, top: 0, width: 1080, height: 1920, transformOrigin: '540px 950px', transform: 'translateY(-330px) scale(1.1)'}}>
+          <ShotHost slot={slots[0]} beat={beatOf(sb)} sb={sb} isLast />
+        </div>
+      </AbsoluteFill>
+    </ThemeProvider>
+  );
+};

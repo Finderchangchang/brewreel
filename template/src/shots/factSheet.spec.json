@@ -1,0 +1,59 @@
+{
+  "type": "factSheet",
+  "purpose": "参数表/开箱清单/课程大纲/考试信息/色卡：把可核实的事实一屏写清。",
+  "tips": [
+    "layout=spec 规格参数 / box 开箱或包装清单 / syllabus 课程大纲 / exam 考试信息 / swatch 色卡",
+    "exam 布局 source 必填（如「来源：XX官网 2026-09」），为空时拒绝渲染；swatch 布局 notice 固定为「屏幕有色差，以到店色板为准」",
+    "facts[].value 里不能出现「终身」「永久」；syllabus 的 rows[].lessons 之和要等于 brief 的总课时（syllabusSum，行业规则实现）"
+  ],
+  "dur": {"default": 4, "min": 3, "max": 8},
+  "mood": 0.1,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["layout", "title", "rows"],
+    "properties": {
+      "layout": {"type": "string", "enum": ["spec", "box", "syllabus", "exam", "swatch"]},
+      "title": {"type": "string", "maxLen": 12},
+      "rows": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 6,
+        "items": {
+          "type": "object",
+          "properties": {
+            "key": {"type": "string", "maxLen": 6},
+            "value": {"type": "string", "maxLen": 10},
+            "qty": {"type": "integer", "minimum": 0, "description": "box 布局专用"},
+            "isGift": {"type": "boolean", "description": "box 布局专用：赠品方块加「赠」角标"},
+            "no": {"type": "string", "maxLen": 4, "description": "syllabus 布局专用：章节号"},
+            "name": {"type": "string", "maxLen": 12, "description": "syllabus 布局专用：章节名"},
+            "lessons": {"type": "integer", "minimum": 0, "description": "syllabus 布局专用：节数"},
+            "hex": {"type": "string", "format": "color", "description": "swatch 布局专用"}
+          }
+        }
+      },
+      "facts": {
+        "type": "array",
+        "maxItems": 4,
+        "description": "底部事实条",
+        "items": {"type": "object", "required": ["label", "value"], "properties": {"label": {"type": "string", "maxLen": 4}, "value": {"type": "string", "maxLen": 8}}}
+      },
+      "source": {"type": "string", "maxLen": 24, "description": "exam 布局必填，如「来源：XX官网 2026-09」"},
+      "notice": {"type": "string", "maxLen": 20},
+      "image": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp"]},
+      "highlight": {"type": "integer", "minimum": 0, "description": "swatch 布局专用：主推色在 rows 里的序号（从 0 数）"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.3, "kind": "tick", "vol": 0.16}, {"at": 0.5, "kind": "tick", "vol": 0.16}],
+  "example": {
+    "mood": 0.1,
+    "dur": 4,
+    "params": {
+      "layout": "spec",
+      "title": "规格参数",
+      "rows": [{"key": "材质", "value": "304不锈钢"}, {"key": "容量", "value": "500ml"}]
+    }
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "name": "保健功能话术 + 餐饮极限词",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "巷口牛肉面",
+      "theme": "warm-emotion",
+      "industry": "food",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "¥59",
+          "sub": "双人套餐"
+        },
+        "caption": "喝我们的汤\n{养胃驱寒}"
+      },
+      {
+        "type": "features",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "全城最正宗的牛肉面"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口牛肉面",
+          "slogan": "吃饱\n{不将就}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "F-health",
+      "F-superlative"
+    ]
+  }
+}

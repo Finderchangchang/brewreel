@@ -1,0 +1,41 @@
+promo-video-skill
+Copyright 2026 柳伟杰 Liu Weijie (GitHub: Finderchangchang) and contributors
+https://github.com/Finderchangchang/promo-video-skill
+
+This product includes promo-video-skill, created by Liu Weijie (柳伟杰, GitHub: Finderchangchang).
+本产品包含柳伟杰（GitHub：Finderchangchang）创作的 promo-video-skill。
+
+[中文]
+本项目以 Apache License 2.0 发布（见 LICENSE），可免费商用。
+按 Apache-2.0 第 4 条：分发本项目、其修改版或包含它的产品时，必须附上 LICENSE，
+并在你的 NOTICE 文件、随附文档或产品界面（通常展示第三方声明的位置）中
+保留上面两行署名，即注明出处：基于柳伟杰（Finderchangchang）的 promo-video-skill。
+用本项目渲染出的视频不要求署名。
+
+第三方组件：
+- Remotion：源码可见，但不是开源软件，有自己的许可证。见 THIRD_PARTY_LICENSES.md。
+- Noto Sans SC、Cascadia Mono：SIL Open Font License 1.1，许可证随字体文件放在同一目录。
+
+industries/ 下的校验规则整理自公开法规和平台规则，仅用于辅助自查，不构成法律意见。
+发布内容是否合规，以监管部门和平台的最新规定为准，责任由发布者自行承担。
+
+[English]
+This project is released under the Apache License 2.0 (see LICENSE) and may
+be used commercially free of charge.
+Under Section 4 of Apache-2.0, if you distribute this project, a modified
+version of it, or a product that includes it, you must include LICENSE and
+keep the two attribution lines above in your NOTICE file, your accompanying
+documentation, or your product's UI where third-party notices normally
+appear — i.e. credit "promo-video-skill by Liu Weijie (Finderchangchang)".
+Videos rendered with this project do not require attribution.
+
+Third-party components:
+- Remotion: source-available, but not open source; it has its own license.
+  See THIRD_PARTY_LICENSES.md.
+- Noto Sans SC, Cascadia Mono: SIL Open Font License 1.1; the license text
+  ships alongside each font's files.
+
+The compliance rules under industries/ are compiled from public regulations
+and platform rules for self-check purposes only, and do not constitute legal
+advice. Whether published content is compliant is governed by the latest
+rules from regulators and platforms; the publisher is solely responsible.

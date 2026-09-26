@@ -1,0 +1,166 @@
+{
+  "meta": {
+    "title": "青枫山舍 宣传片（沉浸看房结构）",
+    "product": "青枫山舍",
+    "theme": "fresh-light",
+    "brandColor": "#2F5D50",
+    "disclaimer": "画面为插画示意，非实景拍摄",
+    "industry": "travel",
+    "platform": "shipinhao",
+    "action": "看中枫林大床房 → 价格和入住时间同屏说清",
+    "facts": [
+      {"id": "f1", "text": "枫林大床房：可住2人，周日至周四328元/晚，周五周六398元/晚，法定节假日468元/晚，含双早（2026-09 现行价目表）"},
+      {"id": "f2", "text": "早餐由主人家手工准备，含在房价内（示例数据）"},
+      {"id": "f3", "text": "云溪高铁站驾车约35分钟；云溪县城驾车约20分钟（导航估算）"},
+      {"id": "f4", "text": "2024年开业，今年是第3年（示例数据，依据营业执照成立日期）"}
+    ],
+    "notices": ["周末及节假日价格另计，以下单页为准"]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2,
+      "caption": "高铁站附近，\n藏着{一片枫树林}",
+      "mood": 0.35,
+      "params": {"visual": "stat", "text": "328元", "sub": "住一晚含双早", "badge": "含双早"}
+    },
+    {
+      "type": "mockApp",
+      "dur": 3,
+      "caption": "问一句有没有房，\n{价格当场就说清}",
+      "mood": 0.25,
+      "params": {
+        "kind": "editor",
+        "title": "查日期",
+        "input": "11月周末有房吗",
+        "button": "查询",
+        "items": [
+          {"text": "枫林大床房", "value": "有房"},
+          {"text": "周五周六", "value": "398元"},
+          {"text": "含双早", "value": "已含"}
+        ],
+        "highlight": 1,
+        "done": "已查到"
+      },
+      "note": "核心动作演示：用户查日期 → 产品当场给出房型和价格（isDemo() 目前只认 chat/phone/mockApp，不认 photoShot，见返回里的发现）"
+    },
+    {
+      "type": "photoShot",
+      "dur": 2.5,
+      "caption": "8间独栋，\n{藏在山坳里}",
+      "mood": 0.2,
+      "params": {
+        "layout": "tour",
+        "media": [
+          {"source": "drawn", "illust": "travel/house", "tag": "示意", "label": "独栋小院"},
+          {"source": "drawn", "illust": "travel/landscape", "tag": "示意", "label": "庭院一角"}
+        ]
+      }
+    },
+    {
+      "type": "photoShot",
+      "dur": 6,
+      "caption": ["枫林大床房，\n{床头正对整片窗}", "窗外望出去，\n{满眼是绿意}"],
+      "mood": 0.15,
+      "params": {
+        "layout": "tour",
+        "roomType": "枫林大床房",
+        "media": [
+          {"source": "drawn", "illust": "travel/window", "tag": "示意", "label": "窗外枫林"},
+          {"source": "drawn", "illust": "travel/bed", "tag": "示意", "label": "1.8米大床"},
+          {"source": "drawn", "illust": "travel/landscape", "tag": "示意", "label": "露台远眺"}
+        ]
+      },
+      "note": "核心动作演示：用户看中这个房型 → roomType 与后面的 priceCard 同一个名字对得上"
+    },
+    {
+      "type": "features",
+      "dur": 3.5,
+      "caption": "关键信息，\n{一屏看全}",
+      "mood": 0.1,
+      "params": {
+        "items": [
+          {"icon": "money", "title": "含双早", "desc": "入住即含 不加价"},
+          {"icon": "users", "title": "住2人", "desc": "1.8米大床"},
+          {"icon": "calendar", "title": "14:00入住", "desc": "12:00退房"},
+          {"icon": "cloud", "title": "免费停车", "desc": "院内6个车位"}
+        ]
+      }
+    },
+    {
+      "type": "photoShot",
+      "dur": 3,
+      "caption": "含在房价里，\n早餐{主人家做}",
+      "mood": 0.1,
+      "params": {
+        "layout": "hero",
+        "media": [{"source": "drawn", "illust": "travel/breakfast", "tag": "示意", "label": "早餐时光"}],
+        "title": "早餐时光",
+        "tagline": "主人家手工准备",
+        "badge": "含双早",
+        "refs": ["f2"]
+      }
+    },
+    {
+      "type": "storeCard",
+      "dur": 4,
+      "caption": "从高铁站来，\n{驾车35分钟到}",
+      "mood": 0.15,
+      "params": {
+        "layout": "map",
+        "name": "青枫山舍",
+        "landmark": "云溪县核桃坳村",
+        "hours": "14:00起入住",
+        "routes": [
+          {"to": "云溪高铁站", "mode": "驾车", "minutes": 35},
+          {"to": "云溪县城", "mode": "驾车", "minutes": 20}
+        ],
+        "basis": "导航估算",
+        "parking": "免费6个车位",
+        "refs": ["f3"]
+      }
+    },
+    {
+      "type": "compare",
+      "dur": 4,
+      "caption": "平日周末，\n{价格差多少}",
+      "mood": 0.15,
+      "params": {
+        "mode": "lr",
+        "left": {"title": "平日", "items": ["人少更清静", "好订房"], "tone": "neutral", "icon": "clock", "stat": "328元"},
+        "right": {"title": "周末", "items": ["气氛更热闹", "建议早订"], "tone": "neutral", "icon": "calendar", "stat": "398元"},
+        "verdict": "错峰更划算"
+      }
+    },
+    {
+      "type": "priceCard",
+      "dur": 4,
+      "caption": "价格写明白，\n{周末稍微贵一点}",
+      "mood": 0.1,
+      "params": {
+        "layout": "card",
+        "label": "售价",
+        "items": [
+          {"itemId": "room-maple-weekday", "name": "枫林大床房", "price": 328, "unit": "晚", "note": "周日至周四"},
+          {"itemId": "room-maple-weekend", "name": "枫林大床房", "price": 398, "unit": "晚", "note": "周五周六"}
+        ],
+        "people": "2人",
+        "includes": ["双早", "免费停车"],
+        "excludes": "加床、宠物另收费",
+        "conditions": "法定节假日468元",
+        "refs": ["f1"]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "青枫山舍",
+        "slogan": "山里住一晚，\n{把日子过慢些}",
+        "points": ["含双早 · 免费停车", "住2人 · 1.8米大床"],
+        "icon": "heart"
+      }
+    }
+  ]
+}

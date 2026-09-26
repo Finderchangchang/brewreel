@@ -1,0 +1,24 @@
+# dependencies / build
+node_modules/
+template/out/
+out/
+template/public/_run/
+template/public/_dev/
+template/.render.lock
+
+# rendered videos (don't commit; examples ship as images instead)
+*.mp4
+*.mov
+
+# env / secrets
+.env
+.env.*
+.privacy-denylist.local
+
+# test / render scratch output
+tests/**/video.mp4
+tests/**/*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db

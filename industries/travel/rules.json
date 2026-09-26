@@ -1,0 +1,49 @@
+{
+  "id": "travel",
+  "name": "文旅住宿",
+  "version": "2026-09-26",
+  "note": "民宿、小型酒店、景区、周边游、营地。行程类产品（一日游/跟团/包车）要求旅行社资质，本阶段没有 brief 加载器可核对资质，一律先进人工复核而不是静默放行。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
+  "enabledShots": ["hook", "photoShot", "priceCard", "storeCard", "reviewCard", "compare", "steps", "quickList", "counter", "credCard", "endCard"],
+  "mediaPolicy": {
+    "shots": ["photoShot", "hook", "storeCard"],
+    "allowSources": ["merchant", "drawn"],
+    "blockAiWhen": {"platform": "douyin"}
+  },
+  "patterns": [
+    {"id": "B-hype", "level": "block", "scope": "text", "regex": "绝美|人间仙境|神仙|天花板|封神|美哭|美到窒息|惊艳全网|宝藏", "message": "主观夸张词，本行业按拦截处理", "fix": "换成具体可见的描述，如房型、设施、窗景", "source": "视频号运营规范 3.4、5.2.1"},
+    {"id": "T-lowest", "level": "block", "scope": "text", "regex": "底价|击穿|比(携程|美团|飞猪|去哪儿|同程|抖音|小红书).{0,6}便宜", "message": "最低价补充规则", "fix": "删掉，不和其他平台比价", "source": "《明码标价和禁止价格欺诈规定》第十九条；市场监管总局会同文化和旅游部在线酒店预订平台行政指导会（2026-09-15）"},
+    {"id": "T-disclaim", "level": "block", "scope": "text", "regex": "仅供参考", "message": "笼统免责在文旅行业不适用（和餐饮的要求相反）", "fix": "逐张标注「实拍」「X月实拍」「示意图」，不要用笼统的「仅供参考」", "source": "《消费者权益保护法》第二十六条"},
+    {"id": "T-grade", "level": "block", "scope": "text", "regex": "[一二三四五1-5]\\s*星级?|星级|[3-5]\\s*A级?|A{3,5}|甲级|乙级|丙级|白金宿|金宿|银宿|钻级", "unless": {"refsIn": "facts"}, "message": "等级称谓需要评定证书依据", "fix": "refs 指向 meta.facts 里的评定证书条目；没有评定就不能写星级/A级", "source": "《在线旅游经营服务管理暂行规定》第十二条；市场监管总局 2026-07-22 典型案例"},
+    {"id": "T-distance", "level": "block", "scope": "text", "regex": "零距离|秒到|就在隔壁|几分钟|分分钟|咫尺|近在眼前", "message": "模糊距离说法", "fix": "换成具体交通方式和分钟数，如「驾车约25分钟」", "source": "《广告法》第八条、第二十八条"},
+    {"id": "T-data", "level": "block", "scope": "text", "regex": "\\d+(\\.\\d+)?\\s*分(?!钟)|\\d+\\s*(万|千)?\\s*(人|位|组|家庭)\\s*(住过|入住|打卡|来过)", "unless": {"shotHas": "source"}, "message": "评分/订单量数据需要来源", "fix": "同一镜头补 source 和 asOf"},
+    {"id": "T-free", "level": "block", "scope": "text", "regex": "1元住|一元住|免费住|白住|9\\.9元", "message": "噱头低价补充", "fix": "删掉，写实际价格"},
+    {"id": "T-promise", "level": "block", "scope": "text", "regex": "保证看到|包看到|一定能看到|百分百|包晴|永不涨价|随时有房|天天有房|不满意全(额)?退", "message": "无法兑现的承诺", "fix": "删掉；季节景观类说法只能写「视天气与季节而定」", "source": "《明码标价和禁止价格欺诈规定》第十九条第（五）项"},
+    {"id": "T-tour", "level": "block", "scope": "text", "regex": "一日游|两日游|[二三四五2-5]日游|跟团|含导游|导游讲解|包车游|线路游", "message": "行程类产品说法，需要旅行社资质", "fix": "没有旅行社资质就删掉；有资质的话联系维护者补 brief 资质核对", "source": "《旅游法》第二十八、二十九条；抖音团购审核指引"},
+    {"id": "T-risk-abs", "level": "block", "scope": "text", "regex": "零风险|绝对安全", "message": "高风险项目不能宣称零风险", "fix": "删掉，改成年龄/身高/健康限制提示"}
+  ],
+  "checks": [
+    {"fn": "priceHasUnit"},
+    {"fn": "extraFeesRequired"},
+    {"fn": "routeHasMode"},
+    {"fn": "seasonalMonth"},
+    {"fn": "textShotRatio"},
+    {"fn": "chatDisclaimer"},
+    {"fn": "credVerbatim"},
+    {"fn": "reviewVerbatim"}
+  ],
+  "requiredNotices": [
+    {"id": "N-weekend", "text": "周末及节假日价格另计，以下单页为准", "when": {"hasShot": "priceCard"}}
+  ],
+  "shotRules": {
+    "priceCard": {"footnote": "周末及节假日价格另计，以下单页为准", "forbidCompareWhen": {"platform": "douyin"}},
+    "storeCard": {"basisNote": "时间为导航估算，以实际路况为准"}
+  },
+  "humanReview": [
+    {"text": "「漂流|玻璃栈道|玻璃桥|索道|滑索|蹦极|攀岩|滑雪|骑马|冲浪|潜水|溯溪」等高风险项目出现时，需要加「项目有年龄、身高、健康限制，恶劣天气关闭」", "source": "《旅游法》第八十条"},
+    {"text": "照片要近期实拍、和房型一致；不换天、不加景、不用广角拉伸，不拿套房照片配标间价"},
+    {"text": "评价只摘原文并留截图"},
+    {"text": "达人推广标「广告」"},
+    {"text": "位置图不画行政区划，不贴地图 App 截图"},
+    {"text": "「住宿＋门票」套餐是否需要旅行社资质，各地口径未核实，以平台类目审核为准"}
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "name": "疾病预防+导流+贬低竞品+虚假服务承诺",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "暖屿保温杯",
+      "theme": "tech-dark",
+      "industry": "ecommerce",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "保温杯",
+          "sub": "实测"
+        },
+        "caption": "喝热水还能预防感冒"
+      },
+      {
+        "type": "quickList",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "text": "加V看更多颜色"
+            },
+            {
+              "text": "比XX牌保温杯强多了"
+            },
+            {
+              "text": "假一赔十"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "暖屿保温杯",
+          "slogan": "喝口热的\n{再出发}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "B-medical",
+      "B-contact",
+      "B-rival",
+      "E-service"
+    ]
+  }
+}

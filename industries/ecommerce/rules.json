@@ -1,0 +1,55 @@
+{
+  "id": "ecommerce",
+  "name": "电商实物",
+  "version": "2026-09-26",
+  "note": "普通日用品实物电商。保健食品/药品/医疗器械/特医食品/烟草/电子烟不在支持范围，命中即整份拒绝。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
+  "enabledShots": ["hook", "photoShot", "priceCard", "factSheet", "compare", "counter", "features", "quickList", "phone", "chat", "reviewCard", "endCard"],
+  "mediaPolicy": {
+    "shots": ["photoShot", "hook"],
+    "allowSources": ["merchant", "drawn"],
+    "blockAiWhen": {"platform": "douyin"},
+    "requireAtLeastOnePhotoWhen": {"platform": "douyin"}
+  },
+  "rejectBrief": [
+    {"regex": "蓝帽子|保健品|OTC|械字号|处方药|非处方药|医疗器械|特殊医学用途配方食品|特医食品|香烟|卷烟|雪茄|电子烟|烟弹|烟油", "message": "属于拒绝品类（保健食品/药品/医疗器械/特医食品/烟草/电子烟）", "source": "《广告法》第十六、十八、二十二、四十六条；总局令第 21 号"}
+  ],
+  "patterns": [
+    {"id": "E-lowprice", "level": "warn", "scope": "text", "regex": "出厂价|工厂价|成本价|清仓价", "message": "价格说法需要凭证", "fix": "有凭证再写，没有就删掉"},
+    {"id": "E-noeffect", "level": "block", "scope": "text", "regex": "无效退款|无副作用", "message": "无效退款/无副作用类承诺", "fix": "删掉"},
+    {"id": "E-antibac", "level": "block", "scope": "text", "regex": "(抗菌|除菌|抑菌|除螨|杀菌)(率)?\\s*\\d+", "unless": {"refsIn": "facts"}, "message": "抗菌类数据需要检测报告依据", "fix": "refs 指向 meta.facts 里的检测报告条目", "source": "《广告法》第十一条、第二十八条"},
+    {"id": "E-patent", "level": "block", "scope": "text", "regex": "专利", "unless": {"refsIn": "facts"}, "message": "专利说法需要依据", "fix": "refs 指向 meta.facts 里的专利号条目（格式 ZL 加 8-12 位数字）", "source": "《广告法》第十二条"},
+    {"id": "E-service", "level": "block", "scope": "text", "regex": "7天无理由|七天无理由|运费险|包邮|假一(赔|罚)\\S?|保修\\d+|以旧换新", "unless": {"refsIn": "facts"}, "message": "服务承诺需要依据", "fix": "refs 指向 meta.facts 里确认这项服务真的有；没有就删掉", "source": "《消费者权益保护法实施条例》第十二条；《微信小店带货「发布虚假宣传信息」违规治理细则》"},
+    {"id": "E-3c", "level": "block", "scope": "text", "regex": "续航\\d+|IPX?\\d|降噪.{0,4}\\d+\\s*dB|\\d+分钟充(满|电)|\\d+\\s*小时保温|保温\\s*\\d+\\s*小时", "unless": [{"shotHas": "condition"}, {"refsIn": "facts"}], "message": "功能数据需要测试条件和来源", "fix": "同一镜头补 condition（测试条件）和 source（商家自测/第三方检测）", "source": "《广告法》第十一条"},
+    {"id": "E-drama", "level": "block", "scope": "shot:chat", "regex": "(老板|老公|老婆|婆婆).{0,6}(便宜|少点|亏|砍价)", "message": "演戏诱导话术", "fix": "改成真实客服问答；没有真实问答就不要用 chat 镜头", "source": "《电子商务法》第十七条；抖音电商食品日杂高频违规场景（2025-12-24）"},
+    {"id": "E-whitening", "level": "block", "scope": "text", "regex": "药妆|医学护肤|修复受损|抗敏|消痘|祛痘印|治痘|激素|干细胞|基因修复", "message": "化妆品功效超范围宣称", "fix": "删掉，普通化妆品不能宣称医学/皮肤科级功效", "source": "《化妆品监督管理条例》第十六、二十二、三十七、四十三条"},
+    {"id": "E-cosmetic-reg", "level": "block", "scope": "text", "regex": "美白|祛斑|淡斑|防晒|SPF|PA\\+|防脱|生发|育发|染发|烫发", "unless": {"refsIn": "facts"}, "message": "特殊化妆品功效需要注册证号依据", "fix": "refs 指向 meta.facts 里的特殊化妆品注册证号条目", "source": "《化妆品监督管理条例》第十六、二十二、三十七、四十三条"},
+    {"id": "E-baby", "level": "block", "scope": "text", "regex": "让(爸爸|妈妈|家长)(买|给你买)|快叫(爸爸|妈妈)|替代母乳|媲美母乳|接近母乳", "message": "母婴儿童类违规说法", "fix": "删掉", "source": "《广告法》第二十、三十八、四十条"},
+    {"id": "E-alcohol", "level": "block", "scope": "text", "regex": "干了|一口闷|千杯不醉|解酒|养生酒|壮阳酒|开车|喝了.{0,4}(不累|提神|助眠)", "message": "酒类违规说法", "fix": "删掉", "source": "《广告法》第二十三条"},
+    {"id": "E-food-health", "level": "block", "scope": "text", "regex": "增强免疫|提高免疫|免疫力|助眠|改善睡眠|养胃|护肝|保肝|降火|祛湿|减肥|瘦身|燃脂|刮油|美容养颜|补肾|壮阳|增高|益智|抗衰|抗氧化", "message": "普通食品不得声称保健功能", "fix": "删掉，改成配料表/规格类卖点", "source": "《广告法》第十六、十八条"},
+    {"id": "E-food-additive", "level": "warn", "scope": "text", "regex": "零添加|无添加|不添加|未添加|0添加", "message": "「零添加」类说法需要依据", "fix": "确认依据后写；预包装食品标签自 2027-03-16 起禁用此类说法（GB 7718-2025）", "source": "GB 7718-2025"},
+    {"id": "E-food-origin", "level": "warn", "scope": "text", "regex": "自家产|自家种|自家养|农户直供", "unless": {"refsIn": "facts"}, "message": "产地说法需要依据佐证", "fix": "refs 指向 meta.facts 里的产地证明"}
+  ],
+  "checks": [
+    {"fn": "priceHasUnit"},
+    {"fn": "discountMath"},
+    {"fn": "netPriceConditions"},
+    {"fn": "giftHasQty"},
+    {"fn": "fromNeedsNote"},
+    {"fn": "chatDisclaimer"},
+    {"fn": "firstPhotoWithin3s"},
+    {"fn": "rejectBrief"},
+    {"fn": "reviewVerbatim"}
+  ],
+  "requiredNotices": [],
+  "shotRules": {
+    "priceCard": {"footnote": "价格以下单页为准"}
+  },
+  "humanReview": [
+    {"text": "设计里区分了 douyin_cart/douyin_plain/channels_cart/channels_plain/xiaohongshu 五种电商 platform 取值，但 meta.platform 目前只有 douyin/shipinhao/generic 三个可选值（schema.ts 未扩展），下面这条按 platform=douyin 统一处理：挂购物车时用了 priceCard——2020 版《抖音购物车：商品分享规范》要求字幕不出现价格，2026-02-10 的价格整治又要求写清条件和期限，口径有冲突，建议默认不带 priceCard，带了请人工确认", "source": "见第 6 节风险说明；meta.platform 枚举待补充"},
+    {"text": "不在降价前临时提价做基准，校验器核实不了历史价格", "source": "《明码标价和禁止价格欺诈规定》第十七条"},
+    {"text": "活动结束后下线含活动价的视频", "source": "抖音电商 2026-02-10 公告"},
+    {"text": "商品名或注册商标本身带「最」字、同品牌自比、国家标准分级用语属于合法例外，校验不应误杀，遇到时用 meta.allowWords 放行（仅限 warn 级）", "source": "《广告绝对化用语执法指南》第五、六项"},
+    {"text": "纯动效加图片的片子建议配口播或 AI 配音，避免被判成「无讲解图片轮播」；用了 AI 配音要勾选平台声明"},
+    {"text": "reviewCard 用买家评价截图时，要把昵称和头像打码，只留评价原文和星级", "source": "《广告法》第三十三条；《民法典》第一千零一十九条"}
+  ]
+}

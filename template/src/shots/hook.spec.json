@@ -1,0 +1,40 @@
+{
+  "type": "hook",
+  "purpose": "第 0 帧的封面钩子：大标题（caption）+ 一句产品高亮胶囊 + 一个主视觉，第 0 帧就完整、不留空帧。必须是第 1 镜。",
+  "tips": [
+    "caption 就是封面大标题：写用户的痛点或反常识问题，{} 里放最扎心的 2–5 个字",
+    "visual 先按内容类型选：bubble = 一条扎心消息 + 警示卡（情绪/社交/客服类）；stat = 一个大数字圆环（效率/省钱类）；icon = 大图标 + 环绕小图标（工具/功能类）；phone = 手机里一张真截图（有截图时）",
+    "visual 再看构图要不要换一换：split = 左右分屏「痛点 vs 产品」，中间一支箭头（适合「以前 vs 现在」类钩子）；statBar = 大数字 + 一整条通栏刻度/进度条（数据、效率类的另一种构图，比 stat 的圆环更「一条杠」）。同一批素材里多支视频别总用同一个 visual，首帧才不会看着像同一个模板换皮",
+    "badge 写产品一句话卖点（≤10 字），如「AI 先帮你看一眼」",
+    "时长 2–3 秒就够，钩子拖长会掉完播",
+    "bubble 适合情绪/社交/客服类；数据、效率、工具类优先 stat / statBar 或 icon，别照搬聊天消息卡。漂浮图标用 deco 选和产品有关的"
+  ],
+  "dur": {"default": 2.5, "min": 1.5, "max": 4},
+  "mood": 0.85,
+  "caption": "required",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["visual"],
+    "properties": {
+      "visual": {"type": "string", "enum": ["bubble", "stat", "icon", "phone", "split", "statBar"], "description": "主视觉类型/构图"},
+      "text": {"type": "string", "maxLen": 14, "description": "bubble：那条扎心消息；stat/statBar：大数字或短词（如「3 秒」「87%」，≤6 字最好看）；icon：大图标下的一行字；phone：贴在手机上的标签（可不填）；split：右侧（产品侧）短语（≤10 字最好看）"},
+      "sub": {"type": "string", "maxLen": 8, "description": "bubble：警示卡标题（如「危险信号」）；stat/statBar：数字下面的说明；split：底部一句小结（可不填）；icon：不用"},
+      "icon": {"type": "string", "format": "icon", "description": "bubble：警示卡图标（默认 alert）；icon：主图标（必填）；split：右侧（产品侧）图标（默认 check）"},
+      "badge": {"type": "string", "maxLen": 10, "description": "标题下方的高亮胶囊：产品一句话卖点"},
+      "src": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp"], "description": "phone 必填：竖屏截图路径（相对 storyboard.json）"},
+      "tone": {"type": "string", "enum": ["bad", "warn", "good", "accent"], "description": "警示色：bad 红（默认）/ warn 橙 / good 绿 / accent 品牌色；split 用来给右侧（产品侧）换色，默认品牌色"},
+      "deco": {"type": "array", "maxItems": 3, "items": {"type": "string", "format": "icon"}, "description": "两侧漂浮的小图标（bubble 用 3 个、stat/statBar 用 2 个，split 用第 1 个做左侧图标），不写就按主题取（business-blue = chart/clock/doc，warm-emotion = chat/heart/bell…）；选和产品有关的图标"},
+      "head": {"type": "string", "maxLen": 10, "description": "bubble：消息卡顶部那行小字，默认「新消息 · 刚刚」；写成 \"\" 就不显示。B 端可写「群消息 · 刚刚」「工单 · 刚刚」"},
+      "leftText": {"type": "string", "maxLen": 10, "description": "split 专用：左侧（痛点侧）短语，如「手动整理」"},
+      "level": {"type": "number", "minimum": 0, "maximum": 10, "description": "statBar 专用：条形填充比例 0–10，默认 8（越高越满）"}
+    }
+  },
+  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.34}, {"at": 1.0, "kind": "thud", "vol": 0.3}],
+  "example": {
+    "caption": "对象说{“你不懂我”}，\n你怎么回？",
+    "mood": 0.85,
+    "dur": 2.5,
+    "params": {"visual": "bubble", "text": "你根本就不懂我", "sub": "危险信号", "badge": "AI 先帮你看一眼"}
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "meta": {
+    "title": "锁耳运动耳挂 宣传片（痛点 → 产品实拍示意 → 新旧对比 → 实测 → 卖点 → 价格 → 片尾）",
+    "product": "锁耳运动耳挂",
+    "theme": "tech-dark",
+    "brandColor": "#FF6B35",
+    "disclaimer": "示意图与模拟页面，仅供参考",
+    "action": "把耳挂扣在真无线耳机上 → 运动甩头也不脱落",
+    "industry": "ecommerce",
+    "allowWords": ["最低"],
+    "cta": "点左下角购物车看详情",
+    "facts": [
+      {"id": "f1", "text": "商家实测：连续用力甩头100次（模拟跑步颠簸幅度），耳挂两侧均无脱落；非国标检测方法，仅供参考（虚构示例数据）"},
+      {"id": "f2", "text": "券后价29.9元/双，需在店铺页面领取10元优惠券后享受，活动时间2026-09-26至2026-10-08（虚构示例数据）"}
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "跑起来的时候，\n耳机又{掉出来了}",
+      "mood": 0.85,
+      "params": {"visual": "icon", "icon": "alert", "text": "耳机又滑出来了", "badge": "运动甩头也不掉", "tone": "bad"}
+    },
+    {
+      "type": "photoShot",
+      "dur": 2.5,
+      "mood": 0.45,
+      "params": {
+        "layout": "hero",
+        "media": [{"source": "drawn", "illust": "ecommerce/tag", "tag": "示意"}],
+        "title": "锁耳运动耳挂",
+        "tagline": "环耳卡扣，运动不脱落",
+        "badge": "新品"
+      },
+      "note": "没有商家实拍图，用行业插画兜底；不画拟真商品外形，靠标题/一句话规格传达信息"
+    },
+    {
+      "type": "compare",
+      "dur": 4.5,
+      "caption": "旧挂钩会松，\n新设计{锁住不掉}",
+      "mood": 0.5,
+      "params": {
+        "mode": "lr",
+        "left": {"title": "旧款挂钩", "items": ["单圈挂耳", "剧烈甩头易松", "只有一种角度"], "tone": "bad", "icon": "alert", "stat": "易松脱", "level": 8},
+        "right": {"title": "新款锁耳", "items": ["双卡扣环耳", "剧烈甩头不掉", "贴合更稳固"], "tone": "good", "icon": "shield", "stat": "更稳固", "level": 2},
+        "meterLabel": "运动稳固度",
+        "verdict": "锁住了，甩头也不用管"
+      },
+      "note": "自家产品迭代对比（旧款单圈挂钩 → 新款双卡扣），不是和其他品牌比"
+    },
+    {
+      "type": "counter",
+      "dur": 3,
+      "caption": "连续甩头100次，\n{两侧都没掉}",
+      "mood": 0.15,
+      "params": {"to": 100, "suffix": "次", "label": "甩头测试无脱落", "sub": "商家实测，非国标方法", "icon": "shield", "tone": "good"}
+    },
+    {
+      "type": "features",
+      "dur": 4.5,
+      "caption": "戴得住的耳挂，\n{细节也没马虎}",
+      "mood": 0.2,
+      "params": {
+        "items": [
+          {"icon": "heart", "title": "软硅胶包边", "desc": "长时间戴也不夹耳"},
+          {"icon": "check", "title": "通用大多数耳机", "desc": "入耳式真无线均可用"},
+          {"icon": "gift", "title": "一对装两色", "desc": "曜石黑 · 珍珠白可选"}
+        ]
+      }
+    },
+    {
+      "type": "phone",
+      "dur": 3.5,
+      "caption": "打开详情页，\n{卖点价格都写清}",
+      "mood": 0.2,
+      "params": {
+        "src": "assets/ecommerce/detail-screen.png",
+        "focus": [
+          {"area": "middle", "label": "到手价29.9元", "style": "box"}
+        ]
+      },
+      "note": "没有真实 App，用 mockApp 渲成一张商品详情速览图给 phone 用（meta.disclaimer 已说明是模拟页面）"
+    },
+    {
+      "type": "priceCard",
+      "dur": 4,
+      "caption": "券后到手\n{29.9元一双}",
+      "mood": 0.15,
+      "params": {
+        "layout": "card",
+        "items": [{"itemId": "suoer-hook-1", "name": "锁耳运动耳挂", "price": 29.9, "unit": "双"}],
+        "label": "券后价",
+        "conditions": "需领10元店铺券",
+        "period": "9.26–10.8",
+        "gift": {"name": "收纳硬壳盒", "qty": 1},
+        "footnote": "价格以下单页为准"
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 3.5,
+      "mood": 0,
+      "params": {
+        "brand": "锁耳运动耳挂",
+        "slogan": "运动甩头，\n{耳机也稳稳卡住}",
+        "points": ["环耳卡扣，不易脱落", "一对装 · 双色可选"],
+        "cta": "点左下角购物车看详情",
+        "icon": "shield"
+      }
+    }
+  ]
+}

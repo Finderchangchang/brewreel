@@ -1,0 +1,72 @@
+{
+  "type": "chat",
+  "purpose": "模拟聊天窗：消息逐条弹出，可在输入框打字，产品悬浮球弹出分析面板（结论 + 标签 + 候选回复），点第 1 条候选「填入」飞进输入框。",
+  "tips": [
+    "适合社交、客服、AI 助手、销售话术类产品的场景演示；配色中性，不像任何具体 IM",
+    "messages 写 1–4 条，最关键的那句放最后",
+    "有 panel 时不要写 typing（面板会把 replies[0] 直接填进输入框）；非要写，typing 必须和 replies[0] 一字不差，否则校验报错",
+    "panel.replies 写 1–3 条候选，第 1 条会被点「填入」。这是产品建议「我」发给对方的话，站在 me 的立场写，不能复述对方的诉求。正例：我说「明天继续加班」，对方说「就知道你忙」→ 回复「这周六整天陪你，好吗」；反例：回复写成「别再加班了，陪我」（这是对方的口吻）",
+    "内容越多时长越长：只有消息 3 秒够；消息 + 打字 + 面板 + 候选建议 8–10 秒","超过 5 秒的 chat，caption 写成 2–3 句的数组（如 [\"先别急着发，\\n对方要的是{你的在乎}\", \"挑一条填进输入框，\\n发不发{你决定}\"]），按拍平分这一镜：前一句配消息，后一句配面板和候选"
+  ],
+  "dur": {"default": 6, "min": 3, "max": 12},
+  "mood": 0.6,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["messages"],
+    "properties": {
+      "peer": {"type": "string", "maxLen": 6, "description": "聊天窗顶栏的对方称呼，默认「对方」（不要写真实账号名）"},
+      "messages": {
+        "type": "array",
+        "minItems": 1,
+        "maxItems": 4,
+        "description": "消息，按顺序每拍弹出一条",
+        "items": {
+          "type": "object",
+          "required": ["from", "text"],
+          "properties": {
+            "from": {"type": "string", "enum": ["me", "peer"], "description": "me = 我（右侧强调色气泡）；peer = 对方（左侧浅灰气泡）"},
+            "text": {"type": "string", "maxLen": 18, "minLen": 1, "description": "消息内容"}
+          }
+        }
+      },
+      "typing": {"type": "string", "maxLen": 16, "description": "没有 panel 时，「我」在输入框里打的字（打字机 + 敲键音）；有 panel 时不写，或和 replies[0] 一字不差"},
+      "panel": {
+        "type": "object",
+        "required": ["title"],
+        "description": "产品面板：从右上角产品悬浮球弹出",
+        "properties": {
+          "title": {"type": "string", "maxLen": 8, "description": "面板标题，如「AI 分析」「智能助手」"},
+          "icon": {"type": "string", "format": "icon", "description": "悬浮球和面板标题的图标，默认 sparkle"},
+          "verdict": {"type": "string", "maxLen": 12, "description": "面板大字结论，如「对方想确认你在不在乎」"},
+          "tone": {"type": "string", "enum": ["good", "warn", "bad", "accent"], "description": "结论的颜色：bad 红 / warn 橙（默认）/ good 绿 / accent 品牌色"},
+          "tags": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLen": 6}, "description": "结论下的小标签"},
+          "replies": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLen": 16, "minLen": 1}, "description": "候选回复：产品建议「我」发给对方的话，站在 me 的立场写（不能是对方的口吻）；第 1 条会被点「填入」飞进输入框"}
+        }
+      }
+    }
+  },
+  "sfx": [{"at": 0.5, "kind": "pop", "vol": 0.22}],
+  "example": {
+    "caption": ["先别急着发，\n对方要的是{你的在乎}", "挑一条填进输入框，\n发不发{你决定}"],
+    "mood": 0.9,
+    "dur": 9,
+    "params": {
+      "peer": "对象",
+      "messages": [
+        {"from": "me", "text": "这周末我约了朋友打球"},
+        {"from": "peer", "text": "上周末你也不在"},
+        {"from": "peer", "text": "你根本就不懂我"}
+      ],
+      "panel": {
+        "title": "AI 分析",
+        "icon": "sparkle",
+        "verdict": "对方想确认你在不在乎",
+        "tone": "bad",
+        "tags": ["要你的在乎", "先接住情绪"],
+        "replies": ["是我没顾上你的感受", "对不起，刚才语气不好", "那你说说哪里不懂你"]
+      }
+    }
+  }
+}

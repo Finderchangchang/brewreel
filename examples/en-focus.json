@@ -1,0 +1,72 @@
+{
+  "meta": {
+    "title": "FocusPilot promo (English demo, fictional app)",
+    "product": "FocusPilot",
+    "theme": "fresh-light",
+    "lang": "en",
+    "disclaimer": "Demo screens, sample data",
+    "action": "Tap start → it blocks distracting apps",
+    "cta": "Try it free"
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "Meant to focus,\n{hours slipped away}",
+      "mood": 0.85,
+      "params": {"visual": "icon", "icon": "clock", "text": "Where did the day go?", "badge": "Start a focus block", "tone": "warn"}
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "Hit start,\n{it blocks the rest}",
+      "mood": 0.5,
+      "params": {
+        "kind": "dashboard",
+        "title": "Focus Today",
+        "input": "How's my focus today?",
+        "stat": {"value": "3", "label": "Sessions done"},
+        "items": [
+          {"icon": "bell", "text": "Apps blocked", "value": "6", "tone": "good"},
+          {"icon": "clock", "text": "Deep work", "value": "25m", "tone": "neutral"}
+        ],
+        "highlight": 0
+      },
+      "note": "core action: tap start -> distracting apps get blocked for the session"
+    },
+    {
+      "type": "quickList",
+      "dur": 3.5,
+      "caption": "Not every app\n{deserves your focus}",
+      "mood": 0.5,
+      "params": {
+        "title": "What gets muted",
+        "items": [
+          {"text": "Social feed", "tag": "Muted", "tone": "bad"},
+          {"text": "Video app", "tag": "Muted", "tone": "bad"},
+          {"text": "Deep work", "tag": "Open", "tone": "good"},
+          {"text": "Messages", "tag": "Later", "tone": "warn"}
+        ]
+      }
+    },
+    {
+      "type": "meter",
+      "dur": 3,
+      "caption": "One tap,\n{a calmer afternoon}",
+      "mood": 0.4,
+      "params": {"value": 8, "from": 3, "max": 10, "label": "Focus score", "style": "gauge", "higherIs": "good", "word": "Great", "note": "Based on this session"}
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "FocusPilot",
+        "slogan": "Less scrolling,\n{more finishing}",
+        "points": ["Blocks distracting apps", "One tap to start"],
+        "cta": "Try it free",
+        "icon": "clock"
+      }
+    }
+  ]
+}

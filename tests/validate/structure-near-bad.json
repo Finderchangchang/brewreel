@@ -1,0 +1,23 @@
+{
+  "meta": {"title": "结构太像样例-反例", "product": "示例", "theme": "fresh-light", "action": "拍照识别，自动填好结果",
+    "facts": [{"id": "f1", "text": "示例数据"}]},
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "手忙脚乱的排版，\n{到底要怎么办}", "params": {"visual": "stat", "text": "0", "sub": "还没整理"}},
+    {"type": "quickList", "dur": 3.5, "caption": "东一份西一份，\n{根本理不清}", "params": {"title": "散落的文件", "items": [
+      {"text": "合同草稿", "tag": "待整理", "tone": "bad", "icon": "doc"},
+      {"text": "报销单据", "tag": "待整理", "tone": "warn", "icon": "money"},
+      {"text": "会议纪要", "tag": "待整理", "tone": "warn", "icon": "calendar"},
+      {"text": "客户资料", "tag": "待整理", "tone": "bad", "icon": "bell"}
+    ]}},
+    {"type": "compare", "dur": 4.5, "caption": "整理这件事，\n{别再靠手动}", "params": {
+      "left": {"title": "手动整理", "items": ["逐个打开", "手动分类", "容易漏掉"], "tone": "bad", "icon": "doc", "stat": "半小时", "level": 8},
+      "right": {"title": "自动整理", "items": ["拍照识别", "自动分好类", "一次搞定"], "tone": "good", "icon": "bolt", "stat": "1 分钟", "level": 2},
+      "meterLabel": "麻烦程度", "verdict": "整理只要一分钟"
+    }},
+    {"type": "steps", "dur": 4.5, "caption": "拍张照片，\n{自动分好类}", "params": {"items": [
+      {"title": "打开相机"}, {"title": "拍下文件"}, {"title": "自动归档"}
+    ]}},
+    {"type": "counter", "dur": 3, "caption": "月底一看，\n{省下不少时间}", "params": {"to": 40, "suffix": "分钟", "label": "本月省下的时间", "sub": "示例数据，以实际为准"}},
+    {"type": "endCard", "dur": 4, "params": {"brand": "示例", "slogan": "整理这件事，\n{交给它就好}", "points": ["拍照自动归档", "资料只存在你手机里"]}}
+  ]
+}

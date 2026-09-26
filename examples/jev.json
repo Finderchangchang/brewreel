@@ -1,0 +1,91 @@
+{
+  "meta": {
+    "title": "Jev 宣传片（镜头库复刻 v2.1）",
+    "product": "Jev 聊天助手",
+    "theme": "warm-emotion",
+    "disclaimer": "演示场景，对话为模拟",
+    "action": "分析对话 → 给出判断和推荐回复",
+    "cta": "官网下载安卓版"
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "对象说{“你不懂我”}，\n你怎么回？",
+      "mood": 0.85,
+      "params": {"visual": "bubble", "text": "你根本就不懂我", "sub": "危险信号", "badge": "回之前，先看一眼"},
+      "note": "第 0 帧就是封面：痛点大字 + 那条扎心消息"
+    },
+    {
+      "type": "chat",
+      "dur": 10,
+      "caption": ["先别急着发，\n对方要的是{你的在乎}", "挑一条填进输入框，\n发不发{你决定}"],
+      "mood": 0.95,
+      "params": {
+        "peer": "对象",
+        "messages": [
+          {"from": "me", "text": "这周末我约了朋友打球"},
+          {"from": "peer", "text": "上周末你也不在"},
+          {"from": "peer", "text": "你根本就不懂我"}
+        ],
+        
+        "panel": {
+          "title": "Jev 分析",
+          "icon": "sparkle",
+          "verdict": "对方想确认你在不在乎",
+          "tone": "bad",
+          "tags": ["要你的在乎", "先接住情绪"],
+          "replies": ["是我没顾上你的感受", "对不起，刚才语气不好", "那你说说哪里不懂你"]
+        }
+      },
+      "note": "反面示范（差点发出去的话）→ 面板拦一下 → 挑一条填入，发不发由用户决定"
+    },
+    {
+      "type": "compare",
+      "dur": 4.5,
+      "caption": "对象回了个{“嗯”}，\n是危险信号吗？",
+      "mood": 0.5,
+      "params": {
+        "mode": "lr",
+        "left": {"title": "晚点到家", "items": ["今晚加班晚点到", "对方回：嗯"], "tone": "good", "icon": "clock", "stat": "2/9"},
+        "right": {"title": "忘了纪念日", "items": ["纪念日我给忘了", "对方回：嗯"], "tone": "bad", "icon": "calendar", "stat": "7/9"},
+        "verdict": "同一个嗯，意思相反"
+      }
+    },
+    {
+      "type": "meter",
+      "dur": 3.5,
+      "caption": "同一个“嗯”，\n意思可能{完全相反}",
+      "mood": 0.9,
+      "params": {"value": 7, "from": 2, "max": 9, "label": "危险程度", "style": "gauge", "higherIs": "bad", "word": "偏危险", "note": "对方在确认你在不在乎"}
+    },
+    {
+      "type": "quickList",
+      "dur": 3.5,
+      "caption": "这些话，\n它先帮你{看一眼}",
+      "mood": 0.5,
+      "params": {
+        "quote": true,
+        "max": 9,
+        "items": [
+          {"text": "随便", "score": 5, "tag": "留神", "tone": "warn"},
+          {"text": "我没生气", "score": 8, "tag": "很危险", "tone": "bad"},
+          {"text": "你忙你的吧", "score": 7, "tag": "偏危险", "tone": "bad"},
+          {"text": "哈哈哈好", "score": 2, "tag": "安全", "tone": "good"}
+        ]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "Jev 聊天助手",
+        "slogan": "回消息之前，\n{先看懂对方}",
+        "points": ["只给建议，不替你发送", "安卓可用 · 支持多款聊天软件"],
+        "cta": "官网下载安卓版",
+        "icon": "chat"
+      }
+    }
+  ]
+}

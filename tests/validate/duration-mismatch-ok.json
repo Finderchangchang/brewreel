@@ -1,0 +1,13 @@
+{
+  "meta": {"title": "耗时说法一致-正例", "product": "示例", "theme": "tech-dark", "action": "点一下生成，内容自动推送",
+    "facts": [{"id": "f1", "text": "示例数据"}]},
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "手忙脚乱的排版，\n{到底要怎么办}", "params": {"visual": "icon", "icon": "sparkle"}},
+    {"type": "mockApp", "dur": 4, "caption": "不用自己排版，\n{2 分钟推送好}", "params": {"kind": "editor", "title": "生成", "input": "写一段文案", "button": "生成", "items": [{"text": "结果一"}, {"text": "结果二"}], "done": "已推送"}},
+    {"type": "compare", "dur": 5, "params": {
+      "left": {"title": "以前", "items": ["手动整理排版"], "tone": "bad", "stat": "1 小时"},
+      "right": {"title": "现在", "items": ["自动排好版"], "tone": "good", "stat": "2 分钟"}
+    }},
+    {"type": "endCard", "dur": 4, "params": {"brand": "示例", "slogan": "关键信息\n{看得到}"}}
+  ]
+}

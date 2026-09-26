@@ -1,0 +1,143 @@
+{
+  "meta": {
+    "title": "职场汇报PPT 宣传片（教培行业·课程介绍样例）",
+    "product": "汇报PPT提升课",
+    "theme": "fresh-light",
+    "brandColor": "#0F766E",
+    "disclaimer": "演示课程页面，数据为虚构",
+    "cta": "抖音课程页购买",
+    "industry": "education",
+    "platform": "douyin",
+    "action": "说一句汇报主题 → AI给出开场三句稿",
+    "notices": ["学习效果因人而异"],
+    "facts": [
+      {"id": "f1", "text": "服务：购买后可在课程页评论区提问，答疑期60天；课程回放有效期365天（示例数据，以详情页为准）"},
+      {"id": "f2", "text": "讲师苏老师（化名）此前系列课程已带教约800名学员（机构后台统计，示例数据）"},
+      {"id": "f3", "text": "课程价格：国庆期间（2026-09-27至10-07）活动价129元（示例数据，以详情页为准）"}
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 3,
+      "caption": "汇报PPT改到崩溃？\n{先把框架搭对}",
+      "mood": 0.75,
+      "params": {"visual": "icon", "icon": "doc", "text": "改到第9版还没定", "badge": "AI帮你搭框架", "tone": "warn"}
+    },
+    {
+      "type": "features",
+      "dur": 6,
+      "caption": ["买课前，\n{这些服务先说清楚}", "答疑期和回放，\n{课程页写得明白}"],
+      "mood": 0.3,
+      "params": {
+        "items": [
+          {"icon": "doc", "title": "配套模板文件", "desc": "每节练习都有模板"},
+          {"icon": "chat", "title": "评论区答疑", "desc": "开课后60天内可提问"},
+          {"icon": "clock", "title": "回放365天", "desc": "365天内随时看"}
+        ]
+      }
+    },
+    {
+      "type": "factSheet",
+      "dur": 7,
+      "caption": ["课程怎么排，\n{一次看完}", "从结构到上台，\n{20节讲透}"],
+      "mood": 0.15,
+      "params": {
+        "layout": "syllabus",
+        "title": "课程大纲",
+        "rows": [
+          {"no": "01", "name": "汇报结构拆解", "key": "汇报结构拆解", "value": "4节", "lessons": 4},
+          {"no": "02", "name": "版式与配色", "key": "版式与配色", "value": "4节", "lessons": 4},
+          {"no": "03", "name": "图表化表达", "key": "图表化表达", "value": "4节", "lessons": 4},
+          {"no": "04", "name": "AI辅助起草", "key": "AI辅助起草", "value": "4节", "lessons": 4},
+          {"no": "05", "name": "上台答疑技巧", "key": "上台答疑技巧", "value": "4节", "lessons": 4}
+        ],
+        "facts": [{"label": "总课时", "value": "20节"}]
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 5,
+      "caption": "说出汇报主题，\n{AI先帮你写开场}",
+      "mood": 0.25,
+      "params": {
+        "kind": "editor",
+        "title": "AI写作助手",
+        "input": "写一段季度汇报开场白",
+        "button": "生成",
+        "items": [
+          {"text": "开场三句稿"},
+          {"text": "先说本季完成3件事"},
+          {"text": "再摆一个关键数据"},
+          {"text": "最后说下季计划"}
+        ],
+        "done": "已生成"
+      },
+      "note": "核心动作演示：用户说出汇报主题 → AI给出开场三句稿"
+    },
+    {
+      "type": "credCard",
+      "dur": 6,
+      "caption": ["这门课谁教，\n{先看资历}", "带过800人的经验，\n{直接搬进课里}"],
+      "mood": 0.15,
+      "params": {
+        "layout": "person",
+        "name": "苏老师",
+        "role": "职场PPT讲师",
+        "years": 6,
+        "creds": ["互联网公司市场部6年", "带教学员超800人"],
+        "skills": ["版式设计", "图表表达", "AI辅助写作"]
+      }
+    },
+    {
+      "type": "steps",
+      "dur": 6,
+      "caption": ["买完就能学，\n{三步就上手}", "有问题去评论区，\n{60天内都能问}"],
+      "mood": 0.2,
+      "params": {
+        "items": [
+          {"title": "下单开通", "desc": "立即解锁全部课时", "icon": "check"},
+          {"title": "跟练习文件做", "desc": "每节配套练习", "icon": "doc"},
+          {"title": "评论区提问", "desc": "60天内可答疑", "icon": "chat"}
+        ]
+      }
+    },
+    {
+      "type": "chat",
+      "dur": 3.5,
+      "caption": "常见问题，\n{这里先说清楚}",
+      "mood": 0.3,
+      "params": {
+        "messages": [
+          {"from": "peer", "text": "报名后要装APP吗"},
+          {"from": "me", "text": "浏览器打开课程页就行"}
+        ]
+      }
+    },
+    {
+      "type": "priceCard",
+      "dur": 3,
+      "caption": "国庆特惠{129元}\n仅到10月7日",
+      "mood": 0.15,
+      "params": {
+        "layout": "card",
+        "items": [{"itemId": "course-1", "name": "汇报PPT提升课", "price": 129, "unit": "套"}],
+        "label": "活动价",
+        "period": "9.27-10.7",
+        "footnote": "价格以下单页为准"
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "汇报PPT提升课",
+        "slogan": "汇报前的慌乱，\n{有课程帮你搭框架}",
+        "points": ["录播课，随时学", "课程页内直接答疑"],
+        "cta": "抖音课程页购买",
+        "icon": "doc"
+      }
+    }
+  ]
+}

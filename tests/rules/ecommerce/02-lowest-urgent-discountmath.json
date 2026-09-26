@@ -1,0 +1,67 @@
+{
+  "name": "全网最低价+虚假紧迫+折数算错",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "product": "暖屿保温杯",
+      "theme": "tech-dark",
+      "industry": "ecommerce",
+      "durationRange": [
+        3,
+        60
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "保温杯",
+          "sub": "促销"
+        },
+        "caption": "全网最低价\n仅此一天"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "p1",
+              "name": "保温杯",
+              "price": 59,
+              "unit": "只"
+            }
+          ],
+          "compare": {
+            "price": 129,
+            "basis": "厂商建议零售价",
+            "evidence": "官网标价"
+          }
+        },
+        "caption": "原价129\n现价59直接3折"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "暖屿保温杯",
+          "slogan": "喝口热的\n{再出发}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "B-lowest",
+      "B-urgent",
+      "含原价类字眼",
+      "对不上"
+    ]
+  }
+}
