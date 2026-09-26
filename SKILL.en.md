@@ -14,6 +14,17 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
 
 ## Workflow
 
+0. **Pick a style** (`meta.style`; leave it out for `cards`). Decide what kind of product this is, then read `<SKILL>/styles/<style>/STYLE.en.md` and `recipes.md`:
+
+   | Style | Status | Fits |
+   |---|---|---|
+   | `cards` (default) | ready | single-benefit products, how-it-works flows, UI demos, physical stores; all six industries |
+   | `quiz` | ready | products with a common misconception that can become a multiple-choice question (foreign phrases, misunderstood features, dishes with misleading names). Templates in `styles/quiz/recipes.md`, samples in `styles/quiz/examples/`. `meta.theme` is `blue-lime` or `cream-tomato` (omitted: food gets `cream-tomato`, everything else `blue-lime`); clip lines must not give the answer away |
+   | `journey` | in development, don't use yet | products with many clear categories (content platforms, feature-rich software, multi-category stores, course catalogs) |
+
+   - When unsure, use `cards` and don't write `meta.style`. Styles in development are blocked by validation.
+   - `meta.aspect`: `9:16` (default, 1080x1920) or `4:5` (1080x1350). `cards` supports 9:16 only; leave it out.
+   - Steps 1–12 below describe `cards`. With another style, its `recipes.md` decides the shots and fields; industry compliance, `meta.facts`, the Don't list and the render command stay the same.
 1. **Set the industry and language.**
    - `meta.industry`: `software` (default) / `food` / `ecommerce` (physical goods) / `education` / `beauty` / `travel` (travel & lodging). Pick the wrong industry and both the allowed shots and the compliance rules will be wrong.
    - `meta.lang`: `zh` (default) / `en`. Set `en` when the video needs English captions or the audience is English-speaking (usage details in step 5).

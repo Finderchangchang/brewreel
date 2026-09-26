@@ -1,0 +1,32 @@
+{
+  "type": "replay",
+  "purpose": "再听/再看一遍（复证）：压暗溶解回底色页，「◀◀ 再听一遍」+ 吉祥物探头，媒体卡倒带角标、画面倒放后重播那句台词；卡下「= 正解」小胶囊 + 原文（关键词马克笔）+ 译文；最后「懂了」圆贴纸盖章、吉祥物灯泡亮起冒心",
+  "tips": [
+    "参数都可以不写：台词、关键词沿用 clip，正解沿用 meaningCard 的第一行 eq",
+    "sticker 写 ≤4 字的「懂了」类短语，如「听懂了」「找到了」"
+  ],
+  "dur": {"default": 3.75, "min": 2.8, "max": 5},
+  "mood": 0.6,
+  "caption": "none",
+  "exit": "none",
+  "params": {
+    "type": "object",
+    "required": [],
+    "properties": {
+      "title": {"type": "string", "maxLen": 6, "minLen": 2, "description": "标题，默认「再听一遍」（看画面的可写「再看一遍」）"},
+      "line": {"type": "string", "maxLen": 20, "minLen": 1, "description": "重播的台词；不写沿用 clip 最后一句"},
+      "zh": {"type": "string", "maxLen": 20, "minLen": 1, "description": "译文 / 注释"},
+      "key": {"type": "string", "maxLen": 8, "minLen": 1, "description": "关键词（line 的子串）；不写沿用 clip.key"},
+      "meaning": {"type": "string", "maxLen": 8, "minLen": 1, "description": "「= 正解」胶囊；不写沿用 meaningCard"},
+      "sticker": {"type": "string", "maxLen": 4, "minLen": 1, "description": "贴纸字，默认「听懂了」"},
+      "scene": {"type": "string", "enum": ["office", "cafe", "street", "home", "classroom", "screen", "phone"], "description": "媒体卡里的小剧场：office 办公室 / cafe 咖啡店 / street 街景 / home 客厅 / classroom 教室（两个角色在场景里把那句话演出来，默认 office）/ screen 产品界面示意（界面里的字写 screenItems）/ phone 手机演示（手指按住 → 波形 → 松手 → 列表逐条出现 screenItems；出题前只演到按住，再看一遍时才出结果）。写了 media 就不用它"},
+      "screenItems": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string", "maxLen": 10, "minLen": 1}, "description": "scene 是 screen / phone 时界面里的 2–4 行真实文字（每行 ≤10 字，如「买牛奶」「周五交报告」）；全片写一次就行（写在第一个用到的镜头），别的镜头自动沿用"},
+      "media": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp", "mp4"], "description": "可选：用户自备的截图或视频（要登记在 meta.assets，版权由用户负责）。不写就用小剧场"}
+    }
+  },
+  "sfx": [{"at": 0, "kind": "swish", "vol": 0.22}],
+  "example": {
+    "dur": 3.75,
+    "params": {"title": "再看一遍", "line": "我点了归档，就不见了", "key": "归档", "meaning": "收起来", "sticker": "找到了", "scene": "screen", "screenItems": ["合同终版确认", "本周周报", "报销单已审批"]}
+  }
+}

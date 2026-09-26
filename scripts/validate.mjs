@@ -12,6 +12,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runIndustryChecks} from './lib/industry.mjs';
 import {runTextChecks, FILLIN_BY_TYPE, FILLIN_DEFAULT, typeOfWhere, splitFacts} from './lib/text-checks.mjs';
+import {ASPECTS, DEFAULT_STYLE, bpmOf, devStylesAllowed, listStyles, loadStyle, runStyleRules, specsForStyle, styleIdOf, styleIds} from './lib/styles.mjs';
 
 // ---------------- 可调清单（改这里） ----------------
 /** 《广告法》极限词。命中即报错；meta.allowWords 里的词豁免 */
@@ -163,6 +164,8 @@ export const units = (s) => {
   return n;
 };
 const fmtN = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+/** 一拍的秒数：0.5 这类一位小数照旧，128 BPM 这类（0.469）保留三位，免得提示「0.5 秒的整数倍」误导 */
+const fmtBeat = (b) => (Math.abs(b * 10 - Math.round(b * 10)) < 1e-9 ? fmtN(b) : b.toFixed(3));
 const SHORTEN_FIX = '整句换一种更短的说法（汉字算 1，拉丁字母算半个）；不要删掉词里的字凑字数（「自动上传」不能缩成「自传」），也不要换成英文';
 /** 字符二元组相似度（Jaccard），用来发现照抄样例的字幕 */
 const bigrams = (s) => {
@@ -239,7 +242,7 @@ const subseq = (q, p) => {
 
 // ---------------- 排程（与 template/src/core/timeline.ts 同一算法） ----------------
 export const schedule = (sb, specs) => {
-  const beat = 60 / (sb.meta?.bpm || 120);
+  const beat = 60 / bpmOf(sb.meta); // cards：meta.bpm || 120（和改造前一样）；其他风格不写 bpm 时用风格默认
   let t = 0;
   return (sb.shots || []).map((shot, i) => {
     const spec = specs[shot?.type];
@@ -331,7 +334,7 @@ export function crossCheck(type, p, W, err, warn) {
 // ---------------- 校验主体 ----------------
 /** 「没有简报依据」类错误的统一标记（checkSpecs 单镜自检时按它过滤，单镜示例本来就没有 meta.facts） */
 const NO_BASIS = '没有简报依据';
-export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null} = {}) {
+export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null, allowDraftStyles = false} = {}) {
   const errors = [];
   const warnings = [];
   const texts = []; // [{where, text}] 画面上会出现的字，统一扫网址/极限词
@@ -503,6 +506,26 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     else if (!['meta', 'shots'].includes(k)) err(k, '多了一个不认识的顶层字段', '最外层只能有 meta 和 shots');
   }
 
+  // ---- 风格与画幅（meta.style 不写 = cards，下面 cards 的规则和改造前逐条一致）----
+  const styleId = styleIdOf(sb.meta);
+  const style = loadStyle(styleId);
+  const isCards = styleId === DEFAULT_STYLE;
+  const SM = style?.manifest ?? loadStyle(DEFAULT_STYLE)?.manifest ?? {};
+  const commonTypes = new Set(Object.keys(specs));
+  if (!isCards && style) specs = specsForStyle(style, specs);
+  const aspect = typeof sb.meta?.aspect === 'string' && ASPECTS[sb.meta.aspect] ? sb.meta.aspect : SM.defaultAspect ?? '9:16';
+  if (sb.meta && typeof sb.meta === 'object') {
+    if (sb.meta.style !== undefined && (typeof sb.meta.style !== 'string' || !style))
+      err('meta.style', `没有叫「${sb.meta.style}」的风格`, `从这些里选：${styleIds().join(' / ')}（不写就是 cards）；各风格适合什么产品见 styles/<id>/STYLE.md`);
+    else if (style && style.manifest.status !== 'stable' && !allowDraftStyles && !devStylesAllowed())
+      err('meta.style', `风格「${styleId}」还在开发中（status: ${style.manifest.status}），不能出片`, `换成已完成的风格：${listStyles().filter((x) => x.manifest.status === 'stable').map((x) => x.id).join(' / ')}（风格负责人自测：设环境变量 PROMO_DEV_STYLES=1）`);
+    if (sb.meta.aspect !== undefined) {
+      const ok = SM.aspects ?? ['9:16'];
+      if (typeof sb.meta.aspect !== 'string' || !ASPECTS[sb.meta.aspect]) err('meta.aspect', `「${sb.meta.aspect}」不是可选画幅`, `只能写 ${Object.keys(ASPECTS).join(' / ')}；不写用风格默认（${SM.defaultAspect}）`);
+      else if (!ok.includes(sb.meta.aspect)) err('meta.aspect', `「${styleId}」风格不支持 ${sb.meta.aspect} 画幅`, `改成 ${ok.join(' / ')}，或删掉 meta.aspect`);
+    }
+  }
+
   // ---- meta ----
   const meta = sb.meta;
   if (!meta || typeof meta !== 'object') err('meta', '缺少 meta', '补上 "meta": {"title": "...", "product": "...", "theme": "warm-emotion"}');
@@ -512,6 +535,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       'industry', 'lang', 'platform', 'notices', 'action', 'durationRange', 'subCategory', 'attachDeal', 'demoData',
       // assets：素材清单 [{src, source: merchant|illustration|screenshot, kind?, pair?}]，结构和真实性由 scripts/checks/assets.mjs 校验
       'assets',
+      // style / aspect：风格包（styles/<id>/）与画幅（9:16 / 4:5），不写 = cards + 风格默认画幅
+      'style', 'aspect',
     ];
     // demoData：整片用的是演示数据（简报没给真数据，界面里的数字是示例）。只放行「演示界面里的内容」，不放行效果说法；
     // 画面上必须有「演示/示例」提示（写在 meta.disclaimer，顶部胶囊会显示）
@@ -594,8 +619,16 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       }
     }
     for (const k of Object.keys(meta)) if (!known.includes(k)) err(`meta.${k}`, '多了一个不认识的字段', `删掉，或检查拼写。可用字段：${known.join('、')}`);
-    for (const k of ['title', 'product', 'theme']) if (typeof meta[k] !== 'string' || !meta[k].trim()) err(`meta.${k}`, '缺少必填字段（文字）', k === 'theme' ? `从这些里选：${Object.keys(THEMES).join(' / ')}` : '填上');
-    if (typeof meta.theme === 'string' && meta.theme && !(meta.theme in THEMES)) err('meta.theme', `没有叫「${meta.theme}」的主题`, `从这些里选：${Object.keys(THEMES).join(' / ')}`);
+    if (isCards) {
+      for (const k of ['title', 'product', 'theme']) if (typeof meta[k] !== 'string' || !meta[k].trim()) err(`meta.${k}`, '缺少必填字段（文字）', k === 'theme' ? `从这些里选：${Object.keys(THEMES).join(' / ')}` : '填上');
+      if (typeof meta.theme === 'string' && meta.theme && !(meta.theme in THEMES)) err('meta.theme', `没有叫「${meta.theme}」的主题`, `从这些里选：${Object.keys(THEMES).join(' / ')}`);
+    } else {
+      // 其他风格：配色从风格自己的 themes 里选，可以不写（用 defaultTheme）
+      for (const k of ['title', 'product']) if (typeof meta[k] !== 'string' || !meta[k].trim()) err(`meta.${k}`, '缺少必填字段（文字）', '填上');
+      const opts = SM.themes ?? [];
+      if (meta.theme !== undefined && (typeof meta.theme !== 'string' || !opts.includes(meta.theme)))
+        err('meta.theme', `「${styleId}」风格没有叫「${meta.theme}」的配色`, opts.length ? `从这些里选：${opts.join(' / ')}；不写用 ${SM.defaultTheme}` : '这个风格没有可选配色，删掉 meta.theme');
+    }
     if (meta.bpm !== undefined && (typeof meta.bpm !== 'number' || meta.bpm < BPM_RANGE[0] || meta.bpm > BPM_RANGE[1]))
       err('meta.bpm', `节拍 ${meta.bpm} 不在 ${BPM_RANGE[0]}–${BPM_RANGE[1]} 之间`, '不确定就删掉，默认 120');
     if (meta.brandColor !== undefined) {
@@ -629,16 +662,20 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   const shots = sb.shots;
   if (!Array.isArray(shots) || shots.length === 0) {
     err('shots', '缺少镜头列表', '写 "shots": [{"type": "hook", ...}, ..., {"type": "endCard", ...}]');
-    return {errors, warnings, slots: [], total: 0, beat: 60 / (meta?.bpm || 120), assets, human: []};
+    return {errors, warnings, slots: [], total: 0, beat: 60 / bpmOf(meta), assets, human: []};
   }
-  const beat = 60 / (meta?.bpm || 120);
+  const beat = 60 / bpmOf(meta);
   const slots = schedule(sb, specs);
   shots.forEach((shot, i) => {
     const type = shot?.type;
     const W = (f) => where(i, type, f);
     if (!shot || typeof shot !== 'object') return err(where(i, '?', ''), '不是对象', '每一镜写成 {"type": ..., "params": {...}}');
     const spec = specs[type];
-    if (!spec) return err(W('type'), `没有「${type}」这种镜头`, `从这些里选：${Object.keys(specs).join(' / ')}`);
+    if (!spec) return err(W('type'), isCards ? `没有「${type}」这种镜头` : `「${styleId}」风格没有「${type}」这种镜头`, `从这些里选：${Object.keys(specs).join(' / ')}`);
+    if (!isCards && commonTypes.has(type) && !style?.ownSpecs?.[type] && aspect !== '9:16')
+      err(W('type'), `公共镜头 ${type} 只按 9:16 设计，${aspect} 画幅不能用`, `换成「${styleId}」风格的专属镜头，或把 meta.aspect 改成 9:16`);
+    if (!isCards && SM.captionLayer === 'none' && shot.caption !== undefined && spec.caption !== 'none')
+      err(W('caption'), `「${styleId}」风格不用全局字幕，caption 不能写`, '删掉 caption，要上屏的字写进这一镜的 params');
     for (const k of Object.keys(shot)) if (!['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note'].includes(k))
       err(W(k), '多了一个不认识的字段', '每一镜只能有 type、dur 或 beats、caption、mood、params、note（时长字段叫 dur，单位秒）');
     // 时长
@@ -648,7 +685,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     const s = slots[i];
     const {min, max} = spec.dur;
     if (s.dur < min - 1e-6 || s.dur > max + 1e-6) err(W('dur'), `时长 ${fmtN(s.dur)} 秒不在该镜头允许的 ${min}–${max} 秒内`, `改到 ${min}–${max} 秒之间（默认 ${spec.dur.default} 秒）`);
-    if (Math.abs(s.dur - s.raw) > 1e-6 && typeof s.raw === 'number' && s.raw > 0) warn(W('dur'), `${fmtN(s.raw)} 秒已吸附到整拍 → ${fmtN(s.dur)} 秒`, `想精确就写成 ${fmtN(beat)} 秒的整数倍`);
+    if (Math.abs(s.dur - s.raw) > 1e-6 && typeof s.raw === 'number' && s.raw > 0) warn(W('dur'), `${fmtN(s.raw)} 秒已吸附到整拍 → ${fmtN(s.dur)} 秒`, fmtBeat(beat) === fmtN(beat) ? `想精确就写成 ${fmtN(beat)} 秒的整数倍` : `想精确就改写 beats（拍数），一拍 ${fmtBeat(beat)} 秒`);
     // 情绪
     if (shot.mood !== undefined && (typeof shot.mood !== 'number' || shot.mood < 0 || shot.mood > 1)) err(W('mood'), `情绪 ${JSON.stringify(shot.mood)} 不在 0–1`, '0 = 平静/正向，0.5 = 留神，1 = 紧张/痛点');
     // 字幕
@@ -673,11 +710,18 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       if (shot.params && typeof shot.params === 'object') crossCheck(type, shot.params, (f) => W(`params.${f}`), err, warn);
     }
     // 位置规则
-    if (i === 0 && type !== 'hook') err(W('type'), '第 1 镜必须是 hook（第 0 帧就要有钩子）', '在最前面加一个 hook 镜头，caption 写封面大标题');
-    if (i > 0 && type === 'hook') err(W('type'), 'hook 只能是第 1 镜', '换成其他镜头类型');
-    if (type === 'endCard' && i !== shots.length - 1) warn(W('type'), '片尾不在最后一镜', '把 endCard 挪到最后');
+    if (isCards) {
+      if (i === 0 && type !== 'hook') err(W('type'), '第 1 镜必须是 hook（第 0 帧就要有钩子）', '在最前面加一个 hook 镜头，caption 写封面大标题');
+      if (i > 0 && type === 'hook') err(W('type'), 'hook 只能是第 1 镜', '换成其他镜头类型');
+      if (type === 'endCard' && i !== shots.length - 1) warn(W('type'), '片尾不在最后一镜', '把 endCard 挪到最后');
+    } else {
+      if (SM.firstShot && i === 0 && type !== SM.firstShot) err(W('type'), `「${styleId}」风格的第 1 镜必须是 ${SM.firstShot}（第 0 帧就要有钩子）`, `在最前面加一镜 ${SM.firstShot}`);
+      if (SM.firstShot && i > 0 && type === SM.firstShot) err(W('type'), `${SM.firstShot} 只能是第 1 镜`, '换成其他镜头类型');
+      if (SM.lastShot && type === SM.lastShot && i !== shots.length - 1) warn(W('type'), `${SM.lastShot} 应该放在最后一镜`, `把 ${SM.lastShot} 挪到最后`);
+    }
   });
-  if (!shots.some((s) => s?.type === 'endCard')) warn('shots', '没有片尾 endCard', '最后加一个 endCard（产品名 + 口号）');
+  if (isCards && !shots.some((s) => s?.type === 'endCard')) warn('shots', '没有片尾 endCard', '最后加一个 endCard（产品名 + 口号）');
+  if (!isCards && SM.lastShot && !shots.some((s) => s?.type === SM.lastShot)) warn('shots', `没有片尾 ${SM.lastShot}`, `最后加一镜 ${SM.lastShot}（产品名 + 口号）`);
 
   // ---- 跨镜规则：产品名一致、CTA 照抄简报、核心动作要演示、字幕别停太久、情绪别硬跳、别照抄样例 ----
   const product = typeof meta?.product === 'string' ? meta.product.trim() : '';
@@ -724,7 +768,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     if (s?.type === 'beforeAfter') return !!(p.before && p.after);
     return false;
   };
-  if (!shots.some(isDemo))
+  const demoOwn = new Set(SM.demoShots ?? []);
+  if ((isCards || SM.requireDemo) && !shots.some((s) => isDemo(s) || demoOwn.has(s?.type)))
     err('shots', '全片没有一镜在演示产品的核心动作（用户做什么 → 产品给出什么），只有口号和卖点卡',
       '加一镜：chat 写 messages + panel（提问 → 回答）；或 mockApp 写 input（用户输入/提问）+ 结果（dashboard 的 stat、editor 的 items、done）；有截图就用 phone；非软件行业（餐饮/电商/文旅/美业等）可以用 photoShot（填 media，实拍或插画兜底皆可）演示产品本身');
   // 字幕停留时长：同一句字幕连续显示不超过 maxHold 秒
@@ -1057,7 +1102,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     }
   });
   // (8) 结构：别和样例/常见模板一模一样（含近似匹配）；中段要有 compare/steps/phone/meter 之一；quickList 和 counter 别同时用；单镜别占比过大
-  {
+  // 这些是 cards 风格的结构经验；其他风格的结构规则写在 styles/<id>/rules.json
+  if (isCards) {
     const seq = shots.map((x) => x?.type).join('→');
     const types = shots.map((x) => x?.type);
     const durs = slots.map((s) => s.dur);
@@ -1098,7 +1144,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   }
 
   // ---- 总时长（meta.durationRange 覆盖默认 15–45 秒；行业推荐结构给的时长更长时，在分镜里写 meta.durationRange 放开）----
-  const durRange = Array.isArray(meta?.durationRange) && meta.durationRange.length === 2 && meta.durationRange.every((x) => typeof x === 'number') ? meta.durationRange : DUR_RANGE;
+  const styleDur = !isCards && Array.isArray(style?.rules?.durationRange) && style.rules.durationRange.length === 2 ? style.rules.durationRange : null;
+  const durRange = Array.isArray(meta?.durationRange) && meta.durationRange.length === 2 && meta.durationRange.every((x) => typeof x === 'number') ? meta.durationRange : styleDur ?? DUR_RANGE;
   const total = slots.length ? slots[slots.length - 1].end : 0;
   if (total < durRange[0] || total > durRange[1])
     err('总时长', `${fmtN(total)} 秒，要在 ${durRange[0]}–${durRange[1]} 秒之间`, total < durRange[0] ? `加镜头或加长时长，还差 ${fmtN(durRange[0] - total)} 秒` : `删镜头或缩短时长，多了 ${fmtN(total - durRange[1])} 秒`);
@@ -1137,8 +1184,13 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   errors.push(...(ind.errors ?? []), ...(txt.errors ?? []).filter((e) => !(QUAL_DUP.test(e.problem) && indWhere.has(e.where)) && !(CHAT_DUP.test(e.problem) && indChatShots.has(shotOf(e.where)))));
   warnings.push(...(ind.warnings ?? []), ...(txt.warnings ?? []));
   const human = [...(ind.human ?? []), ...(txt.human ?? [])];
+  // ---- 风格规则（styles/<id>/rules.json + checks.mjs）----
+  const sty = runStyleRules(sb, style, {where});
+  errors.push(...sty.errors);
+  warnings.push(...sty.warnings);
+  human.push(...sty.human);
 
-  return {errors, warnings, human, slots, total, beat, assets};
+  return {errors, warnings, human, slots, total, beat, assets, style: styleId, aspect};
 }
 
 // ---------------- spec 自检（镜头开发者用） ----------------
@@ -1168,6 +1220,28 @@ export function checkSpecs(specs = loadSpecs()) {
           problems.push(`${type}.spec.json 示例：${e.where}：${e.problem}`);
     }
   }
+  // 各风格的专属镜头：结构同上；示例放进这个风格的最小分镜里跑（开发中的风格也跑）
+  for (const st of listStyles()) {
+    if (st.id === DEFAULT_STYLE) continue;
+    const all = specsForStyle(st, specs);
+    for (const [type, s] of Object.entries(st.ownSpecs)) {
+      const tag = `styles/${st.id}/shots/${type}.spec.json`;
+      for (const k of need) if (s[k] === undefined) problems.push(`${tag}：缺少字段 ${k}`);
+      if (s.dur && !(s.dur.min <= s.dur.default && s.dur.default <= s.dur.max)) problems.push(`${tag}：dur 要满足 min ≤ default ≤ max`);
+      if (!['required', 'optional', 'none'].includes(s.caption)) problems.push(`${tag}：caption 只能是 required / optional / none`);
+      if (st.manifest.captionLayer === 'none' && s.caption !== 'none') problems.push(`${tag}：这个风格 captionLayer 是 none，镜头的 caption 只能是 none`);
+      for (const c of s.sfx ?? []) if (!SFX_KINDS.includes(c.kind)) problems.push(`${tag}：音效 ${c.kind} 不存在（可用：${SFX_KINDS.join(' ')}）`);
+      if (!s.example?.params) continue;
+      const first = st.manifest.firstShot;
+      const shots = [];
+      if (first && first !== type && all[first]?.example) shots.push({type: first, dur: all[first].example.dur, params: all[first].example.params});
+      shots.push({type, dur: s.example.dur ?? s.dur?.default, caption: s.example.caption, mood: s.example.mood, params: s.example.params});
+      const r = validate({meta: {title: 'spec-check', product: 'x', style: st.id, ...(s.example.industry ? {industry: s.example.industry} : {})}, shots}, {baseDir: TEMPLATE, specs, allowDraftStyles: true});
+      for (const e of r.errors)
+        if (!e.where.startsWith('总时长') && e.where !== 'shots' && e.where !== 'meta.action' && !/在 meta\.facts 里找不到来源|没有简报依据|示例\/演示」的 fact|没声明这是演示数据/.test(e.problem))
+          problems.push(`${tag} 示例：${e.where}：${e.problem}`);
+    }
+  }
   return problems;
 }
 
@@ -1191,7 +1265,7 @@ export const formatReport = (r, file = '') => {
     r.human.forEach((e) => out.push(`  - ${e.where}：${e.problem}（${e.fix}）`));
   }
   if (!r.errors.length) {
-    out.push(`校验通过：${r.slots.length} 镜，共 ${fmtN(r.total)} 秒（一拍 ${fmtN(r.beat)} 秒，共 ${Math.round(r.total / r.beat)} 拍）`);
+    out.push(`校验通过：${r.slots.length} 镜，共 ${fmtN(r.total)} 秒（一拍 ${fmtBeat(r.beat)} 秒，共 ${Math.round(r.total / r.beat)} 拍）`);
     out.push(`  ${pad('#', 4)}${pad('类型', 11)}${pad('起止(秒)', 16)}${pad('时长', 7)}字幕`);
     for (const s of r.slots) out.push(`  ${pad(s.i + 1, 4)}${pad(s.type, 11)}${pad(`${s.start.toFixed(1)} – ${s.end.toFixed(1)}`, 16)}${pad(s.dur.toFixed(1), 7)}${short([r.sb?.shots?.[s.i]?.caption ?? ''].flat().join(' / ').replace(/[{}]/g, ''), 20)}`);
   }
@@ -1231,7 +1305,8 @@ if (isMain) {
       console.log(`spec 自检发现 ${p.length} 个问题：\n` + p.map((x) => '  - ' + x).join('\n'));
       process.exit(1);
     }
-    console.log(`spec 自检通过：${Object.keys(loadSpecs()).length} 个镜头`);
+    const own = listStyles().filter((st) => st.id !== DEFAULT_STYLE).map((st) => `${st.id} ${Object.keys(st.ownSpecs).length}`);
+    console.log(`spec 自检通过：${Object.keys(loadSpecs()).length} 个镜头${own.length ? `（另有风格专属镜头：${own.join('、')}）` : ''}`);
     process.exit(0);
   }
   // --brief <简报文件>：有简报原文时，逐条核对 meta.facts 的数字/quote 是否真的出自简报

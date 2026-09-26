@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "title": "双链不是复制一份",
+    "product": "拾页笔记",
+    "style": "quiz",
+    "industry": "software",
+    "action": "在一篇笔记里给另一篇加双链，点一下就在两篇之间来回跳",
+    "disclaimer": "演示场景，界面为示意",
+    "cta": "应用商店搜拾页笔记"
+  },
+  "shots": [
+    {
+      "type": "phraseTitle",
+      "beats": 12,
+      "params": {
+        "eyebrow": "功能竞猜",
+        "phrase": "双链",
+        "guess": "复制一份",
+        "context": "你猜这个笔记工具里的按钮，按一下能干嘛",
+        "scene": "screen",
+        "screenItems": ["上周用户调研", "周会纪要", "竞品对比表"]
+      }
+    },
+    {
+      "type": "clip",
+      "beats": 10,
+      "params": {
+        "lines": [
+          {"speaker": "同事", "text": "上周那份调研写哪了？"},
+          {"speaker": "小林", "text": "我给它加了双链", "zh": "（她没有复制，也没有另存）"}
+        ],
+        "key": "双链",
+        "scene": "office"
+      }
+    },
+    {
+      "type": "quiz",
+      "beats": 19,
+      "params": {
+        "question": "按一下双链会怎样？",
+        "options": ["复制一份", "两篇互相跳转", "发给同事"],
+        "answer": 1
+      }
+    },
+    {
+      "type": "meaningCard",
+      "beats": 12,
+      "params": {
+        "eyebrow": "今天这个按钮",
+        "rows": [
+          {"kind": "word", "text": "双链"},
+          {"kind": "neq", "text": "复制一份"},
+          {"kind": "eq", "text": "两篇互相跳转"},
+          {"kind": "eq", "text": "点一下回到出处"}
+        ]
+      }
+    },
+    {
+      "type": "replay",
+      "beats": 8,
+      "params": {"title": "再看一遍", "sticker": "找到了"}
+    },
+    {
+      "type": "duoScene",
+      "beats": 14,
+      "params": {
+        "context": "开会前两分钟，同事急了：",
+        "ask": "调研那页在哪？",
+        "reply": "点双链就到",
+        "key": "双链"
+      }
+    },
+    {
+      "type": "commentCta",
+      "beats": 7,
+      "params": {"question": "你刚才猜的哪个？", "footnote": "猜 A 的别慌，它不占空间"}
+    },
+    {
+      "type": "brandEnd",
+      "beats": 10,
+      "params": {"badge": "这个按钮你会用了", "slogan": "让笔记连成一张网\n来试试拾页", "button": "搜拾页笔记"}
+    }
+  ]
+}

@@ -10,6 +10,7 @@
 // 全片级的问题 where 用 'shots'（validate.mjs --specs 的单镜自检会跳过 where==='shots' 的整片规则）。
 // ============================================================
 import {where, mkFinding as F} from './util.mjs';
+import {DEFAULT_STYLE, loadStyle, styleIdOf} from '../lib/styles.mjs';
 
 const UI_DEFAULT = ['software', 'education'];
 const FORM_ACTION = /填表|表单|填写|报名|登记|提交|申请|预约|问卷|注册|签到|打卡|投票|form|sign ?up|register|apply|booking|survey/i;
@@ -25,6 +26,15 @@ export function coreActionSurface(sb, ctx, rules) {
   const industryName = rules?.name ?? industry;
   const action = typeof ctx?.meta?.action === 'string' ? ctx.meta.action.trim() : '';
   const isFormProduct = !!action && FORM_ACTION.test(action);
+  // 非 cards 风格：「全片要有一镜演示」按风格清单判断（requireDemo + demoShots），这里只保留逐镜的误用检查；
+  // 风格不要求演示（如 journey 用街区广告牌讲类别）就不报整片缺演示
+  const styleId = styleIdOf(ctx?.meta ?? sb?.meta);
+  const sm = styleId === DEFAULT_STYLE ? null : loadStyle(styleId)?.manifest ?? null;
+  const styleDemoOk = !sm || !sm.requireDemo || shots.some((s) => (sm.demoShots ?? []).includes(s?.type));
+  const needWholeFilmDemo = !sm; // cards：和改造前一样
+
+  if (sm && !styleDemoOk)
+    out.push(F('block', 'shots', `「${sm.name?.zh ?? styleId}」风格要有一镜演示核心动作，全片没有 ${(sm.demoShots ?? []).join(' / ') || '演示镜头'}`, `照 styles/${styleId}/recipes.md 加上演示镜头`));
 
   if (surface === 'ui') {
     shots.forEach((s, i) => {
@@ -33,10 +43,10 @@ export function coreActionSurface(sb, ctx, rules) {
           '在产品自己的界面里演这个动作：消息/聊天类用 chat（先出现对方的消息 → 点开面板 → 给出结果）；生成类用 mockApp kind:"editor"（input 写用户输入，items 写产出）；查数类用 kind:"dashboard"；有真截图就用 phone。form 只给本来就是填表/报名/预约的产品'));
     });
     const isUiDemo = (s) => s?.type === 'chat' || (s?.type === 'phone' && !!s.params?.src) || (s?.type === 'mockApp' && (s.params?.kind !== 'form' || isFormProduct));
-    if (!shots.some(isUiDemo))
+    if (needWholeFilmDemo && !shots.some(isUiDemo))
       out.push(F('block', 'shots', `「${industryName}」的核心动作要在产品自己的界面里演示，全片没有一镜 chat / phone（真截图）/ mockApp（非表单）`,
         '加一镜：消息类用 chat；生成/编辑类用 mockApp kind:"editor"；查数类用 kind:"dashboard"；有截图就用 phone。卖点卡、步骤卡不算演示'));
-    if (action && MSG_ACTION.test(action) && !shots.some((s) => s?.type === 'chat' || (s?.type === 'phone' && !!s.params?.src)))
+    if (needWholeFilmDemo && action && MSG_ACTION.test(action) && !shots.some((s) => s?.type === 'chat' || (s?.type === 'phone' && !!s.params?.src)))
       out.push(F('block', 'shots', `核心动作「${action}」是消息/聊天类，全片却没有 chat（也没有 phone 真截图），消息本身从头到尾没出现`,
         '用 chat 镜头：messages 先出现对方发来的那句话，panel 给出分析/候选回复；不要用表单或卖点卡代替'));
     if (action && !CONVO_ACTION.test(action))
@@ -52,7 +62,7 @@ export function coreActionSurface(sb, ctx, rules) {
           '改用 photoShot 演示产品本身：有商家实拍就用实拍（meta.assets 里 source:"merchant"），没有就用插画场景 {"source": "drawn", "illust": "<行业>/<名字>", "tag": "示意"}；过程用 steps。商家确有自己小程序/店铺页的真实截图，用 phone 镜头放截图'));
     });
     const hasScene = shots.some((s) => (s?.type === 'photoShot' && Array.isArray(s.params?.media) && s.params.media.length > 0) || s?.type === 'beforeAfter');
-    if (!hasScene)
+    if (needWholeFilmDemo && !hasScene)
       out.push(F('block', 'shots', `「${industryName}」的核心动作要用照片或插画场景演示，全片没有一镜 photoShot${industry === 'beauty' ? ' / beforeAfter' : ''}`,
         '加一镜 photoShot：有商家实拍用实拍，没有就用插画兜底 {"source": "drawn", "illust": "<行业>/<名字>", "tag": "示意"}'));
   }

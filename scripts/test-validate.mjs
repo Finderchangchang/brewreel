@@ -16,6 +16,21 @@ const DIR = path.join(ROOT, 'tests', 'validate');
 
 // {file, rule, level: 'errors'|'warnings', expect: true=应该出现/false=不应该出现, match: 子串}
 const CASES = [
+  // 风格包 / 画幅（2026-09）：不写 style = cards；写错风格名、用开发中的风格、cards 用 4:5 都要拦；显式写 cards + 9:16 不误伤
+  {file: 'style-unknown-bad.json', rule: 'meta.style 写了不存在的风格', level: 'errors', expect: true, match: '没有叫「nope」的风格'},
+  {file: 'style-draft-bad.json', rule: '开发中的风格（status 不是 stable）不能出片', level: 'errors', expect: true, match: '还在开发中'},
+  {file: 'style-aspect-bad.json', rule: 'cards 只支持 9:16，写 4:5 要拦', level: 'errors', expect: true, match: '不支持 4:5'},
+  {file: 'style-cards-ok.json', rule: '显式写 style: cards + aspect: 9:16 和不写一样', level: 'errors', expect: false, match: '风格'},
+  // quiz 风格（2026-09）：陷阱项 = 钩子误解；错误选项不写数字；中文片里的英文台词可以用半角标点
+  {file: 'quiz-trap-bad.json', rule: 'quiz：钩子误解必须原样是一个选项', level: 'errors', expect: true, match: '不在选项里'},
+  {file: 'quiz-number-bad.json', rule: 'quiz：错误选项不许写阿拉伯数字', level: 'errors', expect: true, match: '错误选项「隔夜泡 12 小时」写了具体数字'},
+  {file: 'quiz-english-ok.json', rule: 'quiz：英文台词的半角标点不误报', level: 'errors', expect: false, match: '半角标点'},
+  {file: 'quiz-spoiler-bad.json', rule: 'quiz：clip 台词不许说出答案（含数字）', level: 'errors', expect: true, match: '把答案说出来了'},
+  {file: 'quiz-qty-bad.json', rule: 'quiz：数量题的选项都要是数量', level: 'errors', expect: true, match: '问的是数量'},
+  {file: 'quiz-qty-ok.json', rule: 'quiz：数量题错误项用中文数字能过', level: 'errors', expect: false, match: '问的是数量'},
+  {file: 'quiz-screen-bad.json', rule: 'quiz：scene=phone/screen 没写 screenItems 要拦', level: 'errors', expect: true, match: '没写 screenItems'},
+  {file: 'quiz-cta-bad.json', rule: 'quiz：落版按钮要和 meta.cta 对得上', level: 'errors', expect: true, match: '对不上：落版上看不到'},
+  {file: 'quiz-english-ok.json', rule: 'quiz：正常的英文短语片不误报剧透', level: 'errors', expect: false, match: '把答案说出来了'},
   {file: 'shotdirection-bad.json', rule: '字幕禁止镜头说明词（光点/卡片一张张出…）', level: 'errors', expect: true, match: '镜头说明'},
   {file: 'shotdirection-ok.json', rule: '镜头说明检查不误伤正常字幕', level: 'errors', expect: false, match: '镜头说明'},
   {file: 'cliche-bad.json', rule: '套路句扩展：就是这N步 + 给填空句型', level: 'warnings', expect: true, match: '套路句式'},

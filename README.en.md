@@ -99,6 +99,37 @@ python scripts/llm_make.py path/to/brief.md
 
 On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of the values above are placeholders — swap in your own key, and never commit a key or paste one into an issue. You may also put these variables into your AI assistant's own global config (e.g. `~/.claude/settings.json`) — that's an optional convenience this repo mentions but never does for you.
 
+## Styles
+
+A storyboard picks its look with `meta.style`; without it you get the default `cards` style. Each style is a "style pack" with its own design tokens, shot components, validation rules and narrative templates: docs, rules and examples live in `styles/<id>/`, code in `template/src/styles/<id>/`.
+
+**`cards`** (default, ready, 9:16): gradient background, a centered white card and bold outlined captions, one point per shot. Fits a single selling point, a how-it-works flow, UI demos, physical products and stores. Its 18 shots and samples for all six industries are in `examples/`.
+
+![cards style preview](docs/images/style-cards.png)
+
+**`quiz`** (ready, 9:16): off-white background, blue plus neon lime, left-aligned heavy type and flat-illustrated characters. The beat is: state a common misconception → ask an A/B/C question with a 3-second countdown → reveal with a check mark → full-screen meaning card (≠ the old reading / = the right meaning) → a short scene acting it out → a comment prompt. Fits products with a common misconception that can be framed as one multiple-choice question: what a foreign phrase really means, a software feature people often misread (e.g. "Archive = deleted?"), or why a dish is made the way it is. See [`styles/quiz/`](styles/quiz/README.md); templates and length limits are in `styles/quiz/recipes.md` (Chinese); five sample storyboards are in `styles/quiz/examples/`.
+
+![quiz style preview](docs/images/style-quiz.png)
+
+`journey` (a mascot travels through an illustrated city in one continuous shot, one district per content category, 4:5) is still in development; validation blocks it for now.
+
+**Choosing `meta.style`**:
+- The product has a point people commonly get wrong, it can be asked as "What do you think X means?", and there is exactly one right answer → `quiz`.
+- Everything else (selling points, flows, UI demos, stores and physical products, price lists) → `cards`, i.e. leave it out.
+- `quiz` only supports 9:16. Its own shots (question, reveal, meaning card, etc.) can only be used in `quiz`, and it does not mix with the 18 `cards` shots; validation blocks a storyboard that mixes them.
+
+```json
+{ "meta": { "style": "quiz", "industry": "software", "lang": "zh" }, "shots": [ ... ] }
+```
+
+## Contributing a new style: remix and create
+
+- **Use**: make films with an existing style.
+- **Remix (reskin)**: `node scripts/gen-styles.mjs --new <id>` scaffolds a new style; copy over the shots and `tokens.json` you want to keep from the source style, then change palette, fonts and characters. For a color-only variant, editing `themes` in `tokens.json` is enough.
+- **Create (distill)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown → replicate → componentize → cheap-model test → review and fix, ending in a new style. `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` was made this way, with a quiz-style short video as the reference.
+
+Reference videos and their stills, extracted frames, characters, brand names, URLs and film clips never go into the repo. Keep the raw breakdown outside the repo; the repo only holds breakdown text you wrote, characters and scenes you drew, and sample content you wrote. Steps and the PR checklist: [CONTRIBUTING.en.md](CONTRIBUTING.en.md).
+
 ## Industry packs: adding a new industry
 
 Each industry lives under `industries/<id>/`:
@@ -136,6 +167,22 @@ This is an early preview. **We don't yet recommend publishing a video as rendere
 - Industry videos: overall 4–5, compliance 4–5. Most points were lost on cross-field factual problems (items 1 and 3 below).
 - Last round's serious defects mostly did not come back: no Chinese characters on screen in the English video (94 sampled frames), speed claims were blocked, the same image can no longer serve as before and after, the price-card component no longer drops items, route labels now show the destination, and videos with a ✗ in the layout check are refused delivery.
 - Delivery: the model delivered a video by itself in 5 of the 9 runs. In 2 runs the model quit while its render was still queued, 1 render was interrupted halfway, and 1 run was blocked by a `make.mjs` bug: with `--brief`, make passed the file path instead of the brief text, so every number was reported as "not found in the brief". That bug is fixed in this release. This release also makes `make.mjs` refuse an `--out` inside the repo, and `SKILL.md` now tells the model not to stop until it has seen the `交付：` ("delivered") line.
+
+**Testing the quiz style** (new in this release): a cheap model read only `SKILL.md` and the docs in `styles/quiz/`, then wrote 3 storyboards from scratch and rendered them: a foreign phrase, a software-feature quiz and a food quiz. A person scored each out of 10 for "style" (how well it matches the style) and "overall". Results before the fixes:
+
+| Storyboard | Style | Overall |
+|---|---|---|
+| Foreign phrase (phrase) | 7 | 6 |
+| Software-feature quiz (app-feature) | 6 | 4 |
+| Food quiz (food-guess) | 6 | 4 |
+
+The QA review listed 10 problems. Items 1–9 are fixed; item 10 is only partly done. Main changes:
+- **Spoiling the answer before the question**: new check Q10. The hook's context line, every line of the film clip, and the subtitle bar on the quiz card may not contain the correct option, the "=" lines of the meaning card, or the numbers in them. Re-run on those 3 storyboards, all 3 are now blocked.
+- **Subtitle bar on the quiz card**: by default it shows only the half of the clip's last line that contains the key phrase; `quizLine` lets you write it yourself (≤12 characters, no answer). The software and food templates now say "show the feature or dish name, not the effect".
+- **Solid-color blank frames**: `make.mjs` adds a blank-frame check. If more than 95% of the screen is one color for more than 6 frames in a row, the video is not delivered.
+- Also added Q11–Q13: in a quantity question every option must be a quantity; UI mockups (screen / phone) must include the real on-screen text; a film clip requires the "listen again" beat.
+
+After the fixes, all 5 sample storyboards in `styles/quiz/examples/` were re-validated and rendered: `make.mjs` exited 0 each time, the last line was always `交付：…` ("delivered"), and both the layout check and the blank-frame check passed. The cheap model has not yet re-run a scored round after the fixes, so the scores above are still from before them.
 
 **Main remaining limitations** (issues with concrete counter-examples are welcome):
 
@@ -175,11 +222,15 @@ promo-video-skill/
     privacy-scan.mjs              Pre-publish privacy self-check
     checks/ lib/                   Rule implementations
   template/                   The Remotion rendering project
-    src/shots/                 18 shot components + parameter specs
+    src/shots/                 18 shared shot components + parameter specs (used by cards)
+    src/styles/                per-style manifest, design tokens and shots; registry.gen.ts is generated by scripts/gen-styles.mjs
     src/core/                  Fonts, themes, animation, layout helpers
     src/illust/                Industry fallback illustrations
     public/                    Fonts, sound effects, sample assets
-  examples/                   9 ready-to-render storyboard samples (six industries + English + two generic samples)
+  examples/                   9 ready-to-render storyboard samples (six industries + English + two generic samples, all cards style)
+  styles/                     style packs: nine-layer spec, narrative templates, rules, examples; _template/ scaffolds a new style
+  distill/                    style distillation process and reusable prompts
+  CONTRIBUTING.en.md          how to contribute (use / remix / create, PR checklist)
   tests/
     validate/                  Positive/negative regression tests for the validator
     rules/                     Regression tests for each industry's rules (4 cases each)

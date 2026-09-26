@@ -8,6 +8,8 @@
 //   y 1340 以下 只放背景/装饰（平台的文案、按钮会盖住）
 //   关键内容 x 180–900，以 x=540 左右对称；文字行宽 ≤780（x 150–930）
 // ============================================================
+import ASPECTS from './aspects.json';
+
 export const W = 1080;
 export const H = 1920;
 export const FPS = 30;
@@ -30,3 +32,16 @@ export const BG_ONLY = {top: 205, bottom: 1340};
 
 /** 字号下限（审美底线） */
 export const MIN_FONT = {body: 40, panel: 34, tiny: 26};
+
+// ============================================================
+// 多画幅（2026-09 风格包架构）：上面的常量是 9:16 的，cards 风格的镜头一直按它们摆，保持不动。
+// 新风格按 meta.aspect 取几何：useGeometry()（core/aspect.tsx）或 geometryOf(aspect)。
+// 数值的唯一来源是 core/aspects.json，scripts/lib/styles.mjs（校验、版式自查）也读它。
+// ============================================================
+export type AspectName = keyof typeof ASPECTS;
+export type Geometry = (typeof ASPECTS)['9:16'];
+export const ASPECT_NAMES = Object.keys(ASPECTS) as AspectName[];
+export const DEFAULT_ASPECT: AspectName = '9:16';
+export const isAspect = (a: unknown): a is AspectName => typeof a === 'string' && a in ASPECTS;
+/** 画幅 → 尺寸与安全区；不认识的画幅按 9:16 */
+export const geometryOf = (a?: string): Geometry => (isAspect(a) ? (ASPECTS[a] as Geometry) : (ASPECTS['9:16'] as Geometry));

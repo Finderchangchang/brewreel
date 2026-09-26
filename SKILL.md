@@ -14,6 +14,17 @@ metadata:
 
 ## 流程
 
+0. **选风格**（`meta.style`，不写就是 `cards`）。先看产品属于哪一类，再读 `<SKILL>/styles/<风格>/STYLE.md` 和 `recipes.md`：
+
+   | 风格 | 状态 | 适合什么产品 |
+   |---|---|---|
+   | `cards` 卡片信息流（默认） | 可用 | 单一卖点、要讲流程、要演示界面、实物门店；六个行业都支持 |
+   | `quiz` 答题互动 | 可用 | 有常见误解、能出一道选择题的产品（外语短语、功能被误会、菜名名不副实、反常识知识点）。三套模板见 `styles/quiz/recipes.md`，样例在 `styles/quiz/examples/`。`meta.theme` 可选 `blue-lime` / `cream-tomato`（不写：餐饮用 `cream-tomato`，其余用 `blue-lime`）；clip 台词不许说出答案 |
+   | `journey` 角色漫游 | 开发中，先别用 | 内容多、类别清楚的产品（内容平台、功能多的软件、多门店多品类、课程体系） |
+
+   - 拿不准就用 `cards`，不用写 `meta.style`。开发中的风格校验会拦。
+   - `meta.aspect`：`9:16`（默认，1080x1920）或 `4:5`（1080x1350）。`cards` 只支持 9:16，不用写。
+   - 下面第 1–12 步是 `cards` 的写法。用别的风格时，镜头和字段以那个风格的 `recipes.md` 为准；行业合规、`meta.facts`、禁止事项、出片命令照旧。
 1. **定行业和语言**。
    - `meta.industry`：`software`（默认）/ `food`（餐饮）/ `ecommerce`（电商实物）/ `education`（教培）/ `beauty`（美业）/ `travel`（文旅住宿）。选错行业，能用的镜头和合规规则都会不对。
    - `meta.lang`：`zh`（默认）/ `en`。视频要出英文字幕、用户是英文用户，就写 `en`（用法见第 5 步）。

@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "title": "style-test quiz-cta-bad.json",
+    "product": "随口记",
+    "style": "quiz",
+    "industry": "software",
+    "action": "长按说话键说一段待办，松手后自动拆成一条条清单",
+    "disclaimer": "演示场景，界面为示意",
+    "cta": "应用商店搜随口记"
+  },
+  "shots": [
+    {
+      "type": "phraseTitle",
+      "beats": 12,
+      "params": {
+        "eyebrow": "功能竞猜",
+        "phrase": "长按说话",
+        "guess": "只转成文字",
+        "context": "早上出门前，对着手机念了一长串要办的事",
+        "scene": "phone",
+        "screenItems": [
+          "买牛奶和鸡蛋",
+          "周五交报告",
+          "给妈妈回电话"
+        ]
+      }
+    },
+    {
+      "type": "clip",
+      "beats": 10,
+      "params": {
+        "lines": [
+          {
+            "speaker": "室友",
+            "text": "你一口气念那么多，记得住吗？"
+          },
+          {
+            "speaker": "小周",
+            "text": "我就长按说话，松手看看"
+          }
+        ],
+        "key": "长按说话",
+        "scene": "phone"
+      }
+    },
+    {
+      "type": "quiz",
+      "beats": 19,
+      "params": {
+        "question": "松手之后会怎样？",
+        "options": [
+          "只转成文字",
+          "拆成待办清单",
+          "发给室友"
+        ],
+        "answer": 1,
+        "quizLine": "长按说话，松手"
+      }
+    },
+    {
+      "type": "meaningCard",
+      "beats": 12,
+      "params": {
+        "eyebrow": "今天这个按钮",
+        "rows": [
+          {
+            "kind": "word",
+            "text": "长按说话"
+          },
+          {
+            "kind": "neq",
+            "text": "只转成文字"
+          },
+          {
+            "kind": "eq",
+            "text": "拆成待办清单"
+          },
+          {
+            "kind": "eq",
+            "text": "一件事一行"
+          }
+        ]
+      }
+    },
+    {
+      "type": "replay",
+      "beats": 8,
+      "params": {
+        "title": "再看一遍",
+        "sticker": "拆好了"
+      }
+    },
+    {
+      "type": "duoScene",
+      "beats": 14,
+      "params": {
+        "context": "下班路上想起三件事：",
+        "ask": "要不要找张纸记下来？",
+        "reply": "长按说话就行",
+        "key": "长按说话"
+      }
+    },
+    {
+      "type": "commentCta",
+      "beats": 7,
+      "params": {
+        "question": "你刚才猜的哪个？",
+        "comments": [
+          "B！",
+          "我还以为只能转文字"
+        ]
+      }
+    },
+    {
+      "type": "brandEnd",
+      "beats": 10,
+      "params": {
+        "badge": "这个按钮你会用了",
+        "slogan": "张嘴说一遍\n清单自己排好",
+        "button": "点这里"
+      }
+    }
+  ]
+}

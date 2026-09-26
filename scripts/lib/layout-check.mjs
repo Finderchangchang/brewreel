@@ -57,7 +57,9 @@ export const fieldOf = (fields, text, shotIdx) => {
  * @param {{frames: Map<number, any>, slots: {i:number,type:string,start:number,end:number}[], sb: any, checkFrames: number[], fps?: number}} o
  * @returns {{layoutIssues: string[], hanIssues: string[], checked: number, scanned: number, errors: string[]}}
  */
-export const layoutCheck = ({frames, slots, sb, checkFrames, fps = 30}) => {
+// geo：非 cards 风格传画幅几何（scripts/lib/styles.mjs 的 geometryOf），文字一律按 geo.card 的左右边界核对；
+// cards 不传（null），沿用下面的 9:16 规则（字幕带/片尾 x180–900，其余 x150–930），和改造前一样
+export const layoutCheck = ({frames, slots, sb, checkFrames, fps = 30, geo = null}) => {
   const lang = sb?.meta?.lang === 'en' ? 'en' : 'zh';
   const fields = storyboardFields(sb);
   const checkSet = new Set(checkFrames);
@@ -108,7 +110,7 @@ export const layoutCheck = ({frames, slots, sb, checkFrames, fps = 30}) => {
       const [x0, y0, x1, y1] = b.tx ?? [b.x0, b.y0, b.x1, b.y1];
       const c = b.clip;
       if (c && (x1 <= c[0] || x0 >= c[2] || y1 <= c[1] || y0 >= c[3])) continue; // 整块在裁切框外 = 看不见
-      if (x1 <= 0 || x0 >= 1080 || y1 <= 0 || y0 >= 1920) continue;
+      if (x1 <= 0 || x0 >= (geo?.w ?? 1080) || y1 <= 0 || y0 >= (geo?.h ?? 1920)) continue;
       vis.push(b);
       // 裁切：底边 / 左右被容器切掉（顶边切掉多是聊天记录上滚，属正常）
       if (c) {
@@ -119,9 +121,13 @@ export const layoutCheck = ({frames, slots, sb, checkFrames, fps = 30}) => {
         if (cut.length) layoutIssues.push(`${at(fr)}：文字${q(b)}被容器裁切（${cut.join('，')}）${where(b.text, fr)}`);
       }
       // 全局字幕带（y260–540）和 endCard 的大字算「关键内容」，按 x180–900 核对；其余卡片内容按 x150–930
-      const isKeyContent = (y0 >= 245 && y1 <= 555) || slot?.type === 'endCard';
-      const [lo, hi] = isKeyContent ? [178, 902] : [148, 932];
-      if (x0 < lo || x1 > hi) layoutIssues.push(`${at(fr)}：文字${q(b)}出了 x${isKeyContent ? 180 : 150}–${isKeyContent ? 900 : 930}（x ${x0}–${x1}）${where(b.text, fr)}`);
+      if (geo) {
+        if (x0 < geo.card.x0 - 2 || x1 > geo.card.x1 + 2) layoutIssues.push(`${at(fr)}：文字${q(b)}出了 x${geo.card.x0}–${geo.card.x1}（x ${x0}–${x1}）${where(b.text, fr)}`);
+      } else {
+        const isKeyContent = (y0 >= 245 && y1 <= 555) || slot?.type === 'endCard';
+        const [lo, hi] = isKeyContent ? [178, 902] : [148, 932];
+        if (x0 < lo || x1 > hi) layoutIssues.push(`${at(fr)}：文字${q(b)}出了 x${isKeyContent ? 180 : 150}–${isKeyContent ? 900 : 930}（x ${x0}–${x1}）${where(b.text, fr)}`);
+      }
     }
     for (let i = 0; i < vis.length; i++)
       for (let j = i + 1; j < vis.length; j++) {

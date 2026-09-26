@@ -17,7 +17,7 @@
 //
 // 交付规则（模型和测试脚本都按这个判断成没成）：
 //   - 开跑先清掉输出目录里上一次 make 的产物（video.mp4、sheet.png、check/*.png、layout.json、report.txt、manifest.json…），别的文件不动
-//   - 机器自查 / 文字排版 / 布局自查 / 英文片汉字扫描，任何一项有 ✗ 都不交付：退出码 3，打印「未通过，不能交付」，
+//   - 机器自查 / 文字排版 / 布局自查 / 英文片汉字扫描 / 空帧检查（成片逐帧：整屏 95% 以上一个颜色连续超过 6 帧），任何一项有 ✗ 都不交付：退出码 3，打印「未通过，不能交付」，
 //     成片改名 video.rejected.mp4、拼图改名 sheet.rejected.png（留着给人看哪里坏了）
 //   - 成功时写 manifest.json（分镜 sha256、mp4 sha256 / 时长 / 大小、生成时间、各项检查结论），
 //     stdout 最后一行「交付：<mp4 路径>」，report.txt 最后一行「成片：OK <mp4 路径>」；失败时 report.txt 最后一行「成片：无（原因）」。
@@ -33,9 +33,11 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {TEMPLATE, formatReport, loadSpecs, parseFile, validate} from './validate.mjs';
 import {clearStaleOutputs, mp4Duration, sha256Of, verifyDelivery, writeManifest} from './lib/delivery.mjs';
+import {blankRuns} from './lib/blank-check.mjs';
 import {layoutCheck, parseProbeLog} from './lib/layout-check.mjs';
 import {hasCross, machineCheck, reportTextWrap} from './lib/precheck.mjs';
 import {QueueTimeoutError, acquireRenderLock, pidAlive} from './lib/render-lock.mjs';
+import {DEFAULT_STYLE, aspectOf, bpmOf, geometryOf, loadStyle, specsForStyle, styleIdOf} from './lib/styles.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTION = path.join(TEMPLATE, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
@@ -233,7 +235,11 @@ if (r.errors.length) finish('failed', EXIT.INVALID, `分镜校验没过（${r.er
 const lang = parsed.sb.meta?.lang === 'en' ? 'en' : 'zh';
 
 // ---------------- 1b. 机器自查 + 文字排版（不靠模型自评） ----------------
-const specs = loadSpecs();
+// 风格 / 画幅：cards（默认）用公共镜头，和改造前一样；其他风格用专属镜头 + 允许复用的公共镜头
+const styleId = styleIdOf(parsed.sb.meta);
+const specs = styleId === DEFAULT_STYLE ? loadSpecs() : specsForStyle(loadStyle(styleId), loadSpecs());
+const geo = geometryOf(aspectOf(parsed.sb.meta));
+if (styleId !== DEFAULT_STYLE) log(`风格 ${styleId}，画幅 ${aspectOf(parsed.sb.meta)}（${geo.w}x${geo.h}）`);
 const mc = machineCheck(parsed.sb, r);
 const tw = reportTextWrap(parsed.sb, specs);
 fs.appendFileSync(reportFile, `机器自查（make.mjs 自动做，不靠模型自评）：\n${mc.join('\n')}\n文字排版报告（模拟换行，按安全区行宽 780px / 正文下限 40px 粗估，不是逐镜头像素级校验）：\n${tw.join('\n')}\n`, 'utf8');
@@ -277,8 +283,8 @@ if (!noBgm && !stills && fs.existsSync(bgmScript)) {
   const args = [
     bgmScript,
     '--duration', r.total.toFixed(3),
-    '--bpm', String(sb.meta.bpm || 120),
-    '--theme', sb.meta.theme,
+    '--bpm', String(bpmOf(sb.meta)),
+    '--theme', sb.meta.theme || 'warm-emotion',
     '--cues', JSON.stringify(r.slots.map((s) => Number(s.start.toFixed(3)))),
     '--moods', JSON.stringify(sb.shots.map((s) => (typeof s.mood === 'number' ? s.mood : specs[s.type]?.mood ?? 0.5))),
     '--types', JSON.stringify(r.slots.map((s) => s.type)),
@@ -423,7 +429,7 @@ if (!stills && (!fs.existsSync(videoPath) || fs.statSync(videoPath).size < 1024)
 
 // ---------------- 4b. 布局 / 汉字自查：渲染时探针打出的文字包围盒 ----------------
 const probed = parseProbeLog(probeLogs.join('\n'));
-const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS});
+const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS, geo: styleId === DEFAULT_STYLE ? null : geo});
 fs.writeFileSync(path.join(outDir, 'layout.json'), JSON.stringify([...probed.values()].filter((o) => checkFrames.includes(o.frame)), null, 1), 'utf8');
 const missingProbe = [...new Set(checkFrames)].filter((f) => !probed.has(f));
 const layoutLines = [];
@@ -432,7 +438,9 @@ else if (missingProbe.length) layoutLines.push(`  ✗ ${missingProbe.length} 个
 for (const x of lc.errors) layoutLines.push(`  ✗ ${x}`);
 for (const x of lc.layoutIssues) layoutLines.push(`  ✗ ${x}`);
 if (lc.checked && !lc.layoutIssues.length && !lc.errors.length && !missingProbe.length)
-  layoutLines.push(`  ✓ ${lc.checked} 个检查帧：文字没有被容器裁切、没有互相压住、字幕/片尾大字都在 x180–900 内，其余卡片内容都在 x150–930 内`);
+  layoutLines.push(styleId === DEFAULT_STYLE
+    ? `  ✓ ${lc.checked} 个检查帧：文字没有被容器裁切、没有互相压住、字幕/片尾大字都在 x180–900 内，其余卡片内容都在 x150–930 内`
+    : `  ✓ ${lc.checked} 个检查帧：文字没有被容器裁切、没有互相压住、都在 x${geo.card.x0}–${geo.card.x1} 内（${aspectOf(parsed.sb.meta)} 画幅）`);
 const hanLines = [];
 if (lang === 'en') {
   if (lc.hanIssues.length) for (const x of lc.hanIssues) hanLines.push(`  ✗ ${x}`);
@@ -469,7 +477,8 @@ let sheetOk = false;
 if (process.env.FFMPEG) {
   const cols = 10;
   const rows = Math.max(1, Math.ceil(r.total / cols));
-  const res = ff(['-ss', '0.5', '-i', videoPath, '-vf', `fps=1,scale=270:480,pad=280:490:5:5:white,tile=${cols}x${rows}`, '-frames:v', '1', sheetPath], process.env.FFMPEG);
+  const th = Math.round((270 * geo.h) / geo.w); // 9:16 → 480（和原来一样），4:5 → 338
+  const res = ff(['-ss', '0.5', '-i', videoPath, '-vf', `fps=1,scale=270:${th},pad=280:${th + 10}:5:5:white,tile=${cols}x${rows}`, '-frames:v', '1', sheetPath], process.env.FFMPEG);
   sheetOk = res.status === 0 && fs.existsSync(sheetPath);
   if (!sheetOk) log('FFMPEG 拼图失败，改用 Remotion 的 Sheet 合成');
 }
@@ -508,23 +517,42 @@ for (const w of missing) {
 }
 state.checkFrames = wanted.map((w) => path.join(checkDir, w.name)).filter((p) => fs.existsSync(p));
 if (state.checkFrames.length < wanted.length) log(`⚠ 检查帧只生成了 ${state.checkFrames.length}/${wanted.length} 张`);
+
+// 空帧检查：整屏 95% 以上一个颜色、连续超过 6 帧（转场停在纯色上、落版只剩一个小点）算 ✗
+const blank = blankRuns({
+  video: videoPath,
+  fps: FPS,
+  cwd: TEMPLATE,
+  cmd: (a) => (FF ? [FF, '-hide_banner', '-loglevel', 'error', ...a] : [process.execPath, REMOTION, 'ffmpeg', '-hide_banner', '-loglevel', 'error', ...a]),
+});
+if (blank.error) log(`⚠ 空帧检查没跑成（${blank.error.trim().split('\n').pop()}），跳过`);
+const blankBad = blank.runs.map((b) => `✗ ${b.from.toFixed(2)}–${b.to.toFixed(2)} 秒：连续 ${b.frames} 帧整屏 ${Math.round(b.ratio * 100)}% 是同一个颜色 ${b.color}（空帧）。转场别停在纯色上，这段时间里让下一镜的内容已经在画面上`);
+state.checks.blank = {ok: !blankBad.length, scannedFrames: blank.frames, issues: blankBad.map((l) => l.trim()), acceptedByHuman: acceptLayout && blankBad.length > 0};
+for (const b of blankBad) log(b);
 state.lock.release();
 state.lock = null;
 cleanupRun();
 
 // ---------------- 6. 成片和分镜绑定：哈希 + 时长 ----------------
 const dur = mp4Duration(videoPath);
-const finalVideo = rejected ? path.join(outDir, 'video.rejected.mp4') : videoPath;
-if (rejected) fs.renameSync(videoPath, finalVideo);
+const blockingAll = [...blocking, ...blankBad.map((l) => l.trim().replace(/^✗\s*/, ''))];
+const rejectedAll = blockingAll.length > 0 && !acceptLayout;
+const finalVideo = rejectedAll ? path.join(outDir, 'video.rejected.mp4') : videoPath;
+if (rejectedAll) fs.renameSync(videoPath, finalVideo);
+if (rejectedAll && !rejected && state.sheet && fs.existsSync(state.sheet)) {
+  const rs = path.join(outDir, 'sheet.rejected.png');
+  fs.renameSync(state.sheet, rs);
+  state.sheet = rs;
+}
 state.video = {path: finalVideo, sha256: sha256Of(finalVideo), bytes: fs.statSync(finalVideo).size, durationSec: dur, expectedSec: Number(r.total.toFixed(3))};
 if (dur == null) log('⚠ 读不出 mp4 时长（moov/mvhd），manifest 里时长留空');
 else if (Math.abs(dur - r.total) > 0.5) {
   finish('failed', EXIT.RENDER, `成片时长 ${dur.toFixed(2)} 秒和分镜 ${r.total.toFixed(2)} 秒对不上，渲染可能被截断，请重跑`, `video duration ${dur.toFixed(2)}s does not match storyboard ${r.total.toFixed(2)}s`);
 }
-if (rejected) {
-  console.log(`版式 / 汉字自查有 ${blocking.length} 处 ✗（成片已改名 ${path.basename(finalVideo)}，只给人看哪里坏了，不能交付）：`);
-  for (const b of blocking.slice(0, 12)) console.log(`  ✗ ${b}`);
-  finish('rejected', EXIT.REJECTED, `版式 / 汉字自查有 ${blocking.length} 处 ✗：${blocking[0]}`, `${blocking.length} layout/Han check(s) failed; see report.txt`);
+if (rejectedAll) {
+  console.log(`版式 / 汉字 / 空帧自查有 ${blockingAll.length} 处 ✗（成片已改名 ${path.basename(finalVideo)}，只给人看哪里坏了，不能交付）：`);
+  for (const b of blockingAll.slice(0, 12)) console.log(`  ✗ ${b}`);
+  finish('rejected', EXIT.REJECTED, `版式 / 汉字 / 空帧自查有 ${blockingAll.length} 处 ✗：${blockingAll[0]}`, `${blockingAll.length} layout/Han/blank-frame check(s) failed; see report.txt`);
 }
-if (acceptLayout && blocking.length) log(`⚠ 按 --accept-layout 人工放行 ${blocking.length} 处 ✗（manifest 里记为 acceptedByHuman）`);
+if (acceptLayout && blockingAll.length) log(`⚠ 按 --accept-layout 人工放行 ${blockingAll.length} 处 ✗（manifest 里记为 acceptedByHuman）`);
 finish('delivered', EXIT.OK);

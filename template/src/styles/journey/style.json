@@ -1,0 +1,21 @@
+{
+  "id": "journey",
+  "name": {"zh": "角色漫游", "en": "Journey"},
+  "summary": {
+    "zh": "吉祥物乘交通工具一镜到底横穿一座扁平插画城市，每个街区是一个内容类别，路边广告牌是代表内容，天色从白天走到夜晚，落版到产品界面和数据卡。适合内容多、类别清楚的产品（内容平台、多功能软件、多门店多品类、课程体系）",
+    "en": "A mascot rides through a flat-illustrated city in one continuous take; each district is a content category, roadside billboards carry sample titles, the sky moves from day to night, and it lands on the product screen with a stat card. Fits products with many clearly separated categories"
+  },
+  "status": "skeleton",
+  "defaultAspect": "4:5",
+  "aspects": ["4:5", "9:16"],
+  "bpm": 120,
+  "commonShots": [],
+  "firstShot": null,
+  "lastShot": null,
+  "captionLayer": "none",
+  "requireDemo": false,
+  "demoShots": [],
+  "themes": ["day-city"],
+  "defaultTheme": "day-city",
+  "owners": []
+}

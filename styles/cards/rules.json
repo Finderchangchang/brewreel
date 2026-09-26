@@ -1,0 +1,4 @@
+{
+  "style": "cards",
+  "note": "cards 是改造前唯一的风格，它的规则一直写在 scripts/validate.mjs 主体（第 1 镜 hook、最后 endCard、中段镜头、quickList 与 counter 互斥、字幕停留等）和 industries/<行业>/rules.json 里，这里不重复，也不新增，保证老分镜的校验结果一字不变。其他风格的声明式规则格式见 scripts/lib/styles.mjs 的 runStyleRules 注释"
+}

@@ -1,0 +1,38 @@
+{
+  "type": "meaningCard",
+  "purpose": "满屏主色释义卡（全片最多一次）：1 帧硬切到纯主色，空停 0.37 秒后逐行出字——大号词 / ≠ 误解（删除线从左往右画）/ = 正解（亮色）/ 可再加一个词和一行补充",
+  "tips": [
+    "rows 3–5 行：第一行是 word（被误解的词）；恰好一行 neq（常见误解，会被划掉）；至少一行 eq（正解）",
+    "neq 行写 phraseTitle 的误解本意（不带「= ?」）；eq 行写正解，≤8 字",
+    "第二个 word 行适合放一个相关搭配或完整说法，用亮色大字"
+  ],
+  "dur": {"default": 5.625, "min": 3.5, "max": 7.5},
+  "mood": 0.75,
+  "caption": "none",
+  "exit": "none",
+  "params": {
+    "type": "object",
+    "required": ["rows"],
+    "properties": {
+      "eyebrow": {"type": "string", "maxLen": 8, "minLen": 1, "description": "眉题，如「今天这个词」"},
+      "rows": {
+        "type": "array",
+        "minItems": 3,
+        "maxItems": 5,
+        "items": {
+          "type": "object",
+          "required": ["kind", "text"],
+          "properties": {
+            "kind": {"type": "string", "enum": ["word", "neq", "eq"], "description": "word 大号词 / neq ≠ 误解（带删除线）/ eq = 正解"},
+            "text": {"type": "string", "maxLen": 8, "minLen": 1, "description": "这一行的字（word ≤6 字或 12 个字母，neq/eq ≤8 字）"}
+          }
+        }
+      }
+    }
+  },
+  "sfx": [{"at": 0, "kind": "thud", "vol": 0.3}],
+  "example": {
+    "dur": 5.625,
+    "params": {"eyebrow": "今天这个词", "rows": [{"kind": "word", "text": "归档"}, {"kind": "neq", "text": "删除"}, {"kind": "eq", "text": "收起来"}, {"kind": "eq", "text": "随时能搜到"}]}
+  }
+}

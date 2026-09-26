@@ -1,0 +1,8 @@
+{
+  "style": "journey",
+  "note": "草稿：风格负责人实现 Film 和镜头后把街区数（4–6）、相邻街区笑点不重复、收尾数字要有 facts 等规则补齐；跨字段规则写进 styles/journey/checks.mjs。格式见 scripts/lib/styles.mjs 的 runStyleRules 注释",
+  "level": "block",
+  "durationRange": [15, 40],
+  "shotCount": {"min": 1, "max": 9},
+  "noAdjacentSame": false
+}

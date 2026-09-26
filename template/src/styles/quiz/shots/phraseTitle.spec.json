@@ -1,0 +1,31 @@
+{
+  "type": "phraseTitle",
+  "purpose": "误解钩子（第 1 镜）：第 0 帧就把短语和「= 常见误解 ?」以淡色幽灵字排好、媒体卡已在位；短语逐词点亮 → 误解行 → 问号块变亮色 → 吉祥物从卡片上沿探头 → 卡下语境句逐字点亮 → 播放键弹出",
+  "tips": [
+    "phrase 写被误解的那个说法（功能名、菜名、概念），越短越好：中文 ≤6 字，英文 ≤12 个字母",
+    "guess 写多数人的第一反应（常见误解），它必须原样出现在 quiz 镜头的 options 里（陷阱项）",
+    "context 写一句语境（谁在什么情况下会碰到它），别在这里揭晓答案"
+  ],
+  "dur": {"default": 5.625, "min": 2.5, "max": 8},
+  "mood": 0.7,
+  "caption": "none",
+  "exit": "none",
+  "params": {
+    "type": "object",
+    "required": ["phrase", "guess"],
+    "properties": {
+      "eyebrow": {"type": "string", "maxLen": 10, "minLen": 1, "description": "眉题：这是哪一类问题，如「功能冷知识」"},
+      "phrase": {"type": "string", "maxLen": 6, "minLen": 1, "description": "被误解的短语（中文 ≤6 字；拉丁字母算半个，约 12 个字母）"},
+      "guess": {"type": "string", "maxLen": 6, "minLen": 1, "description": "常见的理解（误解），如「删掉了」；quiz 的 options 里必须有一模一样的一项"},
+      "context": {"type": "string", "maxLen": 22, "minLen": 2, "description": "卡下语境句（6 字/秒逐字点亮，最多两行）"},
+      "scene": {"type": "string", "enum": ["office", "cafe", "street", "home", "classroom", "screen", "phone"], "description": "媒体卡里的小剧场：office 办公室 / cafe 咖啡店 / street 街景 / home 客厅 / classroom 教室（两个角色在场景里把那句话演出来，默认 office）/ screen 产品界面示意（界面里的字写 screenItems）/ phone 手机演示（手指按住 → 波形 → 松手 → 列表逐条出现 screenItems；出题前只演到按住，再看一遍时才出结果）。写了 media 就不用它"},
+      "screenItems": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string", "maxLen": 10, "minLen": 1}, "description": "scene 是 screen / phone 时界面里的 2–4 行真实文字（每行 ≤10 字，如「买牛奶」「周五交报告」）；全片写一次就行（写在第一个用到的镜头），别的镜头自动沿用"},
+      "media": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp", "mp4"], "description": "可选：用户自备的截图或视频（要登记在 meta.assets，版权由用户负责）。不写就用小剧场"}
+    }
+  },
+  "sfx": [{"at": 0.5, "kind": "tick", "vol": 0.16}, {"at": 1.0, "kind": "pop", "vol": 0.3}],
+  "example": {
+    "dur": 5.625,
+    "params": {"eyebrow": "功能冷知识", "phrase": "归档", "guess": "删掉了", "context": "很多人不敢点这个按钮，怕邮件就这么没了", "scene": "screen", "screenItems": ["合同终版确认", "本周周报", "报销单已审批"]}
+  }
+}

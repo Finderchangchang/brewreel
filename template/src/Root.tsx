@@ -3,7 +3,7 @@ import {Composition} from 'remotion';
 import type {Storyboard} from './schema';
 import {ensureFont} from './core/font';
 import {FPS, H, W} from './core/safe';
-import {LabProps, Promo, ShotLab, ShotScreen, framesOf, labStoryboard} from './Promo';
+import {LabProps, Promo, ShotLab, ShotScreen, framesOf, labStoryboard, sizeOf} from './Promo';
 import {IllustLab} from './IllustLab';
 import {Sheet, SheetProps, sheetSize} from './Sheet';
 import demo from './demo.json';
@@ -11,7 +11,8 @@ import demo from './demo.json';
 ensureFont();
 
 // Promo：整片（--props=<storyboard.json>）
-// ShotLab：单镜自测（--props='{"type":"meter","theme":"tech-dark"}'，不给 params 就用 spec.example）
+// ShotLab：单镜自测（--props='{"type":"meter","theme":"tech-dark"}'，不给 params 就用 spec.example；别的风格加 "style":"quiz"、"aspect":"4:5"）
+// Promo / ShotLab 的宽高由 calculateMetadata 按 meta.aspect（或风格默认画幅）算，下面的 W/H 只是默认值
 export const RemotionRoot: React.FC = () => (
   <>
     <Composition
@@ -22,7 +23,7 @@ export const RemotionRoot: React.FC = () => (
       height={H}
       durationInFrames={300}
       defaultProps={demo as unknown as Record<string, unknown>}
-      calculateMetadata={({props}) => ({durationInFrames: framesOf(props as unknown as Storyboard)})}
+      calculateMetadata={({props}) => ({durationInFrames: framesOf(props as unknown as Storyboard), ...sizeOf(props as unknown as Storyboard)})}
     />
     <Composition
       id="ShotLab"
@@ -32,7 +33,10 @@ export const RemotionRoot: React.FC = () => (
       height={H}
       durationInFrames={90}
       defaultProps={{type: 'hook'} as Record<string, unknown>}
-      calculateMetadata={({props}) => ({durationInFrames: framesOf(labStoryboard(props as unknown as LabProps))})}
+      calculateMetadata={({props}) => {
+        const sb = labStoryboard(props as unknown as LabProps);
+        return {durationInFrames: framesOf(sb), ...sizeOf(sb)};
+      }}
     />
     {/* Screen：把单个镜头渲成干净的「App 截图」（无字幕/免责/音效），给 phone 镜头当示意素材 */}
     <Composition

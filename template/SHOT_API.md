@@ -1,5 +1,7 @@
 # 写一个镜头需要知道的一切
 
+> 本页讲 **cards 风格的公共镜头**（`src/shots/`，只按 9:16 设计）。给别的风格写专属镜头：文件放 `src/styles/<id>/shots/`，接口同下，但位置用 `useGeometry()`（`core/aspect.tsx`）取当前画幅的安全区、颜色和字号用 `useStyleTokens()` / `useStylePalette()`（`styles/context.tsx`）取，加完跑 `node scripts/gen-styles.mjs`。风格包整体说明见仓库根目录的 `CONTRIBUTING.md` 和 `src/styles/types.ts`。
+
 读完这一页就能动手。参考实现：`src/shots/hook.tsx`、`chat.tsx`、`endCard.tsx`（质量标尺）。
 
 ## 1. 你只改这三个文件

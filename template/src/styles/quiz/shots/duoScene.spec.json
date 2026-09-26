@@ -1,0 +1,30 @@
+{
+  "type": "duoScene",
+  "purpose": "情景对话（迁移到生活）：整页上滑进场，语境句逐字；两个小人从脚底放大进场，右边搭档的问句气泡弹出（关键词马克笔慢扫），气泡收起后左边主讲人回答（先幽灵后实），然后跳起、头顶灯泡亮起、冒心；小人下方是当前这句的译文",
+  "tips": [
+    "写一个生活里会用到这个知识的一问一答；key 必须是 ask 或 reply 的子串",
+    "askZh / replyZh 是译文或注释，台词本来是中文可以不写",
+    "全片最多一段"
+  ],
+  "dur": {"default": 6.5625, "min": 4.5, "max": 8.5},
+  "mood": 0.65,
+  "caption": "none",
+  "exit": "none",
+  "params": {
+    "type": "object",
+    "required": ["context", "ask", "reply"],
+    "properties": {
+      "context": {"type": "string", "maxLen": 14, "minLen": 2, "description": "语境句，如「同事急着找合同：」"},
+      "ask": {"type": "string", "maxLen": 16, "minLen": 1, "description": "搭档的问句（中文 ≤16 字，英文约 32 个字母）"},
+      "askZh": {"type": "string", "maxLen": 18, "minLen": 1, "description": "问句译文（可选）"},
+      "reply": {"type": "string", "maxLen": 10, "minLen": 1, "description": "主讲人的回答（中文 ≤10 字，英文约 20 个字母）"},
+      "replyZh": {"type": "string", "maxLen": 18, "minLen": 1, "description": "回答译文（可选）"},
+      "key": {"type": "string", "maxLen": 8, "minLen": 1, "description": "关键词：ask 或 reply 的子串"}
+    }
+  },
+  "sfx": [{"at": 0, "kind": "swish", "vol": 0.24}],
+  "example": {
+    "dur": 6.5625,
+    "params": {"context": "同事急着找合同：", "ask": "我的合同邮件没了！", "reply": "在归档里呢", "key": "归档"}
+  }
+}

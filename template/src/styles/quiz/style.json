@@ -1,0 +1,21 @@
+{
+  "id": "quiz",
+  "name": {"zh": "答题互动", "en": "Quiz"},
+  "summary": {
+    "zh": "先让观众猜错一次，再揭晓为什么：钩子短语 → 证据片段 → 选项倒数揭晓 → 满屏释义 → 情景复证 → 评论区互动。适合有常见误解、能出一道选择题的产品（功能被误会、菜名名不副实、知识点反常识）",
+    "en": "Let viewers guess wrong once, then reveal why: phrase hook, evidence clip, options with countdown and reveal, full-screen meaning card, scene replay, comment prompt. Fits products with a common misconception that can be framed as a multiple-choice question"
+  },
+  "status": "stable",
+  "defaultAspect": "9:16",
+  "aspects": ["9:16"],
+  "bpm": 128,
+  "commonShots": [],
+  "firstShot": "phraseTitle",
+  "lastShot": "brandEnd",
+  "captionLayer": "none",
+  "requireDemo": false,
+  "demoShots": [],
+  "themes": ["blue-lime", "cream-tomato"],
+  "defaultTheme": "blue-lime",
+  "owners": []
+}

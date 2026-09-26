@@ -125,6 +125,8 @@ function checkAsciiPunctInZh(texts, lang, err) {
   if (lang !== 'zh') return;
   for (const t of texts) {
     const s = String(t.text ?? '');
+    // 整句是外文（中文片里的英文台词、英文短语）：半角标点本来就对，不拦
+    if (!/[㐀-鿿豈-﫿]/.test(s)) continue;
     const hits = new Set();
     for (let i = 0; i < s.length; i++) {
       const ch = s[i];

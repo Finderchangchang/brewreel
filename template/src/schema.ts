@@ -74,8 +74,12 @@ export type Meta = {
   product: string;
   /** 节拍速度，默认 120（一拍 0.5 秒）。允许 90–150 */
   bpm?: number;
-  /** 主题预设名 */
-  theme: ThemeName;
+  /** 主题预设名（cards 风格：core/themes.json 的 6 套；其他风格：该风格 style.json 的 themes，可不写） */
+  theme: ThemeName | (string & {});
+  /** 视觉风格（template/src/styles/<id>/ + styles/<id>/），不写 = "cards"（渐变底 + 卡片 + 描边大字幕） */
+  style?: string;
+  /** 画幅：9:16（1080x1920）/ 4:5（1080x1350）。不写用风格默认；cards 只支持 9:16 */
+  aspect?: '9:16' | '4:5';
   /** 品牌色，#RRGGBB。只替换主题的「强调色」（按钮、我方气泡、图标、进度条） */
   brandColor?: string;
   /** 角落常驻免责小字，≤16 字，如「演示场景，对话为模拟」 */

@@ -1,0 +1,26 @@
+{
+  "type": "district",
+  "purpose": "一个街区（骨架占位）：角色从左向右穿过，路牌写类别名，头顶广告牌写一条代表内容的标题",
+  "tips": [
+    "一个街区 = 一个内容类别；category 写类别名，title 写这个类别里最有代表性的一条内容",
+    "相邻街区别用同一个 tone"
+  ],
+  "dur": {"default": 4, "min": 3, "max": 5},
+  "mood": 0.3,
+  "caption": "none",
+  "exit": "none",
+  "params": {
+    "type": "object",
+    "required": ["category", "title"],
+    "properties": {
+      "category": {"type": "string", "maxLen": 6, "minLen": 1, "description": "类别名（路牌），如「数据报表」"},
+      "title": {"type": "string", "maxLen": 18, "minLen": 2, "description": "广告牌上的代表内容标题"},
+      "tone": {"type": "integer", "minimum": 0, "maximum": 5, "description": "街区主色序号 0–5"}
+    }
+  },
+  "sfx": [{"at": 0, "kind": "whoosh", "vol": 0.25}],
+  "example": {
+    "dur": 4,
+    "params": {"category": "数据报表", "title": "周一早上不用再手拼周报", "tone": 0}
+  }
+}

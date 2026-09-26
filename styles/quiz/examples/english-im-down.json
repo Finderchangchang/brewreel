@@ -1,0 +1,85 @@
+{
+  "meta": {
+    "title": "I'm down 不是我很低落",
+    "product": "句子盒",
+    "style": "quiz",
+    "industry": "education",
+    "action": "在情景小剧场里听一句地道口语，先猜意思再看揭晓和释义",
+    "disclaimer": "情景为虚构演示",
+    "cta": "应用商店搜句子盒"
+  },
+  "shots": [
+    {
+      "type": "phraseTitle",
+      "beats": 12,
+      "params": {
+        "eyebrow": "口语冷知识",
+        "phrase": "I'm down",
+        "guess": "我很低落",
+        "context": "朋友约他周六去爬山，他笑着回了这一句",
+        "scene": "street"
+      }
+    },
+    {
+      "type": "clip",
+      "beats": 10,
+      "params": {
+        "lines": [
+          {"speaker": "朋友", "text": "Hiking this Saturday?", "zh": "周六去爬山吗？"},
+          {"speaker": "阿哲", "text": "Sure, I'm down!"}
+        ],
+        "key": "I'm down",
+        "scene": "street"
+      }
+    },
+    {
+      "type": "quiz",
+      "beats": 19,
+      "params": {
+        "question": "你猜他什么意思？",
+        "options": ["我很低落", "算我一个", "我不想去"],
+        "answer": 1
+      }
+    },
+    {
+      "type": "meaningCard",
+      "beats": 12,
+      "params": {
+        "eyebrow": "今天这句",
+        "rows": [
+          {"kind": "word", "text": "I'm down"},
+          {"kind": "neq", "text": "我很低落"},
+          {"kind": "eq", "text": "算我一个"},
+          {"kind": "eq", "text": "我乐意参加"}
+        ]
+      }
+    },
+    {
+      "type": "replay",
+      "beats": 8,
+      "params": {"title": "再听一遍", "zh": "好啊，算我一个！", "sticker": "懂了"}
+    },
+    {
+      "type": "duoScene",
+      "beats": 15,
+      "params": {
+        "context": "同事问要不要一起点奶茶：",
+        "ask": "Bubble tea later?",
+        "askZh": "等会儿喝奶茶吗？",
+        "reply": "I'm down!",
+        "replyZh": "算我一个！",
+        "key": "I'm down"
+      }
+    },
+    {
+      "type": "commentCta",
+      "beats": 7,
+      "params": {"question": "你刚才猜的哪个？", "footnote": "猜 A 的，下次就不会了"}
+    },
+    {
+      "type": "brandEnd",
+      "beats": 11,
+      "params": {"badge": "又会一句了", "slogan": "每天一句地道口语\n来句子盒练"}
+    }
+  ]
+}

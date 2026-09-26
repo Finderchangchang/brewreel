@@ -1,0 +1,18 @@
+{
+  "id": "__ID__",
+  "name": {"zh": "__NAME__", "en": "__NAME_EN__"},
+  "summary": {"zh": "一句话：适合什么产品", "en": "One sentence: what products it fits"},
+  "status": "draft",
+  "defaultAspect": "9:16",
+  "aspects": ["9:16"],
+  "bpm": 120,
+  "commonShots": [],
+  "firstShot": "__FIRST__",
+  "lastShot": null,
+  "captionLayer": "none",
+  "requireDemo": false,
+  "demoShots": [],
+  "themes": ["default"],
+  "defaultTheme": "default",
+  "owners": []
+}

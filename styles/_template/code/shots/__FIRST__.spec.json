@@ -1,0 +1,18 @@
+{
+  "type": "__FIRST__",
+  "purpose": "开场钩子：第 0 帧就有标题和主视觉",
+  "tips": ["写给模型看：什么时候用、怎么写好"],
+  "dur": {"default": 2, "min": 1.5, "max": 3},
+  "mood": 0.7,
+  "caption": "none",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["title"],
+    "properties": {
+      "title": {"type": "string", "maxLen": 10, "minLen": 1, "description": "开场标题"}
+    }
+  },
+  "sfx": [{"at": 0.1, "kind": "pop", "vol": 0.28}],
+  "example": {"dur": 2, "params": {"title": "先猜一下"}}
+}

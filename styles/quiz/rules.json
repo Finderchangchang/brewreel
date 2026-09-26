@@ -1,0 +1,11 @@
+{
+  "style": "quiz",
+  "note": "声明式规则（总时长、镜头数、必有镜头、次数、顺序）。字段的必填、字数、条数、枚举在 template/src/styles/quiz/shots/*.spec.json；跨字段规则 Q1–Q9（陷阱项 = 钩子误解、错误选项不写数字、关键词是台词子串、释义卡结构、评论区沿用 quiz、落版按钮字数、提问到揭晓 6–8 秒）在 styles/quiz/checks.mjs。格式见 scripts/lib/styles.mjs 的 runStyleRules 注释",
+  "level": "block",
+  "durationRange": [30, 50],
+  "shotCount": {"min": 5, "max": 8},
+  "requiredShots": ["phraseTitle", "quiz", "meaningCard", "brandEnd"],
+  "maxCount": {"phraseTitle": 1, "clip": 1, "quiz": 1, "meaningCard": 1, "replay": 1, "duoScene": 1, "commentCta": 1, "brandEnd": 1},
+  "order": ["phraseTitle", "clip", "quiz", "meaningCard", "replay", "duoScene", "commentCta", "brandEnd"],
+  "noAdjacentSame": true
+}

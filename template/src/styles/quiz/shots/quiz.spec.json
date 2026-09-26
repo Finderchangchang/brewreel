@@ -1,0 +1,34 @@
+{
+  "type": "quiz",
+  "purpose": "提问 + 选项依次弹出 + 倒数 3 拍 + 揭晓（全片高潮）：版式跳切，媒体卡跳到上方；提问打出，选项卡一张张弹出，卡上倒数 3-2-1，揭晓落在整拍上——正确项变亮色打勾，错误项变灰打叉",
+  "tips": [
+    "options 写 3 个（2–4 个），每个 ≤8 字；其中一项必须和 phraseTitle 的 guess 一字不差（陷阱项），answer 是正确项的序号（从 0 数）",
+    "陷阱项不能是正确项；另一个干扰项写一个“想多了”的理解",
+    "时长 8–10 秒最好：提问到揭晓要有 6–8 秒吊胃口",
+    "出题时屏幕上不能有答案：卡里字幕条默认只放 clip 最后一句里含 key 的半句；要换就写 quizLine（≤12 字，不含答案）",
+    "题目问数量（几个小时 / 多少 / 几次 / 几天）时，每个选项都要是数量：正确项用 meta.facts 里的数字，错误项用中文数字（如「一小时 / 6 小时 / 十二小时」）"
+  ],
+  "dur": {"default": 8.90625, "min": 7, "max": 11},
+  "mood": 0.85,
+  "caption": "none",
+  "exit": "none",
+  "params": {
+    "type": "object",
+    "required": ["question", "options", "answer"],
+    "properties": {
+      "question": {"type": "string", "maxLen": 12, "minLen": 2, "description": "提问，如「点了归档，邮件去哪了？」"},
+      "options": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string", "maxLen": 8, "minLen": 1}, "description": "选项，按 A B C 顺序"},
+      "answer": {"type": "integer", "minimum": 0, "maximum": 3, "description": "正确项序号（从 0 数）"},
+      "sub": {"type": "string", "maxLen": 20, "minLen": 1, "description": "旧字段，同 quizLine（没有 clip 时用）"},
+      "quizLine": {"type": "string", "maxLen": 12, "minLen": 1, "description": "出题时卡里的字幕条（≤12 字，不许含答案）；不写就只放 clip 最后一句里含 key 的那半句"},
+      "scene": {"type": "string", "enum": ["office", "cafe", "street", "home", "classroom", "screen", "phone"], "description": "媒体卡里的小剧场：office 办公室 / cafe 咖啡店 / street 街景 / home 客厅 / classroom 教室（两个角色在场景里把那句话演出来，默认 office）/ screen 产品界面示意（界面里的字写 screenItems）/ phone 手机演示（手指按住 → 波形 → 松手 → 列表逐条出现 screenItems；出题前只演到按住，再看一遍时才出结果）。写了 media 就不用它"},
+      "screenItems": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string", "maxLen": 10, "minLen": 1}, "description": "scene 是 screen / phone 时界面里的 2–4 行真实文字（每行 ≤10 字，如「买牛奶」「周五交报告」）；全片写一次就行（写在第一个用到的镜头），别的镜头自动沿用"},
+      "media": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp", "mp4"], "description": "可选：用户自备的截图或视频（要登记在 meta.assets，版权由用户负责）。不写就用小剧场"}
+    }
+  },
+  "sfx": [{"at": 0, "kind": "swish", "vol": 0.24}, {"at": 7.0, "kind": "ding", "vol": 0.36}],
+  "example": {
+    "dur": 8.90625,
+    "params": {"question": "点了归档，邮件去哪了？", "options": ["删掉了", "收起来了", "发给对方了"], "answer": 1, "scene": "screen", "screenItems": ["合同终版确认", "本周周报", "报销单已审批"]}
+  }
+}

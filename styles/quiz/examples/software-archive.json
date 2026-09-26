@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "title": "归档不是删除",
+    "product": "轻邮",
+    "style": "quiz",
+    "industry": "software",
+    "action": "在邮件列表里点归档，邮件收进归档夹，随时能搜到",
+    "disclaimer": "演示场景，界面为示意",
+    "cta": "应用商店搜轻邮"
+  },
+  "shots": [
+    {
+      "type": "phraseTitle",
+      "beats": 12,
+      "params": {
+        "eyebrow": "功能冷知识",
+        "phrase": "归档",
+        "guess": "删掉了",
+        "context": "很多人不敢点这个按钮，怕邮件就这么没了",
+        "scene": "screen",
+        "screenItems": ["合同终版确认", "本周周报", "报销单已审批"]
+      }
+    },
+    {
+      "type": "clip",
+      "beats": 10,
+      "params": {
+        "lines": [
+          {
+            "speaker": "同事",
+            "text": "合同那封邮件呢？"
+          },
+          {
+            "speaker": "小林",
+            "text": "我点了归档，就不见了",
+            "zh": "（其实它一直都在）"
+          }
+        ],
+        "key": "归档",
+        "scene": "office"
+      }
+    },
+    {
+      "type": "quiz",
+      "beats": 19,
+      "params": {
+        "question": "点了归档，邮件去哪了？",
+        "options": [
+          "删掉了",
+          "收起来了",
+          "发给对方了"
+        ],
+        "answer": 1
+      }
+    },
+    {
+      "type": "meaningCard",
+      "beats": 12,
+      "params": {
+        "eyebrow": "今天这个词",
+        "rows": [
+          {
+            "kind": "word",
+            "text": "归档"
+          },
+          {
+            "kind": "neq",
+            "text": "删掉了"
+          },
+          {
+            "kind": "eq",
+            "text": "收起来"
+          },
+          {
+            "kind": "word",
+            "text": "Archive"
+          },
+          {
+            "kind": "eq",
+            "text": "随时能搜到"
+          }
+        ]
+      }
+    },
+    {
+      "type": "replay",
+      "beats": 8,
+      "params": {
+        "title": "再看一遍",
+        "sticker": "找到了"
+      }
+    },
+    {
+      "type": "duoScene",
+      "beats": 14,
+      "params": {
+        "context": "同事急着找合同：",
+        "ask": "我的合同邮件没了！",
+        "reply": "在归档里呢",
+        "key": "归档"
+      }
+    },
+    {
+      "type": "commentCta",
+      "beats": 7,
+      "params": {
+        "question": "你以前以为是哪个？",
+        "footnote": "选 A 的不丢人"
+      }
+    },
+    {
+      "type": "brandEnd",
+      "beats": 10,
+      "params": {
+        "badge": "这个按钮你会用了",
+        "slogan": "想把邮箱理清楚\n来试试轻邮"
+      }
+    }
+  ]
+}
