@@ -27,8 +27,9 @@ export const mixHex = (a: string, b: string, p: number) => {
   const q = Math.max(0, Math.min(1, p));
   return `#${A.map((v, i) => Math.round(v + (B[i] - v) * q).toString(16).padStart(2, '0')).join('')}`;
 };
-const PHASE_TINT: Record<Phase, [string, number]> = {day: ['#FFFFFF', 0], warm: ['#F6C9A8', 0.14], dusk: ['#826178', 0.3], night: ['#221A3E', 0.66]};
-/** 楼的颜色按天色阶段调：黄昏偏紫、夜里压暗 */
+// 和美术城市的 lit() 同一套：黄昏偏琥珀、夜里压成石油蓝（art/palette.ts）
+const PHASE_TINT: Record<Phase, [string, number]> = {day: ['#FFFFFF', 0], warm: ['#FFC46B', 0.1], dusk: ['#FFA23A', 0.18], night: ['#06303C', 0.6]};
+/** UI 元件（路牌、明信片邮票）的颜色按天色阶段调：黄昏偏暖、夜里压暗 */
 export const tint = (c: string, ph: Phase) => (PHASE_TINT[ph][1] ? mixHex(c, PHASE_TINT[ph][0], PHASE_TINT[ph][1]) : c);
 
 

@@ -1,0 +1,12 @@
+{
+  "meta": {"note": "合成的「参考」色板，只给 check-originality 的回归用例用；不是任何真实视频的实测值。这里的说明文字里写 #C8412B 不会被当成颜色"},
+  "palette": {
+    "bg_paper": {"hex": "#EFEBE0", "use": "主背景"},
+    "ink": {"hex": "#232A33", "use": "正文和描边"},
+    "primary": {"hex": "#C8412B", "use": "关键词"},
+    "accent": {"hex": "#F2C12E", "use": "答案底色"},
+    "props": ["#2E9C8F", "#FFFFFF"],
+    "shadow": "0 20px 60px rgba(35,42,51,0.12)",
+    "veil": "rgba(200,65,43,0.2)"
+  }
+}

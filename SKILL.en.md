@@ -3,7 +3,7 @@ name: promo-video-skill
 description: Make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects.
 license: Apache-2.0
 metadata:
-  version: 0.2.0
+  version: 0.2.1
 ---
 
 # Product Promo Video (promo-video)
@@ -19,8 +19,8 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    | Style | Status | Fits |
    |---|---|---|
    | `cards` (default) | ready | single-benefit products, how-it-works flows, UI demos, physical stores; all six industries |
-   | `quiz` | ready | products with a common misconception that can become a multiple-choice question (foreign phrases, misunderstood features, dishes with misleading names). Templates in `styles/quiz/recipes.md`, samples in `styles/quiz/examples/`. `meta.theme` is `blue-lime` or `cream-tomato` (omitted: food gets `cream-tomato`, everything else `blue-lime`); clip lines must not give the answer away |
-   | `journey` | available | products with many clear categories (content platforms, feature-rich software, multi-category stores, course catalogs, a sightseeing route). One district per category / feature / stop; templates and per-beat fields in `styles/journey/recipes.md`, examples in `styles/journey/examples/`. Default `meta.aspect: "4:5"`, `9:16` also works; pick the backdrop with `opening.params.skyline` (`modern` / `street` / `oldtown`; old-town travel must use `oldtown`) and district props that match the content; prices, times and totals must be copied from `meta.facts` |
+   | `quiz` | ready | products with a common misconception that can become a multiple-choice question (foreign phrases, misunderstood features, dishes with misleading names). Templates in `styles/quiz/recipes.md`, samples in `styles/quiz/examples/`. `meta.theme` is `sage-pine`, `rice-soy` or `ash-teal` (omitted: food gets `rice-soy`, everything else `sage-pine`); `phraseTitle.params.voice` picks the voice `exam` / `chat` / `show` (omitted: chosen by industry), which sets the fixed lines (question tag, replay title, stamp, comment prompt); any of them can be overridden in its shot. Write your own question and comment prompt instead of copying stock lines from similar videos (Q14 warns); clip lines must not give the answer away |
+   | `journey` | available | products with many clear categories (content platforms, feature-rich software, multi-category stores, course catalogs, a sightseeing route). One district per category / feature / stop; templates and per-beat fields in `styles/journey/recipes.md`, examples in `styles/journey/examples/`. Default `meta.aspect: "4:5"`, `9:16` also works; pick the backdrop with `opening.params.skyline` (`modern` / `street` / `oldtown`; old-town travel must use `oldtown`) and district props that match the content; the opening kicker names the route or the highlights (e.g. "5 stops on this line") rather than a stock "tour X in one go" line (J18 warns); themes `post-green` (default) / `plum-ticket`; prices, times and totals must be copied from `meta.facts` |
 
    - When unsure, use `cards` and don't write `meta.style`. Styles in development are blocked by validation.
    - `meta.aspect`: `9:16` (default, 1080x1920) or `4:5` (1080x1350). `cards` supports 9:16 only; leave it out.

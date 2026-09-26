@@ -3,7 +3,7 @@ name: promo-video-skill
 description: 做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写一份分镜 JSON（storyboard.json），画面由现成镜头组件画，校验脚本拦规则和行业合规，一条命令出片（带原创配乐和音效）。
 license: Apache-2.0
 metadata:
-  version: 0.2.0
+  version: 0.2.1
 ---
 
 # 产品宣传短片（promo-video）
@@ -19,8 +19,8 @@ metadata:
    | 风格 | 状态 | 适合什么产品 |
    |---|---|---|
    | `cards` 卡片信息流（默认） | 可用 | 单一卖点、要讲流程、要演示界面、实物门店；六个行业都支持 |
-   | `quiz` 答题互动 | 可用 | 有常见误解、能出一道选择题的产品（外语短语、功能被误会、菜名名不副实、反常识知识点）。三套模板见 `styles/quiz/recipes.md`，样例在 `styles/quiz/examples/`。`meta.theme` 可选 `blue-lime` / `cream-tomato`（不写：餐饮用 `cream-tomato`，其余用 `blue-lime`）；clip 台词不许说出答案 |
-   | `journey` 角色漫游 | 可用 | 内容多、类别清楚的产品（内容平台、功能多的软件、多门店多品类、课程体系、一条游线）。一站一个类别 / 功能 / 景点；三套模板和每拍字段见 `styles/journey/recipes.md`，样例在 `styles/journey/examples/`。默认 `meta.aspect: "4:5"`，也可 `9:16`；背景 `opening.params.skyline` 选 `modern` / `street` / `oldtown`（古城古镇题材必须 oldtown），街区道具要和内容对得上；价格、时间、总量数字只能抄 `meta.facts` |
+   | `quiz` 答题互动 | 可用 | 有常见误解、能出一道选择题的产品（外语短语、功能被误会、菜名名不副实、反常识知识点）。三套模板见 `styles/quiz/recipes.md`，样例在 `styles/quiz/examples/`。`meta.theme` 可选 `sage-pine` / `rice-soy` / `ash-teal`（不写：餐饮用 `rice-soy`，其余用 `sage-pine`）；`phraseTitle.params.voice` 选口吻 `exam` / `chat` / `show`（不写按行业选），题号签、回放标题、印章、评论提示这些固定句式跟着口吻走，也可以在镜头里直接写字覆盖；提问句和评论提示自己写，别抄同类视频的套话（Q14 会提醒）；clip 台词不许说出答案 |
+   | `journey` 角色漫游 | 可用 | 内容多、类别清楚的产品（内容平台、功能多的软件、多门店多品类、课程体系、一条游线）。一站一个类别 / 功能 / 景点；三套模板和每拍字段见 `styles/journey/recipes.md`，样例在 `styles/journey/examples/`。默认 `meta.aspect: "4:5"`，也可 `9:16`；背景 `opening.params.skyline` 选 `modern` / `street` / `oldtown`（古城古镇题材必须 oldtown），街区道具要和内容对得上；开场小引写路线或看点（如「这趟车停 5 站」），别套「跟 X 一口气…」（J18 会提醒）；配色 `post-green`（默认）/ `plum-ticket`；价格、时间、总量数字只能抄 `meta.facts` |
 
    - 拿不准就用 `cards`，不用写 `meta.style`。开发中的风格校验会拦。
    - `meta.aspect`：`9:16`（默认，1080x1920）或 `4:5`（1080x1350）。`cards` 只支持 9:16，不用写。

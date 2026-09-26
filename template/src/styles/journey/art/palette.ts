@@ -1,11 +1,18 @@
 // ============================================================
-// journey / art 的颜色系统：角色、载具、天色、城市、街区。全部是本项目自己定的原创配色。
+// journey / art 的颜色系统：角色、载具、天色、城市、街区。全部是本项目自己定的原创配色（v0.2.1 起整套换成「剪纸分层」皮肤）。
 // 组件优先读 tokens.json 里的 art 覆盖（二创换皮只改令牌），没有就用这里的默认值。
 // 天色用一个 0..1 的进度 p 表示：0 = 白天，0.35 = 午后，0.62 = 黄昏，0.82 = 蓝调，1 = 夜晚。
 // ============================================================
 import {useStyleTokens} from '../../context';
+import tokens from '../tokens.json';
 
-export const INK = '#1F191A';
+// 描边墨色：以 tokens.json 默认主题的 ink 为准（和 UI 元件同一支笔），令牌里没有时用深石油蓝。
+// 角色、近景建筑、道具、招牌统一用它。不许用参考片那支近黑暖墨色。
+const TK = tokens as unknown as {defaultTheme?: string; themes?: Record<string, {ink?: string}>};
+export const INK_FALLBACK = '#15384A';
+export const INK: string = TK.themes?.[TK.defaultTheme ?? '']?.ink ?? INK_FALLBACK;
+/** 纸片投影色：剪纸分层——每一层都在身后那层上投一道硬边影子（World.tsx 的 paper 滤镜用） */
+export const PAPER_SHADOW = '#0B2A38';
 
 type Rgb = [number, number, number];
 const toRgb = (h: string): Rgb => {
@@ -30,51 +37,52 @@ export const hash = (i: number) => {
 
 // ---------------- 角色与载具 ----------------
 export const MASCOT = {
-  fur: '#F5993A', // 主体毛色：暖橘
-  furLight: '#FFB861',
-  furDeep: '#DE7A22', // 泪痕纹、耳背
-  limb: '#7B3A22', // 四肢与尾巴环纹：深栗
-  cream: '#FFF3E0', // 口鼻、眉斑、耳内
-  blush: '#FF6F61',
-  scarf: '#14B8A6', // 标志物：青绿围巾
-  scarfDeep: '#0C8C7F',
-  scarfStripe: '#FFFFFF',
-  star: '#FFD93B',
-  glasses: '#2F4BD8',
-  sweat: '#8AD8FF',
+  fur: '#F28A3C', // 主体毛色：暖橘
+  furLight: '#FFAE63',
+  furDeep: '#D0681F', // 泪痕纹、耳背
+  limb: '#5E2C22', // 四肢与尾巴环纹：深栗
+  cream: '#FFF5E6', // 口鼻、眉斑、耳内
+  blush: '#FF7A5C',
+  scarf: '#23A36F', // 标志物：翡翠绿围巾
+  scarfDeep: '#17784F',
+  scarfStripe: '#FFF5E6',
+  star: '#FFEA5A',
+  glasses: '#3259C9',
+  sweat: '#8FE3F0',
   clip: '#FFFDF7',
 };
 export type MascotColors = typeof MASCOT;
 
 export const BOARD = {
-  deck: '#3558E8', // 悬浮滑板：电光蓝
-  deckLight: '#5C7BF7',
-  rim: '#22379E',
-  stripe: '#FFFFFF',
-  pod: '#E9EDF5',
-  podDeep: '#AEB8CC',
-  flameA: '#FFE066',
-  flameB: '#FF8A3D',
-  glow: '#7CF4FF',
-  fin: '#14B8A6',
-  flag: '#FF5A4E',
+  deck: '#3259C9', // 悬浮滑板：钴蓝
+  deckLight: '#5577DD',
+  rim: '#1F3A8A',
+  stripe: '#FFB627', // 板面一道芥末黄条
+  pod: '#EAF2EE',
+  podDeep: '#A9BDB6',
+  flameA: '#FFEA5A',
+  flameB: '#FF8A2F',
+  glow: '#7CFFD0', // 夜里喷口：薄荷辉光
+  fin: '#23A36F',
+  flag: '#FFB627',
   // 小飞艇
-  balloon: '#FFCF3F',
-  balloonDeep: '#F0A81E',
-  balloonBand: '#FF5A4E',
-  gondola: '#3558E8',
+  balloon: '#FFB627',
+  balloonDeep: '#D39A1E',
+  balloonBand: '#1D8A8F',
+  gondola: '#3259C9',
 };
 export type BoardColors = typeof BOARD;
 
 // ---------------- 天色 ----------------
 export type SkyStop = {at: number; top: string; bot: string; sun: string; far: string; cloud: string; haze: string};
-// 白天比初版柔一档（降饱和、远景偏灰蓝），但仍是蓝天 + 灰蓝远景：STYLE.md 规定避开参考片的「米白天空 + 淡紫中景」配色；黄昏粉橘
+// 自己的一套昼夜性格：薄荷晴空 → 柠檬午后 → 青蓝配橘子汽水的黄昏 → 深海蓝调 → 石油蓝夜。
+// 远景是海玻璃绿 / 鼠尾草绿，不用奶油底、淡紫灰远景、粉橘黄昏、紫夜那一套
 export const SKY: SkyStop[] = [
-  {at: 0, top: '#92CCEC', bot: '#E4F3F2', sun: '#FFE27A', far: '#BCD3DE', cloud: '#FFFFFF', haze: '#EEF7F5'},
-  {at: 0.35, top: '#9CC6E6', bot: '#FBE6CB', sun: '#FFD45E', far: '#C8D2D8', cloud: '#FFFFFF', haze: '#FFF1DE'},
-  {at: 0.62, top: '#8A82C6', bot: '#F8B89A', sun: '#FF8452', far: '#BC9CB6', cloud: '#FFD6C8', haze: '#FFCDB0'},
-  {at: 0.82, top: '#2C3A85', bot: '#77599C', sun: '#FF6A4A', far: '#554C86', cloud: '#8C7FB8', haze: '#6E5A98'},
-  {at: 1, top: '#0B1535', bot: '#223A70', sun: '#FFF3C8', far: '#1D2B55', cloud: '#2A3B6B', haze: '#26386A'},
+  {at: 0, top: '#4FB8D8', bot: '#CDEFE3', sun: '#FFE36E', far: '#9ED3C8', cloud: '#FFFFFF', haze: '#E4F7EF'},
+  {at: 0.35, top: '#5AB3D6', bot: '#FFE9A6', sun: '#FFEA5A', far: '#B2D3AC', cloud: '#FFFFFF', haze: '#FFF4C9'},
+  {at: 0.62, top: '#2B7A99', bot: '#FFB443', sun: '#FF6A2B', far: '#5E9A94', cloud: '#FFD08A', haze: '#FFC76B'},
+  {at: 0.82, top: '#0F4A6B', bot: '#2E8F8F', sun: '#FF5A2E', far: '#1E5E6A', cloud: '#3F7F8C', haze: '#2A7880'},
+  {at: 1, top: '#062633', bot: '#0E4B57', sun: '#FFF0C0', far: '#0B3945', cloud: '#15505C', haze: '#124A55'},
 ];
 export const skyAt = (p: number): SkyStop => {
   const q = clamp01(p);
@@ -90,8 +98,8 @@ export const skyAt = (p: number): SkyStop => {
 export const nightOf = (p: number) => clamp01((p - 0.6) / 0.32);
 /** 黄昏程度 0..1（暖光） */
 export const duskOf = (p: number) => clamp01(1 - Math.abs(p - 0.62) / 0.24);
-/** 给任何建筑色套上当前天色：黄昏偏暖、夜里压暗偏蓝 */
-export const lit = (c: string, p: number) => mixHex(mixHex(c, '#FF9A66', duskOf(p) * 0.16), '#141C45', nightOf(p) * 0.58);
+/** 给任何建筑色套上当前天色：黄昏偏琥珀、夜里压暗偏石油蓝 */
+export const lit = (c: string, p: number) => mixHex(mixHex(c, '#FFA23A', duskOf(p) * 0.18), '#06303C', nightOf(p) * 0.6);
 
 /**
  * 按街区序号给天色进度：前面一直是白天/午后，倒数第二个街区进黄昏，最后一个街区是夜晚。
@@ -106,52 +114,52 @@ export const skyForDistrict = (f: number, n: number) => {
 
 // ---------------- 城市 ----------------
 export const STREET = {
-  walkDay: '#EFE6D6',
-  walkNight: '#39406A',
-  curbDay: '#CDBFA8',
-  curbNight: '#262D52',
-  roadDay: '#5A6178',
-  roadNight: '#1B2140',
-  dash: '#FFD84D',
-  lampPost: '#3B4260',
-  lampGlow: '#FFE38A',
-  tree: '#3DBE73',
-  treeDeep: '#249A5A',
-  trunk: '#8A5A3B',
-  bush: '#56C98A',
+  walkDay: '#D6E5DE',
+  walkNight: '#1C4550',
+  curbDay: '#A9C2BA',
+  curbNight: '#12363F',
+  roadDay: '#3E5561',
+  roadNight: '#0C2A33',
+  dash: '#FFB627',
+  lampPost: '#2E5563',
+  lampGlow: '#FFD27A',
+  tree: '#4FAE6A',
+  treeDeep: '#35874E',
+  trunk: '#9A6240',
+  bush: '#6CC07E',
 };
-export const WINDOW = {day: '#EAF6FF', dayGlint: '#FFFFFF', on: '#FFD86B', onWarm: '#FFF0B3', off: '#2A3462'};
+export const WINDOW = {day: '#F2FBF8', dayGlint: '#FFFFFF', on: '#FFAA3B', onWarm: '#FFD98A', off: '#1B4552'};
 
 /**
  * 主题街区。main = 近景主楼色，mid = 中景淡色，accent = 点缀色。
  * 前六个是现代城市的主题街区（districts.tsx）；phone / home / cafe / market 是日常街区（everyday.tsx）；
  * gate / bridge / teahouse / lantern 是古城街区（oldtown.tsx，配 skyline: oldtown 的白墙黛瓦背景）
+ * 色族：芥末、钴蓝、苔绿、橘子、石油青、翡翠——暖冷各半，不用粉、紫、品牌红
  */
-export const DISTRICT_KINDS = ['docs', 'launch', 'tools', 'creative', 'data', 'global', 'phone', 'home', 'cafe', 'market', 'gate', 'bridge', 'teahouse', 'lantern'] as const;
+export const DISTRICT_KINDS = ['docs', 'post', 'tools', 'creative', 'data', 'global', 'phone', 'home', 'cafe', 'market', 'gate', 'bridge', 'teahouse', 'lantern'] as const;
 export type DistrictKind = (typeof DISTRICT_KINDS)[number];
 export const DISTRICT: Record<DistrictKind, {main: string; deep: string; mid: string; accent: string}> = {
-  docs: {main: '#3F6FF2', deep: '#2A4FC2', mid: '#B9C9F6', accent: '#FFC845'},
-  launch: {main: '#FF5A4E', deep: '#D63C33', mid: '#F8C4BA', accent: '#3B4A6B'},
-  tools: {main: '#F2A20C', deep: '#C97F00', mid: '#F6DCA6', accent: '#2F3A56'},
-  creative: {main: '#E845A8', deep: '#B92C82', mid: '#F5C3E2', accent: '#7B5CFF'},
-  data: {main: '#0FB5C9', deep: '#0A8C9D', mid: '#B2E6EE', accent: '#6A4DF4'},
-  global: {main: '#2DAA5F', deep: '#1E8047', mid: '#BFE6CC', accent: '#FF8A3D'},
-  phone: {main: '#5B6CFF', deep: '#3C4BD6', mid: '#C8CDFB', accent: '#FFB547'},
-  home: {main: '#F0795B', deep: '#C95A3F', mid: '#F8CDBF', accent: '#3E81DE'},
-  cafe: {main: '#C7773F', deep: '#9A5327', mid: '#EED3BD', accent: '#2BB29B'},
-  market: {main: '#E8603C', deep: '#B8442A', mid: '#F6CDB9', accent: '#2DAA5F'},
-  gate: {main: '#B8483A', deep: '#8E3328', mid: '#E6CFC6', accent: '#2F3A56'},
-  bridge: {main: '#5F87A6', deep: '#44657F', mid: '#C9D7E0', accent: '#D9534F'},
-  teahouse: {main: '#6F9A52', deep: '#4E7437', mid: '#D6E2C6', accent: '#C8473A'},
-  lantern: {main: '#D8342B', deep: '#A3231D', mid: '#EFC2B8', accent: '#F2B233'},
+  docs: {main: '#E3A92A', deep: '#B07E12', mid: '#F1DB9F', accent: '#1D8A8F'},
+  post: {main: '#3259C9', deep: '#213F99', mid: '#B4D8EC', accent: '#F2762E'},
+  tools: {main: '#6F9A3C', deep: '#4F7427', mid: '#CFE0B3', accent: '#FFB627'},
+  creative: {main: '#F2762E', deep: '#C2551A', mid: '#F9DE9A', accent: '#3259C9'},
+  data: {main: '#1D8A8F', deep: '#146166', mid: '#B3DEDB', accent: '#FFB627'},
+  global: {main: '#2F9E6E', deep: '#1F7550', mid: '#BFE3CF', accent: '#FF8A2F'},
+  phone: {main: '#2E8BC0', deep: '#1E6690', mid: '#BCDDEE', accent: '#F5A623'},
+  home: {main: '#5FA3A0', deep: '#3F7C79', mid: '#CDE5E2', accent: '#F28F3A'},
+  cafe: {main: '#A8683A', deep: '#7E4A24', mid: '#E8D0BA', accent: '#2F9E6E'},
+  market: {main: '#EE9B2E', deep: '#BF7414', mid: '#F8DDAF', accent: '#2F9E6E'},
+  gate: {main: '#B03A36', deep: '#862A27', mid: '#E4CFC8', accent: '#1D5A6B'},
+  bridge: {main: '#4F8A9E', deep: '#356676', mid: '#C4DCE2', accent: '#E0643A'},
+  teahouse: {main: '#7A9E4E', deep: '#577634', mid: '#D8E4C4', accent: '#C0453A'},
+  lantern: {main: '#D6313A', deep: '#A2222B', mid: '#F2CBA6', accent: '#F5B82E'},
 };
 /** 古城配色：白墙、黛瓦、石板、河水、灯笼 */
-export const OLD = {wall: '#F3EFE6', wallShade: '#DDD6C9', plinth: '#B9B2A6', tile: '#3E4450', tileLight: '#5C6374', wood: '#7A4B32', woodLight: '#9A6446', stone: '#CFC9BE', stoneDeep: '#A9A296', water: '#8FC3D6', waterDeep: '#5E9DB6', lantern: '#E2402F', lanternGlow: '#FFB25A', willow: '#8CC86B'};
+export const OLD = {wall: '#F1F5F0', wallShade: '#D6DED8', plinth: '#AEB8B2', tile: '#2E4450', tileLight: '#4D6572', wood: '#7A4B32', woodLight: '#9A6446', stone: '#C9D1CB', stoneDeep: '#A2AEA8', water: '#6FC2C4', waterDeep: '#3F9CA6', lantern: '#DE3A34', lanternGlow: '#FFB25A', willow: '#8CC86B'};
 /** 背景天际线：modern 现代城市（默认）/ street 低层街巷 / oldtown 古城（白墙黛瓦、远山、宝塔、石板路和河） */
 export type Skyline = 'modern' | 'street' | 'oldtown';
-/** 霓虹色（夜景） */
-export const NEON = ['#FFD23F', '#FF5E7E', '#4DE6FF', '#A8FF60', '#B18CFF'];
-
+/** 霓虹色（夜景）：柑橘 + 青柠 + 薄荷一族（青柠和 UI 的强调色同一支），不用粉紫 */
+export const NEON = ['#FF9F1C', '#7CFC3A', '#7CFFD0', '#5CC8FF', '#FF7A45'];
 /** 读令牌里的 art 覆盖：tokens.art.mascot / tokens.art.board / tokens.art.district.<kind> */
 export const useArtColors = () => {
   const tk = useStyleTokens();

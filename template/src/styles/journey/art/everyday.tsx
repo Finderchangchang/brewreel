@@ -17,7 +17,7 @@ type P = {p: number; t: number; gagT?: number; c: C};
 const PhoneNear: React.FC<P> = ({p, t, gagT, c}) => {
   const n = nightOf(p);
   const g = gagT ?? -1;
-  const screen = mixHex('#F7F8FF', '#E8ECFF', n);
+  const screen = mixHex('#F5FAF8', '#E6F2EE', n);
   const scanY = g >= 0 && g < 0.9 ? -556 + (g / 0.9) * 490 : null;
   const done = g >= 0.9;
   const rows = [0, 1, 2, 3];
@@ -25,11 +25,11 @@ const PhoneNear: React.FC<P> = ({p, t, gagT, c}) => {
     <g>
       <House x={40} w={240} h={280} color={c.accent} p={p} seed={111} roof="gable" win="arch" />
       {/* 手机楼 */}
-      <rect x={350} y={-610} width={320} height={610} rx={48} fill={lit('#2A2F45', p)} stroke={INK} strokeWidth={OUT} />
-      <rect x={346} y={-470} width={8} height={70} rx={4} fill={lit('#4A5270', p)} />
+      <rect x={350} y={-610} width={320} height={610} rx={48} fill={lit('#1F3944', p)} stroke={INK} strokeWidth={OUT} />
+      <rect x={346} y={-470} width={8} height={70} rx={4} fill={lit('#3A5A66', p)} />
       <rect x={374} y={-576} width={272} height={530} rx={26} fill={screen} stroke={INK} strokeWidth={3} />
       {n > 0.2 && <rect x={374} y={-576} width={272} height={530} rx={26} fill="#DDE3FF" opacity={0.25 * n} />}
-      <rect x={484} y={-600} width={52} height={14} rx={7} fill={lit('#1A1E2E', p)} />
+      <rect x={484} y={-600} width={52} height={14} rx={7} fill={lit('#102833', p)} />
       <rect x={374} y={-576} width={272} height={64} rx={26} fill={lit(c.main, p)} />
       <rect x={374} y={-540} width={272} height={28} fill={lit(c.main, p)} />
       <rect x={398} y={-556} width={110} height={16} rx={8} fill="#FFFFFF" opacity={0.85} />
@@ -65,7 +65,7 @@ const PhoneNear: React.FC<P> = ({p, t, gagT, c}) => {
       <circle cx={1064} cy={-410} r={22} fill="#2DAA5F" stroke={INK} strokeWidth={3.5} />
       <path d="M 1053,-411 l 8,8 l 14,-15" fill="none" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
       {/* 平板楼 */}
-      <rect x={1200} y={-450} width={280} height={450} rx={30} fill={lit('#343A55', p)} stroke={INK} strokeWidth={OUT} />
+      <rect x={1200} y={-450} width={280} height={450} rx={30} fill={lit('#27434F', p)} stroke={INK} strokeWidth={OUT} />
       <rect x={1222} y={-428} width={236} height={300} rx={16} fill={screen} stroke={INK} strokeWidth={3} />
       {[0, 1, 2, 3].map((i) => {
         const h = [90, 150, 120, 200][i] * (0.9 + 0.1 * Math.sin(t * 2 + i));
@@ -88,8 +88,8 @@ const HomeNear: React.FC<P> = ({p, t, gagT, c}) => {
   const g = gagT ?? -1;
   const body = mixHex(c.main, '#FFFFFF', 0.35);
   const winAt = (i: number, seed: number) => {
-    const lit0 = mixHex('#EAF6FF', hash(seed) < 0.55 ? '#FFD86B' : '#2A3462', n);
-    return g >= i * 0.05 ? '#FFD86B' : lit0;
+    const lit0 = mixHex('#F2FBF8', hash(seed) < 0.55 ? '#FFB941' : '#1B4552', n);
+    return g >= i * 0.05 ? '#FFB941' : lit0;
   };
   const apt = (x: number, w: number, h: number, seed: number, col: string) => {
     const cols = 3;
@@ -107,7 +107,7 @@ const HomeNear: React.FC<P> = ({p, t, gagT, c}) => {
     const balconies = Array.from({length: rows}, (_, r) => (
       <g key={`b${r}`}>
         <rect x={x - 8} y={-h + 84 + r * 90} width={w + 16} height={12} rx={4} fill={lit(c.deep, p)} stroke={INK} strokeWidth={3} />
-        {r % 2 === 0 && <circle cx={x + 30 + ((r * 70) % (w - 60))} cy={-h + 72 + r * 90} r={13} fill={lit('#3DBE73', p)} stroke={INK} strokeWidth={3} />}
+        {r % 2 === 0 && <circle cx={x + 30 + ((r * 70) % (w - 60))} cy={-h + 72 + r * 90} r={13} fill={lit('#4FAE6A', p)} stroke={INK} strokeWidth={3} />}
       </g>
     ));
     return (
@@ -133,10 +133,10 @@ const HomeNear: React.FC<P> = ({p, t, gagT, c}) => {
         return <circle key={k} cx={1110 + q * 40} cy={-440 - q * 120} r={16 + q * 18} fill="#FFFFFF" opacity={0.7 * (1 - q)} />;
       })}
       <House x={780} w={380} h={300} color="#FFF3E0" p={p} seed={122} roof="gable" win="arch" roofColor={c.main} door={false} />
-      <circle cx={970} cy={-330} r={44} fill={g >= 0.3 ? '#FFD86B' : lit('#EAF6FF', p)} stroke={INK} strokeWidth={OUT} />
+      <circle cx={970} cy={-330} r={44} fill={g >= 0.3 ? '#FFB941' : lit('#F2FBF8', p)} stroke={INK} strokeWidth={OUT} />
       <path d="M 970,-316 c -26,-18 -22,-40 -4,-38 c 4,0 4,6 4,6 c 0,0 0,-6 4,-6 c 18,-2 22,20 -4,38 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={2.5} />
       <rect x={940} y={-110} width={60} height={110} rx={10} fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} />
-      <circle cx={970} cy={-80} r={18} fill="none" stroke={lit('#3DBE73', p)} strokeWidth={7} />
+      <circle cx={970} cy={-80} r={18} fill="none" stroke={lit('#4FAE6A', p)} strokeWidth={7} />
       {/* 栅栏 */}
       {Array.from({length: 14}, (_, i) => (
         <path key={`fc${i}`} d={`M ${760 + i * 34},0 L ${760 + i * 34},-58 L ${772 + i * 34},-70 L ${784 + i * 34},-58 L ${784 + i * 34},0 Z`} fill={lit('#FFFFFF', p)} stroke={INK} strokeWidth={3} strokeLinejoin="round" />
@@ -145,7 +145,7 @@ const HomeNear: React.FC<P> = ({p, t, gagT, c}) => {
       {/* 信箱 */}
       <rect x={1290} y={-110} width={12} height={110} fill={lit('#6B4A3A', p)} stroke={INK} strokeWidth={3} />
       <path d="M 1256,-110 L 1256,-150 Q 1256,-176 1296,-176 Q 1336,-176 1336,-150 L 1336,-110 Z" fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} />
-      <path d={flagUp ? 'M 1336,-150 L 1336,-206 L 1366,-196 L 1344,-186' : 'M 1336,-150 L 1372,-150 L 1366,-130 L 1350,-140'} fill={lit('#FF5A4E', p)} stroke={INK} strokeWidth={3.5} strokeLinejoin="round" />
+      <path d={flagUp ? 'M 1336,-150 L 1336,-206 L 1366,-196 L 1344,-186' : 'M 1336,-150 L 1372,-150 L 1366,-130 L 1350,-140'} fill={lit('#FF7A45', p)} stroke={INK} strokeWidth={3.5} strokeLinejoin="round" />
       <Tree x={1250} p={p} seed={5} s={0.9} />
       {apt(1420, 320, 440, 31, mixHex(c.accent, '#FFFFFF', 0.45))}
       {/* 晾衣绳 */}
@@ -177,13 +177,13 @@ const CafeNear: React.FC<P> = ({p, t, c}) => {
   );
   return (
     <g>
-      <House x={40} w={240} h={280} color="#8FA3C7" p={p} seed={131} roof="flat" win="grid" />
+      <House x={40} w={240} h={280} color="#78AFC4" p={p} seed={131} roof="flat" win="grid" />
       {/* 咖啡馆 */}
       <rect x={330} y={-330} width={500} height={330} fill={lit(body, p)} stroke={INK} strokeWidth={OUT} />
       <rect x={320} y={-350} width={520} height={26} rx={4} fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} />
-      <rect x={370} y={-216} width={260} height={160} rx={8} fill={mixHex('#EAF6FF', '#FFD98A', n)} stroke={INK} strokeWidth={OUT} />
+      <rect x={370} y={-216} width={260} height={160} rx={8} fill={mixHex('#F2FBF8', '#FFD98A', n)} stroke={INK} strokeWidth={OUT} />
       <line x1={370} y1={-150} x2={630} y2={-150} stroke={INK} strokeWidth={3} />
-      {[410, 470, 530, 590].map((x, i) => <circle key={x} cx={x} cy={-168} r={12} fill={lit(['#C7773F', '#F2C14E', '#FFFFFF', '#9A5327'][i], p)} stroke={INK} strokeWidth={2.5} />)}
+      {[410, 470, 530, 590].map((x, i) => <circle key={x} cx={x} cy={-168} r={12} fill={lit(['#C7773F', '#FFB627', '#FFFFFF', '#9A5327'][i], p)} stroke={INK} strokeWidth={2.5} />)}
       <rect x={670} y={-150} width={80} height={150} rx={10} fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} />
       <path d="M 356,-260 L 650,-260 L 666,-222 L 340,-222 Z" fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
       {Array.from({length: 7}, (_, i) => <path key={i} d={`M ${366 + i * 42},-260 L ${384 + i * 42},-260 L ${392 + i * 42},-222 L ${372 + i * 42},-222 Z`} fill="#FFFFFF" opacity={0.85 - n * 0.4} />)}
@@ -206,7 +206,7 @@ const CafeNear: React.FC<P> = ({p, t, c}) => {
       <rect x={1286} y={-146} width={88} height={110} rx={6} fill={lit('#2F3A34', p)} stroke={INK} strokeWidth={3.5} />
       {[0, 1, 2].map((i) => <rect key={i} x={1298} y={-128 + i * 30} width={i === 1 ? 44 : 64} height={8} rx={4} fill="#F4F1E6" opacity={0.8} />)}
       {/* 面包房 */}
-      <House x={1440} w={330} h={300} color="#F2C14E" p={p} seed={132} roof="flat" win="arch" awning={c.main} />
+      <House x={1440} w={330} h={300} color="#FFB627" p={p} seed={132} roof="flat" win="arch" awning={c.main} />
       <path d="M 1530,-360 Q 1605,-470 1680,-360 Q 1650,-400 1605,-404 Q 1560,-400 1530,-360 Z" fill={lit('#E9A64A', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
       {[1570, 1605, 1640].map((x) => <path key={x} d={`M ${x},-430 L ${x + 6},-380`} stroke={INK} strokeWidth={3.5} strokeLinecap="round" />)}
       {lampAt(1820, p)}
@@ -218,12 +218,12 @@ const CafeNear: React.FC<P> = ({p, t, c}) => {
 // ---------------- market ----------------
 const MarketNear: React.FC<P> = ({p, t, c}) => {
   const n = nightOf(p);
-  const canopy = [c.main, c.accent, '#F2C14E', '#3F6FF2'];
+  const canopy = [c.main, c.accent, '#FFB627', '#3259C9'];
   const goods = [
-    ['#FF5A4E', '#FF8A3D', '#FFC845'],
-    ['#56C98A', '#2DAA5F', '#A8D86B'],
+    ['#FF7A45', '#FF8A3D', '#FFB627'],
+    ['#6CC07E', '#2F9E6E', '#A8D86B'],
     ['#E9A64A', '#F6D9A8', '#C7773F'],
-    ['#7B5CFF', '#E845A8', '#4DE6FF'],
+    ['#2E8BC0', '#F2762E', '#7CFFD0'],
   ];
   const stall = (x: number, k: number) => {
     const col = canopy[k % canopy.length];
@@ -265,7 +265,7 @@ const MarketNear: React.FC<P> = ({p, t, c}) => {
       {bulbs}
       <House x={1660} w={260} h={300} color={c.deep} p={p} seed={142} roof="gable" win="arch" />
       <Tree x={1980} p={p} seed={6} />
-      <House x={2040} w={140} h={230} color="#F2C14E" p={p} seed={143} roof="flat" win="tall" />
+      <House x={2040} w={140} h={230} color="#FFB627" p={p} seed={143} roof="flat" win="tall" />
     </g>
   );
 };

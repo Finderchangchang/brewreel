@@ -16,13 +16,13 @@ import {GROUND, SceneBackdrop, SceneName, STAGE} from './scenes';
 //   <SceneClip scene="office" w={780} h={439} t={t} lines={[{who:'buddy', at:0.3, dur:1.6}, {who:'host', at:2.1, dur:1.2, expr:'happy'}]} />
 //   <MediaClip media={{kind:'video', src:'_run/xx/clip.mp4', trimStart: 3}} w={780} h={439} t={t} />
 //
-// 倒放（「再听一遍」的倒带效果）：把 t 反着传进来即可，全部是 t 的纯函数。
+// 倒放（回放镜头的倒带效果）：把 t 反着传进来即可，全部是 t 的纯函数。
 // ============================================================
 
 /** 一句台词：谁、第几秒开口、说多久（秒）。说话时默认 talk 姿势 + 嘴动；pose/expr 可覆盖 */
 export type ClipLine = {who: Who; at: number; dur: number; pose?: Pose; expr?: Expr};
 
-/** 一个表演事件：从 at 秒起换姿势 / 表情，或者触发特效、灯泡亮、跳一下、点头 */
+/** 一个表演事件：从 at 秒起换姿势 / 表情，或者触发特效、主讲人耳机亮灯（字段沿用旧名 bulb）、跳一下、点头 */
 export type ClipEvent = {who: Who; at: number; pose?: Pose; expr?: Expr; fx?: FxKind; bulb?: boolean; hop?: boolean; nod?: boolean};
 
 export type CastSlot = {x?: number; facing?: 'left' | 'right'; pose?: Pose; expr?: Expr; bulb?: number; hidden?: boolean};
@@ -100,7 +100,7 @@ const cameraAt = (t: number, mode: ClipCamera, lines: ClipLine[], xs: Record<Who
     const since = last ? t - (last.at + last.dur) : t;
     return clampCam({...wide, zoom: 1 + 0.02 * since});
   }
-  // 近景：说话人偏画面一侧、朝向那边留出手势空间；取景上沿压在帽顶 / 灯泡上方一点
+  // 近景：说话人偏画面一侧、朝向那边留出手势空间；取景上沿压在帽顶 / 耳机上方一点
   const x = xs[cur.who] + (facing[cur.who] === 'right' ? 110 : -110);
   const since = t - (cur.at + 0.15);
   const zoom = 1.6 + 0.03 * since;
@@ -222,7 +222,7 @@ export const PeekCharacter: React.FC<PeekProps> = ({who, x, edgeY, size, t, at =
   const p = Math.max(0, up - down);
   // 露出的高度（角色坐标）：头顶 ≈ 20，肩 ≈ 230
   const visible = show === 'head' ? 185 : 262;
-  const topPad = 200; // 灯泡 / 绒球 / 特效的上方余量
+  const topPad = 200; // 帽顶 / 耳机 / 特效的上方余量
   const boxH = (visible + topPad) * k;
   // 脚底相对边缘的位置：p=0 时整个人在线下，p=1 时露出 visible
   const feetY = edgeY + ((1 - p) * 680 + p * (600 - visible)) * k;

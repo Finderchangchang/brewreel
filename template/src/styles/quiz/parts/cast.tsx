@@ -1,11 +1,11 @@
 import React from 'react';
-import {Avatar as ArtAvatar, Character as ArtCharacter, MediaClip, PeekCharacter, SCENES, mouthAt} from '../art';
+import {Avatar as ArtAvatar, Character as ArtCharacter, MediaClip, SCENES, mouthAt} from '../art';
 import type {Expr, FxKind, Pose, SceneName} from '../art';
-import {usePal, useTk} from './kit';
+import {Sparks, popScale, prog, usePal, useTk} from './kit';
 
 // ============================================================
-// 角色与小剧场的「接口层」：镜头只从这里拿角色、头像、探头和小剧场，不直接引用 art/。
-// 美术（art/）换实现时只改这个文件，镜头不动。角色：a = 主讲人（art 的 host，头顶灯泡 = 状态道具，懂了灯亮），
+// 角色与小剧场的「接口层」：镜头只从这里拿角色、头像、讲解小窗和小剧场，不直接引用 art/。
+// 美术（art/）换实现时只改这个文件，镜头不动。角色：a = 主讲人（art 的 host，状态道具亮 = 懂了；钩子镜里是卡下旁白左边的讲解小窗 Presenter），
 // b = 搭档（art 的 buddy）。场景：art 的 office / cafe / street / home 小剧场 + 这里的 screen（产品界面示意）。
 // ============================================================
 
@@ -22,15 +22,41 @@ export const Actor: React.FC<{who: Who; x: number; y: number; size: number; t: n
 /** 圆形头像（评论框） */
 export const Avatar: React.FC<{who: Who; size: number; t: number}> = ({who, size, t}) => <ArtAvatar who={artWho(who)} size={size} t={t} expr="smug" ring />;
 
-/** 探头：从卡片上沿后面升起（画在卡片之后，边缘以下自己裁掉） */
-export const Peek: React.FC<{t: number; at: number; cardY: number; x?: number; lit?: boolean; talk?: [number, number] | null; fx?: FxKind; fxT?: number}> = ({t, at, cardY, x, lit, talk, fx, fxT}) => {
-  // 位置和大小取令牌 layout.peek（cx = 身体中心，size = 身高像素）；钩子标题的可用宽度按 layout.peek.x（头的左沿）算
-  const pk = useTk().layout?.peek ?? {};
+/** 讲解小窗：主讲人的圆形画中画，停在钩子镜卡下旁白的左边，当「说话人」标（不贴媒体卡的右沿 / 右上角）。
+ *  (x, y) = 圆心像素。出场是「光圈打开」：圆形裁切从 0 张到 1.08 再回到 1（0.24 秒），同时主色外环顺时针画一圈；
+ *  讲解员会说话（嘴动）、耳机会亮灯（lit = 懂了）并放火花。 */
+export const Presenter: React.FC<{t: number; at: number; x: number; y: number; d?: number; lit?: boolean; talk?: [number, number] | null; expr?: Expr; sparks?: number}> = ({t, at, x, y, d: dOver, lit, talk, expr, sparks}) => {
+  const tk = useTk();
+  const pal = usePal();
+  const P = tk.layout?.presenter ?? {d: 176, ring: 8};
+  const d = dOver ?? P.d;
+  if (t < at) return null;
+  const dur = tk.motion?.presenterIn ?? 0.24;
+  const s = popScale(t, at, dur, 0, 1.08);
+  const ringP = prog(t, at + dur * 0.3, 0.3);
+  const R = d / 2;
+  const m = talk ? mouthAt(t, talk[0], talk[1]) : 0;
   return (
-    <PeekCharacter who="host" x={x ?? pk.cx ?? 816} edgeY={cardY} size={pk.size ?? 430} t={t} at={at} facing="left" bulb={lit ? 1 : 0} mouth={talk ? mouthAt(t, talk[0], talk[1]) : 0} expr={lit ? 'happy' : 'neutral'} fx={fx} fxT={fxT} />
+    <div style={{position: 'absolute', left: x - R - P.ring, top: y - R - P.ring, width: d + P.ring * 2, height: d + P.ring * 2}}>
+      <div style={{position: 'absolute', left: P.ring, top: P.ring, width: d, height: d, borderRadius: '50%', overflow: 'hidden', transform: `scale(${s})`, background: pal.cardAlt}}>
+        <ArtAvatar who="host" size={d} t={t} expr={expr ?? (lit ? 'happy' : 'neutral')} mouth={m} bulb={lit ? 1 : 0} ring={false} bg={pal.cardAlt} />
+      </div>
+      <svg width={d + P.ring * 2} height={d + P.ring * 2} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible', transform: `rotate(-90deg) scale(${Math.min(1, s)})`}}>
+        <circle cx={R + P.ring} cy={R + P.ring} r={R + P.ring / 2} fill="none" stroke={pal.ink} strokeWidth={P.ring + 6} />
+        <circle cx={R + P.ring} cy={R + P.ring} r={R + P.ring / 2} fill="none" stroke={pal.primary} strokeWidth={P.ring} pathLength={1} strokeDasharray={1} strokeDashoffset={1 - ringP} />
+      </svg>
+      {/* 小窗左下角一个朱红圆点，像直播小窗的在线灯 */}
+      <div style={{position: 'absolute', left: 4, bottom: 10, width: 22, height: 22, borderRadius: 11, background: pal.pen, border: `3px solid ${pal.ink}`, transform: `scale(${Math.min(1, s)})`}} />
+      {sparks !== undefined ? <Sparks t={t} at={sparks} x={R + P.ring} y={14} spread={d} /> : null}
+    </div>
   );
 };
 
+/** 讲解小窗的位置（圆心）和直径：卡下左侧、旁白第一行旁边；inset 保留参数形状，不再用 */
+export const presenterSpot = (box: {x: number; y: number; w: number; h: number}, inset = 36, d = 128) => {
+  void inset;
+  return {x: 150 + 8 + d / 2, y: box.y + box.h + 34 + 8 + d / 2, d};
+};
 /** 界面里的一行：有字就上真字（34px，面板字号下限），没字就是「？」占位（还没揭晓） */
 const UiRow: React.FC<{text?: string; hot?: boolean; op?: number; scale?: number; done?: boolean}> = ({text, hot, op = 1, scale = 1, done}) => {
   const pal = usePal();
@@ -127,7 +153,7 @@ const PhoneDemo: React.FC<{w: number; h: number; t: number; items?: string[]; ph
       {/* 手指 */}
       {phase !== 'idle' ? (
         <svg width={120} height={170} viewBox="0 0 120 170" style={{position: 'absolute', left: fx - 30, top: fy - 18}}>
-          <path d="M30 18 C30 6 50 6 50 18 L50 70 L96 82 C108 86 112 96 108 108 L98 160 L30 160 L10 110 C4 96 18 88 28 98 L30 102 Z" fill={pal.skin ?? '#FBE3CF'} stroke={pal.ink} strokeWidth={5} strokeLinejoin="round" />
+          <path d="M30 18 C30 6 50 6 50 18 L50 70 L96 82 C108 86 112 96 108 108 L98 160 L30 160 L10 110 C4 96 18 88 28 98 L30 102 Z" fill={pal.skin ?? '#EFC19C'} stroke={pal.ink} strokeWidth={5} strokeLinejoin="round" />
         </svg>
       ) : null}
       {/* App 列表面板 */}

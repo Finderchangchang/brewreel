@@ -16,7 +16,7 @@
     ]
   },
   "shots": [
-    {"type": "opening", "params": {"headline": "5 站慢游", "kicker": "跟橘团逛古镇", "go": "走起！", "skyline": "oldtown"}},
+    {"type": "opening", "params": {"headline": "5 站慢游", "kicker": "从早市走到灯会", "go": "走起！", "skyline": "oldtown"}},
     {"type": "district", "params": {"category": "石板早市", "title": "米糕 8 元一份，热乎的", "scene": "market", "source": "早市 6:30–10:00"}},
     {"type": "district", "params": {"category": "东门城楼", "title": "清晨人少，城门下好拍照", "scene": "gate"}},
     {"type": "district", "params": {"category": "三孔石桥", "title": "站在桥上，看船从脚下过", "scene": "bridge"}},

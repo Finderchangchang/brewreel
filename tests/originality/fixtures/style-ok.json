@@ -1,0 +1,14 @@
+{
+  "$doc": "重新设计过的风格：冷灰蓝底、近黑描边、紫 + 草绿，和参考色板都拉开了",
+  "defaultTheme": "fresh",
+  "themes": {
+    "fresh": {
+      "bg": "#E4ECF4",
+      "ink": "#101418",
+      "primary": "#5B3FD0",
+      "highlight": "#7BD957",
+      "card": "#FFFFFF"
+    }
+  },
+  "scenes": {"shop": {"props": ["#8A5AD8", "#2F6BD8"]}}
+}

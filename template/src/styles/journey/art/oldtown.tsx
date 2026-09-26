@@ -76,7 +76,7 @@ export const OldHouse: React.FC<{x: number; w: number; h: number; p: number; see
     const wx = x + 20 + ((w - 40) / cols) * (i + 0.5);
     const wy = top + 40 + (h > 300 ? 0 : 0);
     const on = hash(seed * 11 + i) < 0.7;
-    const glass = mixHex(lit('#5A4A3F', p), on ? '#FFD98A' : '#2A2433', n);
+    const glass = mixHex(lit('#5A4A3F', p), on ? '#FFD98A' : '#1E3038', n);
     wins.push(
       <g key={i}>
         <rect x={wx - 26} y={wy} width={52} height={50} rx={4} fill={glass} stroke={INK} strokeWidth={3.5} />
@@ -253,7 +253,7 @@ export const OldStreet: React.FC<{x0: number; x1: number; depth: number; p: numb
       seams.push(<line key={`b${k}${r}`} x1={xx} y1={yy} x2={xx} y2={yy + (roadBot - 60) / 3} stroke={mixHex(lane, INK, 0.18)} strokeWidth={3} />);
     }
   }
-  const water = mixHex(lit(OLD.water, p), '#1B2A55', n * 0.5);
+  const water = mixHex(lit(OLD.water, p), '#0E3440', n * 0.5);
   const ripples: React.ReactNode[] = [];
   if (depth > roadBot + 20) {
     const rp = 160;
@@ -313,7 +313,7 @@ const GateNear: React.FC<P> = ({p, t, c}) => {
         <rect key={`cr${i}`} x={404 + i * 50} y={-330} width={30} height={32} fill={stone} stroke={INK} strokeWidth={3.5} />
       ))}
       {/* 拱门 */}
-      <path d="M 850,0 L 850,-150 A 100 100 0 0 1 1050,-150 L 1050,0 Z" fill={lit('#2B2833', p)} stroke={INK} strokeWidth={OUT} />
+      <path d="M 850,0 L 850,-150 A 100 100 0 0 1 1050,-150 L 1050,0 Z" fill={lit('#233238', p)} stroke={INK} strokeWidth={OUT} />
       <path d="M 856,0 L 856,-150 A 94 94 0 0 1 900,-229 L 900,0 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={3.5} />
       <path d="M 1044,0 L 1044,-150 A 94 94 0 0 0 1000,-229 L 1000,0 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={3.5} />
       {[0, 1, 2].map((r) => [870, 884, 1016, 1030].map((x) => <circle key={`s${r}${x}`} cx={x} cy={-150 + r * 44} r={4} fill={lit('#E9B949', p)} />))}
@@ -340,7 +340,7 @@ const GateNear: React.FC<P> = ({p, t, c}) => {
 // ---------------- bridge 石桥 ----------------
 const BridgeNear: React.FC<P> = ({p, t, c}) => {
   const n = nightOf(p);
-  const water = mixHex(lit(OLD.water, p), '#1B2A55', n * 0.5);
+  const water = mixHex(lit(OLD.water, p), '#0E3440', n * 0.5);
   const stone = lit(mixHex(OLD.stone, c.mid, 0.25), p);
   const boatX = 560 + ((t * 45) % 880);
   const arches = [

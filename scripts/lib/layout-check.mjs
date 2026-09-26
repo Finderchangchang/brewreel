@@ -59,8 +59,8 @@ export const fieldOf = (fields, text, shotIdx) => {
  */
 // geo：非 cards 风格传画幅几何（scripts/lib/styles.mjs 的 geometryOf），文字一律按 geo.card 的左右边界核对；
 // cards 不传（null），沿用下面的 9:16 规则（字幕带/片尾 x180–900，其余 x150–930），和改造前一样
-// mustShow：[{i, frame, fields: ['params.title', ...]}]——镜头 spec 声明「检查帧上必须看得见」的字段（journey 的广告牌标题、类别名）。
-//   看不见 = 广告牌是空的 / 这一刻已经收起或还没弹出；同一帧里出现同类镜头别的镜的这个字段 = 胶囊、路牌说的不是同一个类别
+// mustShow：[{i, frame, fields: ['params.title', ...]}]——镜头 spec 声明「检查帧上必须看得见」的字段（journey 的明信片标题、类别名）。
+//   看不见 = 内容卡是空的 / 这一刻已经收起或还没弹出；同一帧里出现同类镜头别的镜的这个字段 = 车票、路牌说的不是同一个类别
 export const layoutCheck = ({frames, slots, sb, checkFrames, fps = 30, geo = null, mustShow = []}) => {
   const lang = sb?.meta?.lang === 'en' ? 'en' : 'zh';
   const fields = storyboardFields(sb);
@@ -162,14 +162,14 @@ export const layoutCheck = ({frames, slots, sb, checkFrames, fps = 30, geo = nul
       if (typeof v !== 'string' || !v.trim()) continue;
       const n = plainN(v).slice(0, 24);
       if (!texts.some((t) => t.includes(n) || (t.length >= 4 && n.includes(t))))
-        layoutIssues.push(`${at(ms.frame)}：检查帧上看不到 shots[${ms.i}].${f}「${String(v).slice(0, 12)}」——这一镜最主要的信息（广告牌是空的，或这一刻已收起 / 还没弹出）`);
+        layoutIssues.push(`${at(ms.frame)}：检查帧上看不到 shots[${ms.i}].${f}「${String(v).slice(0, 12)}」——这一镜最主要的信息（内容卡是空的，或这一刻已收起 / 还没弹出）`);
       (sb?.shots ?? []).forEach((other, j) => {
         if (j === ms.i || other?.type !== shot?.type) return;
         const ov = getPath(other, f);
         if (typeof ov !== 'string' || !ov.trim() || ov.trim() === v.trim()) return;
         const on = plainN(ov);
         if (texts.some((t) => t === on))
-          layoutIssues.push(`${at(ms.frame)}：同一帧里既有本镜的「${String(v).slice(0, 8)}」又有第 ${j + 1} 镜的「${ov}」（胶囊、路牌、广告牌说的不是同一个类别）`);
+          layoutIssues.push(`${at(ms.frame)}：同一帧里既有本镜的「${String(v).slice(0, 8)}」又有第 ${j + 1} 镜的「${ov}」（车票、路牌、明信片说的不是同一个类别）`);
       });
     }
   }

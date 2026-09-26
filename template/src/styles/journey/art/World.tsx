@@ -1,5 +1,5 @@
 import React from 'react';
-import {DistrictKind, Skyline, skyForDistrict, useArtColors} from './palette';
+import {DistrictKind, PAPER_SHADOW, Skyline, nightOf, skyForDistrict, useArtColors} from './palette';
 import {FarSkyline, Sky, Street} from './city';
 import {DISTRICT_NEAR, DISTRICT_W, DistrictMid, FillerNear} from './districts';
 import {OldFar, OldFiller, OldMid, OldStreet} from './oldtown';
@@ -9,9 +9,10 @@ import {OldFar, OldFiller, OldMid, OldStreet} from './oldtown';
 // 世界坐标 = 近景层像素（1.0 倍）。camX = 画面左边缘对应的世界 x。中景、远景按 parallax 倍率跟着走，
 // 以画面中线为支点：屏幕 x = w/2 + (世界 x - camX - w/2) × 倍率。
 // 招牌、角色这些带字/前景件由 Film 画在这层上面，位置用 toScreen() 换算。
+// 剪纸分层：远景、中景、近景三组各套一个 paper 滤镜，在身后投一道往右下错开的硬边纸影（越近错得越多、越深）。
 // ============================================================
 
-/** words = 这一站自己的字（霓虹街屋顶对话框用），来自分镜 */
+/** words = 这一站自己的字（夜景街屋顶对话框用），来自分镜 */
 export type DistrictSlot = {kind: DistrictKind; x0: number; gagT?: number; words?: string[]};
 export type CityLayout = {districts: DistrictSlot[]; start: number; end: number; districtW: number};
 
@@ -23,7 +24,7 @@ export const layoutCity = (kinds: DistrictKind[], opts: {introW?: number; distri
   return {districts: kinds.map((kind, i) => ({kind, x0: intro + i * dw})), start: 0, end: intro + kinds.length * dw + outro, districtW: dw};
 };
 
-/** 建筑缩放建议值：让普通房子的屋顶落在角色脚下（4:5 地平线 1040 → 0.78；9:16 地平线 1560 → 1.1），塔吊、火箭、铅笔塔这类地标照样冒出来 */
+/** 建筑缩放建议值：让普通房子的屋顶落在角色脚下（4:5 地平线 1040 → 0.78；9:16 地平线 1560 → 1.1），塔吊、邮筒楼、铅笔塔这类地标照样冒出来 */
 export const sceneScale = (h: number) => (h > 1500 ? 1.1 : 0.78);
 
 /** 世界 x → 屏幕 x（k = 该层视差倍率，近景 1） */
@@ -113,17 +114,38 @@ export const CityWorld: React.FC<CityWorldProps> = ({w, h, horizonY, camX, t, la
     );
   }
 
+  // 剪纸分层：远 / 中 / 近三层各在身后投一道往右下错开的硬边纸影，越近错得越多、越深
+  const night = nightOf(p);
+  // 同一页里可能有好几张世界（总览图）：id 带上尺寸、缩放和夜色档，参数相同才共用一个滤镜
+  const fid = `jpaper-${w}-${h}-${Math.round(scale * 100)}-${Math.round(night * 20)}`;
+  const paper = (name: string, dx: number, dy: number, a: number) => (
+    <filter id={`${fid}-${name}`} filterUnits="userSpaceOnUse" x={-60} y={-60} width={w + 120} height={h + 120} colorInterpolationFilters="sRGB">
+      <feFlood floodColor={PAPER_SHADOW} floodOpacity={a} result="c" />
+      <feComposite in="c" in2="SourceAlpha" operator="in" result="s" />
+      <feOffset in="s" dx={dx * scale} dy={dy * scale} result="o" />
+      <feMerge>
+        <feMergeNode in="o" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  );
+  const shadeA = 1 - night * 0.45;
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{position: 'absolute', left: 0, top: 0}} data-probe-skip>
+      <defs>
+        {paper('far', 6, 5, 0.16 * shadeA)}
+        {paper('mid', 10, 8, 0.26 * shadeA)}
+        {paper('near', 14, 10, 0.36 * shadeA)}
+      </defs>
       {layer !== 'front' && <Sky w={w} h={h} horizonY={horizonY} p={p} t={t} drift={camX * kFar * 1.5} />}
-      {layer !== 'front' && (old ? <OldFar w={w} horizonY={horizonY} p={p} offset={camX * kFar} scale={scale} /> : <FarSkyline w={w} horizonY={horizonY} p={p} offset={camX * kFar} scale={skyline === 'street' ? scale * 0.55 : scale} />)}
-      {layer !== 'front' && mid}
+      {layer !== 'front' && <g filter={`url(#${fid}-far)`}>{old ? <OldFar w={w} horizonY={horizonY} p={p} offset={camX * kFar} scale={scale} /> : <FarSkyline w={w} horizonY={horizonY} p={p} offset={camX * kFar} scale={skyline === 'street' ? scale * 0.55 : scale} />}</g>}
+      {layer !== 'front' && <g filter={`url(#${fid}-mid)`}>{mid}</g>}
       {layer !== 'back' && (
         <g transform={`translate(0,${horizonY})`}>
           {old ? <OldStreet x0={0} x1={w} depth={depth} p={p} offset={camX * scale} t={t} /> : <Street x0={0} x1={w} depth={depth} p={p} offset={camX * scale} />}
         </g>
       )}
-      {layer !== 'back' && near}
+      {layer !== 'back' && <g filter={`url(#${fid}-near)`}>{near}</g>}
     </svg>
   );
 };

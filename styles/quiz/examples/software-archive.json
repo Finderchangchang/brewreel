@@ -13,12 +13,17 @@
       "type": "phraseTitle",
       "beats": 12,
       "params": {
+        "voice": "show",
         "eyebrow": "功能冷知识",
         "phrase": "归档",
         "guess": "删掉了",
         "context": "很多人不敢点这个按钮，怕邮件就这么没了",
         "scene": "screen",
-        "screenItems": ["合同终版确认", "本周周报", "报销单已审批"]
+        "screenItems": [
+          "合同终版确认",
+          "本周周报",
+          "报销单已审批"
+        ]
       }
     },
     {
@@ -86,7 +91,6 @@
       "type": "replay",
       "beats": 8,
       "params": {
-        "title": "再看一遍",
         "sticker": "找到了"
       }
     },
@@ -104,8 +108,8 @@
       "type": "commentCta",
       "beats": 7,
       "params": {
-        "question": "你以前以为是哪个？",
-        "footnote": "选 A 的不丢人"
+        "question": "你押的是哪个？",
+        "footnote": "押 A 的不丢人"
       }
     },
     {

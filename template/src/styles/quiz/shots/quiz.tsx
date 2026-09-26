@@ -3,17 +3,17 @@ import {interpolate} from 'remotion';
 import {clamp} from '../../../core/anim';
 import {fitLine} from '../../../core/fit';
 import type {SfxCue, ShotProps} from '../../../core/types';
-import {Lit, Mark, litDur, popScale, usePal, useTk} from '../parts/kit';
-import {BurnedSub, Countdown, MediaCard, useCardBox} from '../parts/media';
+import {Lit, Mark, cardStyle, litDur, popScale, usePal, useTk} from '../parts/kit';
+import {CaptionTag, Countdown, MediaCard, useCardBox} from '../parts/media';
 import {useScreenItems, useStoryParams} from '../parts/story';
 import tokens from '../tokens.json';
 
 // ============================================================
-// quiz / quiz：提问 → 选项依次弹出 → 倒数 3 拍 → 揭晓（参考片 10.8–20.3 秒，全片高潮）。
-// 版式跳切：钩子标题、吉祥物、卡下字幕全撤，媒体卡跳到上方（y384），卡内出烧录字幕条（关键词亮色）：
+// quiz / quiz：提问 → 答题卡选项依次弹出 → 秒表倒数 3 拍 → 批改式揭晓（全片高潮）。
+// 版式跳切：钩子标题、讲解小窗、卡下引文全撤，媒体卡跳到上方（y388），卡左下角出字幕签（关键词主色 + 马克笔）：
 // 默认只放 clip 最后一句里含 key 的那半句（或 params.quizLine），出题时屏幕上不许有答案。
-// 提问 9 字/秒打出；选项卡依次弹出（0.27 秒，0→1.05→1，间隔 3 拍）；倒数一拍一个亮色大数字（1.35→1）；
-// 揭晓严格落在整拍上：正确项 1 帧切成亮色底 + 深色勾，0.2 秒放大到 1.03 回弹；错误项变灰 + 暖灰 ×。
+// 提问 9 字/秒打出；答题卡行依次弹出（0.27 秒，0→1.05→1，间隔 3 拍）；倒数是卡中央的墨色秒表，杏黄外圈每拍走空；
+// 揭晓严格落在整拍上：正确项 1 帧切成主色整行 + 杏黄涂卡格 + 杏黄手写勾，0.2 秒放大到 1.03 回弹；错误项变灰 + 朱红小叉。
 // 时间表按时长倒推：揭晓 = 结束前 ≥1.5 秒的最后一个整拍，倒数在它前面 3 拍，选项均匀排在提问和倒数之间。
 // ============================================================
 type P = {question: string; options: string[]; answer: number; sub?: string; quizLine?: string; scene?: string; media?: string; screenItems?: string[]};
@@ -47,11 +47,12 @@ const Quiz: React.FC<ShotProps<P>> = ({params, t, dur, beat}) => {
   const clip = useStoryParams<{lines?: {text: string}[]; key?: string; scene?: string; media?: string}>('clip');
   const hook = useStoryParams<{scene?: string; media?: string}>('phraseTitle');
   const pl = plan(params, dur, beat);
-  const O0 = tk.layout?.option ?? {h: 108, gap: 20, stroke: 4, radius: 26, letterD: 72, letterStroke: 3};
-  const R = tk.motion?.reveal ?? {bump: 0.2, bumpScale: 1.03};
+  const O0 = tk.layout?.option ?? {h: 104, gap: 22, stroke: 4, radius: 14, bubbleW: 84, bubbleH: 58, shadow: 6};
+  const R = tk.motion?.reveal ?? {bump: 0.2, bumpScale: 1.03, mark: 0.14};
   const opts = (params.options ?? []).slice(0, 4);
-  // 选项卡放不进主体区（y ≤ 1340）时整体等比压扁（4 个选项时会用到），字号跟着 fitLine 走
-  const room = 1340 - (box.y + box.h + 32);
+  // 答题卡行放不进主体区（y ≤ 1340）时整体等比压扁（4 个选项时会用到），字号跟着 fitLine 走
+  const top0 = box.y + box.h + 40;
+  const room = 1340 - top0;
   const need = opts.length * O0.h + Math.max(0, opts.length - 1) * O0.gap;
   const kk = need > room ? room / need : 1;
   const O = {...O0, h: Math.floor(O0.h * kk), gap: Math.floor(O0.gap * kk)};
@@ -59,15 +60,15 @@ const Quiz: React.FC<ShotProps<P>> = ({params, t, dur, beat}) => {
   const items = useScreenItems(params.screenItems);
   const revealed = t >= pl.reveal;
   const x0 = tk.layout?.marginLeft ?? 150;
-  const qs = fitLine(params.question ?? '', 780, tk.type?.question ?? 68, 52);
-  const top0 = box.y + box.h + 32;
+  const qs = fitLine(params.question ?? '', 780, tk.type?.question ?? 64, 50);
+  const markP = interpolate(t, [pl.reveal, pl.reveal + (R.mark ?? 0.14)], [0, 1], clamp);
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <div style={{position: 'absolute', left: x0, top: tk.layout?.eyebrowY ?? 270, width: 780, fontSize: qs, fontWeight: 900, color: pal.ink, lineHeight: 1.3, whiteSpace: 'nowrap'}}>
+      <div style={{position: 'absolute', left: x0, top: tk.layout?.tagY ?? 262, width: 780, fontSize: qs, fontWeight: 800, color: pal.ink, lineHeight: 1.3, whiteSpace: 'nowrap'}}>
         <Lit text={params.question ?? ''} t={t} t0={pl.qAt} rate={tk.motion?.charsPerSec?.question ?? 9} mode="type" />
       </div>
       <MediaCard box={box} t={t} stage={{scene: params.scene ?? (clip ? clip.scene : hook?.scene), media: params.media ?? (clip ? clip.media : hook?.media), items, phase: 'ask', phaseAt: -1}}>
-        <BurnedSub text={sub} hot={clip?.key} t={t} at={0.05} box={box} />
+        <CaptionTag text={sub} hot={clip?.key} t={t} at={0.05} box={box} />
         <Countdown t={t} at={pl.cd} beat={beat} box={box} />
       </MediaCard>
       {opts.map((o, i) => {
@@ -76,43 +77,29 @@ const Quiz: React.FC<ShotProps<P>> = ({params, t, dur, beat}) => {
         const s = popScale(t, at, tk.motion?.popIn?.dur ?? 0.27, 0, tk.motion?.popIn?.overshoot ?? 1.05);
         const right = i === params.answer;
         const bump = revealed && right ? interpolate(t, [pl.reveal, pl.reveal + R.bump / 2, pl.reveal + R.bump], [1, R.bumpScale, 1], clamp) : 1;
-        const bg = revealed ? (right ? pal.highlight : pal.cardAlt) : pal.card;
-        const fg = revealed && !right ? pal.wrong : pal.ink;
-        const line = revealed && !right ? pal.wrong : pal.ink;
-        const fs = fitLine(o, 780 - O.letterD - 150, tk.type?.option ?? 54, 40);
+        // 答题卡一行：左边一个椭圆涂卡格（字母），右边选项字。揭晓：正确项整行变主色、涂卡格涂成杏黄、右端杏黄手写勾；
+        // 错误项褪成灰字，右端一个朱红小叉（像老师批改）
+        const good = revealed && right;
+        const bad = revealed && !right;
+        const fg = good ? pal.onPrimary : bad ? pal.wrong : pal.ink;
+        const fs = fitLine(o, 780 - O.bubbleW - 170, tk.type?.option ?? 50, 38);
         return (
-          <div
-            key={i}
-            style={{
-              position: 'absolute',
-              left: 150,
-              width: 780,
-              top: top0 + i * (O.h + O.gap),
-              height: O.h,
-              borderRadius: O.radius,
-              background: bg,
-              border: `${O.stroke}px solid ${line}`,
-              boxShadow: tk.layout?.option?.shadow,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 22,
-              padding: '0 26px',
-              boxSizing: 'border-box',
-              transform: `scale(${s * bump})`,
-            }}
-          >
-            <div style={{width: O.letterD, height: O.letterD, borderRadius: '50%', border: `${O.letterStroke}px solid ${line}`, background: revealed && right ? pal.card : pal.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: tk.type?.optionLetter ?? 40, fontWeight: 900, color: fg, flexShrink: 0}}>
+          <div key={i} style={{position: 'absolute', left: x0, width: 780, top: top0 + i * (O.h + O.gap), height: O.h, display: 'flex', alignItems: 'center', gap: 24, padding: '0 28px 0 22px', transform: `scale(${s * bump})`, transformOrigin: 'left center', opacity: bad ? interpolate(t, [pl.reveal, pl.reveal + (R.wrongFade ?? 0.1)], [1, 0.85], clamp) : 1, ...cardStyle(pal, {radius: O.radius, stroke: O.stroke, shadow: bad ? 0 : O.shadow, bg: good ? pal.primary : bad ? pal.cardAlt : pal.card, shadowColor: pal.ink})}}>
+            <div style={{width: O.bubbleW, height: Math.min(O.bubbleH, O.h - 24), borderRadius: '50%', border: `4px solid ${good ? pal.ink : bad ? pal.wrong : pal.ink}`, background: good ? pal.highlight : pal.card, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: tk.font?.mono, fontSize: tk.type?.optionLetter ?? 36, fontWeight: 700, color: bad ? pal.wrong : pal.ink, flexShrink: 0, lineHeight: 1}}>
               {String.fromCharCode(65 + i)}
             </div>
             <div style={{flex: 1, fontSize: fs, fontWeight: 800, color: fg, whiteSpace: 'nowrap', lineHeight: 1.2}}>{o}</div>
-            {revealed ? <Mark kind={right ? 'check' : 'cross'} size={58} color={right ? pal.ink : pal.cross} p={interpolate(t, [pl.reveal, pl.reveal + (R.mark ?? 0.1)], [0, 1], clamp)} /> : null}
+            {revealed ? (
+              <div style={{transform: good ? 'rotate(-6deg) translateY(-6px)' : undefined}}>
+                <Mark kind={right ? 'check' : 'cross'} size={right ? 76 : 50} color={right ? pal.highlight : pal.pen} p={markP} stroke={right ? 11 : 9} />
+              </div>
+            ) : null}
           </div>
         );
       })}
     </div>
   );
-};
-export default Quiz;
+};export default Quiz;
 
 export const sfx = (p: P, ctx: {dur: number; beat: number}): SfxCue[] => {
   const pl = plan(p, ctx.dur, ctx.beat);

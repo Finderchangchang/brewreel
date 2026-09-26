@@ -1,0 +1,15 @@
+{
+  "$doc": "照搬参考的风格：背景、主色、强调色、描边都和参考几乎一样，道具色原样照搬 —— 每条规则都该报",
+  "defaultTheme": "copy",
+  "themes": {
+    "copy": {
+      "bg": "#EEEADF",
+      "ink": "#232A33",
+      "primary": "#C9432C",
+      "highlight": "#F0C030",
+      "card": "#FFFFFF",
+      "cardAlt": "#EFEBE0"
+    }
+  },
+  "scenes": {"shop": {"props": ["#2E9C8F", "#5B3FD0"]}}
+}

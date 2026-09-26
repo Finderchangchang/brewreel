@@ -4,14 +4,15 @@ import {clamp} from '../../../core/anim';
 import {fitSize} from '../../../core/fit';
 import type {SfxCue, ShotProps} from '../../../core/types';
 import {Actor} from '../parts/cast';
-import {Lit, backOut, litDur, usePal, useTk} from '../parts/kit';
+import {Lit, TagRow, backOut, litDur, usePal, useTk, useVoice} from '../parts/kit';
+import {useStoryParams} from '../parts/story';
 import tokens from '../tokens.json';
 
 // ============================================================
-// quiz / duoScene：两个小人再演一遍（参考片 29.7–37.4 秒，把知识迁移到生活）。整页上滑进场。
+// quiz / duoScene：两个小人再演一遍（把知识迁移到生活）。整页上滑进场。
 // 语境句逐字 → 两个角色以脚底为锚点从 0.2 倍放大进场（0.2 秒，间隔 0.1 秒）→ 搭档（右）的问句气泡弹出（0.13 秒，0.6→1，
 // 锚在尾巴尖），关键词主色 + 马克笔 1.5 秒慢扫 → 气泡收起 → 主讲人（左）的回答气泡（先幽灵后实）→ 主讲人跳起，
-// 最高点头顶灯泡亮起，冒心。译文放在气泡第二行。小人放大到 y≈700–1400。
+// 最高点状态道具亮起、放火花。气泡是小圆角 + 硬投影的方框、直角楔形尾巴；译文放在气泡第二行。小人放大到 y≈700–1400。
 // ============================================================
 type P = {context: string; ask: string; askZh?: string; reply: string; replyZh?: string; key?: string};
 
@@ -31,7 +32,7 @@ export const plan = (p: P, dur: number) => {
 const Bubble: React.FC<{text: string; sub?: string; t: number; at: number; out?: number; side: 'left' | 'right'; tailX: number; y: number; hot?: string; ghostUntil?: number}> = ({text, sub, t, at, out, side, tailX, y, hot, ghostUntil}) => {
   const tk = useTk();
   const pal = usePal();
-  const B = tk.layout?.bubble ?? {radius: 36, stroke: 4, padX: 34, padY: 18, tail: 26};
+  const B = tk.layout?.bubble ?? {radius: 18, stroke: 4, padX: 32, padY: 18, tail: 24, shadow: 6};
   const bp = tk.motion?.bubblePop ?? {dur: 0.13, from: 0.6};
   if (t < at || (out !== undefined && t > out + 0.14)) return null;
   const sIn = interpolate(t, [at, at + bp.dur], [bp.from, 1], {...clamp, easing: backOut(1.6)});
@@ -41,11 +42,11 @@ const Bubble: React.FC<{text: string; sub?: string; t: number; at: number; out?:
   const hotIn = hot && text.includes(hot);
   return (
     <div style={{position: 'absolute', left: 150, width: 780, top: y, display: 'flex', justifyContent: side === 'left' ? 'flex-start' : 'flex-end'}}>
-      <div style={{position: 'relative', maxWidth: 780, padding: `${B.padY}px ${B.padX}px`, borderRadius: B.radius, background: pal.card, border: `${B.stroke}px solid ${ghost ? pal.wrong : pal.ink}`, fontSize: fs, fontWeight: 800, lineHeight: 1.3, color: pal.ink, opacity: ghost ? 0.5 : 1, transform: `scale(${sIn * sOut})`, transformOrigin: side === 'left' ? `${tailX - 150}px 100%` : `calc(100% - ${930 - tailX}px) 100%`, boxShadow: '0 10px 30px rgba(20,33,62,0.08)'}}>
+      <div style={{position: 'relative', maxWidth: 780, padding: `${B.padY}px ${B.padX}px`, borderRadius: B.radius, background: pal.card, border: `${B.stroke}px solid ${ghost ? pal.wrong : pal.ink}`, fontSize: fs, fontWeight: 800, lineHeight: 1.3, color: pal.ink, opacity: ghost ? 0.5 : 1, transform: `scale(${sIn * sOut})`, transformOrigin: side === 'left' ? `${tailX - 150}px 100%` : `calc(100% - ${930 - tailX}px) 100%`, boxShadow: ghost ? 'none' : `${B.shadow ?? 6}px ${B.shadow ?? 6}px 0 ${pal.ink}`}}>
         <Lit text={text} t={t} t0={at} rate={40} hot={hotIn ? hot : undefined} marker={!!hotIn} markerAt={at + 0.1} />
         {sub ? <div style={{fontSize: tk.type?.translation ?? 40, fontWeight: 600, opacity: 0.7, marginTop: 4}}>{sub}</div> : null}
         <svg width={B.tail * 2} height={B.tail + 6} viewBox={`0 -6 ${B.tail * 2} ${B.tail + 6}`} style={{position: 'absolute', bottom: -B.tail - 2, ...(side === 'left' ? {left: tailX - 150 - B.tail} : {right: 930 - tailX - B.tail})}}>
-          <path d={`M0 0 L${B.tail} ${B.tail} L${B.tail * 2} 0`} fill={pal.card} stroke={ghost ? pal.wrong : pal.ink} strokeWidth={B.stroke} strokeLinejoin="round" />
+          <path d={`M0 0 L${side === 'left' ? 0 : B.tail * 2} ${B.tail} L${B.tail * 2} 0`} fill={pal.card} stroke={ghost ? pal.wrong : pal.ink} strokeWidth={B.stroke} strokeLinejoin="round" />
           <rect x={B.stroke} y={-6} width={B.tail * 2 - B.stroke * 2} height={6 + B.stroke / 2} fill={pal.card} />
         </svg>
       </div>
@@ -53,8 +54,10 @@ const Bubble: React.FC<{text: string; sub?: string; t: number; at: number; out?:
   );
 };
 
-const DuoScene: React.FC<ShotProps<P>> = ({params, t, dur}) => {
+const DuoScene: React.FC<ShotProps<P>> = ({params, t, dur, meta}) => {
   const tk = useTk();
+  const voice = useVoice(meta);
+  const hook = useStoryParams<{tag?: string}>('phraseTitle');
   const pal = usePal();
   const pl = plan(params, dur);
   const x0 = tk.layout?.marginLeft ?? 150;
@@ -72,10 +75,11 @@ const DuoScene: React.FC<ShotProps<P>> = ({params, t, dur}) => {
   const bx = 750;
   return (
     <div style={{position: 'absolute', inset: 0}}>
-      <div style={{position: 'absolute', left: x0, top: tk.layout?.titleY ?? 296, width: 780, fontSize: cs, fontWeight: 900, color: pal.ink, lineHeight: 1.3}}>
+      <TagRow label={hook?.tag ?? voice('tag')} x={x0} y={tk.layout?.tagY ?? 262} />
+      <div style={{position: 'absolute', left: x0, top: tk.layout?.titleY ?? 318, width: 780, fontSize: cs, fontWeight: 800, color: pal.ink, lineHeight: 1.3}}>
         <Lit text={params.context ?? ''} t={t} t0={0.1} rate={14} mode="type" />
       </div>
-      <Actor who="a" x={ax} y={feet} size={H} t={t} scale={sA} hop={hopY} lit={lit} facing="right" expr={lit ? 'happy' : 'neutral'} pose={lit ? 'cheer' : undefined} talk={replying ? [pl.replyAt, pl.replyAt + 1.2] : null} fx={lit ? 'hearts' : undefined} fxT={t - pl.hop - 0.1} />
+      <Actor who="a" x={ax} y={feet} size={H} t={t} scale={sA} hop={hopY} lit={lit} facing="right" expr={lit ? 'happy' : 'neutral'} pose={lit ? 'cheer' : undefined} talk={replying ? [pl.replyAt, pl.replyAt + 1.2] : null} fx={lit ? 'sparkle' : undefined} fxT={t - pl.hop - 0.1} />
       <Actor who="b" x={bx} y={feet} size={H} t={t} scale={sB} facing="left" expr={replying ? 'surprised' : 'neutral'} talk={[pl.askAt, pl.askAt + 1.4]} />
       <Bubble text={params.ask ?? ''} sub={params.askZh} t={t} at={pl.askAt} out={pl.askOut} side="right" tailX={bx} y={450} hot={params.key} />
       <Bubble text={params.reply ?? ''} sub={params.replyZh} t={t} at={pl.replyAt} side="left" tailX={ax} y={450} hot={params.key} ghostUntil={pl.solidAt} />

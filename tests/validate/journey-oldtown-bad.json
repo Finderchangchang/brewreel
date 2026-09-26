@@ -11,10 +11,10 @@
   "shots": [
     {"type": "opening", "params": {"headline": "5 站慢游", "kicker": "跟橘团逛古镇"}},
     {"type": "district", "params": {"category": "石板早市", "title": "清早去，热乎的米糕", "scene": "market"}},
-    {"type": "district", "params": {"category": "东门城楼", "title": "清晨人少，城门下好拍照", "scene": "studio"}},
-    {"type": "district", "params": {"category": "三孔石桥", "title": "站在桥上，看船从脚下过", "scene": "launch"}},
-    {"type": "district", "params": {"category": "河边茶馆", "title": "一杯茶，看河慢慢流", "scene": "observatory"}},
-    {"type": "district", "params": {"category": "夜游灯会", "title": "晚上的古镇，灯都亮了", "scene": "neon"}},
+    {"type": "district", "params": {"category": "东门城楼", "title": "清晨人少，城门下好拍照", "scene": "booth"}},
+    {"type": "district", "params": {"category": "三孔石桥", "title": "站在桥上，看船从脚下过", "scene": "postbox"}},
+    {"type": "district", "params": {"category": "河边茶馆", "title": "一杯茶，看河慢慢流", "scene": "hitch"}},
+    {"type": "district", "params": {"category": "夜游灯会", "title": "晚上的古镇，灯都亮了", "scene": "platform"}},
     {"type": "finale", "params": {"slogan": "慢慢走，古镇等你", "stats": [{"value": "5", "unit": "站游线"}], "refs": ["f5"]}}
   ]
 }

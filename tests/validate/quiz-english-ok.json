@@ -43,7 +43,7 @@
       "type": "quiz",
       "beats": 19,
       "params": {
-        "question": "你猜他什么意思？",
+        "question": "他这句到底想说啥？",
         "options": [
           "我很低落",
           "算我一个",
@@ -81,7 +81,7 @@
       "type": "replay",
       "beats": 8,
       "params": {
-        "title": "再听一遍",
+        "title": "倒回去看",
         "zh": "好啊，算我一个！",
         "sticker": "懂了"
       }

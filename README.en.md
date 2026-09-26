@@ -1,6 +1,6 @@
 # Distill Video · 蒸馏视频
 
-**Current version v0.2.0** ([changelog](CHANGELOG.en.md)) | repo `promo-video-skill` | [中文版 → README.md](README.md)
+**Current version v0.2.1** ([changelog](CHANGELOG.en.md)) | repo `promo-video-skill` | [中文版 → README.md](README.md)
 
 Author: **Liu Weijie (柳伟杰)** — GitHub [@Finderchangchang](https://github.com/Finderchangchang). If you redistribute, fork or use this commercially, please keep `LICENSE` and `NOTICE` and credit the source.
 
@@ -109,17 +109,17 @@ A storyboard picks its look with `meta.style`; without it you get the default `c
 
 ![cards style preview](docs/images/style-cards.png)
 
-**`quiz`** (ready, 9:16): off-white background, blue plus neon lime, left-aligned heavy type and flat-illustrated characters. The beat is: state a common misconception → ask an A/B/C question with a 3-second countdown → reveal with a check mark → full-screen meaning card (≠ the old reading / = the right meaning) → a short scene acting it out → a comment prompt. Fits products with a common misconception that can be framed as one multiple-choice question: what a foreign phrase really means, a software feature people often misread (e.g. "Archive = deleted?"), or why a dish is made the way it is. See [`styles/quiz/`](styles/quiz/README.md); templates and length limits are in `styles/quiz/recipes.md` (Chinese); five sample storyboards are in `styles/quiz/examples/`.
+**`quiz`** (ready, 9:16): the skin is a "marked answer sheet": dot-grid paper with a vermilion margin line, a deep primary plus an amber highlighter and a vermilion marking pen, monospaced labels, and cards with small radii and solid hard shadows. Three palettes (`sage-pine` grey-green paper + pine, the default; `rice-soy` rice paper + soy brown, the food default; `ash-teal` grey paper + deep teal) and three voices (`phraseTitle.params.voice`: `exam`, `chat`, `show`). Two original characters, one short and one tall: a host in headphones (the ear cup lights up and sends out sound waves when it clicks) and a buddy in a backwards cap. The beat is: circle a common misconception in red pen → an A/B/C question on an answer sheet with a stopwatch counting 3 → reveal with a check mark → a dictionary card flips in (the misreading struck through with a wavy line, numbered meanings) → replay the clip and stamp it → a short scene acting it out → a comment prompt → a stamp wipe that lands on the closing card. Fits products with a common misconception that can be framed as one multiple-choice question: what a foreign phrase really means, a software feature people often misread (e.g. "Archive = deleted?"), or why a dish is made the way it is. See [`styles/quiz/`](styles/quiz/README.md); templates and length limits are in `styles/quiz/recipes.md` (Chinese); five sample storyboards are in `styles/quiz/examples/`.
 
 ![quiz style preview](docs/images/style-quiz.png)
 
-**`journey`** (ready, 4:5 by default, 9:16 supported): our own mascot, a red-panda cub on a hover board, crosses a flat-illustrated city in one continuous take. One district per content category, an overhead billboard pops a representative title, three backdrops (modern city, low-rise street, or an old town with white walls, tile roofs and a stone bridge) and 14 district types picked by content (docs, launch, workshop, studio, data, night street, phone, home, cafe, market, city gate, stone bridge, teahouse, lanterns), each with its own gag; the sky goes from day to night, and at the end the whole city zooms into the product screen with a brand card and stats. Fits products with many clear categories: channels of a content platform, features of an app, stops on a sightseeing route. See [`styles/journey/`](styles/journey/README.md); per-beat fields and length limits are in `styles/journey/recipes.md` (Chinese); three sample storyboards are in `styles/journey/examples/`.
+**`journey`** (ready, 4:5 by default, 9:16 supported): the skin is "travel stationery" on a "layered paper-cut" city. Our own mascot, a red-panda cub on a hover board, crosses the city in one continuous take (far, middle and near layers and the character are each a sheet of paper with a hard offset paper shadow). It opens on split-flap station letters; a full-width ticket across the top shows the route, the stops and the current stop; each stop throws in an airmail-bordered postcard with a representative title, which is then "posted" into that stop on the ticket. Palette: postal green + neon lime + graphite outlines (`post-green`; `plum-ticket` is a wine-red alternative). One district per content category, three backdrops (modern city, low-rise street, or an old town with white walls, tile roofs and a stone bridge) and 14 district types picked by content (crossing, postbox, ticket check, photo booth, bus stop, night platform, phone, home, cafe, market, city gate, stone bridge, teahouse, lanterns), each with its own station- or mail-themed gag; the sky goes from day to night, and at the last stop the city dims while a stamp card rises: one stamp per stop, stats counting up, and a round "ARRIVED" seal to finish. Fits products with many clear categories: channels of a content platform, features of an app, stops on a sightseeing route. See [`styles/journey/`](styles/journey/README.md); per-beat fields and length limits are in `styles/journey/recipes.md` (Chinese); three sample storyboards are in `styles/journey/examples/`.
 
 ![journey style preview](docs/images/style-journey.png)
 
 **Choosing `meta.style`**:
-- The product has a point people commonly get wrong, it can be asked as "What do you think X means?", and there is exactly one right answer → `quiz`.
-- The product has 4–6 clear categories / features / stops worth touring in one go → `journey`.
+- The product has a point people commonly get wrong and it can be framed as one multiple-choice question with exactly one right answer ("What does X actually mean?") → `quiz`.
+- The product has 4–6 clear categories / features / stops worth touring along one route → `journey`.
 - Everything else (selling points, flows, UI demos, stores and physical products, price lists) → `cards`, i.e. leave it out.
 - `quiz` only supports 9:16. Its own shots (question, reveal, meaning card, etc.) can only be used in `quiz`, and it does not mix with the 18 `cards` shots; validation blocks a storyboard that mixes them.
 
@@ -131,9 +131,16 @@ A storyboard picks its look with `meta.style`; without it you get the default `c
 
 - **Use**: make films with an existing style.
 - **Remix (reskin)**: `node scripts/gen-styles.mjs --new <id>` scaffolds a new style; copy over the shots and `tokens.json` you want to keep from the source style, then change palette, fonts and characters. For a color-only variant, editing `themes` in `tokens.json` is enough.
-- **Create (distill)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown → replicate → componentize → cheap-model test → review and fix, ending in a new style. `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` and `journey` were made this way, with a quiz-style short video and a character-journey short video as their references.
+- **Create (distill)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown (plus a numbered list of the reference's signature elements) → replicate (local only, never committed) → **redesign** → componentize → cheap-model test → review (including a confusability score), ending in a new style. `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` and `journey` were made this way, with a quiz-style short video and a character-journey short video as their references.
 
-Reference videos and their stills, extracted frames, characters, brand names, URLs and film clips never go into the repo. Keep the raw breakdown outside the repo; the repo only holds breakdown text you wrote, characters and scenes you drew, and sample content you wrote. Steps and the PR checklist: [CONTRIBUTING.en.md](CONTRIBUTING.en.md).
+**Redesign + originality check is a required step**, for remixes and new styles alike. We want a style of the same genre, not a one-to-one copy:
+- **The skeleton may stay**: narrative structure, rhythm, motion techniques, camera language and layout principles belong to the genre and anyone can use them.
+- **The skin must be redone**: palette, type treatment, character design and character colors, signature details, fixed copy lines, and branded endings.
+- **Prove the distance with numbers**: run `node scripts/check-originality.mjs --style <id> --ref <reference tokens.json> --signatures <signatures.md>` (keep the reference tokens and signature list outside the repo). Theme chromatic colors must be at least ΔE2000 20 from every reference chromatic color, backgrounds at least 8, the primary + accent pair must not match any reference pair, outlines must differ, no color may be copied, and every signature item needs a `Replaced with: …` (or `已替换为：…`) or `Removed` entry in `styles/<id>/originality.md`.
+- **Review scores confusability** from 1 to 10 and only ≤ 3 passes: someone who knows the reference should see at a glance that it is not the same maker.
+- In v0.2.1 `quiz` and `journey` went through this step and replaced the v0.2.0 skin wholesale; see each style's `originality.md` for the item-by-item record.
+
+Reference videos and their stills, extracted frames, characters, brand names, URLs, film clips and palette tokens never go into the repo. Keep the raw breakdown and the signature list outside the repo; the repo only holds breakdown text you wrote, characters and scenes you drew, and sample content you wrote. Steps and the PR checklist: [CONTRIBUTING.en.md](CONTRIBUTING.en.md).
 
 ## Industry packs: adding a new industry
 
@@ -185,7 +192,7 @@ The QA review listed 10 problems. Items 1–9 are fixed; item 10 is only partly 
 - **Spoiling the answer before the question**: new check Q10. The hook's context line, every line of the film clip, and the subtitle bar on the quiz card may not contain the correct option, the "=" lines of the meaning card, or the numbers in them. Re-run on those 3 storyboards, all 3 are now blocked.
 - **Subtitle bar on the quiz card**: by default it shows only the half of the clip's last line that contains the key phrase; `quizLine` lets you write it yourself (≤12 characters, no answer). The software and food templates now say "show the feature or dish name, not the effect".
 - **Solid-color blank frames**: `make.mjs` adds a blank-frame check. If more than 95% of the screen is one color for more than 6 frames in a row, the video is not delivered.
-- Also added Q11–Q13: in a quantity question every option must be a quantity; UI mockups (screen / phone) must include the real on-screen text; a film clip requires the "listen again" beat.
+- Also added Q11–Q13: in a quantity question every option must be a quantity; UI mockups (screen / phone) must include the real on-screen text; a clip requires the replay beat (`replay`).
 
 After the fixes, all 5 sample storyboards in `styles/quiz/examples/` were re-validated and rendered: `make.mjs` exited 0 each time, the last line was always `交付：…` ("delivered"), and both the layout check and the blank-frame check passed. The cheap model has not yet re-run a scored round after the fixes, so the scores above are still from before them.
 
@@ -198,8 +205,8 @@ After the fixes, all 5 sample storyboards in `styles/quiz/examples/` were re-val
 | Sightseeing route (city-walk) | 5 | 3.5 |
 
 None of the three reached 7. The QA review listed 10 problems and all 10 were addressed; item 10 (colours) is only partly done: the review asked for a softer palette overall, but the style spec forbids copying the reference video's colours, so the palette was only partly softened. Main changes:
-- **Props that didn't match the subject** (item 1): a new backdrop option, `opening.params.skyline`: `modern` city (default) / `street` (low-rise lanes) / `oldtown` (white walls, tile roofs, a stone bridge over a canal), plus new districts such as market, city gate, stone bridge, teahouse and lanterns. Validation now blocks an old-town subject that doesn't use `oldtown`, and districts whose props don't fit the backdrop (e.g. a launch pad in the old town).
-- **Billboards were never checked**: in a one-take film the billboard folds away mid-shot, and the check frame used to be taken at the end of the shot, where it is already gone. `make.mjs` now takes the check frame on the beat set by the shot spec's `checkBeat`, when the billboard has settled. The billboard title and category name must be visible on that frame (`mustShow`), and another district's category name in the same frame also counts as an error; either one refuses delivery.
+- **Props that didn't match the subject** (item 1): a new backdrop option, `opening.params.skyline`: `modern` city (default) / `street` (low-rise lanes) / `oldtown` (white walls, tile roofs, a stone bridge over a canal), plus new districts such as market, city gate, stone bridge, teahouse and lanterns. Validation now blocks an old-town subject that doesn't use `oldtown`, and districts whose props don't fit the backdrop (e.g. a postbox street in the old town).
+- **The per-stop content card was never checked**: in a one-take film the content card (a billboard at the time, a postcard since v0.2.1) folds away mid-shot, and the check frame used to be taken at the end of the shot, where it is already gone. `make.mjs` now takes the check frame on the beat set by the shot spec's `checkBeat`, when the card has settled. The card title and category name must be visible on that frame (`mustShow`), and another district's category name in the same frame also counts as an error; either one refuses delivery.
 - **Numbers without a source**: prices and opening hours on screen must be copied from `meta.facts`, and the number in the hook must be either the district count or backed by the facts. When a promo word appears, the error now names the word and first says to delete it, asking for dates only if the promotion is real; a promotion date in a notice that isn't in the facts is blocked too (the model used to invent a date to get past validation).
 - **Copy warnings**: a category name cut off mid-word, a hook like "5 ledger streets" that doesn't read, a long title with no pause, and an end card with only a slogan (no number and no way to get the product) each raise a warning.
 - **Fields in the wrong place**: fields that belong in `params` but were written at the top level of a shot now produce one merged error with the correct shape, instead of one error per field.
@@ -242,6 +249,7 @@ promo-video-skill/
     make_bgm.py                  Parametric original background music
     build_docs.mjs                Generates shots.md / shots.en.md from spec.json files
     privacy-scan.mjs              Pre-publish privacy self-check
+    check-originality.mjs       Originality check: color difference from the reference (CIEDE2000) + signature-by-signature record
     checks/ lib/                   Rule implementations
   template/                   The Remotion rendering project
     src/shots/                 18 shared shot components + parameter specs (used by cards)
@@ -251,11 +259,12 @@ promo-video-skill/
     public/                    Fonts, sound effects, sample assets
   examples/                   9 ready-to-render storyboard samples (six industries + English + two generic samples, all cards style)
   styles/                     style packs: nine-layer spec, narrative templates, rules, examples; _template/ scaffolds a new style
-  distill/                    style distillation process and reusable prompts
+  distill/                    style distillation process and reusable prompts (breakdown → replicate → redesign → componentize → test → review)
   CONTRIBUTING.en.md          how to contribute (use / remix / create, PR checklist)
   tests/
     validate/                  Positive/negative regression tests for the validator
     rules/                     Regression tests for each industry's rules (4 cases each)
+    originality/               Unit tests for the originality check (color difference, rules, signature records)
 ```
 
 ## FAQ

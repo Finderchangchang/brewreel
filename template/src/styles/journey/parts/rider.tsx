@@ -6,21 +6,22 @@ import type {Expr} from './plan';
 // ============================================================
 // 角色 + 载具的接入层（Film 只认这里的 <Rider>，不直接引用 art/）。
 // 正式角色来自 art/ 的 Mascot（吉祥物 + 悬浮滑板）；这里把风格的 11 种「剧情表情」翻译成美术的 pose / expr / fx。
+// lean（道口下腰）只换姿态和表情，身体后仰的角度由 film.tsx 转整个角色。
 // 接口：原点 (0,0) = 载具中心；size = 300 时角色身高约 190px；不画任何文字（版式探针会把文字当内容查）。
 // 美术没交付或想对照时，把 USE_ART 改成 false 就回到下面的占位件。
 // ============================================================
 const USE_ART = true;
-const ART: Record<Expr, Pick<MascotProps, 'pose' | 'expr' | 'fx' | 'sooty'>> = {
+const ART: Record<Expr, Pick<MascotProps, 'pose' | 'expr' | 'fx'>> = {
   normal: {pose: 'cruise'},
   happy: {pose: 'cruise', expr: 'happy'},
   excited: {pose: 'excited'},
   surprised: {pose: 'surprised'},
   squash: {pose: 'squeeze'},
   relaxed: {pose: 'cruise', expr: 'happy', fx: 'sweat'},
-  sooty: {pose: 'cruise', expr: 'shock', sooty: true, fx: 'smoke'},
+  lean: {pose: 'surprised', expr: 'shock', fx: 'sweat'},
+  offer: {pose: 'point', expr: 'smile'},
   curious: {pose: 'study'},
   pose: {pose: 'cheer'},
-  dizzy: {pose: 'dizzy'},
   wave: {pose: 'wave'},
 };
 export type RiderProps = {
@@ -54,17 +55,13 @@ const Eyes: React.FC<{expr: Expr; ink: string; t: number}> = ({expr, ink, t}) =>
       return pair((x) => <path key={x} d={`M${x - 11} ${EYE_Y + 4} Q${x} ${EYE_Y - 10} ${x + 11} ${EYE_Y + 4}`} stroke={ink} strokeWidth={sw} fill="none" strokeLinecap="round" />);
     case 'excited':
       return pair((x) => (
-        <path key={x} d={starPath(x, EYE_Y, 15, 6.5)} fill="#FFD84A" stroke={ink} strokeWidth={3.5} strokeLinejoin="round" />
+        <path key={x} d={starPath(x, EYE_Y, 15, 6.5)} fill="#FFAA3B" stroke={ink} strokeWidth={3.5} strokeLinejoin="round" />
       ));
     case 'surprised':
       return pair((x) => <circle key={x} cx={x} cy={EYE_Y} r={11} fill="#fff" stroke={ink} strokeWidth={sw - 1} />);
     case 'squash':
     case 'pose':
       return pair((x) => <path key={x} d={`M${x - 12} ${EYE_Y} L${x + 12} ${EYE_Y + (x < 0 ? -5 : 5) * 0}`} stroke={ink} strokeWidth={sw} strokeLinecap="round" />);
-    case 'dizzy':
-      return pair((x) => <path key={x} d={spiralPath(x, EYE_Y, 12, t)} stroke={ink} strokeWidth={4} fill="none" strokeLinecap="round" />);
-    case 'sooty':
-      return pair((x) => <path key={x} d={`M${x - 11} ${EYE_Y - 4} L${x + 11} ${EYE_Y + 4} M${x - 11} ${EYE_Y + 4} L${x + 11} ${EYE_Y - 4}`} stroke={ink} strokeWidth={5} strokeLinecap="round" />);
     default:
       return blink
         ? pair((x) => <path key={x} d={`M${x - 10} ${EYE_Y} L${x + 10} ${EYE_Y}`} stroke={ink} strokeWidth={sw} strokeLinecap="round" />)
@@ -76,15 +73,13 @@ const Mouth: React.FC<{expr: Expr; ink: string; brand: string}> = ({expr, ink, b
   const y = EYE_Y + 30;
   switch (expr) {
     case 'surprised':
-    case 'sooty':
+    case 'lean':
       return <ellipse cx={0} cy={y + 4} rx={9} ry={11} fill={ink} />;
     case 'excited':
     case 'happy':
     case 'wave':
     case 'pose':
       return <path d={`M-16 ${y - 2} Q0 ${y + 22} 16 ${y - 2} Z`} fill={brand} stroke={ink} strokeWidth={4} strokeLinejoin="round" />;
-    case 'dizzy':
-      return <path d={`M-16 ${y + 4} q5 -7 10 0 t10 0 t10 0`} stroke={ink} strokeWidth={4} fill="none" strokeLinecap="round" />;
     case 'squash':
       return <path d={`M-14 ${y + 2} L14 ${y + 2}`} stroke={ink} strokeWidth={5} strokeLinecap="round" />;
     default:
@@ -100,17 +95,6 @@ export const starPath = (cx: number, cy: number, R: number, r: number) => {
     pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`);
   }
   return `M${pts.join(' L')} Z`;
-};
-
-const spiralPath = (cx: number, cy: number, R: number, t: number) => {
-  const pts: string[] = [];
-  const rot = t * 9;
-  for (let i = 0; i <= 28; i++) {
-    const a = rot + i * 0.42;
-    const rr = (R * i) / 28;
-    pts.push(`${(cx + Math.cos(a) * rr).toFixed(1)} ${(cy + Math.sin(a) * rr).toFixed(1)}`);
-  }
-  return `M${pts.join(' L')}`;
 };
 
 /** 手臂：从肩膀到手的折线 + 白圆手 */
@@ -144,7 +128,7 @@ const PlaceholderRider: React.FC<RiderProps> = ({expr, t, size = 300, ink, brand
   const sy = 1 - 0.4 * sq;
   const armsUp = expr === 'excited' || expr === 'pose' || expr === 'surprised';
   const flame = 0.8 + 0.2 * Math.sin(t * 40);
-  const soot = expr === 'sooty';
+  const soot = false;
   return (
     <svg width={size} height={size * 0.95} viewBox="-150 -230 300 285" style={{position: 'absolute', left: -size / 2, top: -size * 0.95 * (230 / 285), overflow: 'visible'}}>
       {/* 滑板尾焰 */}
@@ -174,11 +158,11 @@ const PlaceholderRider: React.FC<RiderProps> = ({expr, t, size = 300, ink, brand
   );
 };
 
-export const Rider: React.FC<RiderProps & {speed?: number; night?: number}> = (p) =>
+export const Rider: React.FC<RiderProps & {speed?: number; night?: number; facing?: 'left' | 'right'}> = (p) =>
   USE_ART ? (
     <>
       <SpeedLines x={-40} y={-8} t={p.t} amount={p.speed ?? 0.8} size={190} />
-      <Mascot x={0} y={-8} size={190} t={p.t} vehicle="hoverboard" facing="right" speed={p.speed ?? 0.8} night={p.night ?? 0} squash={p.squash ?? 0} {...ART[p.expr]} />
+      <Mascot x={0} y={-8} size={190} t={p.t} vehicle="hoverboard" facing={p.facing ?? 'right'} speed={p.speed ?? 0.8} night={p.night ?? 0} squash={p.squash ?? 0} {...ART[p.expr]} />
     </>
   ) : (
     <PlaceholderRider {...p} />

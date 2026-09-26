@@ -1,38 +1,98 @@
 {
   "type": "meaningCard",
-  "purpose": "满屏主色释义卡（全片最多一次）：1 帧硬切到纯主色，空停 0.37 秒后逐行出字——大号词 / ≠ 误解（删除线从左往右画）/ = 正解（亮色）/ 可再加一个词和一行补充",
+  "purpose": "词条卡（全片最多一次）：1 帧硬切到主色桌面，一张纸质词条卡已经压在桌上、从侧面翻正；卡里按词典排版逐行出字——词头（大号墨色）/ 误解行（朱红小叉 + 灰字，被批改笔波浪划掉）/ 释义行（编号 ① ②，第一条扫杏黄马克笔）/ 可再加一个「▸ 相关说法」；卡底「例」栏放原句",
   "tips": [
-    "rows 3–5 行：第一行是 word（被误解的词）；恰好一行 neq（常见误解，会被划掉）；至少一行 eq（正解）",
-    "neq 行写 phraseTitle 的误解本意（不带「= ?」）；eq 行写正解，≤8 字",
-    "第二个 word 行适合放一个相关搭配或完整说法，用亮色大字"
+    "rows 3–5 行：第一行是 word（被误解的词，当词头）；恰好一行 neq（常见误解，会被波浪线划掉）；至少一行 eq（正解，按 ① ② 编号）",
+    "neq 行写 phraseTitle 的误解本意；eq 行写正解，≤8 字",
+    "第二个 word 行适合放一个相关搭配或完整说法（主色，前面带 ▸）",
+    "label 是卡左上角的小签，不写按口吻：「词条」「说法」「功能卡」"
   ],
-  "dur": {"default": 5.625, "min": 3.5, "max": 7.5},
+  "dur": {
+    "default": 5.625,
+    "min": 3.5,
+    "max": 7.5
+  },
   "mood": 0.75,
   "caption": "none",
   "exit": "none",
   "params": {
     "type": "object",
-    "required": ["rows"],
+    "required": [
+      "rows"
+    ],
     "properties": {
-      "eyebrow": {"type": "string", "maxLen": 8, "minLen": 1, "description": "眉题，如「今天这个词」"},
+      "label": {
+        "type": "string",
+        "maxLen": 4,
+        "minLen": 1,
+        "description": "卡左上角的等宽小签，不写按口吻（词条 / 说法 / 功能卡）"
+      },
+      "eyebrow": {
+        "type": "string",
+        "maxLen": 8,
+        "minLen": 1,
+        "description": "小签右边的小标题，如「今天这个词」"
+      },
       "rows": {
         "type": "array",
         "minItems": 3,
         "maxItems": 5,
         "items": {
           "type": "object",
-          "required": ["kind", "text"],
+          "required": [
+            "kind",
+            "text"
+          ],
           "properties": {
-            "kind": {"type": "string", "enum": ["word", "neq", "eq"], "description": "word 大号词 / neq ≠ 误解（带删除线）/ eq = 正解"},
-            "text": {"type": "string", "maxLen": 8, "minLen": 1, "description": "这一行的字（word ≤6 字或 12 个字母，neq/eq ≤8 字）"}
+            "kind": {
+              "type": "string",
+              "enum": [
+                "word",
+                "neq",
+                "eq"
+              ],
+              "description": "word 词头（第二个起是 ▸ 相关说法）/ neq 误解（朱红叉 + 波浪线划掉）/ eq 正解（编号 ① ②）"
+            },
+            "text": {
+              "type": "string",
+              "maxLen": 8,
+              "minLen": 1,
+              "description": "这一行的字（word ≤6 字或 12 个字母，neq/eq ≤8 字）"
+            }
           }
         }
       }
     }
   },
-  "sfx": [{"at": 0, "kind": "thud", "vol": 0.3}],
+  "sfx": [
+    {
+      "at": 0,
+      "kind": "thud",
+      "vol": 0.3
+    }
+  ],
   "example": {
     "dur": 5.625,
-    "params": {"eyebrow": "今天这个词", "rows": [{"kind": "word", "text": "归档"}, {"kind": "neq", "text": "删除"}, {"kind": "eq", "text": "收起来"}, {"kind": "eq", "text": "随时能搜到"}]}
+    "params": {
+      "eyebrow": "今天这个词",
+      "rows": [
+        {
+          "kind": "word",
+          "text": "归档"
+        },
+        {
+          "kind": "neq",
+          "text": "删除"
+        },
+        {
+          "kind": "eq",
+          "text": "收起来"
+        },
+        {
+          "kind": "eq",
+          "text": "随时能搜到"
+        }
+      ]
+    }
   }
 }

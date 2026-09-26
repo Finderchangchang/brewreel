@@ -8,7 +8,7 @@ export type V = [number, number];
 
 export const SW = 6;
 
-/** 角色：host = 主讲人（波波头 + 灯泡发箍 + 背带裙），buddy = 搭档（毛线帽 + 卫衣 + 运动鞋） */
+/** 角色：host = 主讲人（栗色侧分短发 + 低马尾、头戴式耳机、暖橙运动夹克），buddy = 搭档（反戴棒球帽、墨绿条纹毛衣、沙色工装裤） */
 export type Who = 'host' | 'buddy';
 
 /** 姿态（手臂 + 身体） */
@@ -38,8 +38,8 @@ export type Spec = {
 };
 
 export const SPECS: Record<Who, Spec> = {
-  host: {shoulderL: [-44, 222], shoulderR: [48, 222], L1: 86, L2: 82, armW: 26, chin: [12, 180], neck: [6, 184], top: [18, -40], face: [8, 118]},
-  buddy: {shoulderL: [-54, 232], shoulderR: [62, 232], L1: 94, L2: 88, armW: 30, chin: [16, 184], neck: [8, 190], top: [8, -30], face: [8, 118]},
+  host: {shoulderL: [-46, 230], shoulderR: [54, 230], L1: 84, L2: 80, armW: 26, chin: [14, 188], neck: [6, 194], top: [14, -22], face: [8, 122]},
+  buddy: {shoulderL: [-58, 236], shoulderR: [66, 236], L1: 96, L2: 90, armW: 30, chin: [16, 186], neck: [8, 192], top: [8, -34], face: [8, 120]},
 };
 
 type ArmDef = {

@@ -27,7 +27,7 @@ export function coreActionSurface(sb, ctx, rules) {
   const action = typeof ctx?.meta?.action === 'string' ? ctx.meta.action.trim() : '';
   const isFormProduct = !!action && FORM_ACTION.test(action);
   // 非 cards 风格：「全片要有一镜演示」按风格清单判断（requireDemo + demoShots），这里只保留逐镜的误用检查；
-  // 风格不要求演示（如 journey 用街区广告牌讲类别）就不报整片缺演示
+  // 风格不要求演示（如 journey 用每站的明信片讲类别）就不报整片缺演示
   const styleId = styleIdOf(ctx?.meta ?? sb?.meta);
   const sm = styleId === DEFAULT_STYLE ? null : loadStyle(styleId)?.manifest ?? null;
   const styleDemoOk = !sm || !sm.requireDemo || shots.some((s) => (sm.demoShots ?? []).includes(s?.type));

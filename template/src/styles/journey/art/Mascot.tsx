@@ -1,5 +1,5 @@
 import React, {useId} from 'react';
-import {BOARD, BoardColors, INK, MASCOT, MascotColors, clamp01, mixHex, useArtColors} from './palette';
+import {BOARD, BoardColors, INK, MASCOT, MascotColors, PAPER_SHADOW, clamp01, mixHex, useArtColors} from './palette';
 import {limbDir, ribbon, spark4, spiral, star5} from './shapes';
 
 // ============================================================
@@ -241,7 +241,7 @@ export const Hoverboard: React.FC<{t: number; speed: number; night: number; c: B
       <path d="M -112,19 L 96,19" stroke={c.stripe} strokeWidth={5} strokeLinecap="round" />
       <path d="M 104,19 L 118,19" stroke={c.stripe} strokeWidth={5} strokeLinecap="round" />
       {/* 前灯 */}
-      <circle cx={156} cy={8} r={6} fill={mixHex('#FFF6CC', '#FFE066', night)} stroke={INK} strokeWidth={3} />
+      <circle cx={156} cy={8} r={6} fill={mixHex('#FFF6CC', '#FFEA5A', night)} stroke={INK} strokeWidth={3} />
       {night > 0.05 && <path d={`M 160,4 L 330,-24 L 330,52 Z`} fill="#FFF3B0" opacity={0.22 * night} />}
     </g>
   );
@@ -270,8 +270,8 @@ const FxLayer: React.FC<{fx: MascotFx; t: number; side: number}> = ({fx, t, side
     return (
       <g transform={`translate(${hx + side * 18},${hy - 30 + b}) rotate(${side * 10})`}>
         <path d="M -16,-28 Q -16,-48 2,-48 Q 20,-48 20,-32 Q 20,-20 6,-14 Q 0,-11 0,-2" fill="none" stroke={INK} strokeWidth={14} strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M -16,-28 Q -16,-48 2,-48 Q 20,-48 20,-32 Q 20,-20 6,-14 Q 0,-11 0,-2" fill="none" stroke="#FFD93B" strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx={0} cy={16} r={7.5} fill="#FFD93B" stroke={INK} strokeWidth={3.5} />
+        <path d="M -16,-28 Q -16,-48 2,-48 Q 20,-48 20,-32 Q 20,-20 6,-14 Q 0,-11 0,-2" fill="none" stroke="#FFEA5A" strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx={0} cy={16} r={7.5} fill="#FFEA5A" stroke={INK} strokeWidth={3.5} />
       </g>
     );
   }
@@ -286,7 +286,7 @@ const FxLayer: React.FC<{fx: MascotFx; t: number; side: number}> = ({fx, t, side
       <g>
         {pts.map(([x, y, r, ph], i) => {
           const s = 0.55 + 0.45 * Math.abs(sin(t * 5 + ph));
-          return <path key={i} d={spark4(x, y, r * s * 1.3)} fill="#FFE066" stroke={INK} strokeWidth={3} strokeLinejoin="round" />;
+          return <path key={i} d={spark4(x, y, r * s * 1.3)} fill="#FFEA5A" stroke={INK} strokeWidth={3} strokeLinejoin="round" />;
         })}
       </g>
     );
@@ -298,7 +298,7 @@ const FxLayer: React.FC<{fx: MascotFx; t: number; side: number}> = ({fx, t, side
           const a = t * 5 + (i * Math.PI * 2) / 3;
           const x = 6 + Math.cos(a) * 70;
           const y = -300 + Math.sin(a) * 16;
-          return <path key={i} d={star5(x, y, 13)} fill="#FFD93B" stroke={INK} strokeWidth={3} strokeLinejoin="round" />;
+          return <path key={i} d={star5(x, y, 13)} fill="#FFEA5A" stroke={INK} strokeWidth={3} strokeLinejoin="round" />;
         })}
       </g>
     );
@@ -588,7 +588,21 @@ export const Mascot: React.FC<MascotProps & {x: number; y: number; size?: number
       viewBox={`${b.x0} ${b.y0} ${b.x1 - b.x0} ${b.y1 - b.y0}`}
       style={{position: 'absolute', left: x + b.x0 * k, top: y + b.y0 * k, overflow: 'visible', ...style}}
     >
-      <MascotG {...rest} />
+      {/* 剪纸分层：角色也在身后投一道往右下错开的硬边纸影，和城市三层同一套光 */}
+      <defs>
+        <filter id={`jmascot-paper-${Math.round((rest.night ?? 0) * 10)}`} filterUnits="userSpaceOnUse" x={b.x0 - 40} y={b.y0 - 40} width={b.x1 - b.x0 + 80} height={b.y1 - b.y0 + 80} colorInterpolationFilters="sRGB">
+          <feFlood floodColor={PAPER_SHADOW} floodOpacity={0.26 * (1 - (rest.night ?? 0) * 0.4)} result="c" />
+          <feComposite in="c" in2="SourceAlpha" operator="in" result="s" />
+          <feOffset in="s" dx={11} dy={9} result="o" />
+          <feMerge>
+            <feMergeNode in="o" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <g filter={`url(#jmascot-paper-${Math.round((rest.night ?? 0) * 10)})`}>
+        <MascotG {...rest} />
+      </g>
     </svg>
   );
 };

@@ -4,7 +4,7 @@ import {SW} from './rig';
 
 // ============================================================
 // quiz / art 头顶特效（挂在角色头顶，也可以单独放）。t = 特效开始后的秒数，t<0 不画。
-//   hearts   冒心：3 颗主色 / 亮色心往上飘 0.9 秒后淡出（开心、被说服）
+//   hearts   冒心：3 颗暖橙 / 琥珀色心往上飘 0.9 秒后淡出（开心、被说服）；颜色用人设色，不跟主题主色
 //   surprise 惊讶：头边三道放射短线 + 弹一下（0.25 秒弹出，常驻）
 //   think    思考：三个由小到大的圆点气泡依次冒出，循环
 //   sweat    尴尬：一滴汗从额角滑下
@@ -49,9 +49,9 @@ export const Fx: React.FC<{kind: FxKind; t: number; x: number; y: number; pal: A
   switch (kind) {
     case 'hearts': {
       const items = [
-        {dx: 58, d: 0, s: 1.5, c: pal.primary},
-        {dx: 92, d: 0.12, s: 1.1, c: pal.highlight},
-        {dx: 34, d: 0.24, s: 0.9, c: pal.primarySoft},
+        {dx: 58, d: 0, s: 1.5, c: pal.warm},
+        {dx: 92, d: 0.12, s: 1.1, c: pal.glow},
+        {dx: 34, d: 0.24, s: 0.9, c: pal.warmSoft},
       ];
       return (
         <g>
@@ -122,8 +122,8 @@ export const Fx: React.FC<{kind: FxKind; t: number; x: number; y: number; pal: A
       const a = 0.6 + 0.4 * Math.abs(Math.sin(t * 7));
       return (
         <g>
-          <Sparkle x={x + 84} y={y + 40} s={1.2 * backOut(t / 0.2) * a} fill={pal.highlight} line={L} />
-          <Sparkle x={x - 50} y={y + 70} s={0.7 * backOut((t - 0.12) / 0.2) * (1.6 - a)} fill={pal.highlight} line={L} />
+          <Sparkle x={x + 84} y={y + 40} s={1.2 * backOut(t / 0.2) * a} fill={pal.glow} line={L} />
+          <Sparkle x={x - 50} y={y + 70} s={0.7 * backOut((t - 0.12) / 0.2) * (1.6 - a)} fill={pal.glow} line={L} />
         </g>
       );
     }
@@ -133,8 +133,8 @@ export const Fx: React.FC<{kind: FxKind; t: number; x: number; y: number; pal: A
       return (
         <g transform={`translate(${x + 88} ${y + 40}) rotate(${rot}) scale(${sc})`}>
           <path d="M-12,-10 C-12,-26 12,-28 14,-12 C16,0 0,2 0,14" fill="none" stroke={L} strokeWidth={SW * 2 + 5} strokeLinecap="round" strokeLinejoin="round" />
-          <path d="M-12,-10 C-12,-26 12,-28 14,-12 C16,0 0,2 0,14" fill="none" stroke={pal.primary} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
-          <circle cx={0} cy={30} r={7} fill={pal.primary} stroke={L} strokeWidth={SW} />
+          <path d="M-12,-10 C-12,-26 12,-28 14,-12 C16,0 0,2 0,14" fill="none" stroke={pal.warm} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx={0} cy={30} r={7} fill={pal.warm} stroke={L} strokeWidth={SW} />
         </g>
       );
     }

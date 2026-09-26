@@ -2,8 +2,8 @@
   "id": "journey",
   "name": {"zh": "角色漫游", "en": "Journey"},
   "summary": {
-    "zh": "吉祥物乘交通工具一镜到底横穿一座扁平插画城市，每个街区是一个内容类别，路边广告牌是代表内容，天色从白天走到夜晚，落版到产品界面和数据卡。适合内容多、类别清楚的产品（内容平台、多功能软件、多门店多品类、课程体系）",
-    "en": "A mascot rides through a flat-illustrated city in one continuous take; each district is a content category, roadside billboards carry sample titles, the sky moves from day to night, and it lands on the product screen with a stat card. Fits products with many clearly separated categories"
+    "zh": "吉祥物乘交通工具一镜到底横穿一座扁平插画城市，每个街区是一个内容类别：顶部一张车票标着路线和站名，每站甩来一张明信片写这一类的代表内容，天色从白天走到夜晚，终点把每站盖进一张集章卡。适合内容多、类别清楚的产品（内容平台、多功能软件、多门店多品类、课程体系）",
+    "en": "A mascot rides through a flat-illustrated city in one continuous take; each district is a content category: a ticket at the top tracks the route and the stop name, a postcard for each stop carries a sample title, the sky moves from day to night, and the ride ends with every stop stamped onto a stamp card. Fits products with many clearly separated categories"
   },
   "status": "stable",
   "defaultAspect": "4:5",
@@ -15,7 +15,7 @@
   "captionLayer": "none",
   "requireDemo": false,
   "demoShots": [],
-  "themes": ["day-city", "mint-town"],
-  "defaultTheme": "day-city",
+  "themes": ["post-green", "plum-ticket"],
+  "defaultTheme": "post-green",
   "owners": []
 }

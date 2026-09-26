@@ -9,14 +9,15 @@
 //   J7 district 必须连续地夹在 opening 和 finale 之间
 //   J8 价格和时间（N 元 / ¥N / HH:MM / N 小时 / N 分钟 / N 晚）必须在 meta.facts 里原样出现
 //   J9 钩子大字里的数字要么等于街区数，要么在 meta.facts 里出现
-//   J10 夜景街区（neon / lantern）不是最后一站时提醒（只有最后一站是夜景）
+//   J10 夜景街区（platform / lantern）不是最后一站时提醒（只有最后一站是夜景）
 //   J11 街区要配得上背景天际线（opening.params.skyline）：古城街区只在 oldtown 里，现代道具不进古城（按 tokens.json 的 scenes.*.fits）
 //   J12 文旅题材写到古城 / 古镇 / 老街 / 水乡，skyline 必须是 oldtown（不然满屏玻璃高楼）
 //   J13 类别名像被截断的半个词（「预算提」而 title / facts 里是「预算提醒」）提醒
 //   J14 钩子大字照搬句式读不通（「N 个账本街」、带产品名）提醒
-//   J15 广告牌标题超过 10 字又没有停顿（逗号、空格）提醒
+//   J15 明信片标题超过 10 字又没有停顿（逗号、空格）提醒
 //   J16 片尾既没有数字（stats）也没有获取方式（cta）提醒
 //   J17 meta.notices / disclaimer 里的日期必须在 meta.facts 里原样出现（活动日期不能自己编）；有促销字眼时由公共检查 promoHasPeriod 报，这里不重复
+//   J18 小引套用「跟 X 一口气飞越 / 逛完 / 看完」这类别家片子的招牌句式提醒（原创性口径见 originality.md）
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
@@ -124,7 +125,7 @@ export function run(sb, ctx) {
     }
   });
 
-  // J10 夜景街区（霓虹街、灯会）放在白天的站会很怪：只提醒
+  // J10 夜景街区（夜站台、灯会）放在白天的站会很怪：只提醒
   dIdx.forEach((i, n) => {
     const sc = s(shots[i]?.params?.scene);
     if (SCENES[sc]?.night && n !== dIdx.length - 1)
@@ -157,7 +158,7 @@ export function run(sb, ctx) {
     const pool = `${s(p.title)} ${s(p.tag)} ${s(p.source)} ${ctxText}`;
     const m = new RegExp(`${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\u4e00-\\u9fff])`).exec(pool);
     if (m && Array.from(c).length + 1 <= 6 && Array.from(c).length % 2 === 1)
-      warnings.push({where: W(i, 'params.category'), problem: `类别名「${c}」像被截断的词（文案里写的是「${c}${m[1]}」）；它会出现在路牌、胶囊、广告牌表头和片尾标签 4 个地方`, fix: `写完整：「${c}${m[1]}」。类别名 4 字最好，6 字以内组件都放得下，不要为了凑字数截断`});
+      warnings.push({where: W(i, 'params.category'), problem: `类别名「${c}」像被截断的词（文案里写的是「${c}${m[1]}」）；它会出现在路牌、车票站名、明信片和集章卡 4 个地方`, fix: `写完整：「${c}${m[1]}」。类别名 4 字最好，6 字以内组件都放得下，不要为了凑字数截断`});
   });
 
   // J14 钩子大字照搬句式：「N 个账本街」读不通；带产品名也不行
@@ -166,14 +167,14 @@ export function run(sb, ctx) {
     const h = s(x.params?.headline);
     const prod = s(meta.product);
     if (/街$/.test(h) || (prod && prod.length >= 2 && h.includes(prod)))
-      warnings.push({where: W(i, 'params.headline'), problem: `钩子大字「${h}」读不通：观众看不出这趟逛的是什么`, fix: '按题材套句式：内容站「N 篇精选」「N 个栏目」，软件「N 个功能」，文旅「N 站慢游」，门店「N 家店」；产品名不用写进大字（左上角胶囊和片尾都有）'});
+      warnings.push({where: W(i, 'params.headline'), problem: `钩子大字「${h}」读不通：观众看不出这趟逛的是什么`, fix: '按题材套句式：内容站「N 篇精选」「N 个栏目」，软件「N 个功能」，文旅「N 站慢游」，门店「N 家店」；产品名不用写进大字（顶部车票票根和片尾集章卡都有）'});
   });
 
-  // J15 广告牌标题太长又没停顿，一口气读不下来
+  // J15 明信片标题太长又没停顿，读不下来
   dIdx.forEach((i) => {
     const t = s(shots[i]?.params?.title);
     if (Array.from(t).length > 10 && !PUNCT.test(t))
-      warnings.push({where: W(i, 'params.title'), problem: `标题「${t}」${Array.from(t).length} 字没有停顿，一口气读不下来`, fix: '在意群之间加逗号（「一本账本，全家一起看」），或把一半挪到 tag / source；广告牌每行约 12 字'});
+      warnings.push({where: W(i, 'params.title'), problem: `标题「${t}」${Array.from(t).length} 字没有停顿，一口气读不下来`, fix: '在意群之间加逗号（「一本账本，全家一起看」），或把一半挪到 tag / source；明信片每行约 12 字'});
   });
 
   // J16 片尾没有数字也没有获取方式：落版只剩口号
@@ -192,6 +193,14 @@ export function run(sb, ctx) {
     for (const d of s(v).match(DATE) ?? [])
       if (!factText.includes(d.replace(/\s+/g, '')))
         errors.push({where: wh, problem: `日期「${d}」在 meta.facts 里找不到：活动日期不能自己编`, fix: '不是真实活动就删掉这条（连同触发它的促销字眼）；真有活动，先把简报原句抄进 meta.facts（带 source），这里一字不差地写'});
+  });
+
+  // J18 小引照搬别家片子的招牌句式（「跟 X 一口气飞越 / 逛完」）：本风格的皮肤是原创的，文案句式也不跟
+  shots.forEach((x, i) => {
+    if (x?.type !== 'opening') return;
+    const k = s(x.params?.kicker);
+    if (/^跟.{1,6}一口气/.test(k) || /一口气(飞越|飞过|逛完|看完|听完)/.test(k))
+      warnings.push({where: W(i, 'params.kicker'), problem: `小引「${k}」套的是「跟 X 一口气飞越 / 逛完」这种别家片子的招牌句式`, fix: '写这趟车的路线或看点：「这趟车停 5 站」「从早市逛到灯会」「通勤路上换五个台」'});
   });
 
   // J7

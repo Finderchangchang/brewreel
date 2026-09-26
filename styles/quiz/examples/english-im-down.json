@@ -3,6 +3,7 @@
     "title": "I'm down 不是我很低落",
     "product": "句子盒",
     "style": "quiz",
+    "theme": "ash-teal",
     "industry": "education",
     "action": "在情景小剧场里听一句地道口语，先猜意思再看揭晓和释义",
     "disclaimer": "情景为虚构演示",
@@ -13,6 +14,7 @@
       "type": "phraseTitle",
       "beats": 12,
       "params": {
+        "voice": "exam",
         "eyebrow": "口语冷知识",
         "phrase": "I'm down",
         "guess": "我很低落",
@@ -25,8 +27,15 @@
       "beats": 10,
       "params": {
         "lines": [
-          {"speaker": "朋友", "text": "Hiking this Saturday?", "zh": "周六去爬山吗？"},
-          {"speaker": "阿哲", "text": "Sure, I'm down!"}
+          {
+            "speaker": "朋友",
+            "text": "Hiking this Saturday?",
+            "zh": "周六去爬山吗？"
+          },
+          {
+            "speaker": "阿哲",
+            "text": "Sure, I'm down!"
+          }
         ],
         "key": "I'm down",
         "scene": "street"
@@ -36,8 +45,12 @@
       "type": "quiz",
       "beats": 19,
       "params": {
-        "question": "你猜他什么意思？",
-        "options": ["我很低落", "算我一个", "我不想去"],
+        "question": "他这句到底想说啥？",
+        "options": [
+          "我很低落",
+          "算我一个",
+          "我不想去"
+        ],
         "answer": 1
       }
     },
@@ -47,17 +60,31 @@
       "params": {
         "eyebrow": "今天这句",
         "rows": [
-          {"kind": "word", "text": "I'm down"},
-          {"kind": "neq", "text": "我很低落"},
-          {"kind": "eq", "text": "算我一个"},
-          {"kind": "eq", "text": "我乐意参加"}
+          {
+            "kind": "word",
+            "text": "I'm down"
+          },
+          {
+            "kind": "neq",
+            "text": "我很低落"
+          },
+          {
+            "kind": "eq",
+            "text": "算我一个"
+          },
+          {
+            "kind": "eq",
+            "text": "我乐意参加"
+          }
         ]
       }
     },
     {
       "type": "replay",
       "beats": 8,
-      "params": {"title": "再听一遍", "zh": "好啊，算我一个！", "sticker": "懂了"}
+      "params": {
+        "zh": "好啊，算我一个！"
+      }
     },
     {
       "type": "duoScene",
@@ -74,12 +101,18 @@
     {
       "type": "commentCta",
       "beats": 7,
-      "params": {"question": "你刚才猜的哪个？", "footnote": "猜 A 的，下次就不会了"}
+      "params": {
+        "question": "你当时写的哪个？",
+        "footnote": "写 A 的，下次就不会了"
+      }
     },
     {
       "type": "brandEnd",
       "beats": 11,
-      "params": {"badge": "又会一句了", "slogan": "每天一句地道口语\n来句子盒练"}
+      "params": {
+        "badge": "又会一句了",
+        "slogan": "每天一句地道口语\n来句子盒练"
+      }
     }
   ]
 }

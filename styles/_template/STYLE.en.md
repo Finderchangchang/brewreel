@@ -12,4 +12,4 @@
 8. **Variable vs fixed**: the minimum fields a cheap model fills.
 9. **Rules**: everything that can be validated; mark which go into `rules.json` and which into `checks.mjs`.
 
-**Assets to avoid** from the reference, with our replacements. **Good fit / poor fit** for product types.
+**Assets to avoid** from the reference, with our replacements (the item-by-item signature record and the originality check results go in `originality.md` in this folder). **Good fit / poor fit** for product types.

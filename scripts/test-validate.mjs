@@ -30,7 +30,7 @@ const CASES = [
   {file: 'journey-travel-ok.json', rule: 'journey：古镇写了 oldtown 背景 + 古城街区时不误报', level: 'errors', expect: false, match: '背景'},
   // journey 第 2 轮（2026-09）：背景天际线和街区要配套、古镇题材必须古城背景、类别名截断 / 钩子照搬 / 标题无停顿提醒、活动日期不能编、字段写在顶层合并成一条
   {file: 'journey-oldtown-bad.json', rule: 'journey：古镇题材用现代城市背景要拦', level: 'errors', expect: true, match: '题材是「古镇」，背景却是现代城市'},
-  {file: 'journey-skyline-bad.json', rule: 'journey：古城背景里用发射场要拦', level: 'errors', expect: true, match: '「launch」的道具和古城背景'},
+  {file: 'journey-skyline-bad.json', rule: 'journey：古城背景里用邮筒街要拦', level: 'errors', expect: true, match: '「postbox」的道具和古城背景'},
   {file: 'journey-skyline-bad.json', rule: 'journey：古城背景写对了就不再报题材不符', level: 'errors', expect: false, match: '题材是「古镇」'},
   {file: 'journey-copy-bad.json', rule: 'journey：类别名被截成半个词要提醒', level: 'warnings', expect: true, match: '「预算提」像被截断的词'},
   {file: 'journey-copy-bad.json', rule: 'journey：钩子「N 个 XX 街」要提醒', level: 'warnings', expect: true, match: '钩子大字「5 个账本街」读不通'},

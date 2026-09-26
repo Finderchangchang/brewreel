@@ -35,24 +35,27 @@ A storyboard opts in with `"meta": {"style": "<id>", "aspect": "9:16" | "4:5"}`;
 2. Copy the shots and `tokens.json` you want from the source style and change the tokens. Components read values only through `useStyleTokens()` / `useStylePalette()`.
 3. Draw your own characters and scenes (SVG / CSS). Do not trace anyone else's characters.
 4. Explain in `STYLE.md` how it differs from the source and what it fits.
-5. Go through the PR checklist below.
+5. Prove it moved away from the source: `node scripts/check-originality.mjs --style <new id> --ref template/src/styles/<source>/tokens.json` (use `template/src/core/themes.json` when the source is cards), and fill in `styles/<new id>/originality.md`.
+6. Go through the PR checklist below.
 
 ## Create a new style from a reference video
 
-Full process and reusable prompts: [`distill/`](distill/README.en.md) (breakdown → teacher replica → componentize → cheap-model test → review and fix).
+Full process and reusable prompts: [`distill/`](distill/README.en.md) (breakdown → replica, to learn the skeleton and never published → **redesign (reskin)** → componentize → cheap-model test → review and fix). The rule: the skeleton (structure, rhythm, motion techniques, camera language, layout principles) may be learned; the skin (palette, type treatment, characters, signature details, stock phrases, branded ending) must be our own — same genre, but anyone who knows the reference can tell it is not the same brand.
 
-1. `node scripts/extract-frames.mjs <reference> --out <folder outside the repo> --audio`, then write the nine-layer breakdown with `distill/prompts/01-breakdown.md` (keep the raw notes outside the repo).
-2. `node scripts/gen-styles.mjs --new <id>`; put the **anonymized** findings into `styles/<id>/STYLE.md` and numbers into `tokens.json`.
-3. One `shots/<type>.tsx + .spec.json` per component; a one-take style writes a `Film`. Run `node scripts/gen-styles.mjs` after adding shots.
-4. Write `rules.json` and `checks.mjs` from layer 9 of the breakdown.
-5. Let an average model read only `SKILL.en.md` plus your `STYLE.en.md` / `recipes.md`, write storyboards, render them, and fix the rules and docs where it goes wrong.
-6. Get a review with `distill/prompts/04-review.md`.
-7. Set `status` to `stable` when it passes.
+1. `node scripts/extract-frames.mjs <reference> --out <folder outside the repo> --audio`, then write the nine-layer breakdown with `distill/prompts/01-breakdown.md`, plus a numbered signature list `signatures.md` (both outside the repo).
+2. `node scripts/gen-styles.mjs --new <id>` creates a draft; build a replica with `distill/prompts/02-replicate.md` to understand the skeleton. The replica stays local and is never committed.
+3. Redesign with `distill/prompts/redesign.md`: replace every piece of skin, record each one in `styles/<id>/originality.md`, and run `node scripts/check-originality.mjs --style <id> --ref <outside>/tokens.json --signatures <outside>/signatures.md` until it passes.
+4. Put the **anonymized** findings into `styles/<id>/STYLE.md` and numbers into `tokens.json`; one `shots/<type>.tsx + .spec.json` per component, a one-take style writes a `Film`. Run `node scripts/gen-styles.mjs` after adding shots.
+5. Write `rules.json` and `checks.mjs` from layer 9 of the breakdown.
+6. Let an average model read only `SKILL.en.md` plus your `STYLE.en.md` / `recipes.md`, write storyboards, render them, and fix the rules and docs where it goes wrong.
+7. Get a review with `distill/prompts/04-review.md`; the confusability score (1–10) must be ≤ 3.
+8. Set `status` to `stable` when it passes.
 
 ## Copyright and privacy (hard rules)
 
-- Reference videos, their stills and frames, characters, brand names, URLs and film clips never go into the repo.
-- Docs say "based on a quiz-style short video" and never name the other brand. List the brand assets to avoid, with our replacements, in `STYLE.md`.
+- Reference videos, their stills and frames, characters, brand names, URLs and film clips never go into the repo; neither do the reference `tokens.json` and the original signature list.
+- Docs say "based on a quiz-style short video" and never name the other brand. List the brand assets to avoid, with our replacements, in `STYLE.md`; record each signature detail, described abstractly, in `originality.md`.
+- No one-to-one copies: palette, type treatment, characters, signature details, stock phrases and the ending are all rebuilt (criteria and checks in `distill/README.en.md`).
 - No local paths, internal product names or API keys in the repo.
 - New fonts must allow redistribution (e.g. OFL) and be added to `THIRD_PARTY_LICENSES.md`.
 
@@ -65,6 +68,8 @@ Full process and reusable prompts: [`distill/`](distill/README.en.md) (breakdown
 - [ ] `node scripts/validate.mjs --specs`, `node scripts/test-validate.mjs`, `node scripts/test-rules.mjs` all pass
 - [ ] All 9 storyboards in `examples/` still validate (if you touched shared code, render at least one cards film)
 - [ ] New style: at least one storyboard in `styles/<id>/examples/` renders; frame 0 has content and a hook; font sizes ≥ 40 body / 34 panel / 26 minimum; key content inside the safe area (`template/src/core/aspects.json`)
+- [ ] New style, remix, or changed palette / characters: the originality check passes — `node scripts/check-originality.mjs --style <id> --ref <reference tokens.json (outside the repo) or the source style's tokens.json> [--signatures <signature list outside the repo>]`; `styles/<id>/originality.md` is complete (skeleton kept, skin rebuilt, a "Replaced with" line for every signature item, check results, confusability ≤ 3)
+- [ ] Touched `scripts/check-originality.mjs` or `scripts/lib/color.mjs`: `node tests/originality/originality.test.mjs` passes
 - [ ] Docs in both languages (`STYLE.md` + `STYLE.en.md`; `SKILL.md` changes mirrored in `SKILL.en.md`)
 - [ ] No test or render output committed (`make.mjs --out` points outside the repo)
 

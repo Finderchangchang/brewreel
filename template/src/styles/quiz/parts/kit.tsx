@@ -3,9 +3,11 @@ import {Easing, interpolate} from 'remotion';
 import {clamp} from '../../../core/anim';
 import {WORD_JOINER, glueBreaks} from '../../../core/fit';
 import {useStylePalette, useStyleTokens} from '../../context';
+import {useStoryParams} from './story';
 
 // ============================================================
-// quiz 风格的公共元件：缓动、逐字点亮（幽灵字 / 打字）、关键词马克笔、删除线、问号块、勾叉、贴纸、冒心。
+// quiz 风格的公共元件（v0.2.1「批改纸」皮肤）：缓动、逐字点亮（幽灵字 / 打字）、杏黄马克笔、
+// 朱红批改笔（圈疑、波浪划掉、手写勾叉）、印章、火花、等宽题号签、标签。
 // 所有数值从令牌取（tokens.json 的 motion / type / layout），镜头只管摆位置和排时间。
 // ============================================================
 
@@ -13,14 +15,26 @@ export type Pal = Record<string, string>;
 export const usePal = () => useStylePalette() as Pal;
 export const useTk = () => useStyleTokens() as Record<string, any>;
 
-/** easeOutBack：入场回弹（参考片所有入场都带） */
+/** easeOutBack：入场回弹 */
 export const backOut = (s = 1.4) => (x: number) => 1 + (s + 1) * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2);
 /** 0→1 进度（带缓动） */
 export const prog = (t: number, t0: number, dur: number, easing: (x: number) => number = Easing.out(Easing.cubic)) =>
   interpolate(t, [t0, t0 + Math.max(0.001, dur)], [0, 1], {...clamp, easing});
-/** 弹出缩放：0 → overshoot → 1（选项、气泡、贴纸） */
+/** 弹出缩放：0 → overshoot → 1（选项、气泡、便签） */
 export const popScale = (t: number, t0: number, dur: number, from = 0, over = 1.05) =>
   t < t0 ? from : interpolate(t, [t0, t0 + dur * 0.65, t0 + dur], [from, over, 1], {...clamp, easing: Easing.out(Easing.quad)});
+
+/** 两色按比例混合：p=0 → a，p=1 → b（元件里调浅色用，不写死色值） */
+export const mix = (a: string, b: string, p: number) => {
+  const h = (c: string) => {
+    const s = (c ?? '#000000').replace('#', '');
+    const n = parseInt(s.slice(0, 6), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+  const A = h(a);
+  const B = h(b);
+  return '#' + A.map((v, i) => Math.round(v + (B[i] - v) * p).toString(16).padStart(2, '0')).join('');
+};
 
 const isWide = (ch: string) => {
   const cp = ch.codePointAt(0) ?? 0;
@@ -45,7 +59,7 @@ export const unitsOf = (text: string): string[] => {
   return out;
 };
 
-/** 每个单位的开始时间（相对 t0）。rate = 字/秒；latinWord 给定时每个拉丁词固定这么长（标题用 0.37 秒） */
+/** 每个单位的开始时间（相对 t0）。rate = 字/秒；latinWord 给定时每个拉丁词固定这么长 */
 export const unitTimes = (units: string[], rate: number, latinWord?: number) => {
   const at: number[] = [];
   let acc = 0;
@@ -56,8 +70,7 @@ export const unitTimes = (units: string[], rate: number, latinWord?: number) => 
   }
   return {at, total: acc};
 };
-/** 粗黑大字的宽度估算（em）。core/fit.ts 的 emWidth 把拉丁字母一律算 0.55em，大号拉丁短语（I'm down / no big deal）
- *  会估短或估长几十像素，钩子短语又紧贴探头吉祥物，所以大字按字形宽窄分档估 */
+/** 粗体大字的宽度估算（em）：大号拉丁短语按字形宽窄分档估，避免估短撞到右边的元件 */
 export const displayEm = (text: string): number => {
   let w = 0;
   for (const ch of Array.from(text ?? '')) {
@@ -87,7 +100,7 @@ type LitProps = {
   mode?: 'ghost' | 'type';
   latinWord?: number;
   color?: string;
-  /** 关键词（必须是 text 的子串）：换主色；marker=true 时再从左往右扫一道亮色马克笔 */
+  /** 关键词（必须是 text 的子串）：换主色；marker=true 时再从左往右扫一道杏黄马克笔 */
   hot?: string;
   hotColor?: string;
   marker?: boolean;
@@ -97,11 +110,16 @@ type LitProps = {
   markerDur?: number;
   /** 光标（打字模式，最后一个字后面闪） */
   caret?: boolean;
-  /** 覆盖令牌的幽灵字不透明度（钩子要求第 0 帧可读：误解行用 motion.hookGhost） */
+  /** 覆盖令牌的幽灵字不透明度 */
   ghost?: number;
   /** 前 pre 个单位从第 0 帧起就是实色（语境句第 0 帧至少露出前 4 个字） */
   pre?: number;
 };
+
+/** 杏黄马克笔：斜切的粗笔触（两头略倾斜，不是圆角条），从左往右扫 */
+const MarkerStroke: React.FC<{p: number; color: string}> = ({p, color}) => (
+  <span style={{position: 'absolute', left: -8, right: -8, bottom: '0.02em', height: '0.38em', background: color, transformOrigin: 'left center', transform: `scaleX(${p}) skewX(-12deg)`, borderRadius: 2, zIndex: -1}} />
+);
 
 /** 逐字点亮的一段文字（行内内容，外层自己定字号、对齐） */
 export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', latinWord, color, hot, hotColor, marker, markerColor, markerAt, markerDur, caret, ghost: ghostOver, pre = 0}) => {
@@ -112,8 +130,7 @@ export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', lati
   const units = unitsOf(text);
   const {at, total} = unitTimes(units, rate, latinWord);
   const k = hot && text.includes(hot) ? text.indexOf(hot) : -1;
-  // 中文按词粘住（词内不断行）：glueBreaks 在词内相邻字之间插零宽 WORD JOINER，这里记下「哪个字后面要粘」，
-  // 渲染时把 WJ 补回到那个字后面。WJ 零宽，不影响字宽和点亮时间
+  // 中文按词粘住（词内不断行）：glueBreaks 在词内相邻字之间插零宽 WORD JOINER，这里记下「哪个字后面要粘」
   const glueAfter = new Set<number>();
   {
     const g = glueBreaks(text);
@@ -123,7 +140,6 @@ export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', lati
       else oi++;
     }
   }
-  // 按字符位置把单位分成 前 / 关键词 / 后 三段（关键词若切在词中间，按字符切开）
   type Seg = {s: string; i: number; hot: boolean};
   const segs: Seg[] = [];
   let pos = 0;
@@ -160,114 +176,124 @@ export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', lati
   );
   const out: React.ReactNode[] = [];
   let hotBuf: React.ReactNode[] = [];
-  segs.forEach((s, n) => {
-    if (s.hot) hotBuf.push(render(s, n));
-    else {
-      if (hotBuf.length) {
-        out.push(
-          <span key={`h${n}`} style={{position: 'relative', display: 'inline-block', whiteSpace: 'pre'}}>
-            {marker ? <span style={{position: 'absolute', left: -6, right: -6, bottom: '0.06em', height: '0.42em', background: markerColor ?? pal.highlight, transformOrigin: 'left center', transform: `scaleX(${mP})`, borderRadius: 4}} /> : null}
-            {hotBuf}
-          </span>,
-        );
-        hotBuf = [];
-      }
-      out.push(render(s, n));
-    }
-  });
-  if (hotBuf.length)
+  const flush = (key: string) => {
     out.push(
-      <span key="hEnd" style={{position: 'relative', display: 'inline-block', whiteSpace: 'pre'}}>
-        {marker ? <span style={{position: 'absolute', left: -6, right: -6, bottom: '0.06em', height: '0.42em', background: markerColor ?? pal.highlight, transformOrigin: 'left center', transform: `scaleX(${mP})`, borderRadius: 4}} /> : null}
+      <span key={key} style={{position: 'relative', display: 'inline-block', whiteSpace: 'pre', zIndex: 0}}>
+        {marker ? <MarkerStroke p={mP} color={markerColor ?? pal.highlight} /> : null}
         {hotBuf}
       </span>,
     );
+    hotBuf = [];
+  };
+  segs.forEach((s, n) => {
+    if (s.hot) hotBuf.push(render(s, n));
+    else {
+      if (hotBuf.length) flush(`h${n}`);
+      out.push(render(s, n));
+    }
+  });
+  if (hotBuf.length) flush('hEnd');
   const typing = caret && t >= t0 - 0.2;
   const blink = Math.floor(t * 3.2) % 2 === 0 || (t >= t0 && t <= t0 + total);
   return (
     <>
       {out}
-      {typing ? <span style={{display: 'inline-block', width: 4, height: '1em', marginLeft: 4, verticalAlign: '-0.12em', background: pal.primary, opacity: blink ? 1 : 0}} /> : null}
+      {typing ? <span style={{display: 'inline-block', width: '0.5em', height: 5, marginLeft: 4, verticalAlign: '-0.08em', background: pal.pen ?? pal.primary, opacity: blink ? 1 : 0}} /> : null}
     </>
   );
 };
 
-/** 删除线：从左往右画，线比字两边各长 overhang */
-export const Strike: React.FC<{t: number; t0: number; color: string; children: React.ReactNode}> = ({t, t0, color, children}) => {
+/** 波浪划掉：朱红批改笔在字上来回划一道锯齿（不是直线删除线），从左往右露出。
+ *  锯齿按像素画（固定 26px 一个来回），用裁切露出，不拉伸笔画 */
+export const Scribble: React.FC<{t: number; t0: number; color?: string; children: React.ReactNode}> = ({t, t0, color, children}) => {
   const tk = useTk();
-  const m = tk.motion?.strike ?? {dur: 0.13, overhang: 50};
+  const pal = usePal();
+  const m = tk.motion?.scribble ?? {dur: 0.18};
   const p = prog(t, t0, m.dur, Easing.out(Easing.quad));
+  let d = 'M4 22';
+  for (let x = 4, k = 0; x < 1400; x += 13, k++) d += ` L${x + 13} ${k % 2 ? 22 : 6}`;
   return (
     <span style={{position: 'relative', display: 'inline-block'}}>
       {children}
-      <span style={{position: 'absolute', left: -m.overhang / 2, right: -m.overhang / 2, top: '52%', height: 8, marginTop: -4, borderRadius: 4, background: color, transformOrigin: 'left center', transform: `scaleX(${p})`}} />
+      <span style={{position: 'absolute', left: -14, width: 'calc(100% + 28px)', top: '50%', height: 28, marginTop: -12, overflow: 'hidden', clipPath: `inset(-10px ${(1 - p) * 100}% -10px 0)`, opacity: t >= t0 ? 1 : 0}}>
+        <svg width={1400} height={28} viewBox="0 0 1400 28" style={{display: 'block'}}>
+          <path d={d} fill="none" stroke={color ?? pal.pen} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
     </span>
   );
 };
+/** 手写问号（朱红批改笔），画出来 */
+export const PenQuestion: React.FC<{size: number; p: number; color?: string}> = ({size, p, color}) => {
+  const pal = usePal();
+  const c = color ?? pal.pen;
+  return (
+    <svg width={size * 0.62} height={size} viewBox="0 0 62 100" style={{display: 'inline-block', overflow: 'visible', verticalAlign: 'middle'}}>
+      <path d="M12 30 C10 12 26 4 38 6 C54 9 58 26 48 38 C40 47 31 50 31 64" fill="none" stroke={c} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - Math.min(1, p * 1.25)} />
+      <circle cx={31} cy={86} r={6.5} fill={c} opacity={p >= 0.95 ? 1 : 0} />
+    </svg>
+  );
+};
 
-/** 问号块：先是描边空块，揭示时变亮色 */
-export const QBlock: React.FC<{t: number; at: number; size?: number}> = ({t, at, size}) => {
+/** 红笔圈疑：朱红笔沿着文字画一个没收口的手绘圈，圈尾甩出去接一个手写问号。
+ *  钩子里圈住「= 误解」，告诉观众「这个理解存疑」 */
+export const PenCircle: React.FC<{t: number; at: number; children: React.ReactNode; qSize?: number; w: number; h: number}> = ({t, at, children, qSize = 80, w, h}) => {
   const tk = useTk();
   const pal = usePal();
-  const q = tk.layout?.qBlock ?? {size: 108, radius: 18};
-  const s = size ?? q.size;
-  const on = t >= at;
-  const sc = on ? popScale(t, at, 0.2, 0.85, 1.08) : 1;
+  const d = tk.motion?.penCircle ?? 0.32;
+  const p = prog(t, at, d, Easing.inOut(Easing.quad));
+  const q = prog(t, at + d * 0.85, 0.2, Easing.out(Easing.quad));
+  // 圈按像素画（w / h = 圈住的字的估算宽高），笔画粗细不随宽高拉伸
+  const W = w + 28 + 20;
+  const H = h + 32;
+  let n = 0;
+  const path = 'M14 72 C2 52 8 16 50 8 C84 2 102 22 98 48 C95 78 66 94 40 92 C16 90 2 76 6 54 C8 40 20 26 36 20'.replace(/-?\d+(\.\d+)?/g, (v) => String(Math.round((Number(v) / 100) * (n++ % 2 === 0 ? W : H) * 10) / 10));
   return (
-    <span
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: s,
-        height: s,
-        borderRadius: q.radius,
-        background: on ? pal.highlight : 'transparent',
-        color: pal.ink,
-        opacity: on ? 1 : tk.motion?.hookGhost ?? 0.6,
-        fontSize: s * 0.78,
-        fontWeight: 900,
-        lineHeight: 1,
-        transform: `scale(${sc})`,
-      }}
-    >
-      ?
+    <span style={{display: 'inline-flex', alignItems: 'center', gap: 10}}>
+      <span style={{position: 'relative', display: 'inline-block', padding: '0 14px'}}>
+        {children}
+        <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{position: 'absolute', left: -10, top: '50%', marginTop: -H / 2, overflow: 'visible', opacity: t >= at ? 1 : 0}}>
+          <path d={path} fill="none" stroke={pal.pen} strokeWidth={6} strokeLinecap="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - p} />
+        </svg>
+      </span>
+      <span style={{display: 'inline-block', transform: 'rotate(8deg)', opacity: t >= at + d * 0.85 ? 1 : 0}}>
+        <PenQuestion size={qSize} p={q} />
+      </span>
     </span>
   );
 };
-
-/** 勾 / 叉（粗描边图标） */
+/** 手写勾 / 叉（批改笔的笔触：勾带一个起笔小顿，叉是两笔先后画） */
 export const Mark: React.FC<{kind: 'check' | 'cross'; size: number; color: string; p?: number; stroke?: number}> = ({kind, size, color, p = 1, stroke = 9}) => (
   <svg width={size} height={size} viewBox="0 0 60 60" style={{display: 'block', overflow: 'visible'}}>
     {kind === 'check' ? (
-      <path d="M12 31 L25 44 L49 17" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - p} />
+      <path d="M8 30 C11 31 14 34 17 38 C19 41 21 45 23 49 C30 34 40 20 55 7" fill="none" stroke={color} strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - p} />
     ) : (
-      <g stroke={color} strokeWidth={stroke * 0.8} strokeLinecap="round" opacity={p}>
-        <path d="M16 16 L44 44" />
-        <path d="M44 16 L16 44" />
+      <g stroke={color} strokeWidth={stroke * 0.8} strokeLinecap="round" fill="none">
+        <path d="M15 14 C24 24 34 36 46 47" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - Math.min(1, p * 2)} />
+        <path d="M45 13 C36 24 26 36 14 47" pathLength={1} strokeDasharray={1} strokeDashoffset={1 - Math.max(0, p * 2 - 1)} />
       </g>
     )}
   </svg>
 );
 
-/** 冒心：3–5 颗，从 (x,y) 往上飘 rise px，0.4 秒 */
-export const Hearts: React.FC<{t: number; at: number; x: number; y: number; spread?: number}> = ({t, at, x, y, spread = 90}) => {
+/** 火花：4–6 颗四角星，从 (x,y) 往上散开（杏黄 + 朱红两色，墨色描边） */
+export const Sparks: React.FC<{t: number; at: number; x: number; y: number; spread?: number}> = ({t, at, x, y, spread = 90}) => {
   const tk = useTk();
   const pal = usePal();
-  const h = tk.motion?.hearts ?? {dur: 0.4, rise: 120, count: 4};
+  const h = tk.motion?.sparks ?? {dur: 0.45, rise: 110, count: 5};
   if (t < at) return null;
   return (
     <>
       {Array.from({length: h.count}).map((_, i) => {
-        const d = at + i * 0.07;
-        const p = prog(t, d, h.dur * 1.6, Easing.out(Easing.quad));
+        const d = at + i * 0.06;
         if (t < d) return null;
-        const dx = (i - (h.count - 1) / 2) * (spread / h.count) * 1.4;
-        const op = interpolate(t, [d, d + 0.08, d + h.dur * 2.2, d + h.dur * 3], [0, 1, 1, 0], clamp);
-        const s = 34 + (i % 2) * 12;
+        const p = prog(t, d, h.dur * 1.5, Easing.out(Easing.quad));
+        const dx = (i - (h.count - 1) / 2) * (spread / h.count) * 1.5;
+        const op = interpolate(t, [d, d + 0.06, d + h.dur * 2, d + h.dur * 2.8], [0, 1, 1, 0], clamp);
+        const s = 30 + (i % 3) * 10;
         return (
-          <svg key={i} width={s} height={s} viewBox="0 0 40 40" style={{position: 'absolute', left: x + dx - s / 2, top: y - p * h.rise - s / 2, opacity: op, transform: `scale(${0.4 + 0.6 * Math.min(1, p * 2)}) rotate(${(i % 2 ? 1 : -1) * 12}deg)`}}>
-            <path d="M20 35 C8 26 3 19 3 12.5 C3 7 7 3.5 12 3.5 C15.5 3.5 18.5 5.5 20 8.5 C21.5 5.5 24.5 3.5 28 3.5 C33 3.5 37 7 37 12.5 C37 19 32 26 20 35 Z" fill={i % 2 ? pal.highlight : pal.primary} stroke={pal.ink} strokeWidth={3} strokeLinejoin="round" />
+          <svg key={i} width={s} height={s} viewBox="0 0 40 40" style={{position: 'absolute', left: x + dx - s / 2, top: y - p * h.rise * (0.7 + (i % 2) * 0.4) - s / 2, opacity: op, transform: `scale(${0.3 + 0.7 * Math.min(1, p * 2.2)}) rotate(${p * (i % 2 ? 60 : -60)}deg)`}}>
+            <path d="M20 2 C22 14 26 18 38 20 C26 22 22 26 20 38 C18 26 14 22 2 20 C14 18 18 14 20 2 Z" fill={i % 2 ? pal.pen : pal.highlight} stroke={pal.ink} strokeWidth={2.5} strokeLinejoin="round" />
           </svg>
         );
       })}
@@ -275,62 +301,129 @@ export const Hearts: React.FC<{t: number; at: number; x: number; y: number; spre
   );
 };
 
-/** 「懂了」圆贴纸：盖章 0.13 秒，1.3→1，旋转 -8° */
-export const Sticker: React.FC<{t: number; at: number; text: string; x: number; y: number; size?: number}> = ({t, at, text, x, y, size}) => {
+/** 印章：朱红圆角方章、内框一道细线，字按印章排（1–2 个汉字竖排，3–4 个两字一行，拉丁字一行）。
+ *  盖章 0.14 秒，1.35→1，转 -7° */
+export const Seal: React.FC<{t: number; at: number; text: string; x: number; y: number; size?: number; rot?: number}> = ({t, at, text, x, y, size, rot}) => {
   const tk = useTk();
   const pal = usePal();
-  const st = tk.motion?.stamp ?? {dur: 0.13, from: 1.3, rot: -8};
-  const d = size ?? tk.layout?.sticker ?? 210;
+  const st = tk.motion?.stamp ?? {dur: 0.14, from: 1.35, rot: -7};
+  const d = size ?? tk.layout?.seal ?? 196;
   if (t < at) return null;
   const p = prog(t, at, st.dur, Easing.in(Easing.quad));
   const sc = st.from + (1 - st.from) * p;
-  const fs = Math.max(tk.type?.min ?? 28, Math.min(46, Math.floor((d * 0.72) / Math.max(1, Array.from(text).length))));
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: x - d / 2,
-        top: y - d / 2,
-        width: d,
-        height: d,
-        borderRadius: '50%',
-        background: pal.highlight,
-        border: `5px solid ${pal.ink}`,
-        boxShadow: `0 6px 0 ${pal.ink}`,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transform: `scale(${sc}) rotate(${st.rot}deg)`,
-        opacity: Math.min(1, p * 3 + 0.2),
-      }}
-    >
-      <div style={{fontSize: fs, fontWeight: 900, color: pal.ink, lineHeight: 1.1}}>{text}</div>
-      <div style={{marginTop: 4}}>
-        <Mark kind="check" size={52} color={pal.ink} p={prog(t, at + st.dur, 0.12)} stroke={8} />
+    <div style={{position: 'absolute', left: x - d / 2, top: y - d / 2, width: d, height: d, transform: `scale(${sc}) rotate(${rot ?? st.rot}deg)`, opacity: Math.min(1, p * 3 + 0.2)}}>
+      <SealFace text={text} size={d} />
+    </div>
+  );
+};
+
+/** 印章本体（不带动画，落版的印章擦除也用它） */
+export const SealFace: React.FC<{text: string; size: number; check?: boolean}> = ({text, size, check}) => {
+  const tk = useTk();
+  const pal = usePal();
+  const chars = Array.from(text ?? '');
+  const cjk = chars.every((c) => isWide(c));
+  const inner = size - size * 0.16;
+  let body: React.ReactNode;
+  if (check || !chars.length) body = <Mark kind="check" size={inner * 0.62} color={pal.card} stroke={10} />;
+  else if (cjk && chars.length <= 2) {
+    const fs = Math.max(tk.type?.min ?? 28, Math.floor((inner * 0.86) / Math.max(1, chars.length)));
+    body = (
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1, fontSize: fs, fontWeight: 900, color: pal.card}}>
+        {chars.map((c, i) => (
+          <span key={i}>{c}</span>
+        ))}
       </div>
+    );
+  } else if (cjk) {
+    // 3–4 个字：两字一行，从上往下（按现代阅读顺序，不做右起竖读）
+    const rowsArr = [chars.slice(0, 2), chars.slice(2, 4)];
+    const fs = Math.max(tk.type?.min ?? 28, Math.floor((inner * 0.74) / 2));
+    body = (
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, lineHeight: 1, fontSize: fs, fontWeight: 900, color: pal.card}}>
+        {rowsArr.map((row, i) => (
+          <div key={i} style={{display: 'flex', gap: 6}}>
+            {row.map((c, j) => (
+              <span key={j}>{c}</span>
+            ))}
+          </div>
+        ))}
+      </div>
+    );  } else {
+    const fs = Math.max(tk.type?.min ?? 28, Math.min(Math.floor(inner * 0.4), Math.floor((inner * 0.9) / Math.max(1, displayEm(text)))));
+    body = <div style={{fontSize: fs, fontWeight: 900, color: pal.card, fontFamily: tk.font?.mono, letterSpacing: '0.02em', lineHeight: 1, whiteSpace: 'nowrap'}}>{text}</div>;
+  }
+  return (
+    <div style={{width: size, height: size, borderRadius: size * 0.14, background: pal.pen, boxShadow: `4px 5px 0 ${pal.ink}`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+      <div style={{position: 'absolute', inset: size * 0.07, borderRadius: size * 0.08, border: `${Math.max(3, size * 0.022)}px solid ${pal.card}`}} />
+      {body}
     </div>
   );
 };
 
-/** 眉题：小圆点 + 小字 */
-export const Eyebrow: React.FC<{text: string; x: number; y: number; color: string; dot?: string; size?: number}> = ({text, x, y, color, dot, size}) => {
+/** 题号签：等宽小字的墨色签 + 正文 */
+export const TagRow: React.FC<{label?: string; text?: string; x: number; y: number; color?: string; chipBg?: string; chipFg?: string}> = ({label, text, x, y, color, chipBg, chipFg}) => {
   const tk = useTk();
-  const fs = size ?? tk.type?.eyebrow ?? 30;
+  const pal = usePal();
+  if (!label && !text) return null;
   return (
-    <div style={{position: 'absolute', left: x, top: y, display: 'flex', alignItems: 'center', gap: 12, fontSize: fs, fontWeight: 700, color, letterSpacing: 1, lineHeight: 1.2, whiteSpace: 'nowrap'}}>
-      <span style={{width: 14, height: 14, borderRadius: 7, background: dot ?? color, display: 'inline-block'}} />
-      <span>{text}</span>
+    <div style={{position: 'absolute', left: x, top: y, display: 'flex', alignItems: 'center', gap: 14, whiteSpace: 'nowrap'}}>
+      {label ? (
+        <span style={{padding: '3px 12px 4px', borderRadius: 6, background: chipBg ?? pal.ink, color: chipFg ?? pal.card, fontFamily: tk.font?.mono, fontSize: tk.type?.tag ?? 28, fontWeight: 700, letterSpacing: tk.font?.tagTracking ?? '0.08em', lineHeight: 1.2}}>{label}</span>
+      ) : null}
+      {text ? <span style={{fontSize: tk.type?.eyebrow ?? 30, fontWeight: 700, color: color ?? pal.ink, lineHeight: 1.2}}>{text}</span> : null}
     </div>
   );
 };
 
-/** 胶囊标签（= 释义、按钮） */
-export const Pill: React.FC<{text: string; bg: string; color: string; size?: number; style?: React.CSSProperties}> = ({text, bg, color, size, style}) => {
+/** 标签（右端斜切角的书签形，不是胶囊）：= 正解、小提示 */
+export const Label: React.FC<{text: string; bg: string; color: string; size?: number; style?: React.CSSProperties}> = ({text, bg, color, size, style}) => {
   const tk = useTk();
+  const pal = usePal();
+  const fs = size ?? tk.type?.pill ?? 34;
   return (
-    <span style={{display: 'inline-block', padding: '8px 26px', borderRadius: 999, background: bg, color, fontSize: size ?? tk.type?.pill ?? 34, fontWeight: 800, lineHeight: 1.25, whiteSpace: 'nowrap', ...style}}>
+    <span style={{display: 'inline-block', padding: `6px ${fs * 1.1}px 6px ${fs * 0.55}px`, background: bg, color, fontSize: fs, fontWeight: 800, lineHeight: 1.25, whiteSpace: 'nowrap', border: `3px solid ${pal.ink}`, borderRadius: 6, clipPath: `polygon(0 0, 100% 0, calc(100% - ${fs * 0.5}px) 50%, 100% 100%, 0 100%)`, ...style}}>
       {text}
     </span>
   );
+};
+
+/** 硬投影卡片样式（小圆角 + 右下实色偏移影，不用柔光阴影） */
+export const cardStyle = (pal: Pal, opt: {radius?: number; stroke?: number; shadow?: number; bg?: string; shadowColor?: string} = {}): React.CSSProperties => ({
+  background: opt.bg ?? pal.card,
+  border: `${opt.stroke ?? 4}px solid ${pal.ink}`,
+  borderRadius: opt.radius ?? 16,
+  boxShadow: `${opt.shadow ?? 8}px ${opt.shadow ?? 8}px 0 ${opt.shadowColor ?? pal.ink}`,
+  boxSizing: 'border-box',
+});
+
+// ---------------- 口吻（固定句式的三套可选） ----------------
+
+export type VoiceKey = 'tag' | 'replayTitle' | 'seal' | 'entry' | 'example' | 'sheet' | 'hint' | 'prefill' | 'comments' | 'badge';
+
+/** 本片的口吻：phraseTitle.params.voice，不写按 meta.industry（tokens.industryVoices） */
+export const useVoice = (meta?: {industry?: string; lang?: string}) => {
+  const tk = useTk();
+  const hook = useStoryParams<{voice?: string}>('phraseTitle');
+  const V = tk.voices ?? {};
+  const byInd = tk.industryVoices ?? {};
+  const name = hook?.voice && V[hook.voice] ? hook.voice : byInd[meta?.industry ?? ''] ?? byInd.default ?? 'exam';
+  const set = V[name] ?? V.exam ?? {};
+  const get = (key: VoiceKey): string | string[] => {
+    const e = set[key];
+    return e ? (meta?.lang === 'en' ? e.en : e.zh) : '';
+  };
+  const fill = (s: string, vars: Record<string, string>) => String(s ?? '').replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
+  /** 一句话（{trap} / {right} 会被替换） */
+  const say = (key: VoiceKey, vars: Record<string, string> = {}): string => {
+    const raw = get(key);
+    return fill(Array.isArray(raw) ? raw[0] ?? '' : raw, vars);
+  };
+  /** 一组话（便签评论） */
+  const list = (key: VoiceKey, vars: Record<string, string> = {}): string[] => {
+    const raw = get(key);
+    return (Array.isArray(raw) ? raw : [raw]).map((s) => fill(s, vars));
+  };
+  return Object.assign(say, {list});
 };

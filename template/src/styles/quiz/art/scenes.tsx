@@ -3,7 +3,8 @@ import type {ArtPalette} from './colors';
 import {SW} from './rig';
 
 // ============================================================
-// quiz / art 小剧场背景（替代影视片段的「情景」）。全部代码绘制，平涂 + 墨色描边，颜色取当前主题。
+// quiz / art 小剧场背景（替代影视片段的「情景」）。全部代码绘制，平涂 + 墨色描边。
+// 墙、地板、描边取当前主题；家具、灯、植物、布艺用人设色（暖橙 / 墨绿 / 琥珀 / 沙色，见 colors.ts 的 CAST），和两个角色是一套。
 // 舞台坐标：1600 × 900（16:9），地面线 y = GROUND；角色站在地面线上（SceneClip 负责摆位）。
 //   office 办公室：大窗 + 城市剪影、书架、挂钟、办公桌 + 显示器图表、台灯、落地绿植
 //   cafe   咖啡店：菜单黑板、吊灯、条纹吧台 + 咖啡机、蛋糕罩、墙裙
@@ -77,7 +78,7 @@ const Office: React.FC<P> = ({pal, t}) => {
       {[
         [960, 60, pal.primary],
         [996, 78, pal.highlight],
-        [1034, 70, pal.inkSoft],
+        [1034, 70, pal.deep],
         [1068, 84, pal.primarySoft],
         [1104, 64, pal.highlight],
       ].map(([x, h, c], i) => (
@@ -90,12 +91,12 @@ const Office: React.FC<P> = ({pal, t}) => {
       <rect x={898} y={458} width={294} height={164} rx={8} fill={pal.card} />
       {bars.map((b, i) => {
         const hh = 110 * b * (0.9 + 0.1 * Math.sin(t * 3 + i));
-        return <rect key={i} x={926 + i * 52} y={600 - hh} width={32} height={hh} rx={5} fill={i === 3 ? pal.primary : pal.primarySoft} />;
+        return <rect key={i} x={926 + i * 52} y={600 - hh} width={32} height={hh} rx={5} fill={i === 3 ? pal.primary : pal.deepSoft} />;
       })}
       <path d="M1030,640 L1030,690 M990,690 L1070,690" {...o} strokeWidth={10} />
       <rect x={820} y={690} width={740} height={26} rx={8} fill={pal.wood} {...o} />
       <path d="M850,716 L850,850 M1530,716 L1530,850" {...o} strokeWidth={12} />
-      <path d="M1370,640 L1410,640 L1404,690 L1376,690 Z" fill={pal.primary} {...o} />
+      <path d="M1370,640 L1410,640 L1404,690 L1376,690 Z" fill={pal.deep} {...o} />
       <path d="M1410,652 Q1430,654 1428,668 Q1426,680 1406,678" fill="none" {...o} />
       <path d="M1470,690 L1470,560 L1420,520" fill="none" {...o} strokeWidth={8} />
       <path d="M1380,506 L1450,490 L1446,540 Z" fill={pal.highlight} {...o} />
@@ -139,9 +140,9 @@ const Cafe: React.FC<P> = ({pal, t}) => {
       <rect x={1180} y={250} width={60} height={80} rx={10} fill={pal.inkSoft} {...ol(pal, 5)} />
       <rect x={1260} y={270} width={50} height={60} rx={10} fill={pal.highlightSoft} {...ol(pal, 5)} />
       {/* 吧台 */}
-      <rect x={760} y={560} width={840} height={200} fill={pal.primary} {...o} />
+      <rect x={760} y={560} width={840} height={200} fill={pal.deep} {...o} />
       {Array.from({length: 7}).map((_, i) => (
-        <path key={i} d={`M${820 + i * 110},586 L${820 + i * 110},740`} stroke={pal.primaryDeep} strokeWidth={10} strokeLinecap="round" />
+        <path key={i} d={`M${820 + i * 110},586 L${820 + i * 110},740`} stroke={pal.deepSoft} strokeWidth={10} strokeLinecap="round" />
       ))}
       <rect x={740} y={530} width={880} height={32} rx={10} fill={pal.wood} {...o} />
       {/* 咖啡机 */}
@@ -201,7 +202,7 @@ const Street: React.FC<P> = ({pal, t}) => {
       <rect x={700} y={430} width={440} height={300} rx={10} fill={pal.sky} {...o} />
       <path d="M760,450 L700,530 M860,450 L760,600 M1020,450 L900,640" stroke={pal.card} strokeWidth={14} strokeLinecap="round" />
       <path d="M760,730 L760,650 Q800,610 840,650 L840,730 M880,730 L880,630 L960,630 L960,730" fill={pal.highlightSoft} {...ol(pal, 5)} />
-      <rect x={1200} y={430} width={220} height={350} rx={10} fill={pal.primarySoft} {...o} />
+      <rect x={1200} y={430} width={220} height={350} rx={10} fill={pal.deepSoft} {...o} />
       <rect x={1226} y={456} width={168} height={170} rx={8} fill={pal.sky} {...ol(pal, 5)} />
       <circle cx={1394} cy={640} r={9} fill={pal.highlight} {...ol(pal, 4)} />
       {/* 人行道 + 马路 */}
@@ -242,8 +243,8 @@ const Home: React.FC<P> = ({pal, t}) => {
       <path d="M390,100 L390,480 M180,290 L600,290" stroke={pal.card} strokeWidth={14} />
       <Cloud x={300 + ((t * 10) % 50)} y={200} s={0.6} pal={pal} />
       <path d="M150,70 L640,70" {...o} strokeWidth={12} />
-      <path d={`M160,74 L260,74 Q${250 + Math.sin(t) * 4},300 230,520 L150,520 Z`} fill={pal.primary} {...o} />
-      <path d={`M620,74 L520,74 Q${530 - Math.sin(t) * 4},300 550,520 L630,520 Z`} fill={pal.primary} {...o} />
+      <path d={`M160,74 L260,74 Q${250 + Math.sin(t) * 4},300 230,520 L150,520 Z`} fill={pal.deep} {...o} />
+      <path d={`M620,74 L520,74 Q${530 - Math.sin(t) * 4},300 550,520 L630,520 Z`} fill={pal.deep} {...o} />
       {/* 挂画 */}
       <rect x={880} y={140} width={200} height={150} rx={8} fill={pal.card} {...o} />
       <path d="M900,270 L960,200 L1000,240 L1030,210 L1060,270 Z" fill={pal.primarySoft} {...ol(pal, 4)} />
@@ -299,7 +300,7 @@ const Classroom: React.FC<P> = ({pal, t}) => {
       {/* 讲台 + 书 */}
       <path d="M1250,560 L1480,560 L1460,740 L1270,740 Z" fill={pal.wood} {...o} />
       <path d="M1270,600 L1460,600" stroke={pal.primaryDeep} strokeWidth={5} opacity={0.5} />
-      <rect x={1300} y={528} width={120} height={32} rx={6} fill={pal.primary} {...o} />
+      <rect x={1300} y={528} width={120} height={32} rx={6} fill={pal.deep} {...o} />
       <rect x={1316} y={500} width={96} height={28} rx={6} fill={pal.highlight} {...o} />
       {/* 课桌 */}
       {[180, 560].map((x, i) => (
@@ -313,7 +314,9 @@ const Classroom: React.FC<P> = ({pal, t}) => {
   );
 };
 /** 画一个场景背景（放进 viewBox 为 0 0 1600 900 的 <svg> / <g> 里） */
-export const SceneBackdrop: React.FC<{name: SceneName; pal: ArtPalette; t?: number}> = ({name, pal, t = 0}) => {
+export const SceneBackdrop: React.FC<{name: SceneName; pal: ArtPalette; t?: number}> = ({name, pal: themePal, t = 0}) => {
+  // 场景里的「主色 / 亮色」一律用人设色：换主题只换墙和描边，家具还是这一套暖橙 + 墨绿 + 琥珀
+  const pal: ArtPalette = {...themePal, primary: themePal.warm, highlight: themePal.glow};
   switch (name) {
     case 'cafe':
       return <Cafe pal={pal} t={t} />;

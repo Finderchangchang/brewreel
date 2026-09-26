@@ -1,14 +1,15 @@
 import React from 'react';
-import {ArtPalette, useArtPalette} from './colors';
+import {ArtPalette, mixHex, useArtPalette} from './colors';
 import {Fx, FxKind} from './fx';
 import {blinkAt, breathe, waveAt} from './motion';
 import {Expr, FACES, Face, HandKind, Pose, SPECS, SW, V, Who, solveArm} from './rig';
 
 // ============================================================
 // quiz / art 角色（全部 SVG 代码绘制，原创设计）。
-//   host  主讲人：齐刘海波波头、头戴发箍 + 小灯泡天线（状态道具：没懂 = 灯灭，懂了 = 灯亮），白衬衫 + 主色背带裙、玛丽珍鞋
-//   buddy 搭档：个子高、毛线帽 + 亮色绒球、小麦肤色、粗眉、亮色卫衣（帽兜 + 抽绳 + 袋鼠兜）、深色直筒裤、白色运动鞋
-// 画法：平涂、无渐变、统一墨色描边 SW=6（600 高时）、圆线头；颜色全部取自当前主题（colors.ts）。
+//   host  主讲人：矮个大头（约 3.6 头身）、栗色侧分短发 + 低马尾、头戴式耳机（状态道具：没懂 = 耳罩灯灭，懂了 = 耳罩亮琥珀色 + 冒声波）、
+//         暖橙运动夹克（奶白拉链、袖条）+ 墨绿短裤、条纹袜 + 厚底鞋
+//   buddy 搭档：高个宽肩、反戴棒球帽（暖橙帽檐朝后）、深棕肤色、粗眉 + 雀斑、墨绿毛衣（胸前暖橙宽条）、沙色工装裤、暖橙高帮鞋
+// 画法：平涂、无渐变、统一墨色描边 SW=6（600 高时）、圆线头；描边 / 底色取当前主题，衣服道具用人设色（colors.ts 的 CAST）。
 //
 // 两种用法：
 //   <Character who="host" x={300} y={1200} size={560} pose="talk" expr="happy" mouth={m} t={t} />   ← HTML 里，(x,y) = 脚底中心
@@ -28,7 +29,7 @@ export type CharacterProps = {
   nod?: number;
   /** 额外歪头（度，正 = 朝面向方向歪） */
   tilt?: number;
-  /** 灯泡亮度 0..1（仅 host；懂了 = 1） */
+  /** 状态道具亮度 0..1（仅 host 的耳机亮灯；懂了 = 1）。沿用旧名 bulb，调用方不用改 */
   bulb?: number;
   /** 头顶特效 + 它开始后经过的秒数 */
   fx?: FxKind;
@@ -104,7 +105,7 @@ const Hand: React.FC<{at: V; deg: number; flip: boolean; kind: HandKind; skin: s
   </g>
 );
 
-const Arm: React.FC<{who: Who; pose: Pose; side: 1 | -1; wave: number; sleeve: string; skin: string; line: string; cuff?: string}> = ({who, pose, side, wave, sleeve, skin, line, cuff}) => {
+const Arm: React.FC<{who: Who; pose: Pose; side: 1 | -1; wave: number; sleeve: string; skin: string; line: string; cuff?: string; stripe?: string}> = ({who, pose, side, wave, sleeve, skin, line, cuff, stripe}) => {
   const s = SPECS[who];
   const a = solveArm(who, pose, side, wave);
   // 袖口：沿小臂从手往回退一点
@@ -117,6 +118,7 @@ const Arm: React.FC<{who: Who; pose: Pose; side: 1 | -1; wave: number; sleeve: s
   return (
     <g>
       <Tube pts={[a.S, a.E, C]} w={s.armW} fill={sleeve} line={line} />
+      {stripe && <path d={`M${a.S[0].toFixed(1)},${a.S[1].toFixed(1)} L${a.E[0].toFixed(1)},${a.E[1].toFixed(1)} L${C2[0].toFixed(1)},${C2[1].toFixed(1)}`} fill="none" stroke={stripe} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />}
       {cuff && <Tube pts={[C2, C]} w={s.armW + 1} fill={cuff} line={line} />}
       <Hand at={a.H} deg={a.handDeg} flip={a.flip} kind={a.hand} skin={skin} line={line} />
     </g>
@@ -124,12 +126,25 @@ const Arm: React.FC<{who: Who; pose: Pose; side: 1 | -1; wave: number; sleeve: s
 };
 
 // ---------- 五官 ----------
-const Eyes: React.FC<{f: Face; blink: number; pal: ArtPalette; xs: [number, number]; y: number}> = ({f, blink, pal, xs, y}) => {
+const Eyes: React.FC<{f: Face; blink: number; pal: ArtPalette; xs: [number, number]; y: number; lash?: boolean}> = ({f, blink, pal, xs, y, lash}) => {
   const L = pal.line;
   const one = (x: number, i: number) => {
     const kind = f.eyes === 'wink' && i === 0 ? 'happy' : f.eyes === 'wink' ? 'dot' : f.eyes;
     if (blink > 0.5 && (kind === 'dot' || kind === 'look' || kind === 'wide' || kind === 'worried')) {
       return <path key={i} d={`M${x - 7},${y + 1} Q${x},${y + 4} ${x + 7},${y + 1}`} stroke={L} strokeWidth={4.5} fill="none" strokeLinecap="round" />;
+    }
+    // 主讲人：眼尾一根上翘的睫毛（点眼类才有）
+    if (lash && (kind === 'dot' || kind === 'look' || kind === 'worried')) {
+      const ex = kind === 'look' ? x + 3 : x;
+      const ey = kind === 'look' ? y - 4 : kind === 'worried' ? y + 1 : y;
+      const rx = kind === 'worried' ? 5 : kind === 'look' ? 5.4 : 5.6;
+      const ry = kind === 'worried' ? 6 : kind === 'look' ? 6.6 : 7;
+      return (
+        <g key={i}>
+          <ellipse cx={ex} cy={ey} rx={rx} ry={ry} fill={L} />
+          <path d={`M${ex + 4},${ey - 5} L${ex + 10},${ey - 10}`} stroke={L} strokeWidth={3.5} strokeLinecap="round" />
+        </g>
+      );
     }
     switch (kind) {
       case 'happy':
@@ -220,7 +235,7 @@ const Mouth: React.FC<{f: Face; open: number; at: V; pal: ArtPalette}> = ({f, op
   return <path d={P[f.mouth] ?? P.smile} stroke={L} strokeWidth={4.5} fill="none" strokeLinecap="round" strokeLinejoin="round" />;
 };
 
-// ---------- 状态道具：小灯泡 ----------
+// ---------- 独立小道具：灯泡图标（镜头作者可单独用；角色本身不再戴灯泡） ----------
 export const Bulb: React.FC<{cx: number; cy: number; lit: number; pal: ArtPalette; r?: number}> = ({cx, cy, lit, pal, r = 17}) => {
   const L = pal.line;
   const on = lit > 0.5;
@@ -232,27 +247,15 @@ export const Bulb: React.FC<{cx: number; cy: number; lit: number; pal: ArtPalett
           const rad = (a * Math.PI) / 180;
           const r1 = r + 8;
           const r2 = r + 8 + 13 * lit;
-          return (
-            <line
-              key={i}
-              x1={cx + Math.cos(rad) * r1}
-              y1={cy + Math.sin(rad) * r1}
-              x2={cx + Math.cos(rad) * r2}
-              y2={cy + Math.sin(rad) * r2}
-              stroke={L}
-              strokeWidth={4.5}
-              strokeLinecap="round"
-            />
-          );
+          return <line key={i} x1={cx + Math.cos(rad) * r1} y1={cy + Math.sin(rad) * r1} x2={cx + Math.cos(rad) * r2} y2={cy + Math.sin(rad) * r2} stroke={L} strokeWidth={4.5} strokeLinecap="round" />;
         })}
       <path
         d={`M${cx - r * 0.55},${cy + r * 0.75} C${cx - r * 1.35},${cy + r * 0.2} ${cx - r * 1.1},${cy - r * 1.1} ${cx},${cy - r * 1.1} C${cx + r * 1.1},${cy - r * 1.1} ${cx + r * 1.35},${cy + r * 0.2} ${cx + r * 0.55},${cy + r * 0.75} Z`}
-        fill={on ? pal.highlight : pal.card}
+        fill={on ? pal.glow : pal.card}
         stroke={L}
         strokeWidth={SW * 0.8}
         strokeLinejoin="round"
       />
-      {!on && <path d={`M${cx - 6},${cy + 2} l4,-7 l4,7 l4,-7`} stroke={pal.inkPale} strokeWidth={3} fill="none" strokeLinecap="round" strokeLinejoin="round" />}
       {on && <path d={`M${cx - 8},${cy - 6} Q${cx - 6},${cy - 12} ${cx},${cy - 13}`} stroke={pal.card} strokeWidth={4} fill="none" strokeLinecap="round" />}
       <rect x={cx - r * 0.55} y={cy + r * 0.72} width={r * 1.1} height={r * 0.7} rx={3} fill={pal.inkSoft} stroke={L} strokeWidth={SW * 0.7} />
     </g>
@@ -260,36 +263,76 @@ export const Bulb: React.FC<{cx: number; cy: number; lit: number; pal: ArtPalett
 };
 
 // ================= host：主讲人 =================
+// 栗色侧分短发 + 低马尾（暖橙发圈）；头戴式耳机 = 状态道具（没懂：耳罩灯灭；懂了：耳罩亮琥珀色、往外冒声波）；
+// 暖橙运动夹克（奶白拉链、袖子一道奶白条、墨绿罗纹领 / 袖口 / 下摆）；墨绿短裤；奶白条纹袜 + 厚底鞋。个子矮、头大，约 3.6 头身。
+
 const HostBody: React.FC<{pal: ArtPalette}> = ({pal}) => {
   const L = pal.line;
   const o = {stroke: L, strokeWidth: SW, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const};
   return (
     <g>
-      {/* 腿 + 袜子 + 玛丽珍鞋 */}
-      <Tube pts={[[-22, 440], [-24, 574]]} w={25} fill={pal.skinA} line={L} />
-      <Tube pts={[[26, 440], [30, 574]]} w={25} fill={pal.skinA} line={L} />
-      <Tube pts={[[-24, 552], [-24, 574]]} w={29} fill={pal.card} line={L} />
-      <Tube pts={[[30, 552], [30, 574]]} w={29} fill={pal.card} line={L} />
-      <path d="M-40,578 Q-42,598 -24,598 L-4,598 Q8,598 6,586 Q2,572 -18,572 Q-36,570 -40,578 Z" fill={L} {...o} />
-      <path d="M14,578 Q12,598 30,598 L52,598 Q64,598 62,586 Q58,572 38,572 Q18,570 14,578 Z" fill={L} {...o} />
-      {/* 衬衫 */}
-      <path d="M-46,214 Q-48,200 -30,196 L38,196 Q54,200 52,214 L54,300 L-48,300 Z" fill={pal.card} {...o} />
-      {/* 背带裙：护胸 + A 字裙摆 */}
-      <path d="M-34,238 L40,238 L46,300 L90,462 Q4,478 -84,462 L-42,300 Z" fill={pal.primary} {...o} />
-      <path d="M-40,300 L44,300" stroke={L} strokeWidth={SW * 0.7} strokeLinecap="round" />
-      {/* 裙摆褶线 */}
-      <path d="M-16,318 L-26,446 M20,318 L28,448" stroke={pal.primaryDeep} strokeWidth={4} strokeLinecap="round" />
-      {/* 胸前口袋 */}
-      <path d="M-12,254 L20,254 L20,276 Q4,284 -12,276 Z" fill={pal.primarySoft} stroke={L} strokeWidth={4} strokeLinejoin="round" />
-      {/* 背带 + 扣子 */}
-      <Tube pts={[[-30, 240], [-34, 204]]} w={9} fill={pal.primary} line={L} />
-      <Tube pts={[[36, 240], [40, 204]]} w={9} fill={pal.primary} line={L} />
-      <circle cx={-29} cy={244} r={6} fill={pal.highlight} stroke={L} strokeWidth={3.5} />
-      <circle cx={35} cy={244} r={6} fill={pal.highlight} stroke={L} strokeWidth={3.5} />
-      {/* 脖子 + 圆领 */}
-      <path d="M-8,168 L-8,196 L20,196 L20,168" fill={pal.skinA} {...o} />
-      <path d="M-24,192 Q-30,216 -4,214 Q4,208 4,196 Z" fill={pal.card} {...o} />
-      <path d="M32,192 Q38,216 12,214 Q4,208 4,196 Z" fill={pal.card} {...o} />
+      {/* 腿 + 条纹袜 */}
+      <Tube pts={[[-22, 440], [-24, 568]]} w={24} fill={pal.skinA} line={L} />
+      <Tube pts={[[26, 440], [30, 568]]} w={24} fill={pal.skinA} line={L} />
+      <Tube pts={[[-24, 526], [-24, 568]]} w={28} fill={pal.light} line={L} />
+      <Tube pts={[[30, 526], [30, 568]]} w={28} fill={pal.light} line={L} />
+      <path d="M-36,538 L-12,538 M18,538 L42,538" stroke={pal.warm} strokeWidth={6} />
+      {/* 厚底鞋：奶白鞋面 + 墨绿厚鞋底 */}
+      <path d="M-46,582 Q-48,558 -28,556 L-12,556 Q10,558 14,582 Z" fill={pal.light} {...o} />
+      <path d="M-50,580 L18,580 Q24,580 24,588 L24,592 Q24,600 14,600 L-42,600 Q-50,600 -50,592 Z" fill={pal.deep} {...o} />
+      <path d="M10,582 Q8,558 28,556 L44,556 Q66,558 70,582 Z" fill={pal.light} {...o} />
+      <path d="M6,580 L74,580 Q80,580 80,588 L80,592 Q80,600 70,600 L14,600 Q6,600 6,592 Z" fill={pal.deep} {...o} />
+      <path d="M-30,566 L-16,566 M26,566 L40,566" stroke={L} strokeWidth={3.5} strokeLinecap="round" />
+      {/* 墨绿短裤 */}
+      <path d="M-54,360 L62,360 L74,446 L12,450 L6,416 L0,450 L-64,446 Z" fill={pal.deep} {...o} />
+      <path d="M-62,432 L-2,436 M12,436 L72,432" stroke={pal.deepSoft} strokeWidth={4} strokeLinecap="round" />
+      {/* 脖子 */}
+      <path d="M-6,176 L-6,210 L20,210 L20,176" fill={pal.skinA} {...o} />
+      {/* 夹克：身体 + 墨绿罗纹下摆 */}
+      <path d="M-52,228 Q-52,208 -30,206 L42,206 Q62,208 62,228 L66,354 L-58,354 Z" fill={pal.warm} {...o} />
+      <rect x={-62} y={342} width={132} height={28} rx={10} fill={pal.deep} {...o} />
+      <path d="M-44,348 L-44,364 M-26,348 L-26,364 M-8,348 L-8,364 M10,348 L10,364 M28,348 L28,364 M46,348 L46,364" stroke={pal.deepSoft} strokeWidth={3} strokeLinecap="round" />
+      {/* 奶白拉链 + 拉头 */}
+      <path d="M8,214 L8,342" stroke={pal.light} strokeWidth={6} strokeLinecap="round" />
+      <rect x={1} y={232} width={14} height={20} rx={5} fill={pal.light} stroke={L} strokeWidth={3.5} />
+      {/* 胸前琥珀色星星徽章 + 一个小口袋 */}
+      <circle cx={-26} cy={256} r={11} fill={pal.glow} stroke={L} strokeWidth={4} />
+      <path d="M-26,248 Q-25,255 -18,256 Q-25,257 -26,264 Q-27,257 -34,256 Q-27,255 -26,248 Z" fill={L} />
+      <path d="M24,300 L50,300" stroke={pal.warmDeep} strokeWidth={5} strokeLinecap="round" />
+      {/* 墨绿罗纹立领 */}
+      <path d="M-30,204 Q8,232 44,204 L36,192 Q8,214 -22,192 Z" fill={pal.deep} {...o} />
+    </g>
+  );
+};
+
+/** 耳机：远侧耳罩（画在脸后面） */
+const PhonesFar: React.FC<{pal: ArtPalette}> = ({pal}) => <rect x={68} y={94} width={26} height={52} rx={12} fill={pal.deep} stroke={pal.line} strokeWidth={SW} />;
+
+/** 耳机：头梁 + 近侧耳罩 + 亮灯时的声波（lit 0..1） */
+const PhonesNear: React.FC<{pal: ArtPalette; lit: number}> = ({pal, lit}) => {
+  const L = pal.line;
+  const on = lit > 0.5;
+  const band = 'M-62,112 C-70,40 -28,20 10,20 C52,20 90,40 82,100';
+  return (
+    <g>
+      <path d={band} fill="none" stroke={L} strokeWidth={13 + SW * 2} strokeLinecap="round" />
+      <path d={band} fill="none" stroke={pal.deep} strokeWidth={13} strokeLinecap="round" />
+      {/* 头梁上的暖橙软垫 */}
+      <path d="M-30,32 C-12,22 26,20 44,28" fill="none" stroke={L} strokeWidth={18 + SW * 2} strokeLinecap="round" />
+      <path d="M-30,32 C-12,22 26,20 44,28" fill="none" stroke={pal.warm} strokeWidth={18} strokeLinecap="round" />
+      {/* 近侧耳罩 */}
+      <rect x={-86} y={92} width={44} height={66} rx={20} fill={pal.deep} stroke={L} strokeWidth={SW} />
+      <ellipse cx={-68} cy={125} rx={12} ry={21} fill={on ? pal.glow : pal.deepDark} stroke={L} strokeWidth={4} />
+      {on ? <path d="M-72,112 Q-76,120 -74,128" stroke={pal.card} strokeWidth={4} fill="none" strokeLinecap="round" /> : <circle cx={-68} cy={125} r={4} fill={pal.deepSoft} />}
+      {/* 声波：亮灯时从耳罩往外冒三道弧 */}
+      {lit > 0.05 &&
+        [0, 1, 2].map((i) => {
+          const k = Math.min(1, lit * 1.2 - i * 0.12);
+          if (k <= 0) return null;
+          const x = -98 - i * 16;
+          const h = (14 + i * 9) * k;
+          return <path key={i} d={`M${x + 6},${125 - h} Q${x - 8 * k},125 ${x + 6},${125 + h}`} stroke={L} strokeWidth={5} fill="none" strokeLinecap="round" />;
+        })}
     </g>
   );
 };
@@ -298,62 +341,69 @@ const HostHead: React.FC<{pal: ArtPalette; f: Face; blink: number; mouth: number
   const L = pal.line;
   const o = {stroke: L, strokeWidth: SW, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const};
   const fy = nod * 5;
+  const strand = mixHex(pal.hairA, L, 0.45);
   return (
     <g>
-      {/* 后发：齐肩波波头 */}
-      <path d="M-84,172 C-96,112 -86,32 4,28 C94,32 104,112 92,172 Q86,184 74,178 L-66,178 Q-78,184 -84,172 Z" fill={L} {...o} />
+      {/* 低马尾 + 暖橙发圈 */}
+      <path d="M-58,158 C-96,158 -122,196 -112,242 C-100,222 -86,208 -56,196 Z" fill={pal.hairA} {...o} />
+      <path d="M-100,212 Q-96,200 -84,194" stroke={strand} strokeWidth={4} fill="none" strokeLinecap="round" />
+      <ellipse cx={-64} cy={176} rx={11} ry={16} transform="rotate(-24 -64 176)" fill={pal.warm} stroke={L} strokeWidth={4.5} />
+      <PhonesFar pal={pal} />
+      {/* 后发 */}
+      <path d="M-76,166 C-94,96 -74,28 8,28 C90,28 106,96 92,158 Q86,170 74,162 L-62,170 Q-72,178 -76,166 Z" fill={pal.hairA} {...o} />
       {/* 脸 */}
-      <ellipse cx={8} cy={116} rx={62} ry={64} fill={pal.skinA} {...o} />
+      <ellipse cx={8} cy={122} rx={68} ry={66} fill={pal.skinA} {...o} />
       <g transform={`translate(0 ${fy})`}>
-        {/* 腮红 */}
-        <ellipse cx={-22} cy={140} rx={11} ry={6.5} fill={pal.blushA} opacity={f.blush} />
-        <ellipse cx={52} cy={140} rx={11} ry={6.5} fill={pal.blushA} opacity={f.blush} />
-        <Brows f={f} xs={[-6, 38]} y={98} thick={4} line={L} />
-        <Eyes f={f} blink={blink} pal={pal} xs={[-4, 38]} y={120} />
-        <Mouth f={f} open={mouth} at={[18, 148]} pal={pal} />
+        <ellipse cx={-22} cy={150} rx={11} ry={6.5} fill={pal.blushA} opacity={f.blush} />
+        <ellipse cx={54} cy={150} rx={11} ry={6.5} fill={pal.blushA} opacity={f.blush} />
+        <Brows f={f} xs={[-4, 40]} y={104} thick={4.5} line={L} />
+        <Eyes f={f} blink={blink} pal={pal} xs={[-2, 40]} y={126} lash />
+        <Mouth f={f} open={mouth} at={[20, 157]} pal={pal} />
       </g>
-      {/* 齐刘海 */}
-      <path d="M-58,112 C-70,52 -34,34 8,34 C52,34 84,54 74,110 C70,98 66,90 60,84 Q14,92 -40,84 C-50,90 -54,100 -58,112 Z" fill={L} {...o} />
-      {/* 两侧鬓发 */}
-      <path d="M-58,100 C-66,128 -64,156 -60,178 L-46,178 C-52,150 -52,122 -46,96 Z" fill={L} {...o} />
-      <path d="M74,98 C80,128 80,156 76,178 L62,178 C66,150 66,124 60,94 Z" fill={L} {...o} />
-      {/* 发箍 + 天线 + 灯泡 */}
-      <path d="M-66,72 C-60,44 -28,36 8,36 C46,36 74,44 82,70" fill="none" stroke={L} strokeWidth={11 + SW * 2} strokeLinecap="round" />
-      <path d="M-66,72 C-60,44 -28,36 8,36 C46,36 74,44 82,70" fill="none" stroke={pal.highlight} strokeWidth={11} strokeLinecap="round" />
-      <path d="M14,30 C14,10 22,-4 18,-18" fill="none" stroke={L} strokeWidth={5} strokeLinecap="round" />
-      <Bulb cx={18} cy={-36} lit={bulb} pal={pal} />
+      {/* 侧分斜刘海：从左往右一大片扫过额头，发梢收在右鬓 */}
+      <path d="M-64,114 C-76,54 -34,30 10,30 C60,30 92,56 82,108 C74,90 62,78 48,70 C34,84 10,88 -12,90 C-34,94 -52,102 -64,114 Z" fill={pal.hairA} {...o} />
+      <path d="M-30,44 Q10,40 40,62 M-46,70 Q-20,58 12,62" stroke={strand} strokeWidth={4} fill="none" strokeLinecap="round" />
+      {/* 右鬓一缕 */}
+      <path d="M80,98 C88,122 86,148 78,164 L68,158 C74,140 74,120 70,102 Z" fill={pal.hairA} {...o} />
+      <PhonesNear pal={pal} lit={bulb} />
     </g>
   );
 };
 
 // ================= buddy：搭档 =================
+// 反戴棒球帽（墨绿帽身、暖橙帽檐朝后、前额露出调节扣的开口）；深棕肤色、粗眉、雀斑；
+// 墨绿圆领毛衣（胸前一道暖橙宽条 + 两根奶白细线、奶白罗纹领口和袖口）；沙色工装裤（侧袋、卷边）；暖橙高帮鞋。个子高、肩宽。
+
 const BuddyBody: React.FC<{pal: ArtPalette}> = ({pal}) => {
   const L = pal.line;
   const o = {stroke: L, strokeWidth: SW, strokeLinejoin: 'round' as const, strokeLinecap: 'round' as const};
   return (
     <g>
-      {/* 直筒裤 */}
-      <path d="M-56,366 L64,366 L66,560 L14,560 L8,420 L2,420 L-4,560 L-56,560 Z" fill={pal.inkSoft} {...o} />
-      <path d="M-56,544 L-4,544 M14,544 L66,544" stroke={L} strokeWidth={4} strokeLinecap="round" />
-      {/* 运动鞋 */}
-      <path d="M-58,566 Q-62,598 -40,598 L2,598 Q16,598 14,584 Q10,564 -14,562 L-50,558 Q-58,558 -58,566 Z" fill={pal.card} {...o} />
-      <path d="M-60,588 L14,588" stroke={L} strokeWidth={4} />
-      <path d="M12,566 Q8,598 30,598 L76,598 Q92,598 88,582 Q82,564 56,562 L20,558 Q12,558 12,566 Z" fill={pal.card} {...o} />
-      <path d="M10,588 L90,588" stroke={L} strokeWidth={4} />
-      {/* 卫衣：身体 + 罗纹下摆 */}
-      <path d="M-62,236 Q-64,208 -34,202 L44,202 Q74,208 72,236 L74,360 L-64,360 Z" fill={pal.highlight} {...o} />
-      <rect x={-66} y={352} width={142} height={28} rx={10} fill={pal.highlight} {...o} />
-      <path d="M-40,360 L-40,372 M-14,360 L-14,372 M12,360 L12,372 M38,360 L38,372 M60,360 L60,372" stroke={pal.primaryDeep} strokeWidth={3} strokeLinecap="round" opacity={0.45} />
-      {/* 袋鼠兜 */}
-      <path d="M-34,298 L44,298 L56,346 L-46,346 Z" fill={pal.highlightSoft} stroke={L} strokeWidth={4.5} strokeLinejoin="round" />
+      {/* 沙色工装裤 + 侧袋 + 卷边 */}
+      <path d="M-60,368 L68,368 L72,540 L14,540 L8,432 L2,432 L-4,540 L-62,540 Z" fill={pal.sand} {...o} />
+      <rect x={-60} y={446} width={30} height={38} rx={6} fill={pal.sand} stroke={L} strokeWidth={4} />
+      <path d="M-60,458 L-30,458" stroke={L} strokeWidth={3.5} />
+      <path d="M40,388 L44,520" stroke={pal.sandDeep} strokeWidth={4} strokeLinecap="round" />
+      <rect x={-65} y={526} width={64} height={22} rx={7} fill={pal.sandDeep} {...o} />
+      <rect x={11} y={526} width={64} height={22} rx={7} fill={pal.sandDeep} {...o} />
+      {/* 暖橙高帮鞋 + 奶白鞋底 */}
+      <path d="M-58,546 L-8,546 L-6,568 Q16,568 18,586 L-60,586 Z" fill={pal.warm} {...o} />
+      <rect x={-62} y={582} width={84} height={18} rx={8} fill={pal.light} {...o} />
+      <path d="M-46,556 L-24,556 M-46,568 L-24,568" stroke={L} strokeWidth={3.5} strokeLinecap="round" />
+      <path d="M14,546 L64,546 L66,568 Q88,568 90,586 L12,586 Z" fill={pal.warm} {...o} />
+      <rect x={10} y={582} width={84} height={18} rx={8} fill={pal.light} {...o} />
+      <path d="M26,556 L48,556 M26,568 L48,568" stroke={L} strokeWidth={3.5} strokeLinecap="round" />
       {/* 脖子 */}
-      <path d="M-8,172 L-8,202 L24,202 L24,172" fill={pal.skinB} {...o} />
-      {/* 帽兜（领口一圈） */}
-      <path d="M-44,200 C-38,242 52,244 58,200 L42,196 C34,222 -20,224 -28,196 Z" fill={pal.highlight} {...o} />
-      {/* 抽绳 */}
-      <path d="M-4,222 L-8,272 M20,222 L24,272" stroke={L} strokeWidth={4} strokeLinecap="round" />
-      <rect x={-13} y={270} width={10} height={14} rx={3} fill={pal.primary} stroke={L} strokeWidth={3} />
-      <rect x={19} y={270} width={10} height={14} rx={3} fill={pal.primary} stroke={L} strokeWidth={3} />
+      <path d="M-8,176 L-8,206 L24,206 L24,176" fill={pal.skinB} {...o} />
+      {/* 墨绿毛衣 + 胸前暖橙宽条 */}
+      <path d="M-68,240 Q-70,210 -38,204 L48,204 Q78,210 76,240 L80,362 L-72,362 Z" fill={pal.deep} {...o} />
+      <path d="M-69,262 L77,262 L78,298 L-70,298 Z" fill={pal.warm} stroke={L} strokeWidth={4.5} strokeLinejoin="round" />
+      <path d="M-66,271 L75,271 M-67,289 L76,289" stroke={pal.light} strokeWidth={3.5} />
+      {/* 罗纹下摆 */}
+      <rect x={-76} y={350} width={160} height={28} rx={10} fill={pal.deep} {...o} />
+      <path d="M-56,356 L-56,372 M-36,356 L-36,372 M-16,356 L-16,372 M4,356 L4,372 M24,356 L24,372 M44,356 L44,372 M64,356 L64,372" stroke={pal.deepSoft} strokeWidth={3} strokeLinecap="round" />
+      {/* 奶白罗纹圆领 */}
+      <path d="M-32,204 Q8,238 48,204 L40,194 Q8,222 -24,194 Z" fill={pal.light} {...o} />
     </g>
   );
 };
@@ -364,29 +414,36 @@ const BuddyHead: React.FC<{pal: ArtPalette; f: Face; blink: number; mouth: numbe
   const fy = nod * 5;
   return (
     <g>
+      {/* 帽檐朝后（暖橙） */}
+      <path d="M-58,72 C-98,60 -130,68 -140,88 C-114,98 -82,96 -56,90 Z" fill={pal.warm} {...o} />
       {/* 耳朵 */}
-      <ellipse cx={-58} cy={124} rx={13} ry={16} fill={pal.skinB} {...o} />
-      <ellipse cx={74} cy={124} rx={13} ry={16} fill={pal.skinB} {...o} />
+      <ellipse cx={-58} cy={126} rx={13} ry={16} fill={pal.skinB} {...o} />
+      <ellipse cx={74} cy={126} rx={13} ry={16} fill={pal.skinB} {...o} />
       {/* 脸：方一点的下巴 */}
-      <path d="M-58,86 C-58,58 -36,46 8,46 C52,46 74,58 74,88 L72,138 C70,168 44,182 8,182 C-28,182 -56,168 -58,138 Z" fill={pal.skinB} {...o} />
-      {/* 鬓角碎发 */}
-      <path d="M-58,76 Q-70,98 -58,112 Q-56,98 -48,88 Z" fill={L} {...o} />
-      <path d="M74,76 Q84,96 74,110 Q72,96 64,88 Z" fill={L} {...o} />
+      <path d="M-58,88 C-58,58 -36,46 8,46 C52,46 74,58 74,90 L72,140 C70,170 44,186 8,186 C-28,186 -56,170 -58,140 Z" fill={pal.skinB} {...o} />
+      {/* 鬓角 */}
+      <path d="M-58,78 Q-70,102 -58,118 Q-56,102 -46,90 Z" fill={L} {...o} />
+      <path d="M74,78 Q84,98 74,114 Q72,98 64,90 Z" fill={L} {...o} />
       <g transform={`translate(0 ${fy})`}>
-        <ellipse cx={-20} cy={146} rx={11} ry={6} fill={pal.blushB} opacity={f.blush} />
-        <ellipse cx={56} cy={146} rx={11} ry={6} fill={pal.blushB} opacity={f.blush} />
-        <Brows f={f} xs={[-10, 40]} y={100} thick={7.5} line={L} />
-        <Eyes f={f} blink={blink} pal={pal} xs={[-8, 40]} y={122} />
-        {/* 小鼻子 */}
-        <path d="M20,130 Q28,138 20,144" stroke={pal.nose} strokeWidth={3.5} fill="none" strokeLinecap="round" />
-        <Mouth f={f} open={mouth} at={[20, 160]} pal={pal} />
+        <ellipse cx={-20} cy={150} rx={11} ry={6} fill={pal.blushB} opacity={f.blush} />
+        <ellipse cx={56} cy={150} rx={11} ry={6} fill={pal.blushB} opacity={f.blush} />
+        {/* 雀斑 */}
+        {[[-30, 142], [-20, 138], [-12, 145], [48, 142], [58, 138], [66, 145]].map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={2.8} fill={pal.freckle} />
+        ))}
+        <Brows f={f} xs={[-10, 40]} y={104} thick={7.5} line={L} />
+        <Eyes f={f} blink={blink} pal={pal} xs={[-8, 40]} y={126} />
+        <path d="M20,132 Q28,140 20,146" stroke={pal.nose} strokeWidth={3.5} fill="none" strokeLinecap="round" />
+        <Mouth f={f} open={mouth} at={[20, 163]} pal={pal} />
       </g>
-      {/* 毛线帽：帽身 + 翻边 + 绒球 */}
-      <path d="M-66,76 C-72,14 -34,-6 8,-6 C52,-6 88,14 82,76 Z" fill={pal.primary} {...o} />
-      <path d="M-30,6 Q-40,40 -38,66 M8,-4 L8,66 M46,6 Q56,40 54,66" stroke={pal.primaryDeep} strokeWidth={4} fill="none" strokeLinecap="round" opacity={0.7} />
-      <rect x={-74} y={56} width={164} height={34} rx={15} fill={pal.primary} {...o} />
-      <path d="M-50,62 L-50,84 M-28,62 L-28,84 M-6,62 L-6,84 M16,62 L16,84 M38,62 L38,84 M60,62 L60,84" stroke={pal.primaryDeep} strokeWidth={4} strokeLinecap="round" opacity={0.7} />
-      <path d="M8,-30 q9,-6 16,2 q10,2 6,12 q6,9 -3,15 q-4,9 -14,5 q-9,6 -15,-3 q-10,-2 -6,-12 q-5,-10 4,-14 q4,-9 12,-5 Z" fill={pal.highlight} {...o} />
+      {/* 帽身（墨绿）+ 缝线 + 顶扣 */}
+      <path d="M-68,88 C-74,20 -36,-10 8,-10 C54,-10 90,20 84,88 C50,78 -30,78 -68,88 Z" fill={pal.deep} {...o} />
+      <path d="M8,-8 C-12,20 -22,50 -26,80 M8,-8 C28,20 38,50 42,79" stroke={pal.deepSoft} strokeWidth={4} fill="none" strokeLinecap="round" />
+      {/* 前额：调节扣的开口，露出一撮头发 + 扣带 */}
+      <path d="M10,80 Q12,54 32,54 Q52,54 54,80 Z" fill={L} {...o} />
+      <path d="M8,76 L56,76" stroke={L} strokeWidth={10 + SW} strokeLinecap="round" />
+      <path d="M8,76 L56,76" stroke={pal.deep} strokeWidth={10} strokeLinecap="round" />
+      <circle cx={8} cy={-12} r={8} fill={pal.warm} stroke={L} strokeWidth={4} />
     </g>
   );
 };
@@ -405,11 +462,13 @@ export const CharacterG: React.FC<CharacterProps> = ({who, pose = 'stand', expr 
   const L = pal.line;
   const isHost = who === 'host';
   const skin = isHost ? pal.skinA : pal.skinB;
-  const sleeve = isHost ? pal.card : pal.highlight;
+  const sleeve = isHost ? pal.warm : pal.deep;
+  const cuff = isHost ? pal.deep : pal.light;
+  const stripe = isHost ? pal.light : undefined;
   const lean = pose === 'surprised' ? -3 : pose === 'think' ? 2 : 0;
   // 手臂在身体前面画；思考姿势的托肘手要在托下巴那只手后面
-  const armR = <Arm who={who} pose={pose} side={1} wave={wave + talkWave} sleeve={sleeve} skin={skin} line={L} cuff={isHost ? undefined : pal.highlight} />;
-  const armL = <Arm who={who} pose={pose} side={-1} wave={0} sleeve={sleeve} skin={skin} line={L} cuff={isHost ? undefined : pal.highlight} />;
+  const armR = <Arm who={who} pose={pose} side={1} wave={wave + talkWave} sleeve={sleeve} skin={skin} line={L} cuff={cuff} stripe={stripe} />;
+  const armL = <Arm who={who} pose={pose} side={-1} wave={0} sleeve={sleeve} skin={skin} line={L} cuff={cuff} stripe={stripe} />;
   const head = isHost ? (
     <HostHead pal={pal} f={f} blink={blink} mouth={mouth} nod={nod} bulb={bulb} />
   ) : (
@@ -463,7 +522,7 @@ export const Avatar: React.FC<{who: Who; size: number; expr?: Expr; mouth?: numb
           <circle cx={cx} cy={cy} r={r} />
         </clipPath>
       </defs>
-      <circle cx={cx} cy={cy} r={r} fill={bg ?? (who === 'host' ? pal.highlightSoft : pal.primaryPale)} />
+      <circle cx={cx} cy={cy} r={r} fill={bg ?? (who === 'host' ? pal.glowSoft : pal.deepPale)} />
       <g clipPath={`url(#av${id})`}>
         <g transform={`translate(0 ${who === 'host' ? 34 : 34})`}>
           <CharacterG who={who} expr={expr} mouth={mouth} nod={nod} t={t} bulb={bulb} />

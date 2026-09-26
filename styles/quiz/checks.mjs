@@ -18,6 +18,7 @@
 //   Q11 数量题（几个小时 / 多少 / 几次 / 几天）：每个选项都要是数量
 //   Q12 scene 是 screen / phone 就要写 screenItems（界面真字）；软件题材必须有
 //   Q13 有 clip 没 replay 提醒
+//   Q14 固定套话提醒：同类视频里用滥了的几句原话（如「你猜他什么意思」「再听一遍」「评论区打个字母」）换成自己的句式或口吻默认句
 //   Q8 另有：落版必须有行动引导（button 或 meta.cta），button 要和 meta.cta 对得上
 // ============================================================
 
@@ -121,7 +122,7 @@ export function run(sb, ctx) {
     if (text(r.key) && text(r.line) && !text(r.line).includes(r.key))
       errors.push({where: ctx.where(repI, 'replay', 'key'), problem: `关键词「${r.key}」不在 line 里`, fix: '让 line 原样包含关键词，或者两个都不写（沿用 clip）'});
     if (clipI < 0 && !text(r.line))
-      errors.push({where: ctx.where(repI, 'replay', 'line'), problem: '没有 clip 镜头，replay 又没写 line，「再听一遍」没有台词可放', fix: '给 replay 写 line（和 key），或者在前面加一镜 clip'});
+      errors.push({where: ctx.where(repI, 'replay', 'line'), problem: '没有 clip 镜头，replay 又没写 line，回放没有台词可放', fix: '给 replay 写 line（和 key），或者在前面加一镜 clip'});
   }
 
   // Q6 释义卡
@@ -225,9 +226,23 @@ export function run(sb, ctx) {
       errors.push({where: ctx.where(hookI, 'phraseTitle', 'screenItems'), problem: '软件题材没写 screenItems：全片看不到产品界面，功能没被演示', fix: '第 1 镜写 "scene": "screen" 和 "screenItems"（界面里的 2–4 行字）；功能是「按住说话 → 出清单」这类的，clip 写 "scene": "phone"，再看一遍时会演出结果'});
   }
 
-  // Q13 有 clip 就保留 replay（「再听一遍 / 再看一遍」这一拍）
+  // Q13 有 clip 就保留 replay（回放复证这一拍）
   if (clipI >= 0 && repI < 0)
-    warnings.push({where: ctx.where(clipI, 'clip', 'type'), problem: '有 clip 但没有 replay：节奏里少了「再听一遍」这一拍', fix: '在 meaningCard 后面加 {"type": "replay", "beats": 8}（参数都可省）'});
+    warnings.push({where: ctx.where(clipI, 'clip', 'type'), problem: '有 clip 但没有 replay：节奏里少了「回放复证」这一拍', fix: '在 meaningCard 后面加 {"type": "replay", "beats": 8}（参数都可省）'});
+
+
+  // Q14 固定套话：这几句在同类答题视频里用滥了，观众一眼会当成别家的片子；换成自己的话，或者删掉字段用口吻（phraseTitle.voice）的默认句
+  {
+    const STOCK = [/你猜[他她它]?(是)?什么意思/, /再听一遍/, /评论区打个字母/, /^听懂了$/, /第一反应选的/];
+    const FIELDS = {quiz: ['question'], replay: ['title', 'sticker'], commentCta: ['question', 'hint', 'prefill'], brandEnd: ['badge']};
+    shots.forEach((s, i) => {
+      for (const f of FIELDS[s?.type] ?? []) {
+        const v = text(s?.params?.[f]);
+        if (v && STOCK.some((re) => re.test(v)))
+          warnings.push({where: ctx.where(i, s.type, f), problem: `「${v}」是同类视频里用滥的固定说法，放在这个风格里像照搬别家`, fix: f === 'question' ? '换成自己的句式，如「他这句到底想说啥？」「你押的是哪个？」' : '换成自己的句式，或者删掉这个字段，按 phraseTitle.voice 的口吻出默认句'});
+      }
+    });
+  }
 
   // Q9 提问到揭晓 6–8 秒：quiz 镜头时长决定（揭晓在结束前约 1.5 秒的整拍）
   if (quizI >= 0) {

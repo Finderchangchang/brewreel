@@ -9,18 +9,18 @@ import {OLDTOWN_NEAR} from './oldtown';
 // journey / art 现代城市的六个主题街区（原创造型；日常街区见 everyday.tsx，古城街区见 oldtown.tsx）。每个街区 = 一段宽 DISTRICT_W 的近景模块 + 一段中景模块。
 // 近景局部坐标：地面线 y = 0，x 0..DISTRICT_W；中景 x 0..midW。
 //   docs     资料/文档：文件柜大楼（抽屉 + 冒出来的文件夹）、三本竖立的活页夹楼、文件夹招牌
-//   launch   发布/上线：指挥中心 + 转动雷达、发射塔架 + 胖火箭（gagT 起点火升空）
+//   post     发布/寄出：邮局（拱窗 + 钟楼）、一座邮筒楼（笑点时投信口翻开，吐出邮票贴纸——贴纸在 parts/props.tsx 的 GagFx 里飞）
 //   tools    工具/工厂：工具箱大楼、锯齿屋顶车间 + 扳手招牌、塔吊吊箱子、传送带
 //   creative 创意/设计：铅笔塔、溢出颜料的油漆桶楼、画架、调色板招牌
-//   data     数据/研究：柱状图楼群 + 折线（gagT 起长高）、饼图穹顶、烧瓶实验楼、服务器塔
-//   global   夜景/霓虹：转动的地球仪、屋顶对话框招牌（写分镜里这一站的类别名和标签，另两块画星星和爱心；夜里是霓虹）、串旗
+//   data     数据/资料：柱状图楼群 + 折线（gagT 起长高）、楼顶一块圆形饼图牌、量杯楼、服务器塔
+//   global   夜景街：转动的地球仪、屋顶对话框招牌（写分镜里这一站的类别名和标签，另两块画星星和爱心；夜里像灯箱一样亮暖光）、串旗
 // 日常街区（phone / home / cafe / market）在 everyday.tsx，古城街区（gate / bridge / teahouse / lantern）在 oldtown.tsx。
-// gagT = 本街区笑点开始后的秒数（没有就不传），组件按它自己演（火箭升空、柱子长高、箱子晃）。
+// gagT = 本街区笑点开始后的秒数（没有就不传），组件按它自己演（投信口翻开、柱子长高、箱子晃）。
 // ============================================================
 
 export const DISTRICT_W = 2200;
 
-/** words = 街区自己的字（霓虹街屋顶对话框上显示的类别名 / 标签，来自分镜），不传就画图标 */
+/** words = 街区自己的字（夜景街屋顶对话框上显示的类别名 / 标签，来自分镜），不传就画图标 */
 export type DistrictArtProps = {p: number; t: number; gagT?: number; words?: string[]};
 type C = (typeof DISTRICT)[DistrictKind];
 
@@ -28,12 +28,12 @@ const lamp = (x: number, p: number) => <StreetLamp key={`lamp${x}`} x={x} p={p} 
 
 // ---------------- docs ----------------
 const DocsNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
-  const steel = '#DCE4F8';
+  const steel = '#DCEDE8';
   const drawers = [0, 1, 2, 3];
   const binders = [
     {x: 720, h: 430, col: c.main},
     {x: 800, h: 470, col: c.accent},
-    {x: 880, h: 410, col: '#FF7B6B'},
+    {x: 880, h: 410, col: '#F58A4B'},
   ];
   const n = nightOf(p);
   return (
@@ -49,19 +49,19 @@ const DocsNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
             {i === 0 && (
               <g>
                 <path d={`M ${380 + out},${y + 6} L ${392 + out},${y - 34} L ${452 + out},${y - 34} L ${460 + out},${y - 20} L ${520 + out},${y - 20} L ${520 + out},${y + 6} Z`} fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-                <path d={`M ${470 + out},${y + 6} L ${478 + out},${y - 48} L ${540 + out},${y - 48} L ${548 + out},${y - 30} L ${600 + out},${y - 30} L ${600 + out},${y + 6} Z`} fill={lit('#FF7B6B', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+                <path d={`M ${470 + out},${y + 6} L ${478 + out},${y - 48} L ${540 + out},${y - 48} L ${548 + out},${y - 30} L ${600 + out},${y - 30} L ${600 + out},${y + 6} Z`} fill={lit('#F58A4B', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
               </g>
             )}
             <rect x={360 + out} y={y} width={270} height={116} rx={10} fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} />
             <rect x={438 + out} y={y + 18} width={114} height={34} rx={6} fill={mixHex('#FFFFFF', '#FFE9A8', n)} stroke={INK} strokeWidth={3} />
             <path d={`M ${452 + out},${y + 30} L ${520 + out},${y + 30} M ${452 + out},${y + 40} L ${500 + out},${y + 40}`} stroke="#9AA3B8" strokeWidth={4} strokeLinecap="round" />
-            <rect x={455 + out} y={y + 70} width={80} height={20} rx={10} fill={lit('#EEF2FB', p)} stroke={INK} strokeWidth={3.5} />
+            <rect x={455 + out} y={y + 70} width={80} height={20} rx={10} fill={lit('#EEF6F3', p)} stroke={INK} strokeWidth={3.5} />
           </g>
         );
       })}
       {/* 柜顶盆栽 */}
       <path d="M 590,-548 L 596,-590 L 632,-590 L 638,-548 Z" fill={lit('#FF8A3D', p)} stroke={INK} strokeWidth={3.5} strokeLinejoin="round" />
-      <path d="M 614,-592 Q 590,-640 566,-630 Q 588,-612 612,-594 M 614,-592 Q 632,-650 660,-640 Q 640,-616 616,-594" fill={lit('#3DBE73', p)} stroke={INK} strokeWidth={3.5} strokeLinejoin="round" />
+      <path d="M 614,-592 Q 590,-640 566,-630 Q 588,-612 612,-594 M 614,-592 Q 632,-650 660,-640 Q 640,-616 616,-594" fill={lit('#4FAE6A', p)} stroke={INK} strokeWidth={3.5} strokeLinejoin="round" />
       {/* 三本竖立的活页夹楼 */}
       {binders.map((b, i) => (
         <g key={i}>
@@ -96,80 +96,50 @@ const DocsNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
   );
 };
 
-// ---------------- launch ----------------
-const LaunchNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
+// ---------------- post ----------------
+const PostNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
   const n = nightOf(p);
-  const g = gagT ?? -1;
-  const rise = g > 0.35 ? Math.pow(g - 0.35, 2) * 520 : 0;
-  const shake = g > 0 && g < 0.6 ? Math.sin(g * 90) * 4 : 0;
-  const fire = g > 0;
-  const dish = Math.sin(t * 1.4) * 18;
-  const rx = 1090 + shake;
-  const ry = -44 - rise;
-  const white = lit('#F6F7FB', p);
+  const g = gagT ?? -9;
+  // 邮筒楼（x 1000–1180）：投信口的挡板在笑点前 0.2 秒翻开，吐完贴纸 1 秒后合上；楼身一抖
+  const open = Math.max(0, Math.min(1, (g + 0.2) / 0.15)) * (1 - Math.max(0, Math.min(1, (g - 1) / 0.2)));
+  const shake = g > 0 && g < 0.4 ? Math.sin(g * 70) * 3 : 0;
+  const clock = t * 12;
+  const white = lit('#F4F9F7', p);
   return (
     <g>
       <House x={40} w={220} h={250} color={mixHex(c.main, '#FFFFFF', 0.2)} p={p} seed={21} roof="gable" win="grid" />
-      {/* 指挥中心 */}
+      {/* 邮局：一排拱窗 + 钟楼 */}
       <g>
-        <rect x={400} y={-380} width={10} height={80} fill={INK} />
-        <g transform={`rotate(${dish},405,-372)`}>
-          <path d="M 340,-420 Q 405,-330 470,-420 Z" fill={lit('#F6F7FB', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-          <line x1={405} y1={-392} x2={405} y2={-448} stroke={INK} strokeWidth={4} />
-          <circle cx={405} cy={-452} r={8} fill={mixHex('#FF5A4E', '#FFE066', n)} stroke={INK} strokeWidth={3} />
-        </g>
-        <House x={300} w={420} h={300} color={c.accent} p={p} seed={22} roof="flat" win="band" door />
+        <rect x={470} y={-470} width={120} height={180} rx={10} fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} />
+        <path d="M 460,-470 L 530,-540 L 600,-470 Z" fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+        <circle cx={530} cy={-395} r={42} fill={white} stroke={INK} strokeWidth={OUT} />
+        <path d={`M 530,-395 L ${530 + Math.cos((clock * Math.PI) / 180) * 26},${-395 + Math.sin((clock * Math.PI) / 180) * 26} M 530,-395 L 530,-420`} stroke={INK} strokeWidth={5} strokeLinecap="round" />
+        <House x={300} w={420} h={300} color={c.accent} p={p} seed={22} roof="flat" win="arch" door />
         <rect x={330} y={-150} width={360} height={40} rx={8} fill={lit(c.main, p)} stroke={INK} strokeWidth={3.5} />
         {[0, 1, 2, 3, 4].map((i) => (
-          <circle key={i} cx={360 + i * 75} cy={-130} r={8} fill={Math.floor(t * 3 + i) % 3 === 0 ? '#FFE066' : '#FFFFFF'} stroke={INK} strokeWidth={2.5} />
+          <path key={i} d={`M ${350 + i * 72},-142 l 44,0 l 0,24 l -44,0 Z M ${350 + i * 72},-142 l 22,14 l 22,-14`} fill={mixHex('#FFFFFF', '#FFE9A8', n)} stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
         ))}
       </g>
-      {/* 发射台 */}
-      <rect x={820} y={-44} width={460} height={44} rx={6} fill={lit('#8E97AD', p)} stroke={INK} strokeWidth={OUT} />
-      {[0, 1, 2, 3, 4, 5].map((i) => (
-        <rect key={i} x={840 + i * 72} y={-32} width={40} height={10} rx={5} fill={lit('#FFD84D', p)} />
-      ))}
-      {/* 塔架 */}
-      <g>
-        <rect x={870} y={-640} width={16} height={596} fill={lit(c.accent, p)} stroke={INK} strokeWidth={3} />
-        <rect x={956} y={-640} width={16} height={596} fill={lit(c.accent, p)} stroke={INK} strokeWidth={3} />
-        {Array.from({length: 7}, (_, i) => (
-          <path key={i} d={`M 878,${-620 + i * 82} L 964,${-540 + i * 82} M 964,${-620 + i * 82} L 878,${-540 + i * 82}`} stroke={lit(c.accent, p)} strokeWidth={7} />
-        ))}
-        <rect x={860} y={-660} width={122} height={24} rx={6} fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} />
-        <rect x={972} y={g > 0.2 ? -470 : -440} width={g > 0.2 ? 30 : 60} height={16} fill={lit(c.accent, p)} stroke={INK} strokeWidth={3} />
-        <circle cx={921} cy={-672} r={9} fill={Math.floor(t * 2) % 2 ? '#FF5A4E' : lit('#8E97AD', p)} stroke={INK} strokeWidth={3} />
+      {/* 邮筒楼：圆顶筒身、投信口、邮筒帽檐、底座 */}
+      <g transform={`translate(${shake},0)`}>
+        <rect x={960} y={-40} width={260} height={40} rx={8} fill={lit('#86A2A4', p)} stroke={INK} strokeWidth={OUT} />
+        <path d="M 1000,-40 L 1000,-470 Q 1000,-560 1090,-560 Q 1180,-560 1180,-470 L 1180,-40 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+        <path d="M 988,-470 Q 1090,-500 1192,-470 L 1192,-448 Q 1090,-478 988,-448 Z" fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+        <rect x={1030} y={-344} width={120} height={28} rx={8} fill={INK} />
+        <g transform={`rotate(${-70 * open},1030,-344)`}>
+          <rect x={1026} y={-360} width={128} height={20} rx={6} fill={lit(c.deep, p)} stroke={INK} strokeWidth={3.5} />
+        </g>
+        {/* 筒身上的信封标 */}
+        <rect x={1044} y={-250} width={92} height={62} rx={6} fill={white} stroke={INK} strokeWidth={3.5} />
+        <path d="M 1044,-250 L 1090,-214 L 1136,-250" fill="none" stroke={INK} strokeWidth={3.5} strokeLinejoin="round" />
+        <rect x={1030} y={-150} width={120} height={60} rx={8} fill={lit(mixHex(c.main, '#FFFFFF', 0.3), p)} stroke={INK} strokeWidth={3.5} />
+        <path d="M 1040,-120 L 1140,-120" stroke={INK} strokeWidth={3} strokeDasharray="8 6" />
       </g>
-      {/* 火箭 */}
-      <g transform={`translate(${rx},${ry})`}>
-        {fire && (
-          <g>
-            <path d={`M -38,0 Q -44,${70 + Math.sin(t * 40) * 14} 0,${150 + Math.sin(t * 33) * 20} Q 44,${70 + Math.sin(t * 29) * 14} 38,0 Z`} fill="#FF8A3D" stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-            <path d="M -20,0 Q -20,50 0,90 Q 20,50 20,0 Z" fill="#FFE066" />
-          </g>
-        )}
-        <path d="M -62,-10 L -92,20 L -92,0 L -60,-70 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <path d="M 62,-10 L 92,20 L 92,0 L 60,-70 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <path d="M -60,0 L -60,-250 Q -60,-330 0,-370 Q 60,-330 60,-250 L 60,0 Z" fill={white} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <path d="M -44,-300 Q -30,-340 0,-370 Q 30,-340 44,-300 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <rect x={-60} y={-90} width={120} height={26} fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} />
-        <circle cx={0} cy={-200} r={30} fill={lit('#8FD3FF', p)} stroke={INK} strokeWidth={OUT + 2} />
-        <path d="M -12,-214 Q -2,-222 10,-218" fill="none" stroke="#FFFFFF" strokeWidth={5} strokeLinecap="round" />
-        <rect x={-10} y={0} width={20} height={12} fill={lit('#8E97AD', p)} stroke={INK} strokeWidth={3} />
-      </g>
-      {/* 发射烟团 */}
-      {g > 0 &&
-        Array.from({length: 7}, (_, i) => {
-          const k = Math.min(1, g * 1.4);
-          const x = 1090 + (i - 3) * 70 * k * (1 + hash(i) * 0.4);
-          const r = (40 + hash(i * 3) * 30) * k;
-          return <circle key={i} cx={x} cy={-30 - hash(i * 5) * 40 * k} r={r} fill={mixHex('#FFFFFF', '#C9CEDD', hash(i))} stroke={INK} strokeWidth={3.5} />;
-        })}
       <Tree x={1350} p={p} seed={7} />
       {lamp(1440, p)}
-      <House x={1510} w={280} h={300} color={c.main} p={p} seed={23} roof="arc" win="arch" awning="#FFD84D" />
+      <House x={1510} w={280} h={300} color={c.main} p={p} seed={23} roof="arc" win="arch" awning="#FFB627" />
       <House x={1810} w={260} h={250} color={mixHex(c.accent, '#FFFFFF', 0.3)} p={p} seed={24} roof="flat" win="grid" />
-      <Bench x={640} p={p} color={c.main} />
+      <Bench x={760} p={p} color={c.main} />
     </g>
   );
 };
@@ -178,27 +148,27 @@ const LaunchNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
 const ToolsNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
   const swing = Math.sin(t * 1.8) * 7 + (gagT !== undefined && gagT > 0 ? Math.sin(gagT * 9) * Math.exp(-gagT * 2) * 18 : 0);
   const belt = (t * 90) % 150;
-  const slate = '#4F6D7A';
+  const slate = '#3F6A74';
   return (
     <g>
       {/* 工具箱大楼 */}
       <path d="M 170,-330 L 170,-390 Q 170,-410 190,-410 L 370,-410 Q 390,-410 390,-390 L 390,-330" fill="none" stroke={INK} strokeWidth={34} strokeLinecap="round" />
-      <path d="M 170,-330 L 170,-390 Q 170,-410 190,-410 L 370,-410 Q 390,-410 390,-390 L 390,-330" fill="none" stroke={lit('#5A6178', p)} strokeWidth={24} strokeLinecap="round" />
+      <path d="M 170,-330 L 170,-390 Q 170,-410 190,-410 L 370,-410 Q 390,-410 390,-390 L 390,-330" fill="none" stroke={lit('#3E5561', p)} strokeWidth={24} strokeLinecap="round" />
       <rect x={60} y={-340} width={440} height={340} rx={16} fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} />
       <rect x={60} y={-340} width={440} height={80} rx={16} fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} />
-      <rect x={110} y={-280} width={40} height={36} rx={6} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={3.5} />
-      <rect x={410} y={-280} width={40} height={36} rx={6} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={3.5} />
+      <rect x={110} y={-280} width={40} height={36} rx={6} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={3.5} />
+      <rect x={410} y={-280} width={40} height={36} rx={6} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={3.5} />
       <Windows x={90} y={-230} w={380} h={130} kind="grid" p={p} seed={31} rows={2} />
       <rect x={250} y={-80} width={60} height={80} rx={10} fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} />
       {/* 锯齿车间 + 扳手招牌 */}
       <House x={580} w={460} h={250} color={slate} p={p} seed={32} roof="saw" win="band" door={false} roofColor="#3A5260" />
-      <rect x={700} y={-130} width={220} height={130} rx={6} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={OUT} />
+      <rect x={700} y={-130} width={220} height={130} rx={6} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={OUT} />
       {[0, 1, 2, 3, 4].map((i) => (
         <line key={i} x1={700} y1={-110 + i * 24} x2={920} y2={-110 + i * 24} stroke={INK} strokeWidth={3} opacity={0.5} />
       ))}
       <g transform="translate(810,-360) rotate(-24)">
-        <rect x={-18} y={-10} width={36} height={170} rx={16} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={OUT} />
-        <path d="M -44,-40 Q -48,-80 -14,-92 L -14,-52 L 14,-52 L 14,-92 Q 48,-80 44,-40 Q 40,-8 0,-6 Q -40,-8 -44,-40 Z" fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+        <rect x={-18} y={-10} width={36} height={170} rx={16} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={OUT} />
+        <path d="M -44,-40 Q -48,-80 -14,-92 L -14,-52 L 14,-52 L 14,-92 Q 48,-80 44,-40 Q 40,-8 0,-6 Q -40,-8 -44,-40 Z" fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
         <circle cx={0} cy={130} r={9} fill={lit(c.main, p)} stroke={INK} strokeWidth={3} />
       </g>
       {/* 塔吊 */}
@@ -209,7 +179,7 @@ const ToolsNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
         ))}
         <rect x={1296} y={-624} width={68} height={624} fill="none" stroke={INK} strokeWidth={3} />
         <rect x={960} y={-660} width={520} height={34} fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} />
-        <rect x={1400} y={-700} width={70} height={40} fill={lit('#5A6178', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={1400} y={-700} width={70} height={40} fill={lit('#3E5561', p)} stroke={INK} strokeWidth={OUT} />
         <rect x={1318} y={-700} width={28} height={40} fill={lit('#8FD3FF', p)} stroke={INK} strokeWidth={3} />
         <g transform={`rotate(${swing},1060,-626)`}>
           <line x1={1060} y1={-626} x2={1060} y2={-380} stroke={INK} strokeWidth={4} />
@@ -222,15 +192,15 @@ const ToolsNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
       </g>
       {/* 传送带 */}
       <g>
-        <rect x={1420} y={-96} width={420} height={30} rx={15} fill={lit('#5A6178', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={1420} y={-96} width={420} height={30} rx={15} fill={lit('#3E5561', p)} stroke={INK} strokeWidth={OUT} />
         {Array.from({length: 7}, (_, i) => (
-          <circle key={i} cx={1440 + i * 63} cy={-81} r={9} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={3} />
+          <circle key={i} cx={1440 + i * 63} cy={-81} r={9} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={3} />
         ))}
         <path d="M 1460,-66 L 1450,0 M 1800,-66 L 1810,0" stroke={INK} strokeWidth={10} strokeLinecap="round" />
         {[0, 1, 2].map((i) => {
           const x = 1420 + ((belt + i * 150) % 450) - 30;
           if (x < 1410 || x > 1790) return null;
-          const col = [c.main, '#FF7B6B', '#3F6FF2'][i];
+          const col = [c.main, '#F58A4B', '#3259C9'][i];
           return <rect key={i} x={x} y={-150} width={54} height={54} rx={6} fill={lit(col, p)} stroke={INK} strokeWidth={3.5} />;
         })}
       </g>
@@ -253,11 +223,11 @@ const CreativeNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
       <House x={40} w={240} h={300} color={mixHex(c.accent, '#FFFFFF', 0.2)} p={p} seed={41} roof="flat" win="grid" awning={c.main} />
       {/* 铅笔塔 */}
       <g>
-        <rect x={340} y={-46} width={140} height={46} rx={10} fill={lit('#FF8FB1', p)} stroke={INK} strokeWidth={OUT} />
-        <rect x={336} y={-96} width={148} height={52} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={340} y={-46} width={140} height={46} rx={10} fill={lit('#FFA46B', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={336} y={-96} width={148} height={52} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={OUT} />
         <path d="M 336,-78 L 484,-78 M 336,-62 L 484,-62" stroke={INK} strokeWidth={3} opacity={0.5} />
-        <rect x={340} y={-470} width={140} height={374} fill={lit('#FFC845', p)} stroke={INK} strokeWidth={OUT} />
-        <rect x={386} y={-470} width={48} height={374} fill={lit('#FFD978', p)} />
+        <rect x={340} y={-470} width={140} height={374} fill={lit('#FFB627', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={386} y={-470} width={48} height={374} fill={lit('#FFAA3B', p)} />
         <line x1={386} y1={-470} x2={386} y2={-96} stroke={INK} strokeWidth={3} />
         <line x1={434} y1={-470} x2={434} y2={-96} stroke={INK} strokeWidth={3} />
         <path d="M 340,-470 L 410,-600 L 480,-470 Z" fill={lit('#F2D2A2', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
@@ -269,8 +239,8 @@ const CreativeNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
         <path d="M 600,-300 Q 760,-440 920,-300" fill="none" stroke={INK} strokeWidth={12} />
         <path d="M 580,-300 L 940,-300 L 910,0 L 610,0 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
         <ellipse cx={760} cy={-300} rx={184} ry={26} fill={lit(c.deep, p)} stroke={INK} strokeWidth={OUT} />
-        {drip(650, 90, '#FFC845', 1)}
-        {drip(730, 140, '#4DE6FF', 2)}
+        {drip(650, 90, '#FFB627', 1)}
+        {drip(730, 140, '#7CFFD0', 2)}
         {drip(820, 70, c.accent, 3)}
         {drip(880, 110, '#FFFFFF', 4)}
         <Windows x={640} y={-170} w={240} h={90} kind="grid" rows={1} p={p} seed={43} />
@@ -281,7 +251,7 @@ const CreativeNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
         <path d="M 1080,-380 L 1010,0 M 1080,-380 L 1150,0 M 1080,-380 L 1100,0" stroke={lit('#8A5A3B', p)} strokeWidth={14} strokeLinecap="round" />
         <path d="M 1080,-380 L 1010,0 M 1080,-380 L 1150,0" stroke={INK} strokeWidth={3} strokeLinecap="round" opacity={0.6} />
         <rect x={950} y={-350} width={260} height={200} rx={6} fill={lit('#FFFDF7', p)} stroke={INK} strokeWidth={OUT} />
-        <circle cx={1150} cy={-300} r={26} fill={lit('#FFC845', p)} />
+        <circle cx={1150} cy={-300} r={26} fill={lit('#FFB627', p)} />
         <path d="M 960,-160 Q 1020,-250 1080,-190 Q 1130,-240 1200,-170 L 1200,-160 Z" fill={lit(c.main, p)} />
         <path d="M 980,-280 Q 1030,-320 1080,-285" fill="none" stroke={lit(c.accent, p)} strokeWidth={12} strokeLinecap="round" />
         <rect x={960} y={-150} width={240} height={18} rx={6} fill={lit('#8A5A3B', p)} stroke={INK} strokeWidth={3.5} />
@@ -291,7 +261,7 @@ const CreativeNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c}) => {
       <g transform="translate(1440,-420)">
         <path d="M -110,10 C -120,-60 -40,-90 30,-80 C 110,-70 130,0 90,30 C 60,50 40,20 10,40 C -20,60 -100,70 -110,10 Z" fill={lit('#F2D2A2', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
         <ellipse cx={40} cy={10} rx={16} ry={12} fill={lit(c.accent, p)} stroke={INK} strokeWidth={3} />
-        {['#FF5A4E', '#FFC845', '#2DAA5F', '#3F6FF2', c.main].map((col, i) => (
+        {['#FF7A45', '#FFB627', '#2F9E6E', '#3259C9', c.main].map((col, i) => (
           <circle key={i} cx={-70 + i * 34} cy={-40 + (i % 2) * 18} r={14} fill={n > 0.5 ? NEON[i % NEON.length] : col} stroke={INK} strokeWidth={3} />
         ))}
       </g>
@@ -311,9 +281,9 @@ const DataNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
     return 0.45 + 0.55 * (1 - Math.pow(1 - k, 3));
   };
   const hs = [220, 300, 390, 500];
-  const cols = [c.main, c.accent, c.deep, '#FFC845'];
+  const cols = [c.main, c.accent, c.deep, '#FFB627'];
   const tops = hs.map((h, i) => [80 + i * 126 + 55, -h * grow(i)] as const);
-  const line = mixHex('#FF5A4E', NEON[1], n);
+  const line = mixHex('#FF7A45', NEON[1], n);
   const bub = (i: number) => {
     const k = ((t * 0.5 + hash(i)) % 1 + 1) % 1;
     return <circle key={i} cx={1320 + (hash(i * 3) - 0.5) * 160} cy={-110 - k * 170} r={8 + hash(i * 7) * 10} fill="#FFFFFF" opacity={0.8 * (1 - k)} />;
@@ -336,14 +306,16 @@ const DataNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
       {tops.map(([x, y], i) => (
         <circle key={i} cx={x} cy={y - 60} r={12} fill="#FFFFFF" stroke={INK} strokeWidth={4} />
       ))}
-      {/* 饼图穹顶 */}
+      {/* 楼顶一块圆形饼图牌（立在两根短柱上，不是穹顶） */}
       <g>
-        <path d="M 700,-230 A 190 190 0 0 1 820,-406 L 890,-230 Z" fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <path d="M 890,-230 L 820,-406 A 190 190 0 0 1 1010,-380 Z" fill={lit('#FFC845', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <path d="M 890,-230 L 1010,-380 A 190 190 0 0 1 1080,-230 Z" fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <House x={690} w={400} h={230} color={c.deep} p={p} seed={55} roof="none" win="tall" />
+        <House x={690} w={400} h={230} color={c.deep} p={p} seed={55} roof="flat" win="tall" />
+        <rect x={846} y={-300} width={14} height={70} fill={INK} />
+        <rect x={920} y={-300} width={14} height={70} fill={INK} />
+        <circle cx={890} cy={-380} r={96} fill={lit(c.main, p)} stroke={INK} strokeWidth={OUT} />
+        <path d="M 890,-380 L 890,-476 A 96 96 0 0 1 973,-332 Z" fill={lit('#FFB627', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+        <path d="M 890,-380 L 973,-332 A 96 96 0 0 1 842,-297 Z" fill={lit(c.accent, p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
       </g>
-      {/* 烧瓶实验楼 */}
+      {/* 量杯楼 */}
       <g>
         <defs>
           <clipPath id="jFlask">
@@ -359,18 +331,18 @@ const DataNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, gagT, c}) => {
         </g>
         <circle cx={1320} cy={-170} r={150} fill="none" stroke={INK} strokeWidth={OUT} />
         <path d="M 1230,-250 Q 1240,-290 1270,-300" fill="none" stroke="#FFFFFF" strokeWidth={10} strokeLinecap="round" opacity={0.9} />
-        <rect x={1220} y={-24} width={200} height={24} rx={6} fill={lit('#5A6178', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={1220} y={-24} width={200} height={24} rx={6} fill={lit('#3E5561', p)} stroke={INK} strokeWidth={OUT} />
       </g>
       {/* 服务器塔 */}
       <g>
-        <rect x={1560} y={-400} width={200} height={400} rx={10} fill={lit('#2F3A56', p)} stroke={INK} strokeWidth={OUT} />
+        <rect x={1560} y={-400} width={200} height={400} rx={10} fill={lit('#23414E', p)} stroke={INK} strokeWidth={OUT} />
         {Array.from({length: 6}, (_, i) => (
           <g key={i}>
-            <rect x={1580} y={-380 + i * 60} width={160} height={42} rx={6} fill={lit('#45527A', p)} stroke={INK} strokeWidth={3} />
+            <rect x={1580} y={-380 + i * 60} width={160} height={42} rx={6} fill={lit('#2F5866', p)} stroke={INK} strokeWidth={3} />
             {[0, 1, 2].map((k) => (
-              <circle key={k} cx={1600 + k * 18} cy={-359 + i * 60} r={5} fill={(Math.floor(t * 4) + i + k) % 3 === 0 ? '#A8FF60' : '#4DE6FF'} />
+              <circle key={k} cx={1600 + k * 18} cy={-359 + i * 60} r={5} fill={(Math.floor(t * 4) + i + k) % 3 === 0 ? '#EFF27A' : '#7CFFD0'} />
             ))}
-            <rect x={1680} y={-364 + i * 60} width={46} height={10} rx={5} fill={lit('#8E97AD', p)} />
+            <rect x={1680} y={-364 + i * 60} width={46} height={10} rx={5} fill={lit('#86A2A4', p)} />
           </g>
         ))}
       </g>
@@ -397,19 +369,19 @@ const GlobalNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c, words}) => {
     </g>
   );
   const bubble = (x: number, y: number, label: string, i: number) => {
-    const neon = NEON[i % NEON.length];
+    // 夜里是灯箱：纸面发暖光，字和图标用本街区深色（不做霓虹描边、不闪）
+    const neon = c.deep;
     const icon = label === 'star' || label === 'heart';
     const text = icon ? '' : label;
     const w = icon ? 130 : Math.max(130, Array.from(text).length * 44 + 60);
-    const flick = n > 0.5 && i === 2 && Math.sin(t * 13) > 0.85 ? 0.35 : 1;
     return (
-      <g key={i} transform={`translate(${x},${y})`} opacity={flick}>
-        <path d={`M ${-w / 2},-44 Q ${-w / 2},-60 ${-w / 2 + 16},-60 L ${w / 2 - 16},-60 Q ${w / 2},-60 ${w / 2},-44 L ${w / 2},14 Q ${w / 2},30 ${w / 2 - 16},30 L -8,30 L -30,56 L -30,30 L ${-w / 2 + 16},30 Q ${-w / 2},30 ${-w / 2},14 Z`} fill={mixHex('#FFFFFF', '#141B3A', n)} stroke={n > 0.3 ? neon : INK} strokeWidth={n > 0.3 ? 6 : OUT} strokeLinejoin="round" />
-        {n > 0.3 && <path d={`M ${-w / 2},-44 Q ${-w / 2},-60 ${-w / 2 + 16},-60 L ${w / 2 - 16},-60 Q ${w / 2},-60 ${w / 2},-44 L ${w / 2},14 Q ${w / 2},30 ${w / 2 - 16},30 L -8,30 L -30,56 L -30,30 L ${-w / 2 + 16},30 Q ${-w / 2},30 ${-w / 2},14 Z`} fill="none" stroke={neon} strokeWidth={18} opacity={0.28 * n} />}
+      <g key={i} transform={`translate(${x},${y})`}>
+        <path d={`M ${-w / 2},-44 Q ${-w / 2},-60 ${-w / 2 + 16},-60 L ${w / 2 - 16},-60 Q ${w / 2},-60 ${w / 2},-44 L ${w / 2},14 Q ${w / 2},30 ${w / 2 - 16},30 L -8,30 L -30,56 L -30,30 L ${-w / 2 + 16},30 Q ${-w / 2},30 ${-w / 2},14 Z`} fill={mixHex('#FFFFFF', '#FFF1C9', n)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
+        {n > 0.3 && <path d={`M ${-w / 2},-44 Q ${-w / 2},-60 ${-w / 2 + 16},-60 L ${w / 2 - 16},-60 Q ${w / 2},-60 ${w / 2},-44 L ${w / 2},14 Q ${w / 2},30 ${w / 2 - 16},30 L -8,30 L -30,56 L -30,30 L ${-w / 2 + 16},30 Q ${-w / 2},30 ${-w / 2},14 Z`} fill="none" stroke="#FFE7A0" strokeWidth={22} opacity={0.35 * n} />}
         {label === 'star' ? (
-          <path d={star5(0, -14, 30)} fill={n > 0.3 ? neon : lit('#FFC845', p)} stroke={INK} strokeWidth={3} strokeLinejoin="round" />
+          <path d={star5(0, -14, 30)} fill={n > 0.3 ? neon : lit('#FFB627', p)} stroke={INK} strokeWidth={3} strokeLinejoin="round" />
         ) : label === 'heart' ? (
-          <path d="M 0,12 C -34,-10 -30,-44 -8,-42 C -2,-42 0,-36 0,-34 C 0,-36 2,-42 8,-42 C 30,-44 34,-10 0,12 Z" fill={n > 0.3 ? neon : lit('#FF5E7E', p)} stroke={INK} strokeWidth={3} strokeLinejoin="round" />
+          <path d="M 0,12 C -34,-10 -30,-44 -8,-42 C -2,-42 0,-36 0,-34 C 0,-36 2,-42 8,-42 C 30,-44 34,-10 0,12 Z" fill={n > 0.3 ? neon : lit('#FF7A45', p)} stroke={INK} strokeWidth={3} strokeLinejoin="round" />
         ) : (
           <text x={0} y={-2} textAnchor="middle" dominantBaseline="middle" fontSize={44} fontWeight={900} fill={n > 0.3 ? neon : lit(c.deep, p)} style={{fontFamily: '"PSans", "Noto Sans SC", "Microsoft YaHei UI", sans-serif'}}>
             {text}
@@ -429,7 +401,7 @@ const GlobalNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c, words}) => {
           </clipPath>
         </defs>
         <path d="M 470,-60 L 610,-60 L 640,0 L 440,0 Z" fill={lit('#8A5A3B', p)} stroke={INK} strokeWidth={OUT} strokeLinejoin="round" />
-        <rect x={530} y={-120} width={20} height={64} fill={lit('#C9CEDD', p)} stroke={INK} strokeWidth={3.5} />
+        <rect x={530} y={-120} width={20} height={64} fill={lit('#C3D6D1', p)} stroke={INK} strokeWidth={3.5} />
         <circle cx={540} cy={-310} r={170} fill={lit('#3FA9F5', p)} />
         <g clipPath="url(#jGlobe)">
           {continents(-spin)}
@@ -448,7 +420,7 @@ const GlobalNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c, words}) => {
       {bubble(1250, -350, labels[1], 1)}
       <House x={1420} w={300} h={350} color={mixHex(c.main, '#FFFFFF', 0.2)} p={p} seed={64} roof="flat" win="arch" />
       {bubble(1570, -430, labels[2], 2)}
-      <House x={1760} w={280} h={300} color="#3F6FF2" p={p} seed={65} roof="flat" win="grid" awning="#FFC845" />
+      <House x={1760} w={280} h={300} color="#3F6FF2" p={p} seed={65} roof="flat" win="grid" awning="#FFB627" />
       {bubble(1900, -380, labels[3], 3)}
       <StreetLamp x={720} p={p} />
       <StreetLamp x={1400} p={p} />
@@ -459,7 +431,7 @@ const GlobalNear: React.FC<DistrictArtProps & {c: C}> = ({p, t, c, words}) => {
 
 // ---------------- 通用填充段（片头、片尾、街区之间） ----------------
 export const FillerNear: React.FC<DistrictArtProps & {seed?: number; w?: number}> = ({p, seed = 0, w = DISTRICT_W}) => {
-  const cols = ['#8FA3C7', '#E88D6D', '#6FBF9B', '#F2C14E', '#B48CD9', '#5FA8D3'];
+  const cols = ['#78AFC4', '#F09A5B', '#6DB48A', '#FFB627', '#C9745A', '#3F95A6'];
   const out: React.ReactNode[] = [];
   let x = 30;
   let i = 0;
@@ -468,7 +440,7 @@ export const FillerNear: React.FC<DistrictArtProps & {seed?: number; w?: number}
     const hw = 220 + Math.floor(hash(s) * 90);
     const hh = 240 + Math.floor(hash(s + 1) * 140);
     const roofs = ['gable', 'flat', 'arc', 'step'] as const;
-    out.push(<House key={i} x={x} w={hw} h={hh} color={cols[Math.floor(hash(s + 2) * cols.length)]} p={p} seed={s} roof={roofs[Math.floor(hash(s + 3) * 4)]} win={hash(s + 4) > 0.5 ? 'arch' : 'grid'} awning={hash(s + 5) > 0.6 ? '#FF7B6B' : undefined} />);
+    out.push(<House key={i} x={x} w={hw} h={hh} color={cols[Math.floor(hash(s + 2) * cols.length)]} p={p} seed={s} roof={roofs[Math.floor(hash(s + 3) * 4)]} win={hash(s + 4) > 0.5 ? 'arch' : 'grid'} awning={hash(s + 5) > 0.6 ? '#F58A4B' : undefined} />);
     x += hw + 30;
     if (hash(s + 6) > 0.45) {
       out.push(<Tree key={`t${i}`} x={x + 50} p={p} seed={s} />);
@@ -482,7 +454,7 @@ export const FillerNear: React.FC<DistrictArtProps & {seed?: number; w?: number}
 
 export const DISTRICT_NEAR: Record<DistrictKind, React.FC<DistrictArtProps & {c: C}>> = {
   docs: DocsNear,
-  launch: LaunchNear,
+  post: PostNear,
   tools: ToolsNear,
   creative: CreativeNear,
   data: DataNear,
@@ -494,7 +466,7 @@ export const DISTRICT_NEAR: Record<DistrictKind, React.FC<DistrictArtProps & {c:
 // ---------------- 中景模块 ----------------
 /** low = 低层街巷（skyline: street）：中景楼压到 2–4 层，不画高塔 */
 export const DistrictMid: React.FC<{kind: DistrictKind | 'filler'; w: number; p: number; t: number; seed?: number; c?: C; low?: boolean}> = ({kind, w, p, t, seed = 0, c, low = false}) => {
-  const base = c?.mid ?? '#C9D3E6';
+  const base = c?.mid ?? '#BFD9D3';
   const alt = mixHex(base, '#FFFFFF', 0.25);
   const deep = mixHex(base, INK, 0.12);
   const tops = ['flat', 'dome', 'spire', 'step', 'antenna', 'tank'] as const;
@@ -512,10 +484,11 @@ export const DistrictMid: React.FC<{kind: DistrictKind | 'filler'; w: number; p:
   }
   const col = lit(deep, p);
   const extra =
-    kind === 'launch' ? (
-      <g>
-        <rect x={w * 0.45 - 60} y={-760} width={120} height={80} rx={20} fill={col} />
-        <path d={`M ${w * 0.45 - 40},-680 L ${w * 0.45 - 60},0 M ${w * 0.45 + 40},-680 L ${w * 0.45 + 60},0`} stroke={col} strokeWidth={12} />
+    kind === 'post' ? (
+      <g transform={`translate(${w * 0.45},0)`}>
+        <rect x={-60} y={-640} width={120} height={640} fill={col} />
+        <path d="M -76,-640 L 0,-730 L 76,-640 Z" fill={col} />
+        <circle cx={0} cy={-560} r={40} fill={mixHex(col, '#FFFFFF', 0.5 - nightOf(p) * 0.2)} />
       </g>
     ) : kind === 'tools' ? (
       <g>
@@ -544,16 +517,15 @@ export const DistrictMid: React.FC<{kind: DistrictKind | 'filler'; w: number; p:
         <path d="M -30,0 L -120,470 M 30,0 L 120,470" stroke={col} strokeWidth={12} />
       </g>
     ) : kind === 'data' ? (
-      <g transform={`translate(${w * 0.5},-640)`}>
-        <path d="M -110,0 Q 0,120 110,0 Z" fill={col} transform={`rotate(${-20 + Math.sin(t * 0.8) * 8})`} />
-        <rect x={-10} y={40} width={20} height={600} fill={col} />
+      <g transform={`translate(${w * 0.5},0)`}>
+        {[0, 1, 2, 3].map((k) => <rect key={k} x={-150 + k * 76} y={-(360 + k * 110 + Math.sin(t * 0.8 + k) * 12)} width={64} height={360 + k * 110 + Math.sin(t * 0.8 + k) * 12} rx={10} fill={col} />)}
       </g>
     ) : kind === 'global' ? (
       <g transform={`translate(${w * 0.4},0)`}>
         <path d="M -40,0 L -12,-700 L 12,-700 L 40,0 Z" fill={col} />
         <circle cx={0} cy={-620} r={52} fill={col} />
         <rect x={-3} y={-860} width={6} height={170} fill={col} />
-        <circle cx={0} cy={-864} r={8} fill={mixHex(col, '#FF5A4E', 0.4 + nightOf(p) * 0.6)} />
+        <circle cx={0} cy={-864} r={8} fill={mixHex(col, '#FF7A45', 0.4 + nightOf(p) * 0.6)} />
       </g>
     ) : kind === 'phone' ? (
       <g transform={`translate(${w * 0.5},0)`}>

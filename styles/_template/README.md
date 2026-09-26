@@ -9,7 +9,7 @@ node scripts/gen-styles.mjs --new <id> --name 中文名 --name-en EnglishName
 ```
 
 它会：
-- 把本文件夹的 `STYLE.md`、`STYLE.en.md`、`recipes.md`、`rules.json`、`checks.mjs`、`examples/` 复制到 `styles/<id>/`；
+- 把本文件夹的 `STYLE.md`、`STYLE.en.md`、`recipes.md`、`rules.json`、`checks.mjs`、`originality.md`、`examples/` 复制到 `styles/<id>/`；
 - 把 `code/` 复制到 `template/src/styles/<id>/`（`style.json` 清单、`tokens.json` 令牌、`index.ts`、一个示例镜头 `opening`）；
 - 重新生成注册表 `template/src/styles/registry.gen.ts` 和 `template/src/styles/<id>/shots/index.gen.ts`。
 
@@ -17,7 +17,7 @@ node scripts/gen-styles.mjs --new <id> --name 中文名 --name-en EnglishName
 
 ## 然后
 
-1. 按 `STYLE.md` 的九层把规格写完（方法见 `distill/`）。
+1. 按 `STYLE.md` 的九层把规格写完（方法见 `distill/`）；皮肤换成自己的之后填 `originality.md`，跑 `node scripts/check-originality.mjs --style <id> --ref <仓库外参考 tokens.json> --signatures <仓库外招牌清单>` 直到通过。
 2. 改 `tokens.json`，加镜头（`shots/<type>.tsx + .spec.json`，加完跑 `node scripts/gen-styles.mjs`）。
 3. 写 `rules.json` / `checks.mjs`、`recipes.md`、`examples/`。
 4. 自测：ShotLab 出单帧（props 加 `"style":"<id>"`，可加 `"aspect":"4:5"`），`make.mjs --stills` 出几帧，最后出整片。

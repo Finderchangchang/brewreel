@@ -1,9 +1,9 @@
 {
   "type": "opening",
-  "purpose": "钩子（必须是第 1 镜）：第 0 帧就是完整的城市街景，角色站在起点台上待命，屏幕中上方一行小引 + 一个红色描边大字（数字 + 单位）；第 1 拍角色喊出发口令，然后起飞加速，大字缩小退场",
+  "purpose": "钩子（必须是第 1 镜）：第 0 帧就是完整的城市街景，角色站在起点台上待命，顶部车票标出整条路线，屏幕中上方一行荧光笔小引 + 一排翻牌站牌大字（数字 + 单位，数字高亮）；牌子依次翻一下，第 1 拍角色喊出发口令，然后起飞加速，牌子逐块上翻退场",
   "tips": [
-    "headline 写「数字 + 单位」，说清这趟要逛多少东西，按题材套句式：内容站「N 篇精选」「N 个栏目」，软件「N 个功能」「N 个功能一口气看完」写不下就「N 个功能」，文旅「N 站慢游」，门店「N 家店」；数字 = 街区数，或在 meta.facts 里能找到",
-    "kicker 写「跟谁一口气做什么」，如「跟小团一口气逛完」，≤10 字",
+    "headline 写「数字 + 单位」，说清这趟要逛多少东西，按题材套句式：内容站「N 篇精选」「N 个栏目」，软件「N 个功能」「N 站功能」，文旅「N 站慢游」，门店「N 家店」；数字 = 街区数，或在 meta.facts 里能找到",
+    "kicker 写这趟车的路线或看点（≤10 字），如「这趟车停 5 站」「从早市逛到灯会」「今天的路线」；别写「跟 X 一口气飞越 / 逛完」这种套话",
     "go 是角色的出发口令，默认「出发！」，≤5 字",
     "固定 4 拍（120 BPM 时 2 秒），别改长：钩子拖久了观众会划走"
   ],
@@ -15,15 +15,15 @@
     "type": "object",
     "required": ["headline"],
     "properties": {
-      "headline": {"type": "string", "maxLen": 6, "minLen": 2, "description": "大字：数字 + 单位，如「5 个新功能」（全片唯一的描边大字）"},
-      "kicker": {"type": "string", "maxLen": 10, "minLen": 2, "description": "大字上面的小引，如「跟小团一口气逛完」"},
+      "headline": {"type": "string", "maxLen": 6, "minLen": 2, "description": "翻牌大字：数字 + 单位，如「5 个新功能」（每个字一块翻牌，数字高亮）"},
+      "kicker": {"type": "string", "maxLen": 10, "minLen": 2, "description": "大字上面的小引（荧光笔底色），如「这趟车停 5 站」"},
       "go": {"type": "string", "maxLen": 5, "minLen": 1, "description": "角色的出发口令气泡，默认「出发！」"},
       "skyline": {"type": "string", "enum": ["modern", "street", "oldtown"], "description": "背景天际线：modern 现代城市（默认）/ street 低层街巷 / oldtown 古城（白墙黛瓦、远山宝塔、石板路和河）"}
     }
   },
-  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.3}, {"at": 0.95, "kind": "whoosh", "vol": 0.38}],
+  "sfx": [{"at": 0.22, "kind": "tick", "vol": 0.16}, {"at": 0.34, "kind": "tick", "vol": 0.13}, {"at": 0.95, "kind": "whoosh", "vol": 0.38}],
   "example": {
     "dur": 2,
-    "params": {"headline": "5 个新功能", "kicker": "跟小团一口气逛完", "go": "出发！"}
+    "params": {"headline": "5 个新功能", "kicker": "这趟车停 5 站", "go": "出发！"}
   }
 }

@@ -1,28 +1,67 @@
 {
   "type": "brandEnd",
-  "purpose": "收尾落版（最后一镜）：接上一镜的圆形擦除，亮色满屏 1 帧后缩成一个点，边缩边露出已经在位的整版：「✓ 小标」+ 两行口号、logo 卡（logo + 产品名）、亮色 CTA 按钮（button 或 meta.cta）、两个小人冒心；定格到最后，按钮轻跳一下，不淡出",
+  "purpose": "结业卡落版（最后一镜）：接上一镜的印章擦除，满屏朱红方章 1 帧后边转边缩，落成品牌卡右上角的印章，边缩边露出已经在位的整版：朱红手写勾 + 小标 + 两行口号（左对齐）、品牌卡（logo + 产品名）、票根形 CTA 按钮（button 或 meta.cta）、两个小人放火花；定格到最后，按钮轻跳一下，不淡出",
   "tips": [
     "slogan 写两行（用 \\n 分行），每行 ≤8 字，句式如「想把 X 弄明白 / 来 Y」",
     "name 不写就用 meta.product；button 不写就用 meta.cta。结尾一定要有行动引导：meta.cta 和 button 至少写一个，写了 button 要和 meta.cta 对得上（包含它的关键几个字）",
     "画面里不许写网址"
   ],
-  "dur": {"default": 4.6875, "min": 3.8, "max": 6.5},
+  "dur": {
+    "default": 4.6875,
+    "min": 3.8,
+    "max": 6.5
+  },
   "mood": 0.6,
   "caption": "none",
   "exit": "none",
   "params": {
     "type": "object",
-    "required": ["slogan"],
+    "required": [
+      "slogan"
+    ],
     "properties": {
-      "badge": {"type": "string", "maxLen": 10, "minLen": 2, "description": "口号上方的「✓ 小标」，如「这个按钮你会用了」"},
-      "slogan": {"type": "string", "format": "caption", "maxLines": 2, "maxLen": 16, "minLen": 2, "description": "两行口号，\\n 分行"},
-      "name": {"type": "string", "maxLen": 10, "minLen": 1, "description": "产品名；不写用 meta.product"},
-      "button": {"type": "string", "maxLen": 8, "minLen": 2, "description": "按钮文字；不写用 meta.cta"}
+      "badge": {
+        "type": "string",
+        "maxLen": 10,
+        "minLen": 2,
+        "description": "口号上方的小标（前面一个朱红手写勾），不写按口吻：「本题已掌握」「又长知识了」「这一题拿下了」"
+      },
+      "slogan": {
+        "type": "string",
+        "format": "caption",
+        "maxLines": 2,
+        "maxLen": 16,
+        "minLen": 2,
+        "description": "两行口号，\\n 分行"
+      },
+      "name": {
+        "type": "string",
+        "maxLen": 10,
+        "minLen": 1,
+        "description": "产品名；不写用 meta.product"
+      },
+      "button": {
+        "type": "string",
+        "maxLen": 8,
+        "minLen": 2,
+        "description": "按钮文字；不写用 meta.cta"
+      }
     }
   },
-  "sfx": [{"at": 0.3, "kind": "whoosh", "vol": 0.22}],
+  "sfx": [
+    {
+      "at": 0.3,
+      "kind": "whoosh",
+      "vol": 0.22
+    }
+  ],
   "example": {
     "dur": 4.6875,
-    "params": {"badge": "这个按钮你会用了", "slogan": "想把邮箱理清楚\n来试试轻邮", "name": "轻邮", "button": "搜轻邮"}
+    "params": {
+      "badge": "这个按钮你会用了",
+      "slogan": "想把邮箱理清楚\n来试试轻邮",
+      "name": "轻邮",
+      "button": "搜轻邮"
+    }
   }
 }

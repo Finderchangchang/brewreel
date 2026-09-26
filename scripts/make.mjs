@@ -302,7 +302,7 @@ if (!noBgm && !stills && fs.existsSync(bgmScript)) {
 // ---------------- 探针帧 ----------------
 // 检查帧：第 0 帧 + 每镜「结束前 0.45 秒」（此时本镜动画已演完、还没开始退场）——版式在这些帧上判。
 // 镜头 spec 写了 checkBeat 的，改抽「本镜第 checkBeat 拍」：一镜到底的风格里主要信息在镜中间就收起了
-// （journey 的广告牌第 6.4 拍收起，镜尾那一帧上根本没有广告牌），要在它停稳的时刻查
+// （journey 每站的明信片在镜头中段就寄出收起，镜尾那一帧上根本没有它），要在它停稳的时刻查
 const lastFrame = Math.max(0, Math.round(r.total * FPS) - 1);
 const frameOf = (sec) => Math.min(Math.round(sec * FPS), lastFrame);
 const checkSecOf = (s) => {
@@ -436,7 +436,7 @@ if (!stills && (!fs.existsSync(videoPath) || fs.statSync(videoPath).size < 1024)
 
 // ---------------- 4b. 布局 / 汉字自查：渲染时探针打出的文字包围盒 ----------------
 const probed = parseProbeLog(probeLogs.join('\n'));
-// mustShow：镜头 spec 声明「检查帧上必须看得见」的字段（journey 的广告牌标题和类别名），看不见就是空牌子或错过了时刻
+// mustShow：镜头 spec 声明「检查帧上必须看得见」的字段（journey 的明信片标题和类别名），看不见就是空卡或错过了时刻
 const mustShow = r.slots.map((s) => ({i: s.i, frame: frameOf(checkSecOf(s)), fields: Array.isArray(specs[s.type]?.mustShow) ? specs[s.type].mustShow : []})).filter((x) => x.fields.length);
 const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS, geo: styleId === DEFAULT_STYLE ? null : geo, mustShow});
 fs.writeFileSync(path.join(outDir, 'layout.json'), JSON.stringify([...probed.values()].filter((o) => checkFrames.includes(o.frame)), null, 1), 'utf8');

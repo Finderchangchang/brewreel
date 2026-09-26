@@ -9,7 +9,7 @@ export type {CityWorldProps, CityLayout, DistrictSlot} from './World';
 export {DISTRICT_W, DISTRICT_NEAR, DistrictMid, FillerNear} from './districts';
 export type {DistrictArtProps} from './districts';
 export {Sky, FarSkyline, House, Tower, Windows, StreetLamp, Tree, Bush, Bench, Bunting, Street} from './city';
-export {Billboard, WaySign, NeonSign} from './signs';
+export {WaySign} from './signs';
 export {EVERYDAY_NEAR} from './everyday';
 export {OLDTOWN_NEAR, OldFar, OldMid, OldFiller, OldStreet, OldHouse, TileRoof, Lantern, Willow} from './oldtown';
 export {INK, MASCOT, BOARD, SKY, STREET, WINDOW, NEON, OLD, DISTRICT, DISTRICT_KINDS, skyAt, skyForDistrict, nightOf, duskOf, lit, mixHex, hash, useArtColors} from './palette';

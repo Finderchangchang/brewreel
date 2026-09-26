@@ -4,17 +4,17 @@
 //
 //   相机 x(t) = ∫速度 dt（前景层像素）。速度：开场怠速 → 起飞加速到巡航 → 每个街区的笑点窗口减速（0.52–0.7 倍）→ 片尾减速到 0
 //   某层（视差系数 f）上的物体，屏幕 x = 物体层坐标 - camAt(t) × f
-//   路牌：街区第 0 拍正好经过角色（HUD 类别胶囊同一拍切换）
-//   广告牌：第 boardReadBeat 拍时中心在屏幕 boardReadX 处（最好读的位置）
+//   路牌：街区第 0 拍正好经过角色（车票上的当前站同一拍切换）
+//   明信片：第 boardReadBeat 拍时中心在屏幕 boardReadX 处（最好读的位置）
 //   道具：第 gagAt 拍时正好在角色面前
 // ============================================================
 import {FPS} from '../../../core/safe';
-import {DISTRICT, DistrictKind, Skyline} from '../art/palette';
+import {DISTRICT, DistrictKind, INK, Skyline} from '../art/palette';
 import type {Slot} from '../../../core/timeline';
 import type {Storyboard} from '../../../schema';
 
 export type Tokens = Record<string, any>;
-export type Expr = 'normal' | 'happy' | 'excited' | 'surprised' | 'squash' | 'relaxed' | 'sooty' | 'curious' | 'pose' | 'dizzy' | 'wave';
+export type Expr = 'normal' | 'happy' | 'excited' | 'surprised' | 'squash' | 'relaxed' | 'lean' | 'offer' | 'curious' | 'pose' | 'wave';
 export type Phase = 'day' | 'warm' | 'dusk' | 'night';
 
 export type SceneDef = {
@@ -55,8 +55,10 @@ export type District = {
   source?: string;
   bubble: string;
   burst: string;
-  /** 霓虹街屋顶对话框上的字：类别名 + 标签 */
+  /** 夜站台街区屋顶对话框上的字：类别名 + 标签 */
   words: string[];
+  /** 道具配色（scenes.*.props 的槽位已换成这个街区的美术配色） */
+  props: string[];
 };
 
 export type Plan = {
@@ -82,14 +84,14 @@ export type Plan = {
 export type ArtKind = DistrictKind;
 /** 剧情街区类型（scene）→ 美术街区外观 */
 export const ART_KIND: Record<string, ArtKind> = {
-  stack: 'docs', launch: 'launch', factory: 'tools', studio: 'creative', observatory: 'data', neon: 'global',
+  crossing: 'docs', postbox: 'post', punch: 'tools', booth: 'creative', hitch: 'data', platform: 'global',
   market: 'market', phone: 'phone', home: 'home', cafe: 'cafe',
   gate: 'gate', bridge: 'bridge', teahouse: 'teahouse', lantern: 'lantern',
 };
 export const SKYLINES: Skyline[] = ['modern', 'street', 'oldtown'];
-/** 美术街区的世界宽（近景层，未缩放）与发布街区火箭的位置，见 art/districts.tsx */
+/** 美术街区的世界宽（近景层，未缩放）与邮局街区邮筒楼的位置，见 art/districts.tsx */
 const ART_DISTRICT_W = 2200;
-const ART_ROCKET_X = 1090;
+const ART_POSTBOX_X = 1090;
 const PHASE_SKY: Record<Phase, number> = {day: 0.08, warm: 0.36, dusk: 0.64, night: 1};
 
 export const sceneIds = (tk: Tokens): string[] => Object.keys(tk.scenes ?? {}).filter((k) => !k.startsWith('$'));
@@ -131,8 +133,11 @@ export const buildPlan = (sb: Storyboard, slots: Slot[], beat: number, tk: Token
     const def = tk.scenes[scene] as SceneDef;
     // 类别色 = 该街区美术外观的主色（令牌 art.district 可覆盖），和楼群一个颜色；districtColors 只在美术色缺失时兜底
     const kind = ART_KIND[scene] ?? 'docs';
-    const artMain: string | undefined = tk.art?.district?.[kind]?.main ?? DISTRICT[kind]?.main;
-    const colors: string[] = artMain ? [artMain] : tk.districtColors ?? ['#3E435D'];
+    const art = {...(DISTRICT[kind] ?? {}), ...(tk.art?.district?.[kind] ?? {})} as Record<string, string>;
+    const colors: string[] = art.main ? [art.main] : ['#5E6573'];
+    // 道具配色槽位：main / deep / mid / accent = 这个街区的美术配色，white / ink = 纸白和描边色，其余照写（#RRGGBB）
+    const slot = (v: string) => (v === 'white' ? '#FFFFFF' : v === 'ink' ? INK : art[v] ?? (/^#[0-9a-fA-F]{6}$/.test(v) ? v : art.main ?? '#5E6573'));
+    const props = (Array.isArray(def.props) ? def.props : ['main', 'accent', 'mid', 'deep']).map(slot);
     return {
       k,
       shotIndex: s.i,
@@ -149,6 +154,7 @@ export const buildPlan = (sb: Storyboard, slots: Slot[], beat: number, tk: Token
       bubble: str(p.bubble) ?? def.bubble[lang],
       burst: str(p.burst) ?? def.burst[lang],
       words: [str(p.category), str(p.tag)].filter((x): x is string => !!x),
+      props,
     };
   });
   const total = slots.length ? slots[slots.length - 1].end : 1;
@@ -217,15 +223,15 @@ export const buildPlan = (sb: Storyboard, slots: Slot[], beat: number, tk: Token
 
   // ---- 美术城市的世界坐标 ----
   // 路牌边界（第 0 拍经过角色）在前景层的 x = camAt(start) + mascotX。美术街区整体向后错开 o，
-  // 让发布街区的火箭正好在笑点那一拍停在角色前方（DX_LAUNCH 像素处）；没有发布街区就不错开
+  // 让邮局街区的邮筒楼正好在笑点那一拍停在角色前方（postboxDX 像素处，贴纸从它的投信口吐出来）；没有邮筒街区就不错开
   const kinds = districts.map((d) => ART_KIND[d.scene] ?? 'docs');
   const b0 = districts.length ? (camAt(districts[0].start) + mascotX) / cityScale : 0;
   let o = 0;
-  const L = districts.find((d) => d.def.gag === 'launch');
+  const L = districts.find((d) => d.def.gag === 'sticker');
   if (L) {
-    const gx = (camAt(L.start + L.def.gagAt * beat) + mascotX + (cam.launchDX ?? 170)) / cityScale; // 笑点时火箭该在的世界 x
+    const gx = (camAt(L.start + L.def.gagAt * beat) + mascotX + (cam.postboxDX ?? 170)) / cityScale; // 笑点时邮筒楼该在的世界 x
     const x0L = b0 + L.k * ART_DISTRICT_W;
-    o = gx - (x0L + ART_ROCKET_X);
+    o = gx - (x0L + ART_POSTBOX_X);
     // 错开量限制在街区宽的 ±25%，免得路牌离街区太远
     o = Math.max(-ART_DISTRICT_W * 0.25, Math.min(ART_DISTRICT_W * 0.25, o));
   }
@@ -266,19 +272,19 @@ export const hash = (i: number) => {
   return x - Math.floor(x);
 };
 
-/** 当前表情：开场待命 → 起飞兴奋；街区按场景表；片尾挥手 */
+/** 当前表情：开场待命 → 起飞兴奋；街区按场景表；片尾欢呼 */
 export const exprAt = (plan: Plan, t: number): Expr => {
   const b = plan.beat;
   if (plan.opening && t < plan.opening.end) {
     const u = (t - plan.opening.start) / plan.opening.dur;
     return u < 0.45 ? 'happy' : 'excited';
   }
-  if (plan.finale && t >= plan.finale.start) return t - plan.finale.start < 1.3 ? 'excited' : 'wave';
+  if (plan.finale && t >= plan.finale.start) return t - plan.finale.start < 1.3 ? 'excited' : 'pose';
   const k = plan.districtAt(t);
   if (k < 0) return 'normal';
   const d = plan.districts[k];
   const lb = (t - d.start) / b;
   for (const [a, z, e] of d.def.expr ?? []) if (lb >= a && lb < z) return e;
-  // 上一个街区的表情可以拖进下一个街区的第 0 拍前（例如被熏黑）——不拖，干净切回常态
+  // 上一个街区的表情不拖进下一个街区，干净切回常态
   return 'normal';
 };

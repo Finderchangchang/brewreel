@@ -1,19 +1,25 @@
 {
   "type": "clip",
-  "purpose": "证据片段：版式和钩子一样（标题、探头吉祥物都在），媒体卡里开播——小剧场角色开口（或播自备视频/截图），卡下三层字幕：说话人 / 原文逐词点亮 / 译文；最后一句的关键词变主色、亮色马克笔慢扫",
+  "purpose": "证据片段：版式和钩子一样（题号签、标题、被圈起来的误解、讲解小窗都在），媒体卡里开播——小剧场角色开口（或播自备视频/截图），卡下左对齐引文块：说话人 / 原文逐词点亮 / 译文；最后一句的关键词变主色、杏黄马克笔慢扫",
   "tips": [
     "lines 写 1–2 句对白，第二句（最后一句）里要包含 key",
     "key 是被误解的那个词在台词里的原样写法，必须是最后一句 text 的子串",
     "台词只露短语 / 功能名 / 菜名，不许说出答案或效果（text 和 zh 都算，数字也算）：答案留给 meaningCard。例：「这汤看起来好浓，你猜熬了多久？」",
     "zh 是给原文配的译文或注释；台词本来就是中文可以不写"
   ],
-  "dur": {"default": 4.6875, "min": 2.5, "max": 7},
+  "dur": {
+    "default": 4.6875,
+    "min": 2.5,
+    "max": 7
+  },
   "mood": 0.6,
   "caption": "none",
   "exit": "none",
   "params": {
     "type": "object",
-    "required": ["lines"],
+    "required": [
+      "lines"
+    ],
     "properties": {
       "lines": {
         "type": "array",
@@ -21,23 +27,103 @@
         "maxItems": 2,
         "items": {
           "type": "object",
-          "required": ["text"],
+          "required": [
+            "text"
+          ],
           "properties": {
-            "speaker": {"type": "string", "maxLen": 6, "minLen": 1, "description": "说话人小标签"},
-            "text": {"type": "string", "maxLen": 20, "minLen": 1, "description": "台词原文（中文 ≤20 字，英文约 40 个字母）"},
-            "zh": {"type": "string", "maxLen": 20, "minLen": 1, "description": "译文 / 注释（可选）"}
+            "speaker": {
+              "type": "string",
+              "maxLen": 6,
+              "minLen": 1,
+              "description": "说话人小标签"
+            },
+            "text": {
+              "type": "string",
+              "maxLen": 20,
+              "minLen": 1,
+              "description": "台词原文（中文 ≤20 字，英文约 40 个字母）"
+            },
+            "zh": {
+              "type": "string",
+              "maxLen": 20,
+              "minLen": 1,
+              "description": "译文 / 注释（可选）"
+            }
           }
         }
       },
-      "key": {"type": "string", "maxLen": 8, "minLen": 1, "description": "关键词：最后一句 text 的子串，变主色 + 马克笔"},
-      "scene": {"type": "string", "enum": ["office", "cafe", "street", "home", "classroom", "screen", "phone"], "description": "媒体卡里的小剧场：office 办公室 / cafe 咖啡店 / street 街景 / home 客厅 / classroom 教室（两个角色在场景里把那句话演出来，默认 office）/ screen 产品界面示意（界面里的字写 screenItems）/ phone 手机演示（手指按住 → 波形 → 松手 → 列表逐条出现 screenItems；出题前只演到按住，再看一遍时才出结果）。写了 media 就不用它"},
-      "screenItems": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string", "maxLen": 10, "minLen": 1}, "description": "scene 是 screen / phone 时界面里的 2–4 行真实文字（每行 ≤10 字，如「买牛奶」「周五交报告」）；全片写一次就行（写在第一个用到的镜头），别的镜头自动沿用"},
-      "media": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp", "mp4"], "description": "可选：用户自备的截图或视频（要登记在 meta.assets，版权由用户负责）。不写就用小剧场"}
+      "key": {
+        "type": "string",
+        "maxLen": 8,
+        "minLen": 1,
+        "description": "关键词：最后一句 text 的子串，变主色 + 马克笔"
+      },
+      "scene": {
+        "type": "string",
+        "enum": [
+          "office",
+          "cafe",
+          "street",
+          "home",
+          "classroom",
+          "screen",
+          "phone"
+        ],
+        "description": "媒体卡里的小剧场：office 办公室 / cafe 咖啡店 / street 街景 / home 客厅 / classroom 教室（两个角色在场景里把那句话演出来，默认 office）/ screen 产品界面示意（界面里的字写 screenItems）/ phone 手机演示（手指按住 → 波形 → 松手 → 列表逐条出现 screenItems；出题前只演到按住，再看一遍时才出结果）。写了 media 就不用它"
+      },
+      "screenItems": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 4,
+        "items": {
+          "type": "string",
+          "maxLen": 10,
+          "minLen": 1
+        },
+        "description": "scene 是 screen / phone 时界面里的 2–4 行真实文字（每行 ≤10 字，如「买牛奶」「周五交报告」）；全片写一次就行（写在第一个用到的镜头），别的镜头自动沿用"
+      },
+      "media": {
+        "type": "string",
+        "format": "asset",
+        "accept": [
+          "png",
+          "jpg",
+          "jpeg",
+          "webp",
+          "mp4"
+        ],
+        "description": "可选：用户自备的截图或视频（要登记在 meta.assets，版权由用户负责）。不写就用小剧场"
+      }
     }
   },
-  "sfx": [{"at": 3.0, "kind": "ding", "vol": 0.18}],
+  "sfx": [
+    {
+      "at": 3,
+      "kind": "ding",
+      "vol": 0.18
+    }
+  ],
   "example": {
     "dur": 4.6875,
-    "params": {"lines": [{"speaker": "同事", "text": "合同那封邮件呢？"}, {"speaker": "小林", "text": "我点了归档，就不见了", "zh": "（其实它一直都在）"}], "key": "归档", "scene": "screen", "screenItems": ["合同终版确认", "本周周报", "报销单已审批"]}
+    "params": {
+      "lines": [
+        {
+          "speaker": "同事",
+          "text": "合同那封邮件呢？"
+        },
+        {
+          "speaker": "小林",
+          "text": "我点了归档，就不见了",
+          "zh": "（其实它一直都在）"
+        }
+      ],
+      "key": "归档",
+      "scene": "screen",
+      "screenItems": [
+        "合同终版确认",
+        "本周周报",
+        "报销单已审批"
+      ]
+    }
   }
 }
