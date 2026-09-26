@@ -1,8 +1,8 @@
 {
   "type": "counter",
-  "purpose": "大数字滚动：数字从 from 滚到 to（嗒嗒声 + 进度条同步走），落定那一拍弹一下 + 放射光线 + 叮，下面写这个数字的含义和口径。可选把旧值划掉 + 自动算出变化幅度（如 45 分钟 → 6 分钟，↓ 87%）。",
+  "purpose": "大数字滚动：数字从 from 滚到 to（嗒嗒声 + 进度条同步走），落定那一拍弹一下 + 放射光线 + 叮，下面写这个数字的含义和口径。可选显示旧值：钱（¥/元/$）会划掉旧值并算出降幅（如 ¥199 → ¥129，↓ 35%）；其他单位（分钟、℃）不划线、不算百分比，数字下的条从旧值刷到新值。",
   "tips": [
-    "一镜只放一个数字；数字只能来自简报（先原样抄进 meta.facts），sub 写简报给的口径；简报没给来源就写「示例数据，以实际为准」，不要自己编「内部测试」「实测」",
+    "一镜只放一个数字；数字只能来自简报（先原样抄进 meta.facts），sub 照抄那条 fact 的 source；简报没给数字就别用 counter（标了示例数据的数字也不能当效果），改用 compare 只比做法；不要自己编「内部测试」「实测」",
     "不要写 100%、第一 之类的极限表述",
     "prefix/suffix 放符号或单位：¥、+、%、倍、分钟、小时",
     "前后对比（省时间、降成本）：from 写旧值、to 写新值、showFrom 写 true，画面会划掉旧值并算出变化幅度",
@@ -22,7 +22,7 @@
       "prefix": {"type": "string", "maxLen": 2, "description": "数字前的符号，如「¥」「+」"},
       "suffix": {"type": "string", "maxLen": 3, "description": "数字后的单位，如「%」「倍」「分钟」"},
       "label": {"type": "string", "maxLen": 12, "minLen": 1, "description": "数字的含义，如「整理一份周报」"},
-      "sub": {"type": "string", "maxLen": 16, "minLen": 1, "description": "小字：口径/来源。只写简报给的来源（要先抄进 meta.facts）；没给就写「示例数据，以实际为准」"},
+      "sub": {"type": "string", "maxLen": 16, "minLen": 1, "description": "小字：口径/来源。照抄 meta.facts 里那条的 source，如「2026-08 后台统计」"},
       "icon": {"type": "string", "format": "icon", "description": "数字上方的图标，默认 trend"},
       "showFrom": {"type": "boolean", "description": "true = 在数字上方显示被划掉的旧值 + 变化幅度（需要写 from）"},
       "tone": {"type": "string", "enum": ["accent", "good", "bad"], "description": "数字颜色：accent 主题色（默认）/ good 绿 / bad 红"}
@@ -33,6 +33,6 @@
     "caption": "周报不用再熬，\n{几分钟就交}",
     "mood": 0.2,
     "dur": 3,
-    "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "sub": "示例数据，以实际为准", "icon": "clock", "tone": "good"}
+    "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "icon": "clock", "tone": "good"}
   }
 }

@@ -1,0 +1,61 @@
+{
+  "name": "评审原案：专注计时器被演成和「them」的聊天",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "Focus",
+      "lang": "en",
+      "action": "Tap start → it blocks distracting apps"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2.5,
+        "mood": 0.7,
+        "params": {
+          "visual": "icon",
+          "icon": "clock",
+          "text": "Where did the day go?"
+        },
+        "caption": "Meant to focus,\nhours later…"
+      },
+      {
+        "type": "chat",
+        "dur": 4,
+        "mood": 0.4,
+        "params": {
+          "peer": "them",
+          "messages": [
+            {
+              "from": "peer",
+              "text": "How long?"
+            },
+            {
+              "from": "me",
+              "text": "25 minutes"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "Focus",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "不是聊天/问答，这一镜却把产品演成了和别人的对话"
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "name": "餐饮用 mockApp 编点单/结算界面演示核心动作",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "巷口牛肉面",
+      "industry": "food",
+      "notices": [
+        "图片仅供参考 以实物为准",
+        "以团购详情页为准"
+      ],
+      "action": "下单双人套餐 → 到店核销吃面"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "illust",
+          "illust": "food/bowl",
+          "text": "一碗面"
+        },
+        "caption": "下班路上\n来碗热汤面"
+      },
+      {
+        "type": "mockApp",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "kind": "form",
+          "title": "确认订单",
+          "items": [
+            {
+              "text": "双人套餐",
+              "value": "59元"
+            }
+          ],
+          "button": "去支付",
+          "done": "下单成功"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口牛肉面",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "mockApp 是编出来的 App 界面",
+      "全片没有一镜 photoShot"
+    ]
+  }
+}

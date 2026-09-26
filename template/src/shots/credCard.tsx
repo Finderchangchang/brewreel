@@ -4,7 +4,8 @@ import {bump, pop} from '../core/anim';
 import {fitLine} from '../core/fit';
 import {FONT, MONO} from '../core/font';
 import {Icon} from '../core/icons';
-import {Sweep} from '../core/kit';
+import {Sweep, pick} from '../core/kit';
+import type {Lang} from '../core/kit';
 import {Illust, isIllust} from '../illust';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, useTheme} from '../core/theme';
@@ -40,10 +41,12 @@ const INDUSTRY_TOOL: Record<string, string> = {
   travel: 'travel/bed',
 };
 
-const initial = (s?: string) => (s && s.trim() ? Array.from(s.trim())[0] : '师');
+// 头像首字：英文名取首字母大写；没写名字时按 meta.lang 给占位字
+const initial = (s: string | undefined, lang: Lang | undefined) => (s && s.trim() ? Array.from(s.trim())[0].toUpperCase() : pick(lang, '师', '★'));
+const yearsText = (y: number, lang: Lang | undefined) => pick(lang, `从业 ${y} 年`, `${y} ${y === 1 ? 'yr' : 'yrs'} experience`);
 
 // ---------- person ----------
-const Person: React.FC<{p: P; t: number; beat: number; industry?: string}> = ({p, t, beat, industry}) => {
+const Person: React.FC<{p: P; t: number; beat: number; industry?: string; lang?: Lang}> = ({p, t, beat, industry, lang}) => {
   const th = useTheme();
   const enter = pop(t, 0, 15, 170);
   const creds = (p.creds ?? []).slice(0, 3);
@@ -92,7 +95,7 @@ const Person: React.FC<{p: P; t: number; beat: number; industry?: string}> = ({p
                 fontSize: 72,
               }}
             >
-              {initial(p.name)}
+              {initial(p.name, lang)}
             </div>
           )}
           {!p.photo && tool && isIllust(tool) && (
@@ -106,7 +109,7 @@ const Person: React.FC<{p: P; t: number; beat: number; industry?: string}> = ({p
           {p.role && <div style={{fontSize: 36, fontWeight: 700, color: th.cardSub, whiteSpace: 'nowrap'}}>{p.role}</div>}
           {typeof p.years === 'number' && (
             <div style={{display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', padding: '5px 18px', borderRadius: 18, background: th.accentSoft, color: th.accent, fontWeight: 800, fontSize: 28}}>
-              从业 {p.years} 年
+              {yearsText(p.years, lang)}
             </div>
           )}
         </div>
@@ -276,7 +279,7 @@ const CredCard: React.FC<ShotProps<P>> = ({params: p, t, beat, meta}) => {
   const layout: Layout = p.layout === 'honor' ? 'honor' : 'person';
   return (
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
-      {layout === 'person' ? <Person p={p} t={t} beat={beat} industry={meta?.industry} /> : <Honor p={p} t={t} />}
+      {layout === 'person' ? <Person p={p} t={t} beat={beat} industry={meta?.industry} lang={meta?.lang} /> : <Honor p={p} t={t} />}
     </div>
   );
 };

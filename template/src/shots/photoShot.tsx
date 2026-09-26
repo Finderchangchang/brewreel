@@ -3,7 +3,9 @@ import {Img, OffthreadVideo, staticFile} from 'remotion';
 import {fitTimeline, pop} from '../core/anim';
 import {fitLine} from '../core/fit';
 import {FONT} from '../core/font';
-import {isIllust, Illust} from '../illust';
+import {illustFor, isIllust} from '../illust';
+import {IllustScene, resolveSceneIllust} from '../illust/scene';
+import {pick, type Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
@@ -15,14 +17,16 @@ import type {ShotProps, SfxCue} from '../core/types';
 //   grid    2–4 张拼贴，各带短标签，依次错落入场
 //   callouts 单张照片 + 1–3 处引线圈注
 //   tour    2–5 张依次轮播，带页码点
-// 没有真实素材（media.source==='drawn'）时不画拟真实物，换成 <Illust> 兜底的插画信息卡，
-// 背景走当前主题色，不单独判断行业调色（行业专属底色留给以后按 meta.industry 扩展主题）。
+// 没有真实素材（media.source==='drawn' 或没给 src）时不画拟真实物，换成整卡插画场景（illust/scene.tsx）：
+// 主题色底 + 纹理、约 480px 主插画、同行业 2–3 个小道具飘入、慢推、按行业的粒子层；角标一律「示意」。
+// 没写 illust 时按 label/title 的关键词挑图（illust/names.json 的 keywords），再按行业默认图兜底。
+// 画面里的固定文案走 pick(meta.lang, 中, 英)。
 // ============================================================
 type Media = {
   src?: string;
   kind?: 'image' | 'video';
   source?: 'merchant' | 'ai' | 'drawn';
-  tag?: '实拍' | '示意' | '效果图';
+  tag?: '实拍' | '示意' | '效果图'; // i18n-ignore（枚举值，上屏走 tagLabel 的 pick）
   month?: number;
   label?: string;
   illust?: string;
@@ -48,33 +52,38 @@ type P = {
 
 const isVideoSrc = (src?: string) => !!src && /\.(mp4|webm|mov|m4v)$/i.test(src);
 
-// meta.industry 缺省或没给 illust 名字时的兜底插画（对应 §2.2 每行业的 ★ 首图）
-const DEFAULT_ILLUST: Record<string, string> = {
-  food: 'food/bowl',
-  ecommerce: 'ecommerce/gift',
-  education: 'education/book',
-  beauty: 'beauty/scissors',
-  travel: 'travel/house',
-};
-const fallbackIllust = (industry?: string, wanted?: string) => (isIllust(wanted) ? (wanted as string) : DEFAULT_ILLUST[industry ?? ''] ?? '_base/bubble');
+// 没给 illust（或给了不存在的名字）时：先按这一张的 label / 镜头 title 等文字挑关键词最贴的插画
+// （names.json 的 keywords；如「手打牛肉丸」→ food/meatball、「保温杯」→ ecommerce/cup），都没命中再按行业默认图。
+// 以前一律按行业给默认图，保温杯拿到的是礼盒（评审 evidence：ind-ecommerce 9s）。
+const drawnIllust = (m: Media | undefined, texts: Array<string | undefined>, industry?: string) =>
+  isIllust(m?.illust) ? (m?.illust as string) : resolveSceneIllust(illustFor([m?.label, ...texts], industry), industry);
 
-const tagLabel = (m?: Media) => {
-  if (!m) return '示意';
-  if (m.source === 'ai') return 'AI生成 · 效果示意';
-  if (m.month) return `${m.month}月实拍`;
-  return m.tag ?? (m.source === 'drawn' ? '示意' : '实拍');
+const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const TAG_EN: Record<string, string> = {实拍: 'Real photo', 示意: 'Illustration', 效果图: 'Concept render'};
+
+const tagLabel = (m: Media | undefined, lang?: Lang) => {
+  // 插画兜底一律标「示意」：模型把 tag 写成「实拍」也不照抄（画的不能冒充实拍）
+  if (!m || m.source === 'drawn' || !m.src) return pick(lang, '示意', 'Illustration');
+  if (m.source === 'ai') return pick(lang, 'AI生成 · 效果示意', 'AI-generated · Concept');
+  if (m.month) return pick(lang, `${m.month}月实拍`, `Shot in ${MONTH_EN[(m.month - 1) % 12]}`);
+  const tag = m.tag ?? '实拍'; // i18n-ignore（枚举值，下一行 pick 换英文）
+  return pick(lang, tag, TAG_EN[tag] ?? tag);
 };
 
-// ---------- 素材内容：真图/真视频/插画兜底 ----------
-const MediaContent: React.FC<{m?: Media; t: number; dur: number; industry?: string}> = ({m, t, dur, industry}) => {
-  const th = useTheme();
+// ---------- 素材内容：真图/真视频/整卡插画场景兜底（illust/scene.tsx） ----------
+const MediaContent: React.FC<{m?: Media; t: number; dur: number; industry?: string; w: number; h: number; texts?: Array<string | undefined>; variant?: number}> = ({
+  m,
+  t,
+  dur,
+  industry,
+  w,
+  h,
+  texts = [],
+  variant = 0,
+}) => {
   const zoom = 1 + 0.06 * Math.min(1, Math.max(0, t) / Math.max(0.6, dur));
   if (!m || m.source === 'drawn' || !m.src) {
-    return (
-      <div style={{position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(160deg, ${th.accentSoft} 0%, ${th.card} 120%)`}}>
-        <Illust name={fallbackIllust(industry, m?.illust)} size={224} color="accent" animate t={t} />
-      </div>
-    );
+    return <IllustScene name={drawnIllust(m, texts, industry)} w={w} h={h} t={t} dur={dur} industry={industry} variant={variant} />;
   }
   if (m.kind === 'video' || isVideoSrc(m.src)) {
     return (
@@ -209,7 +218,7 @@ const PlayBadge: React.FC<{t: number}> = ({t}) => {
 const BOX = {x: CARD.x0, y: MAIN.y0, w: CARD.w, h: MAIN.h};
 
 // ---------- hero / clip / callouts：单张大图 ----------
-const HeroLike: React.FC<{p: P; t: number; dur: number; industry?: string; isClip?: boolean; isCallouts?: boolean}> = ({p, t, dur, industry, isClip, isCallouts}) => {
+const HeroLike: React.FC<{p: P; t: number; dur: number; industry?: string; lang?: Lang; isClip?: boolean; isCallouts?: boolean}> = ({p, t, dur, industry, lang, isClip, isCallouts}) => {
   const th = useTheme();
   const m0 = p.media?.[0];
   const enter = pop(t, 0, 14, 170);
@@ -217,8 +226,8 @@ const HeroLike: React.FC<{p: P; t: number; dur: number; industry?: string; isCli
   const at = marks.map((_, i) => 0.35 + i * 0.55);
   return (
     <Frame box={BOX} style={{opacity: Math.min(1, enter * 1.6), transform: `translateY(${(1 - enter) * 44}px) scale(${0.94 + 0.06 * enter})`}}>
-      <MediaContent m={m0} t={t} dur={dur} industry={industry} />
-      <TagChip text={tagLabel(m0)} />
+      <MediaContent m={m0} t={t} dur={dur} industry={industry} w={BOX.w} h={BOX.h} texts={[p.title, p.tagline, p.roomType]} />
+      <TagChip text={tagLabel(m0, lang)} />
       {isClip && <PlayBadge t={t} />}
       {marks.map((c, i) => {
         if (t < at[i]) return null;
@@ -279,7 +288,7 @@ const gridBoxes = (n: number): {x: number; y: number; w: number; h: number}[] =>
   return [0, 1, 2, 3].map((i) => ({x: x0 + (i % 2) * (cw + G), y: y0 + Math.floor(i / 2) * (ch + G), w: cw, h: ch}));
 };
 
-const Grid: React.FC<{p: P; t: number; dur: number; industry?: string}> = ({p, t, dur, industry}) => {
+const Grid: React.FC<{p: P; t: number; dur: number; industry?: string; lang?: Lang}> = ({p, t, dur, industry, lang}) => {
   const items = (p.media ?? []).slice(0, 4);
   const n = items.length;
   if (!n) return null;
@@ -294,8 +303,8 @@ const Grid: React.FC<{p: P; t: number; dur: number; industry?: string}> = ({p, t
         if (t < at) return null;
         return (
           <Frame key={i} box={boxes[i]} radius={32} style={{opacity: Math.min(1, q * 1.6), transform: `translateY(${(1 - q) * 46}px) scale(${0.9 + 0.1 * q})`}}>
-            <MediaContent m={m} t={t - at} dur={dur} industry={industry} />
-            <TagChip text={tagLabel(m)} corner={i % 2 ? 'tr' : 'tl'} />
+            <MediaContent m={m} t={t - at} dur={dur} industry={industry} w={boxes[i].w} h={boxes[i].h} texts={[p.title]} variant={i} />
+            <TagChip text={tagLabel(m, lang)} corner={i % 2 ? 'tr' : 'tl'} />
             {m.label && (
               <div style={{position: 'absolute', left: 14, bottom: 12, padding: '6px 16px', borderRadius: 18, background: alpha('#0B0D14', 0.55), color: '#fff', fontFamily: FONT, fontWeight: 700, fontSize: 26, whiteSpace: 'nowrap'}}>{m.label}</div>
             )}
@@ -307,7 +316,7 @@ const Grid: React.FC<{p: P; t: number; dur: number; industry?: string}> = ({p, t
 };
 
 // ---------- tour：2–5 张依次轮播 ----------
-const Tour: React.FC<{p: P; t: number; dur: number; industry?: string}> = ({p, t, dur, industry}) => {
+const Tour: React.FC<{p: P; t: number; dur: number; industry?: string; lang?: Lang}> = ({p, t, dur, industry, lang}) => {
   const items = (p.media ?? []).slice(0, 5);
   const n = items.length;
   if (!n) return null;
@@ -320,9 +329,9 @@ const Tour: React.FC<{p: P; t: number; dur: number; industry?: string}> = ({p, t
   return (
     <Frame box={BOX} style={{opacity: Math.min(1, enter * 1.6), transform: `translateY(${(1 - enter) * 44}px) scale(${0.94 + 0.06 * enter})`}}>
       <div style={{position: 'absolute', inset: 0, opacity: cross, transform: `scale(${0.98 + 0.02 * cross})`}}>
-        <MediaContent m={m} t={local} dur={slice} industry={industry} />
+        <MediaContent m={m} t={local} dur={slice} industry={industry} w={BOX.w} h={BOX.h} texts={[p.roomType, p.title]} variant={idx} />
       </div>
-      <TagChip text={tagLabel(m)} />
+      <TagChip text={tagLabel(m, lang)} />
       {p.roomType && (
         <div style={{position: 'absolute', left: 20, top: 62, padding: '6px 18px', borderRadius: 18, background: alpha('#0B0D14', 0.5), color: '#fff', fontFamily: FONT, fontWeight: 700, fontSize: 26, whiteSpace: 'nowrap'}}>{p.roomType}</div>
       )}
@@ -340,15 +349,16 @@ const Tour: React.FC<{p: P; t: number; dur: number; industry?: string}> = ({p, t
 
 const PhotoShot: React.FC<ShotProps<P>> = ({params: p, t, dur, meta}) => {
   const layout = p.layout ?? 'hero';
-  const industry = (meta as any)?.industry as string | undefined;
+  const industry = meta?.industry as string | undefined;
+  const lang = meta?.lang;
   return (
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
       {layout === 'grid' ? (
-        <Grid p={p} t={t} dur={dur} industry={industry} />
+        <Grid p={p} t={t} dur={dur} industry={industry} lang={lang} />
       ) : layout === 'tour' ? (
-        <Tour p={p} t={t} dur={dur} industry={industry} />
+        <Tour p={p} t={t} dur={dur} industry={industry} lang={lang} />
       ) : (
-        <HeroLike p={p} t={t} dur={dur} industry={industry} isClip={layout === 'clip'} isCallouts={layout === 'callouts'} />
+        <HeroLike p={p} t={t} dur={dur} industry={industry} lang={lang} isClip={layout === 'clip'} isCallouts={layout === 'callouts'} />
       )}
     </div>
   );

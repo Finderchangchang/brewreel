@@ -1,0 +1,102 @@
+{
+  "name": "占位图混进来：几个字节的 stub、240×160 缩略图、_dev/ 路径、改名复制的仓库示例图",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "巷口牛肉面",
+      "industry": "food",
+      "notices": [
+        "图片仅供参考 以实物为准",
+        "以团购详情页为准"
+      ],
+      "assets": [
+        {
+          "src": "_assets/stub.jpg",
+          "source": "merchant",
+          "kind": "dish"
+        },
+        {
+          "src": "_assets/small-240x160.png",
+          "source": "merchant",
+          "kind": "dish"
+        },
+        {
+          "src": "_dev/dish.png",
+          "source": "merchant",
+          "kind": "dish"
+        },
+        {
+          "src": "_assets/renamed-sample.png",
+          "source": "merchant",
+          "kind": "dish"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "illust",
+          "illust": "food/bowl",
+          "text": "一碗面"
+        },
+        "caption": "下班路上\n来碗热汤面"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "grid",
+          "media": [
+            {
+              "src": "_assets/stub.jpg",
+              "source": "merchant",
+              "tag": "实拍"
+            },
+            {
+              "src": "_assets/small-240x160.png",
+              "source": "merchant",
+              "tag": "实拍"
+            },
+            {
+              "src": "_dev/dish.png",
+              "source": "merchant",
+              "tag": "实拍"
+            },
+            {
+              "src": "_assets/renamed-sample.png",
+              "source": "merchant",
+              "tag": "实拍"
+            }
+          ],
+          "title": "招牌三样"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口牛肉面",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "只有 11 字节，是占位/空文件",
+      "240×160，短边不到 300px",
+      "在 _dev/ 目录下",
+      "和仓库自带的示例图"
+    ]
+  }
+}

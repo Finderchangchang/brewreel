@@ -1,0 +1,78 @@
+{
+  "name": "插画/设计图标成「实拍」，字幕写「顾客授权实拍 未修图」",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "栗言发型工作室",
+      "industry": "beauty",
+      "notices": [
+        "生活美容 · 不提供医疗美容服务"
+      ],
+      "assets": [
+        {
+          "src": "_assets/photo-c.png",
+          "source": "illustration",
+          "note": "设计师画的发型示意"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "grid",
+          "media": [
+            {
+              "src": "_assets/photo-c.png",
+              "source": "merchant",
+              "tag": "实拍",
+              "label": "法式短"
+            },
+            {
+              "source": "drawn",
+              "illust": "beauty/hair-short",
+              "tag": "实拍",
+              "label": "层次短"
+            }
+          ],
+          "title": "本店同款"
+        },
+        "caption": "顾客授权实拍\n未修图"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "在素材清单里是 illustration，画面却会标「实拍」",
+      "没有照片文件（src），画面却会显示「实拍」角标",
+      "写了「顾客授权」"
+    ]
+  }
+}

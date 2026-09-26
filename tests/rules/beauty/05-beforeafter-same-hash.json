@@ -1,0 +1,80 @@
+{
+  "name": "改个文件名再用一次：before/after 内容哈希相同",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "栗言发型工作室",
+      "industry": "beauty",
+      "notices": [
+        "生活美容 · 不提供医疗美容服务"
+      ],
+      "assets": [
+        {
+          "src": "_assets/photo-a.png",
+          "source": "merchant",
+          "kind": "customer-before",
+          "pair": "A"
+        },
+        {
+          "src": "_assets/photo-a-copy.png",
+          "source": "merchant",
+          "kind": "customer-after",
+          "pair": "A"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "beforeAfter",
+        "dur": 4,
+        "mood": 0.2,
+        "params": {
+          "before": {
+            "src": "_assets/photo-a.png",
+            "label": "做之前"
+          },
+          "after": {
+            "src": "_assets/photo-a-copy.png",
+            "label": "做完"
+          },
+          "consent": true,
+          "retouched": false,
+          "sameAngle": true,
+          "subVertical": "hair",
+          "caption2": "顾客授权实拍"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "内容却完全一样（哈希一致）"
+    ],
+    "blockCount": 1
+  }
+}

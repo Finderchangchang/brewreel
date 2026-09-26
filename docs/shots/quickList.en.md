@@ -1,5 +1,11 @@
 # quickList quick-cut list
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "quickList", "dur": 3,
+ "params": {"items": [{"text": "Weekly report"}, {"text": "Meeting notes"}, {"text": "Daily update"}]}}
+```
+
 3–6 rows of white cards fly in one per beat, alternating left and right; as each one lands, a "stamp" appears on the right: a score rolling from 0 to its target (optionally with a verdict word), or a colored tag dropping in. A color bar on the left fills in by tone. Fast pace, strong feeling.
 
 ## When to use

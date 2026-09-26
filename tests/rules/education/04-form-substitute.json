@@ -1,0 +1,60 @@
+{
+  "name": "核心动作是 Ctrl+E 拆列，却用填表单演示",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "表格速成课",
+      "industry": "education",
+      "action": "输第一行，按Ctrl+E → 整列自动拆好"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.6,
+        "params": {
+          "visual": "icon",
+          "icon": "doc",
+          "text": "一列拆两列"
+        },
+        "caption": "姓名手机号挤一列\n{怎么拆}"
+      },
+      {
+        "type": "mockApp",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "kind": "form",
+          "title": "拆分设置",
+          "items": [
+            {
+              "text": "分隔方式",
+              "value": "智能"
+            }
+          ],
+          "button": "提交",
+          "done": "已拆分"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "表格速成课",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "这一镜却用 form 表单代替"
+    ]
+  }
+}

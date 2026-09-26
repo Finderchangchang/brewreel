@@ -4,6 +4,7 @@
   "version": "2026-09-26",
   "note": "普通日用品实物电商。保健食品/药品/医疗器械/特医食品/烟草/电子烟不在支持范围，命中即整份拒绝。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
   "enabledShots": ["hook", "photoShot", "priceCard", "factSheet", "compare", "counter", "features", "quickList", "phone", "chat", "reviewCard", "endCard"],
+  "coreAction": {"surface": "physical", "note": "核心动作用照片或插画场景演示（photoShot 实拍或 source:drawn 插画 / beforeAfter）；不许用 mockApp 编 App 界面，见 scripts/checks/core-action.mjs"},
   "mediaPolicy": {
     "shots": ["photoShot", "hook"],
     "allowSources": ["merchant", "drawn"],

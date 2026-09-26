@@ -108,7 +108,7 @@ const Ghost: React.FC<{b: Box; i: number; fade: number}> = ({b, i, fade}) => {
 };
 
 // ---------- 卡片 ----------
-const FeatureCard: React.FC<{b: Box; item: Item; i: number; t: number; at: number; active: boolean}> = ({b, item, i, t, at, active}) => {
+const FeatureCard: React.FC<{b: Box; item: Item; i: number; t: number; at: number; active: boolean; en?: boolean}> = ({b, item, i, t, at, active, en}) => {
   const th = useTheme();
   const q = pop(t, at, 13, 190);
   const hit = bump(t, at + 0.12, 0.45);
@@ -162,7 +162,9 @@ const FeatureCard: React.FC<{b: Box; item: Item; i: number; t: number; at: numbe
             lineHeight: 1.3,
             color: th.cardSub,
             textAlign: row ? 'left' : 'center',
-            wordBreak: 'break-all',
+            // 中文任意处可断；英文只在词间断（break-all 会把英文单词从中间劈开）
+            wordBreak: en ? 'normal' : 'break-all',
+            overflowWrap: en ? 'break-word' : undefined,
             ...({textWrap: 'balance'} as React.CSSProperties), // 多行时各行等长，避免最后一行只剩一个字
           }}
         >
@@ -228,7 +230,7 @@ const Spotlight: React.FC<{bx: Box[]; at: number[]; t: number; cur: number}> = (
   );
 };
 
-const Features: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
+const Features: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const items = (p.items ?? []).slice(0, 4);
   const n = items.length;
   if (!n) return null;
@@ -245,7 +247,7 @@ const Features: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
         const ghostFade = Math.min(interpolate(t, [at[i] - 0.3, at[i] - 0.15], [0, 1], clamp), interpolate(t, [at[i], at[i] + 0.2], [1, 0], clamp));
         return i > 0 && ghostFade > 0 ? <Ghost key={`g${i}`} b={bx[i]} i={i} fade={ghostFade} /> : null;
       })}
-      {items.map((it, i) => (t >= at[i] ? <FeatureCard key={i} b={bx[i]} item={it} i={i} t={t} at={at[i]} active={i === cur} /> : null))}
+      {items.map((it, i) => (t >= at[i] ? <FeatureCard key={i} b={bx[i]} item={it} i={i} t={t} at={at[i]} active={i === cur} en={meta?.lang === 'en'} /> : null))}
       <Spotlight bx={bx} at={at} t={t} cur={cur} />
     </div>
   );

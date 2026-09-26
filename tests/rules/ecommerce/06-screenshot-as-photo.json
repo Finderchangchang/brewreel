@@ -1,0 +1,66 @@
+{
+  "name": "把店铺详情页截图放进 photoShot 还标「实拍」",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "fresh-light",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "暖屿保温杯",
+      "industry": "ecommerce",
+      "assets": [
+        {
+          "src": "_assets/photo-c.png",
+          "source": "screenshot",
+          "note": "店铺商品详情页截图"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.6,
+        "params": {
+          "visual": "illust",
+          "illust": "ecommerce/cup",
+          "text": "中午就凉了"
+        },
+        "caption": "早上的咖啡\n到中午就凉了"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "hero",
+          "media": [
+            {
+              "src": "_assets/photo-c.png",
+              "source": "merchant",
+              "tag": "实拍"
+            }
+          ],
+          "title": "暖屿保温杯"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "暖屿保温杯",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "登记的是截图（source=screenshot），photoShot 只放商家实拍或插画",
+      "在素材清单里是 screenshot，画面却会标「实拍」"
+    ]
+  }
+}

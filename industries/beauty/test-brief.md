@@ -21,3 +21,13 @@
 办卡活动：充1000送100，签电子合同，未消费余额可退
 店主原话（含违规表述，用于测试校验）："我们的头疗能防脱生发""全成都剪短发最好的店""90%的顾客都会回头""加我微信 lizi-hair 预约""做完显年轻十岁，不再是黄脸婆"
 期望：25 秒，变身对比结构，暖色简约风
+
+## 测试环境说明（素材）
+
+- 上面列的照片、视频、截图文件**不随仓库提供**。用这份简报测试时，按「商家没有可用照片」处理：photoShot 的 media 写 `{"source": "drawn", "tag": "示意", "illust": "<插画 id>"}` 用插画兜底，不写「实拍」「顾客授权」「未修图」，不设 consent；beforeAfter 没有照片就不用，改用 steps。
+- 校验对插画兜底会放行，并在「需人工复核」里提醒；只有商家给了照片、片子却一张没用时才会拦。
+- 真出片时，把照片放进分镜目录，每个用到的文件都在 `meta.assets` 登记来源（merchant 商家实拍 / illustration 插画 / screenshot 截图），例如：
+
+```json
+"assets": [{"src": "photos/case1-before.jpg", "source": "merchant", "kind": "customer-before", "pair": "A"}, {"src": "photos/case1-after.jpg", "source": "merchant", "kind": "customer-after", "pair": "A"}]
+```

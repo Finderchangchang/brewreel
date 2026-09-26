@@ -1,5 +1,11 @@
 # factSheet Spec table / box list / syllabus / exam info / color swatch
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "factSheet", "dur": 4,
+ "params": {"layout": "spec", "title": "Course info", "rows": [{"key": "Format", "value": "Recorded"}, {"key": "Lessons", "value": "20"}]}}
+```
+
 One card, five layouts, rows lighting up one at a time — the moving element is "facts being proven one by one," not everything dumped on screen at once:
 - `spec`: a parameter table (key: value) with table rules
 - `box`: an unboxing/packaging list, rounded tiles with a "×N" quantity and a "gift" badge

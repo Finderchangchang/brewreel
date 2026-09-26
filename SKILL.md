@@ -23,11 +23,29 @@ metadata:
    - `meta.action`：**必填**，一句话「用户做什么 → 产品给出什么」（如「拍小票 → 自动填好金额和分类」），不上画面。演示类镜头（chat/phone/mockApp/photoShot）的画面文字要体现这个动作，校验会核对。
    - 简报「获取方式」有内容 → 原样写进 `meta.cta`，片尾 `cta` 照抄它；简报写「无」→ 两处都不写。**不要自己编**「应用商店搜 XX」。
    - 简报里没有的功能不要写进卖点和片尾。
-   - 简报「数字和来源」有内容 → 每条抄进 `meta.facts`，格式是 `[{"id":"f1","text":"原话…"}]`（**不是纯字符串数组**）。画面上任何带单位的数字（时长、百分比、倍数、人数、金额）都要能在这里找到同样的数字，没有来源一律报错，不是提醒；确实没给数据就写定性说法，别编数字。镜头 `params.refs: ["f1"]` 可以把某个说法（如「现做」）和某条 fact 关联起来，给行业规则核对用。
+   - 简报「数字和来源」有内容 → 每条抄进 `meta.facts`，格式是 `[{"id":"f1","text":"原话…","source":"来源"}]`（**不是纯字符串数组**）：
+     - `source` **必填**：照抄简报写的来源（「2026-09 价目表」「后台统计至 8 月」）；简报没写来源就写 `"简报未注明来源"`。不许自己编来源，也不许自己编 fact。
+     - `quote` 可选：简报里的那句原话，逐字照抄。
+     - 画面上任何带单位的数字（时长、百分比、倍数、人数、金额）都要能在 facts 里找到同样的数字，没有一律报错；确实没给数据就写定性说法，别编数字。
+     - 镜头 `params.refs: ["f1"]` 把某个说法（如「现做」、compare 的 stat/level、meter 的读数）和某条 fact 关联起来。
+   - **示例数据和效果说法分开**（校验会拦）：
+     - text 或 source 里带「示例 / 演示 / 模拟 / 虚构」的 fact 是示例数据，**不能给效果说法作依据**。效果说法 = compare 的 stat/level、counter 的数、meter 往「变好」方向摆、字幕和卖点里的百分比/倍数、「省 / 缩短 / 提升」带的时长和金额。
+     - 界面里只能用示例数字时（简报没给真数据）：meta 写 `"demoData": true`，`meta.disclaimer` 写「演示画面，数据为示例」。示例数字只能出现在 mockApp/phone/chat/priceCard 等演示界面和价格条款里。
+     - 简报没给效果数据 → compare 只比做法（items 写「少 3 步」「不用切窗口」），不写 stat 数字和 level；不用 counter。
+     - 速度说法（「几秒」「秒出」「即刻」「瞬间」「零等待」「instantly」）必须有一条真实 fact 带秒级耗时，否则报错。「马上试试」这类行动号召不算。
+   - **限定语跟着数字走**（校验会拦）：屏幕上的数字对上某条 fact 时，fact 里跟着它的条件要在同一镜（字幕、卡片或底部提示条）写出来：
+     - 日期范围照抄：fact 写「周日至周四 328 元」，画面就写「周日至周四」，不能改成「平日」「周一到周四」。
+     - 券后 / 满减 / 会员价、「N 元起」、附加费金额、活动时间、预约、节假日不可用，一个都不能丢。例：「券后29.9元」不能写成「到手价29.9元」。
+     - fact 只说「保温 6 小时」，画面不能写「全天保温」；fact 写了固定退房时间，画面不能写「灵活退房」。
    - **全片同一件事的耗时只用一个数**：counter 写 3 分钟，别处就不能写「秒出」「3 秒」；钩子写「半天」，counter 的旧值也得是半天。校验会拦。`compare` 同一栏的 `stat` 和 `items` 也不能自相矛盾（如左栏又写「5 分钟」又写「三天」）。
    - 想覆盖默认 15–45 秒的总时长范围（如行业推荐结构要 27 秒以上），写 `meta.durationRange: [15, 60]` 这样的两元素数组。
-   - 底部需要常驻小字提示（如「限时活动，以团购详情页为准」），写 `meta.notices`：字符串数组，最多 3 条，合并成一行显示在底部。
-3. **建目录**：`promo/<片名英文>/`，分镜写在 `promo/<片名英文>/storyboard.json`。用户给的截图/录屏/logo 复制进同一目录。
+   - 底部需要常驻小字提示（如「限时活动，以团购详情页为准」），写 `meta.notices`：字符串数组，最多 3 条，合并成一行显示在底部。notices 别和 `meta.disclaimer` 说同一句话（都写「演示」就算重复，校验会拦）。
+3. **建目录，登记素材**：`promo/<片名英文>/`，分镜写在 `promo/<片名英文>/storyboard.json`。用户给的截图/录屏/logo/照片复制进同一目录。
+   - 用到照片的镜头（`photoShot`、`beforeAfter`、`storeCard.photo`）：每个文件都要登记在 `meta.assets`：
+     `"assets": [{"src": "photos/dish.jpg", "source": "merchant"}]`。`source` 只能是 `merchant`（商家实拍）/ `illustration`（插画、示意图）/ `screenshot`（软件截图）。
+   - 截图不能放进 photoShot；插画不能标「实拍」；不到 2KB、短边不到 300px、仓库自带示例图、`_dev/` 下的文件都算占位图，会被拦。
+   - `beforeAfter` 的两张必须是**同一位顾客的两张不同照片**：都登记 `merchant`，`kind` 分别写 `customer-before` / `customer-after`，`pair` 写同一个值（如 `"A"`）。同一张图、改名复制的图都会被拦。
+   - **商家没有可用照片**：photoShot 的 media 写 `{"source": "drawn", "tag": "示意", "illust": "<插画 id>"}` 用插画兜底，校验会放行并列进「需人工复核」。不写「实拍」「顾客授权」，不设 consent。商家给了照片却一张没用，才会被拦。
 4. **选主题**（`meta.theme`）：
    - 情感、社交、生活 → `warm-emotion`
    - 开发者、AI、硬核工具 → `tech-dark`
@@ -37,8 +55,12 @@ metadata:
    - 高端、极简、设计 → `mono-premium`
    有品牌色就写 `meta.brandColor`（#RRGGBB），它只换强调色。
 5. **挑 5–9 个镜头**（镜头说明看 `<SKILL>/shots.md`，18 个镜头一览表在最上面）。`hook` 必须第 1 镜（2–3 秒），`endCard` 必须最后 1 镜（4 秒）。
-   **必须有一镜演示核心动作**（第 2 步写的 `meta.action`），校验会拦：
-   `chat` 写 messages + panel（提问 → 回答）；或 `mockApp` 写 input（用户输入/提问）+ 结果（dashboard 的 stat、editor 的 items、done）；有截图用 `phone`。
+   **必须有一镜演示核心动作**（第 2 步写的 `meta.action`），按行业用不同的镜头，校验会拦：
+   - **software、education（界面类）**：`chat` 写 messages + panel（提问 → 回答）；或 `mockApp` 写 input（用户输入/提问）+ 结果（dashboard 的 stat、editor 的 items、done）；有截图用 `phone`。
+     - 核心动作是发消息/回复的产品 → 必须有 chat（或 phone 真截图）；不是聊天类的产品 → 别用 chat 演。
+     - `mockApp kind:"form"` 只给本来就是填表的产品，别拿表单顶替核心动作。
+     - mockApp dashboard 的 `input` 和 `stat.label` 要问答对得上（问「上月广州新增多少商户」，stat 就写「上月广州新增商户」）；items 别写「数据」「信息」「内容」这种占位词。
+   - **food、ecommerce、beauty、travel（实物/门店类）**：**不许用 mockApp 编 App 界面**（点单页、预订页都不行）。全片至少一镜 `photoShot`（实拍或插画兜底）或 `beforeAfter`，再配 steps / priceCard 讲清楚。
    `meta.industry` 决定哪些镜头能用（见 `industries/<industry>/rules.json` 的 `enabledShots`，或直接看 recipe.md），选了不开放的镜头校验会报错。7 个行业镜头（software 默认不开）：
    - `photoShot` 实拍照片/短视频（菜品、商品、作品、房间、公区、后厨）
    - `priceCard` 价目表；`storeCard` 门店/地图/预订；`reviewCard` 真实顾客评价（原文摘录，不能改写得更夸张）
@@ -50,7 +72,8 @@ metadata:
    software 行业可选的组合（挑一种，再按产品改；其他行业直接照 `industries/<industry>/recipe.md` 的推荐结构改）：
    - **C 端情感/社交**（聊天、情感、陪伴）：hook(bubble) → chat 演示（写成 2–3 句字幕）→ meter 或 compare 讲「这句话的分量」→ quickList 快切 → endCard
    - **工具提效**（写作、记账、发布、剪辑）：hook(stat) → compare 讲「以前 vs 现在」→ mockApp editor/form 演示「输入 → 结果」→ steps 讲怎么用 → endCard；或 hook → quickList 讲麻烦 → mockApp → steps → endCard
-   - **B 端数据/办公**（报表、会议、CRM）：hook(icon) → phone 截图圈注或 mockApp dashboard 带 input「问一句 → 出数」→ compare 或 meter 讲效果 → steps → endCard；只有简报给了耗时数字才用 counter（那就别再用 quickList）
+   - **B 端数据/办公**（报表、会议、CRM）：hook(icon 或 split) → phone 截图圈注或 mockApp dashboard 带 input「问一句 → 出数」→ compare 讲做法差别 → steps → endCard；只有简报给了耗时数字才用 counter（那就别再用 quickList）
+   - hook 的 `visual` 同一批片子别总用一种：一条扎心消息用 bubble，有真数字用 stat，说一处风景/一样东西用 illust，痛点 vs 产品用 split。compare 写了 level 时，`tone: good` 那栏要在这把尺子上占优（写 `higherIs` 说清越高越好还是越差）。
    总时长 20–30 秒最好（允许 15–45，或 `meta.durationRange` 的自定义范围）。同一种镜头别连着用。相邻两镜 mood 差别别超过 0.5（中间插一镜过渡），否则背景会硬切。
 6. **写字幕**（每镜的 `caption`）：一镜一句话，抖音式大字，**说给观众听，不描述画面怎么动**（❌「卡片一张张出，讲它能做什么」这是镜头说明，不是字幕）。
    - 中文：最多 2 行，用 `\n` 换行；每行 ≤12 个汉字（字母数字算半个）。`meta.lang: "en"` 时英文字幕按拉丁字符数折算（约中文限制的 1.8 倍），具体数字看 `docs/shots/<type>.en.md`
@@ -65,27 +88,30 @@ metadata:
    - 不要叠字（「排期排期」）、不要删字凑字数（「卡脖子」写成「卡脖」）、不要写错别字（「登陆」应为「登录」，除非真是登陆舰/月球），字数超了整句换说法
    - 别写绝对化用语（「全搞定」「一清二楚」「安全无忧」「100%」）：产品很难兑现，校验会提醒，换成有分寸的说法
    - 换行只写一个反斜杠 `\n`；字幕里要用引号就写「」，不要写英文双引号 `"`
+   - 条目（items、points）开头不要自己写 ✓ • · - 「1.」：组件会画图标和序号。断行别让最后一行只剩一个字或一个词（「复制粘贴排版全\n乱」）；英文别断在 your / the / to 这类虚词后面
 7. **写 `mood`**（0–1）：痛点/紧张 0.8–1，转折 0.5，产品和卖点 0–0.3，片尾 0。背景颜色和配乐都跟着它变。
 8. **写 storyboard.json**，格式见文末完整示例。时长用 `dur`（秒），写 0.5 的整数倍。
    **文件必须是 UTF-8 编码**。中文 Windows 默认 GBK：用编辑器/写文件工具直接写 UTF-8；用 PowerShell 就 `[IO.File]::WriteAllText($p, $json, [Text.UTF8Encoding]::new($false))`；用 Python 就 `open(p, "w", encoding="utf-8")`。不要用 `echo >`、`Out-File`（5.1 版）写中文。
    `chat` 的 `panel.replies` 是产品建议**「我」**发给对方的话，站在 me 的立场写（我说要加班，建议回复不能是「别再加班了，陪我」——那是对方的口吻）；有 panel 就别写 `typing`。
-9. **校验**，按报错逐条改，直到通过：
+9. **校验**，按报错逐条改，直到通过。简报是文件时加 `--brief`，校验会核对 facts 里的数字和 quote 是不是真在简报里：
    ```
-   node <SKILL>/scripts/validate.mjs promo/<片名>/storyboard.json
+   node <SKILL>/scripts/validate.mjs promo/<片名>/storyboard.json --brief promo/<片名>/brief.md
    ```
    报错格式是「第 N 镜（类型）字段：问题 → 怎么改」，照「怎么改」做。结果分三档：
    - **报错（errors）**：必须改，改不完不出片。
    - **提醒（warnings）**：尽量改（文案质量、结构别太像模板），改不动也能出片，但交付时要能跟用户说清楚为什么没改。
    - **需人工复核（human）**：校验判断不了的（如「这条评价是不是真的一字不改」「这句资历是不是确实出自简报」），**不用改 storyboard**，原样列给用户，让用户自己确认。
-10. **出片**（约 2 分钟，会自动生成配乐）：
+10. **出片**（2–4 分钟，会自动生成配乐；别的片子在渲染时会排队，每 15 秒打印一次排队情况）：
    ```
-   node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名>
+   node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名> --brief promo/<片名>/brief.md
    ```
-   `--out` 必填（测试时改用 `--round <轮次>`，产物统一放 `tests/<轮次>/<片名>/`，同一轮的几支片子用同一个轮次名，**不要自己按秒生成时间戳目录**）。
-   产物：`video.mp4`、`sheet.png`（每秒一帧拼图）、`check/`（第 0 帧 + 每镜结束前的全尺寸帧）、`report.txt`（含文字排版报告：会不会断词、会不会超宽）、`layout.json`。
-   只想快速看几帧：加 `--stills 0,3.5,8`（秒），只出单帧，不出整片。
-11. **先看 `report.txt` 末尾的「机器自查」「文字排版报告」「布局自查」**（make.mjs 自动做：反斜杠、产品名、获取方式、字幕停留时长、片尾图标和免责小字是否相碰、有没有断词/超宽的行；渲染时量出每个文字块的位置，查文字被卡片裁切、两块字互相压住、字出了 x150–930），有 ✗ 先改（布局 ✗ 通常是某个字段写太多：删条目或缩短文字）；再看 `sheet.png` 和 `check/` 按下面清单自查，有问题改 storyboard.json 回到第 9 步。
-12. **交付**：把 `video.mp4` 路径、`sheet.png` 路径交给用户，附上「发布前自查清单」（见下）——第 9 步的「需人工复核」条目原样列进去，逐条让用户确认，不要替用户下判断。
+   - `--out` 必填。测试时改用 `--round <轮次>`：产物放到**仓库外**的 `promo-video-skill-tests/<轮次>/<片名>/`（和仓库同级），同一轮的几支片子用同一个轮次名，**不要自己按秒生成时间戳目录**，也不要把测试产物写进仓库。
+   - 产物：`video.mp4`、`sheet.png`（每秒一帧拼图）、`check/`（第 0 帧 + 每镜结束前的全尺寸帧）、`report.txt`、`layout.json`、`manifest.json`（分镜和成片的 sha256、时长、各项检查结论）。开跑时会先清掉目录里上一次的这些产物。
+   - 只想快速看几帧：加 `--stills 0,3.5,8`（秒），只出单帧，不出整片（不是交付）。
+   - **只认最后一行**：成功时 make 最后一行是 `交付：<mp4 路径>`，交给用户的路径**只能抄这一行**。没有这一行就是失败，不许把别的 mp4 当成片。
+   - 退出码：0 可交付 / 1 校验没过 / 2 参数错 / 3 版式或汉字自查有 ✗（成片改名 `video.rejected.mp4`，只给人看哪里坏了）/ 4 渲染失败或时长不对 / 5 排队超时 / 6 内部错误 / 130 被中断。
+11. **看 `report.txt`**：「机器自查」「文字排版报告」「布局自查」里**有一个 ✗ 就不能交付**（make 会返回 3）。布局自查在渲染后量每个文字块：被卡片裁切、两块字互相压住、关键文字出了 x180–900、英文片画面上出现汉字（每半拍抽一帧查）。✗ 通常是某个字段写太多：删条目或缩短文字，改完回到第 9 步。全是 ✓ 之后再看 `sheet.png` 和 `check/`，按下面清单自查。
+12. **交付**：交付前可以跑一次 `node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名> --verify`，确认成片还对应当前分镜（改过分镜会报「成片和分镜不一致，请重跑 make」）。把 make 最后一行的 mp4 路径、`sheet.png` 路径交给用户，附上「发布前自查清单」（见下）——第 9 步的「需人工复核」条目原样列进去，逐条让用户确认，不要替用户下判断。
 
 ## 自查清单（看拼图，逐条对照画面写结论，不要直接打勾）
 
@@ -119,14 +145,19 @@ metadata:
 - 画面文字里不能有反斜杠（JSON 里写成 `\\n` 会原样显示在画面上）
 - 画面里不许出现：网址、二维码、「扫码」、@账号、「XX号：名字」、「关注/搜 XX 号」。产品本身的品类词（如做「公众号」排版的工具）不算引流：把词加进 `meta.allowWords`，**不要为了过校验改产品名**
 - 不许用《广告法》极限词：最、第一、唯一、首个、首选、独家、顶级、绝对、100%、全网、遥遥领先……（「最近/最后/第一步」这类不算）。确有依据才写进 `meta.allowWords`
-- 带单位的数字（时长/百分比/倍数/人数/金额）必须能在 `meta.facts` 里找到同样的数字，没有就是编造，一律报错
+- 带单位的数字（时长/百分比/倍数/人数/金额）必须能在 `meta.facts` 里找到同样的数字，没有就是编造，一律报错；每条 fact 必须有 `source`
+- 示例数据（fact 里写了「示例/演示/模拟/虚构」）不能撑效果说法；界面里用示例数字要写 `meta.demoData: true` + disclaimer 带「演示/示例」
+- 数字对上 fact 时，fact 里的日期范围、券后条件、「起」、附加费金额、活动时间要一起上屏（同一镜或 notices）
+- 照片类镜头用到的文件要在 `meta.assets` 登记来源；beforeAfter 前后必须是同一位顾客的两张不同的商家实拍
+- 实物/门店行业（food/ecommerce/beauty/travel）不许用 mockApp；software/education 的核心动作要在界面里演（chat/phone/mockApp）
 - 行业规则三档：**block 一律拦截**（如医美功效宣称、划线价没写依据、真实评价没写月份）；**warn 提醒但不拦**；**human 校验判断不了，交付时列给用户**（见上面的「发布前自查清单」第 1 条）
 - 素材路径相对 storyboard.json 所在目录，文件必须存在；截图支持 png/jpg/webp，录屏支持 mp4
 
 ## 禁止事项
 
 - 不改 `template/`、`scripts/`、`industries/` 里的任何文件；不写坐标、像素、帧号、颜色值、CSS
-- 不编造用户没给的数据和来源；画面上的数字要在 `meta.facts` 里找得到，没有来源就写「示例数据，以实际为准」
+- 不编造用户没给的数据和来源；画面上的数字要在 `meta.facts` 里找得到。没有真数据：效果类镜头（counter、带数字的 compare、「变好」的 meter）不用，演示界面里的示例数字用 `demoData` 声明
+- 不把同一张图当前后对比，不把插画、截图说成实拍
 - 不出现第三方 App 的名字、logo 或标志色（如某聊天软件的绿色气泡）；称呼用「对方」「同事」「客户」
 - 不写真实人名、手机号、账号
 - 不用 `bgm` 字段（make.mjs 自动填）
@@ -154,7 +185,18 @@ metadata:
 | 里有字面的 \n | JSON 里换行只写一个反斜杠 |
 | 含平台名「公众号」（提醒） | 产品本身的品类词：加进 `meta.allowWords`；引流：删掉 |
 | 缺少必填字段 meta.action | 写一句「用户做什么 → 产品给出什么」 |
-| 数字在 meta.facts 里找不到来源 | 简报给了这个数字就原话抄进 `meta.facts`（`{"id":"f1","text":"…"}` 格式）；没给就把具体数字换成定性说法 |
+| 数字在 meta.facts 里找不到来源 | 简报给了这个数字就原话抄进 `meta.facts`（`{"id":"f1","text":"…","source":"…"}` 格式）；没给就把具体数字换成定性说法 |
+| meta.facts[N].source：缺少 source | 照抄简报写的来源；简报没写就写 `"简报未注明来源"` |
+| 来自标了「示例/演示」的 fact，但没声明这是演示数据 | meta 写 `"demoData": true`，disclaimer 写「演示画面，数据为示例」 |
+| 只在你自己标了「示例/演示」的 fact 里有 | 这是效果说法，示例数据撑不住：删掉数字，compare 只比做法；counter 换成 steps 或 compare |
+| level（8 对 2）…meta.facts 里没有这个分数 | 删掉两栏的 level 和 meterLabel，差别写进 items |
+| 刻度方向反了 | 让 `tone: good` 那栏在这把尺子上占优，或写 `higherIs` / 换 meterLabel 的说法 |
+| 读数 N 没有依据 | 产品演示里给出的判断 → `demoData: true`；效果/评分 → 数字抄进 facts 并写 refs，没有就删掉这一镜 |
+| 限定语丢了：没写 facts 里跟着它的「周日至周四」 | 把 fact 里的日期范围/条件原样写进同一镜（字幕、标题或卡片），别改写成「平日」「周末」 |
+| 说 29.9 元，但简报里这个价要满足条件才有 | 同一句写清条件，如「领券后29.9元」；放不下就别在这里报价 |
+| 是实物/门店行业，mockApp 是编出来的 App 界面 | 删掉 mockApp，用 photoShot（实拍或插画兜底）+ steps 演核心动作 |
+| 素材没登记 / 前后两张是同一个文件 | 在 `meta.assets` 登记每个文件的来源；前后对比换成同一位顾客的两张不同照片，没有就改用 steps |
+| 「现做」类说法需要依据 | 给这一镜写 `refs` 指向简报里的那条 fact；这一镜没有 refs 字段就删掉这类说法 |
 | 字幕含镜头说明词（如「卡片一张张出」） | 这是说给观众听的字幕，不是给剪辑的说明；换成用户视角的一句话 |
 | 「登陆」是错别字，应为「登录」 | 改成「登录」（「登陆舰/登陆月球」这类不算） |
 | 「一清二楚」是绝对化承诺 | 换成有分寸的说法，如「关键信息看得到」 |
@@ -172,11 +214,17 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
 
 ## 更多样例（结构各不相同，照着「产品类型」挑，别照抄字幕）
 
-- `<SKILL>/examples/jev.json`：C 端情感，software 行业（聊天演示配 2 句字幕 → 仪表 → 快切 → 片尾；获取方式「官网下载安卓版」）
-- `<SKILL>/examples/ledger.json`：工具提效，software 行业（痛点快切 → 对比 → mockApp 拍小票出结果 → 数字 → 片尾；简报没给获取方式，片尾不放 cta）
-- `<SKILL>/examples/meeting.json`：B 端办公，software 行业（截图圈注 → 模拟界面 → 数字 → 步骤 → 片尾；获取方式「官网申请免费试用」）
-- `<SKILL>/examples/en-focus.json`：`meta.lang: "en"` 的英文样例（虚构 App，展示英文字幕怎么写）
-- 其他行业（food/ecommerce/education/beauty/travel）的合规样例在 `industries/<industry>/test-brief.md` + `expected.md`：test-brief 是一份示例简报，expected 写清楚照这份简报写的分镜哪些地方会被拦、为什么。开新行业的第一支片子建议先看这两份。
+9 份样例都能直接通过校验并出片，产品和数据都是虚构的：
+- `<SKILL>/examples/jev.json`：C 端情感，software（聊天演示配 2 句字幕 → 对比 → 仪表 → 快切 → 片尾；仪表读数是演示判断，写了 `demoData`）
+- `<SKILL>/examples/ledger.json`：工具提效，software（痛点快切 → 只比做法的对比 → mockApp 拍小票出结果 → 预算读数 → 片尾；没有真实效果数据，所以不用 counter）
+- `<SKILL>/examples/meeting.json`：B 端办公，software（截图圈注 → 待办列表 → 前后对比 → 步骤 → 片尾；获取方式「官网申请免费试用」）
+- `<SKILL>/examples/en-focus.json`：`meta.lang: "en"` 的英文样例
+- `<SKILL>/examples/food.json`：餐饮上新（插画兜底的 photoShot → 到店三步 → 甜度读数有 fact 撑 → 活动价 → 片尾）
+- `<SKILL>/examples/ecommerce.json`：电商实物（分屏钩子 → 新旧对比 → 商家实测数字 → 券后价写清条件 → 片尾）
+- `<SKILL>/examples/education.json`：教培（服务条款 → 课程大纲 → AI 演示 → 讲师 → 价格）
+- `<SKILL>/examples/beauty.json`：美业，没有实拍照片时怎么拍（插画 + 步骤 + 答疑 + 价目表）
+- `<SKILL>/examples/travel.json`：文旅住宿（插画钩子 → 看房 → 地图 → 价格按 facts 原样写日期范围）
+- 每个行业的合规反例在 `industries/<industry>/test-brief.md` + `expected.md`：test-brief 是一份示例简报，expected 写清楚照这份简报写的分镜哪些地方会被拦、为什么。开新行业的第一支片子建议先看这两份。
 
 ## 完整示例（examples/ledger.json，可直接通过校验）
 
@@ -187,12 +235,11 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
     "product": "省心记账",
     "theme": "fresh-light",
     "disclaimer": "演示画面，数据为示例",
+    "demoData": true,
     "action": "拍小票 → 自动填好金额和分类",
     "facts": [
-      {"id": "f1", "text": "试用用户本月比上月多存下约 1260 元（示例数据）"},
-      {"id": "f2", "text": "演示账本示例条目：外卖 ¥860、奶茶咖啡 ¥326、忘关的自动续费 ¥98、深夜打车 ¥410（示例数据）"},
-      {"id": "f3", "text": "手动记一笔平均约 5 分钟；用本产品拍照记一笔约 10 秒（示例数据）"},
-      {"id": "f4", "text": "演示识别结果：午饭 ¥38.5，本月餐饮预算已用 62%（示例数据）"}
+      {"id": "f1", "text": "演示账本示例条目：外卖 ¥860、奶茶咖啡 ¥326、忘关的自动续费 ¥98、深夜打车 ¥410（示例数据）", "source": "虚构产品的示例数据"},
+      {"id": "f2", "text": "演示识别结果：午饭 ¥38.5，本月餐饮预算已用 62%（示例数据）", "source": "虚构产品的示例数据"}
     ]
   },
   "shots": [
@@ -225,10 +272,9 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
       "mood": 0.45,
       "params": {
         "mode": "lr",
-        "left": {"title": "手动记账", "items": ["每笔手动输入", "分类全靠猜", "拖到最后就放弃"], "tone": "bad", "icon": "doc", "stat": "5 分钟", "level": 8},
-        "right": {"title": "省心记账", "items": ["拍小票自动识别", "自动分好类", "月底一键复盘"], "tone": "good", "icon": "bolt", "stat": "10 秒", "level": 2},
-        "meterLabel": "麻烦程度",
-        "verdict": "记一笔只要十秒"
+        "left": {"title": "手动记账", "items": ["每笔手动输入", "分类全靠猜", "拖到最后就放弃"], "tone": "bad", "icon": "doc", "stat": "全靠手打"},
+        "right": {"title": "省心记账", "items": ["拍小票自动识别", "自动分好类", "月底一键复盘"], "tone": "good", "icon": "bolt", "stat": "拍一下"},
+        "verdict": "记账不用再硬撑"
       }
     },
     {
@@ -254,11 +300,12 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
       "note": "核心动作演示：用户拍小票 → 产品给出金额、商家、分类"
     },
     {
-      "type": "counter",
+      "type": "meter",
       "dur": 3,
-      "caption": "月底一看，\n{居然还有结余}",
-      "mood": 0.1,
-      "params": {"to": 1260, "prefix": "¥", "label": "本月比上月多存下", "sub": "示例数据，因人而异", "icon": "money", "tone": "good"}
+      "caption": "预算快花完，\n{它先提醒你}",
+      "mood": 0.35,
+      "params": {"value": 62, "max": 100, "label": "餐饮预算已用", "unit": "%", "style": "ring", "higherIs": "bad", "word": "留神", "note": "超过八成会弹提醒"},
+      "note": "单个读数（演示账本里的预算进度），不是效果对比；meta.demoData 已声明"
     },
     {
       "type": "endCard",

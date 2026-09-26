@@ -1,5 +1,11 @@
 # mockApp simulated product UI
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "mockApp", "dur": 4, "caption": "Type your notes,\n{get a first draft}",
+ "params": {"kind": "editor", "title": "Weekly report", "input": "What I did this week", "button": "Generate", "items": [{"text": "Shipped the new homepage"}, {"text": "Fixed the login bug"}], "done": "Done"}}
+```
+
 Use this when there's no screenshot: it draws a neutral-colored, realistic-looking app screen and animates it acting something out. Everything is driven by params — no image needed.
 
 Four screen kinds (`kind`):

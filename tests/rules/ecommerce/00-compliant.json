@@ -1,5 +1,5 @@
 {
-  "name": "痛点解决结构：实拍+条件齐全+无违规词",
+  "name": "痛点解决结构：实拍登记在素材清单、券后价写清领券条件和活动期、compare 刻度方向正确",
   "storyboard": {
     "meta": {
       "title": "t",
@@ -10,6 +10,23 @@
       "durationRange": [
         3,
         60
+      ],
+      "assets": [
+        {
+          "src": "_assets/photo-c.png",
+          "source": "merchant",
+          "kind": "product"
+        }
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "text": "实测：95℃热水装满、盖紧、室温 20℃ 静置 6 小时后 68℃（商家自测）"
+        },
+        {
+          "id": "f7",
+          "text": "活动：2026-09-26 至 2026-10-07，领 20 元店铺券后 59 元/只"
+        }
       ]
     },
     "shots": [
@@ -33,7 +50,8 @@
           "media": [
             {
               "source": "merchant",
-              "tag": "实拍"
+              "tag": "实拍",
+              "src": "_assets/photo-c.png"
             }
           ],
           "callouts": [
@@ -46,6 +64,30 @@
           ]
         },
         "caption": "316不锈钢内胆\n一键弹盖"
+      },
+      {
+        "type": "compare",
+        "dur": 4,
+        "mood": 0.4,
+        "params": {
+          "left": {
+            "title": "普通杯",
+            "items": [
+              "放到中午变凉"
+            ],
+            "tone": "bad",
+            "level": 3
+          },
+          "right": {
+            "title": "暖屿杯",
+            "items": [
+              "中午还温热"
+            ],
+            "tone": "good",
+            "level": 8
+          },
+          "meterLabel": "保温时长"
+        }
       },
       {
         "type": "priceCard",
@@ -62,7 +104,8 @@
             }
           ],
           "label": "券后价",
-          "conditions": "需领取20元店铺券"
+          "conditions": "需领取20元店铺券",
+          "period": "9.26–10.7"
         },
         "caption": "券后59元\n一只焕新用"
       },

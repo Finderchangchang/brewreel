@@ -32,7 +32,26 @@ export type Lang = 'zh' | 'en';
 export type Platform = 'douyin' | 'shipinhao' | 'generic';
 
 /** 一条事实/数据来源：id 给 refs 字段指认，text 是原话（照抄简报，不能自己编） */
-export type Fact = {id: string; text: string};
+export type Fact = {
+  id: string;
+  text: string;
+  /** 简报里写的来源（必填），如「2026-09 价目表」；简报没写就写「简报未注明来源」，不许自己编 */
+  source: string;
+  /** 可选：简报里的原句，逐字照抄（传了 --brief 时会核对） */
+  quote?: string;
+};
+
+/**
+ * 素材清单的一条（meta.assets）：photoShot、beforeAfter、storeCard.photo 用到的每个文件都要登记。
+ * source：merchant = 商家实拍；illustration = 插画/示意；screenshot = 软件截图（不能放进 photoShot）。
+ * kind / pair：beforeAfter 的两张要登记为 merchant，kind 分别是 customer-before / customer-after，pair 相同。
+ */
+export type AssetEntry = {
+  src: string;
+  source: 'merchant' | 'illustration' | 'screenshot';
+  kind?: string;
+  pair?: string;
+};
 
 /** 镜头类型（每种对应 src/shots/<type>.tsx + <type>.spec.json） */
 export type ShotType =
@@ -89,6 +108,10 @@ export type Meta = {
   subCategory?: string;
   /** 是否挂了团购/优惠链接（抖音团购、视频号小商店等），决定 mediaPolicy/compareHasBasis 等按 when 条件生效的规则；不写按 false 处理 */
   attachDeal?: boolean;
+  /** 界面里的数字是示例（简报没给真数据）。写 true 时 disclaimer 必须带「演示/示例」；示例数字只能出现在演示界面和价格条款里，不能当效果说法 */
+  demoData?: boolean;
+  /** 素材清单：照片/截图/插画文件各自的来源，见 AssetEntry */
+  assets?: AssetEntry[];
 };
 
 export type Shot = {

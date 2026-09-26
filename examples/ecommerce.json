@@ -5,13 +5,14 @@
     "theme": "tech-dark",
     "brandColor": "#FF6B35",
     "disclaimer": "示意图与模拟页面，仅供参考",
+    "demoData": true,
     "action": "把耳挂扣在真无线耳机上 → 运动甩头也不脱落",
     "industry": "ecommerce",
     "allowWords": ["最低"],
     "cta": "点左下角购物车看详情",
     "facts": [
-      {"id": "f1", "text": "商家实测：连续用力甩头100次（模拟跑步颠簸幅度），耳挂两侧均无脱落；非国标检测方法，仅供参考（虚构示例数据）"},
-      {"id": "f2", "text": "券后价29.9元/双，需在店铺页面领取10元优惠券后享受，活动时间2026-09-26至2026-10-08（虚构示例数据）"}
+      {"id": "f1", "text": "商家实测：按跑步颠簸幅度连续用力甩头100次，耳挂两侧均无脱落；非国标检测方法，仅供参考", "source": "商家自测记录（简报提供）"},
+      {"id": "f2", "text": "券后价29.9元/双，需在店铺页面领取10元优惠券后享受，活动时间2026-09-26至2026-10-08（虚构示例数据）", "source": "虚构商品的示例价格"}
     ]
   },
   "shots": [
@@ -20,7 +21,7 @@
       "dur": 2.5,
       "caption": "跑起来的时候，\n耳机又{掉出来了}",
       "mood": 0.85,
-      "params": {"visual": "icon", "icon": "alert", "text": "耳机又滑出来了", "badge": "运动甩头也不掉", "tone": "bad"}
+      "params": {"visual": "split", "leftText": "跑两步就滑出", "text": "扣上就不掉", "icon": "shield", "deco": ["alert"], "badge": "运动甩头也不掉", "tone": "accent"}
     },
     {
       "type": "photoShot",
@@ -42,9 +43,8 @@
       "mood": 0.5,
       "params": {
         "mode": "lr",
-        "left": {"title": "旧款挂钩", "items": ["单圈挂耳", "剧烈甩头易松", "只有一种角度"], "tone": "bad", "icon": "alert", "stat": "易松脱", "level": 8},
-        "right": {"title": "新款锁耳", "items": ["双卡扣环耳", "剧烈甩头不掉", "贴合更稳固"], "tone": "good", "icon": "shield", "stat": "更稳固", "level": 2},
-        "meterLabel": "运动稳固度",
+        "left": {"title": "旧款挂钩", "items": ["单圈挂耳", "剧烈甩头易松", "只有一种角度"], "tone": "bad", "icon": "alert", "stat": "易松脱"},
+        "right": {"title": "新款锁耳", "items": ["双卡扣环耳", "剧烈甩头不掉", "贴合更稳固"], "tone": "good", "icon": "shield", "stat": "更稳固"},
         "verdict": "锁住了，甩头也不用管"
       },
       "note": "自家产品迭代对比（旧款单圈挂钩 → 新款双卡扣），不是和其他品牌比"
@@ -77,7 +77,7 @@
       "params": {
         "src": "assets/ecommerce/detail-screen.png",
         "focus": [
-          {"area": "middle", "label": "到手价29.9元", "style": "box"}
+          {"area": "middle", "label": "领券价写在这里", "style": "box"}
         ]
       },
       "note": "没有真实 App，用 mockApp 渲成一张商品详情速览图给 phone 用（meta.disclaimer 已说明是模拟页面）"

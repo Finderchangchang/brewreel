@@ -1,5 +1,12 @@
 # beforeAfter Before/after wipe slider
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "beforeAfter", "dur": 3,
+ "params": {"before": {"src": "photos/before.png"}, "after": {"src": "photos/after.png"}, "consent": true, "retouched": false, "subVertical": "hair"}}
+```
+Beauty only. Both photos must be real merchant photos of the same customer, listed in meta.assets: `[{"src": "photos/before.png", "source": "merchant", "kind": "customer-before", "pair": "A"}, {"src": "photos/after.png", "source": "merchant", "kind": "customer-after", "pair": "A"}]`. No photos → use steps.
+
 A real before-and-after comparison of the same customer: a vertical handle wipes from right to left to reveal "after". Only enabled for the beauty industry (hair / nails / lashes).
 
 ## When to use it

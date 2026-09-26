@@ -1,8 +1,11 @@
 {
   "type": "priceCard",
-  "purpose": "价格卡/价目表：把明码标价的排版规则做进组件里，模型只填数字和条件。layout=card 单个房型/套餐/商品；menu 2–6 项的价目表。",
+  "purpose": "价格卡/价目表：把明码标价的排版规则做进组件里，模型只填数字和条件。layout=card 1–3 个价格（单个房型/套餐/商品；同一房型平日/周末两档价也用它，逐行显示）；menu 2–6 项的价目表。card 给了 4 项以上会自动换成 menu，任何一项都不会被丢掉。",
   "tips": [
     "items[].itemId 对应 brief 价格表里的 id，行业规则会按它核对价格（priceMatchesBrief）；不允许 0、1、9.9 这类噱头价",
+    "同一房型/套餐分平日、周末两档价：写两项 items，name 相同，note 分别照抄 facts 里的日期范围（如「周一至周四」「周五至周日」），画面会把名字写一次、两行价格各带日期；别只写一项把另一档价丢掉",
+    "label、compare.basis 只能从中文枚举里选，英文片（meta.lang=en）也照写中文值，画面会自动换成英文说法",
+    "footnote 和 meta.notices 里某条一样时画面只显示底部提示条那一份，不会重复",
     "from=true（价格后带「起」）时，card 布局必须给 fromNote，menu 布局必须给 addOns",
     "compare（划线价）要给 basis 和 evidence；画面上不出现「原价」二字，显示 basis 本身（如「厂商建议零售价」）",
     "footnote 是各行业固定文案，模型不要自己改写；不确定就删掉这个字段，等行业规则按 requiredNotices 兜底"
@@ -15,7 +18,7 @@
     "type": "object",
     "required": ["layout", "items"],
     "properties": {
-      "layout": {"type": "string", "enum": ["card", "menu"], "description": "card 单个房型/套餐/商品 / menu 2–6 项价目表"},
+      "layout": {"type": "string", "enum": ["card", "menu"], "description": "card 1–3 个价格（逐行堆叠）/ menu 2–6 项价目表；card 给 4 项以上自动换 menu"},
       "items": {
         "type": "array",
         "minItems": 1,
@@ -66,11 +69,14 @@
     "dur": 3,
     "params": {
       "layout": "card",
-      "items": [{"itemId": "deal-1", "name": "双人套餐", "price": 59, "unit": "份", "note": "含两菜一汤"}],
-      "label": "团购价",
+      "items": [
+        {"itemId": "room-a-weekday", "name": "庭院双床房", "price": 328, "unit": "晚", "note": "周一至周四"},
+        {"itemId": "room-a-weekend", "name": "庭院双床房", "price": 428, "unit": "晚", "note": "周五至周日"}
+      ],
+      "label": "售价",
       "people": "2人",
-      "includes": ["主菜两份", "例汤一份"],
-      "limits": ["限堂食"]
+      "includes": ["两份早餐", "免费停车"],
+      "limits": ["需提前一天预订"]
     }
   }
 }

@@ -4,7 +4,8 @@ import {bump, clamp, easeOut, fitTimeline, pop} from '../core/anim';
 import {emWidth, fitLine} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
-import {IconDisc, Sweep, TapRipple} from '../core/kit';
+import {IconDisc, Sweep, TapRipple, pick} from '../core/kit';
+import type {Lang} from '../core/kit';
 import {CARD, SAFE} from '../core/safe';
 import {alpha, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
@@ -308,7 +309,7 @@ const Thinking: React.FC<{h: number; t: number}> = ({h, t}) => {
 
 // ---------- dashboard ----------
 const DASH_ROW = 84;
-const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl, t: t0, bodyH}) => {
+const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = ({p, pl, t: t0, bodyH, lang}) => {
   const th = useTheme();
   const rows = pl.rows;
   const rowsH = rows.length ? rows.length * (DASH_ROW + 10) + 6 : 0;
@@ -324,7 +325,7 @@ const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl,
   const thinking = !!p.input && t < 0;
   return (
     <div style={{display: 'flex', flexDirection: 'column'}}>
-      {p.input && <SearchBar text={ask} t={t0} focus={t0 >= pl.typeFrom && t < 0.3} icon="sparkle" />}
+      {p.input && <SearchBar text={ask} t={t0} focus={t0 >= pl.typeFrom && t < 0.3} icon="sparkle" lang={lang} />}
       {thinking ? (
         <Thinking h={statH + chartH} t={t0} />
       ) : (
@@ -366,27 +367,27 @@ const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl,
 // ---------- list ----------
 const SEARCH_H = 80;
 const listRowH = (n: number) => (n >= 5 ? 96 : 104);
-const SearchBar: React.FC<{text: string; t: number; focus: boolean; icon?: string}> = ({text, t, focus, icon = 'search'}) => {
+const SearchBar: React.FC<{text: string; t: number; focus: boolean; icon?: string; lang?: Lang}> = ({text, t, focus, icon = 'search', lang}) => {
   const th = useTheme();
   return (
     <div style={{height: SEARCH_H, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '0 24px', borderRadius: 40, background: th.cardAlt, border: `2px solid ${focus ? th.accentLine : th.line}`, marginBottom: 18}}>
       <Icon name={icon} size={40} color={icon === 'search' ? th.cardMuted : th.accent} stroke={2.4} />
       <div style={{fontSize: 38, color: th.cardText, whiteSpace: 'nowrap'}}>
-        {text || <span style={{color: th.cardMuted}}>{icon === 'search' ? '搜索' : '问一句…'}</span>}
+        {text || <span style={{color: th.cardMuted}}>{icon === 'search' ? pick(lang, '搜索', 'Search') : pick(lang, '问一句…', 'Ask anything…')}</span>}
         <Caret t={t} size={38} on={focus} />
       </div>
     </div>
   );
 };
 
-const List: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
+const List: React.FC<{p: P; pl: Plan; t: number; lang?: Lang}> = ({p, pl, t, lang}) => {
   const rows = pl.rows;
   const text = typed(p.input ?? '', t, pl.typeFrom, pl.charSec);
   const focus = !!p.input && t >= pl.typeFrom && (pl.rowAt[0] === undefined || t < pl.rowAt[0] + 0.3);
   const rowH = listRowH(rows.length);
   return (
     <div>
-      {p.input && <SearchBar text={text} t={t} focus={focus} />}
+      {p.input && <SearchBar text={text} t={t} focus={focus} lang={lang} />}
       <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
         {rows.map((it, i) => (t >= pl.rowAt[i] ? <Row key={i} it={it} t={t} at={pl.rowAt[i]} hot={i === pl.h} hotAt={pl.tapAt} h={rowH} kind="list" /> : <Skeleton key={i} h={rowH} on={t >= pl.rowAt[i] - SKELETON_MAX} />))}
       </div>
@@ -396,11 +397,11 @@ const List: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
 
 // ---------- editor ----------
 const PROMPT_H = 104;
-const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl, t, bodyH}) => {
+const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = ({p, pl, t, bodyH, lang}) => {
   const th = useTheme();
   const rows = pl.rows;
   const prompt = typed(p.input ?? '', t, pl.typeFrom, pl.charSec);
-  const btn = p.button || '生成';
+  const btn = p.button || pick(lang, '生成', 'Generate');
   const press = pl.tapAt >= 0 ? bump(t, pl.tapAt, 0.3) : 0;
   const genFrom = rows.length > 1 ? pl.lineFrom[1] : Infinity;
   const generating = rows.length > 1 && t >= genFrom && (pl.hlAt < 0 || t < pl.hlAt);
@@ -417,7 +418,7 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl, t,
         {generating && (
           <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 800, color: th.accent}}>
             <Icon name="sparkle" size={30} color={th.accent} stroke={2.4} style={{transform: `rotate(${t * 180}deg)`}} />
-            生成中
+            {pick(lang, '生成中', 'Generating')}
           </div>
         )}
       </div>
@@ -466,13 +467,13 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl, t,
 // ---------- form ----------
 const FORM_BTN = 88;
 const formPer = (bodyH: number, n: number) => Math.min(132, (bodyH - FORM_BTN - 24) / Math.max(1, n));
-const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl, t, bodyH}) => {
+const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = ({p, pl, t, bodyH, lang}) => {
   const th = useTheme();
   const rows = pl.rows;
   const per = formPer(bodyH, rows.length);
   const fieldH = Math.max(62, Math.min(76, per - 50));
   const labelH = per - fieldH - 8;
-  const btn = p.button || '提交';
+  const btn = p.button || pick(lang, '提交', 'Submit');
   const press = pl.tapAt >= 0 ? bump(t, pl.tapAt, 0.3) : 0;
   const ok = pl.doneAt >= 0 && t >= pl.doneAt;
   const okQ = pl.doneAt >= 0 ? pop(t, pl.doneAt, 12, 200) : 0;
@@ -539,7 +540,7 @@ const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number}> = ({p, pl, t, b
         }}
       >
         {ok && <Icon name="check" size={42} color="#fff" stroke={3.2} style={{transform: `scale(${okQ})`}} />}
-        {ok ? p.done || '已提交' : btn}
+        {ok ? p.done || pick(lang, '已提交', 'Submitted') : btn}
       </div>
     </div>
   );
@@ -556,8 +557,9 @@ const cardHeight = (p: P) => {
   return SAFE.h;
 };
 
-const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
+const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const th = useTheme();
+  const lang = meta?.lang;
   const pl = plan(p, dur, beat);
   const kind = pl.kind;
   const enter = pop(t, 0, 16, 170);
@@ -650,13 +652,13 @@ const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
         {/* 主体 */}
         <div style={{padding: `${PAD_T}px ${PADX}px ${PAD_B}px`}}>
           {kind === 'dashboard' ? (
-            <Dashboard p={p} pl={pl} t={t} bodyH={bodyH} />
+            <Dashboard p={p} pl={pl} t={t} bodyH={bodyH} lang={lang} />
           ) : kind === 'list' ? (
-            <List p={p} pl={pl} t={t} />
+            <List p={p} pl={pl} t={t} lang={lang} />
           ) : kind === 'editor' ? (
-            <Editor p={p} pl={pl} t={t} bodyH={bodyH} />
+            <Editor p={p} pl={pl} t={t} bodyH={bodyH} lang={lang} />
           ) : (
-            <Form p={p} pl={pl} t={t} bodyH={bodyH} />
+            <Form p={p} pl={pl} t={t} bodyH={bodyH} lang={lang} />
           )}
         </div>
       </div>

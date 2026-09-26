@@ -1,10 +1,72 @@
 {
-  "meta": {"title": "套路句-反例", "product": "示例", "theme": "tech-dark", "action": "点一下生成，卡片自动排好版",
-    "facts": [{"id": "f1", "text": "示例数据"}]},
+  "meta": {
+    "title": "套路句-反例",
+    "product": "示例",
+    "theme": "tech-dark",
+    "action": "点一下生成，卡片自动排好版",
+    "facts": [
+      {
+        "id": "f1",
+        "text": "示例数据",
+        "source": "简报·数字和来源"
+      }
+    ]
+  },
   "shots": [
-    {"type": "hook", "dur": 2.5, "caption": "手忙脚乱的排版，\n{到底要怎么办}", "params": {"visual": "icon", "icon": "sparkle"}},
-    {"type": "mockApp", "dur": 4, "caption": "不用自己排版，\n{点一下就生成}", "params": {"kind": "editor", "title": "生成", "input": "写一段文案", "button": "生成", "items": [{"text": "结果一"}, {"text": "结果二"}], "done": "已生成"}},
-    {"type": "steps", "dur": 5, "caption": "就是这三步，\n{搞定全部排版}", "params": {"items": [{"title": "打开工具"}, {"title": "点生成"}, {"title": "拿结果"}]}},
-    {"type": "endCard", "dur": 4, "params": {"brand": "示例", "slogan": "用起来\n{很省心}"}}
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "手忙脚乱的排版，\n{到底要怎么办}",
+      "params": {
+        "visual": "icon",
+        "icon": "sparkle"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "不用自己排版，\n{点一下就生成}",
+      "params": {
+        "kind": "editor",
+        "title": "生成",
+        "input": "写一段文案",
+        "button": "生成",
+        "items": [
+          {
+            "text": "结果一"
+          },
+          {
+            "text": "结果二"
+          }
+        ],
+        "done": "已生成"
+      }
+    },
+    {
+      "type": "steps",
+      "dur": 5,
+      "caption": "就是这三步，\n{搞定全部排版}",
+      "params": {
+        "items": [
+          {
+            "title": "打开工具"
+          },
+          {
+            "title": "点生成"
+          },
+          {
+            "title": "拿结果"
+          }
+        ]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "示例",
+        "slogan": "用起来\n{很省心}"
+      }
+    }
   ]
 }

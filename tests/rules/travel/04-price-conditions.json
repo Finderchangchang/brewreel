@@ -1,0 +1,164 @@
+{
+  "name": "评审原案：周日被算成周末价、价格卡只剩 368、套餐丢了加价/有效期/预约/节假日不可用、附加费只写名目、灵活退房",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "fresh-light",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "松溪小住",
+      "industry": "travel",
+      "disclaimer": "画面为插画示意",
+      "notices": [
+        "周末及节假日价格另计，以下单页为准"
+      ],
+      "facts": [
+        {
+          "id": "f1",
+          "text": "山景大床房：周日至周四 368 元/晚，周五周六 468 元/晚，法定节假日 598 元/晚，含双早。"
+        },
+        {
+          "id": "f2",
+          "text": "团购套餐：山景大床房 1 晚＋双早＋溪头古桥景区门票 2 张，399 元；周日至周四可用，周五周六加 100 元，节假日不可用；2026 年 11 月 30 日前入住；需提前 1 天预约。"
+        },
+        {
+          "id": "f3",
+          "text": "不收押金；小型犬可以带，加收清洁费 80 元/晚；加床 100 元/晚（含早）；14:00 入住，12:00 退房；延迟退房到 14:00 加 50 元。"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "illust",
+          "illust": "travel/window-view",
+          "text": "推窗见竹林"
+        },
+        "caption": "推开窗\n整片竹林就在眼前"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "hero",
+          "media": [
+            {
+              "source": "drawn",
+              "illust": "travel/room",
+              "tag": "示意",
+              "label": "山景大床房"
+            }
+          ],
+          "title": "山景大床房"
+        }
+      },
+      {
+        "type": "compare",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "left": {
+            "title": "平日",
+            "items": [
+              "周一到周四 368元"
+            ],
+            "tone": "neutral"
+          },
+          "right": {
+            "title": "周末",
+            "items": [
+              "周五六日 468元"
+            ],
+            "tone": "neutral"
+          }
+        }
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.2,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "r1",
+              "name": "山景大床房",
+              "price": 368,
+              "unit": "晚"
+            }
+          ],
+          "footnote": "周末及节假日价格另计，以下单页为准"
+        },
+        "caption": "周末假期\n有浮价"
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.2,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "deal-1",
+              "name": "山景房一晚套餐",
+              "price": 399,
+              "unit": "套"
+            }
+          ],
+          "label": "套餐价",
+          "excludes": "加床、宠物清洁费另计"
+        }
+      },
+      {
+        "type": "features",
+        "dur": 3,
+        "mood": 0.2,
+        "params": {
+          "items": [
+            {
+              "icon": "clock",
+              "title": "14:00入住",
+              "desc": "灵活退房时间"
+            },
+            {
+              "icon": "shield",
+              "title": "不收押金",
+              "desc": "小型犬可入住"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "松溪小住",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "把 368 元写成「周一到周四」的价",
+      "把 468 元写成「周五六日」的价",
+      "简报里同一项还有「周五周六 468 元/晚」，画面只给了 368 元",
+      "简报里同一项还有「法定节假日 598 元/晚」，画面只给了 368 元",
+      "简报写着「周五周六加 100 元」，画面没写这笔加价",
+      "画面没写截止日期（11月30日）",
+      "画面没写预约要求",
+      "简报写着「节假日不可用」，画面没写",
+      "简报里 399 元只适用于「周日至周四」",
+      "提到「加床」",
+      "提到「清洁费」",
+      "说「灵活退房」"
+    ]
+  }
+}

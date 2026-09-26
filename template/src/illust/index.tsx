@@ -18,9 +18,47 @@ import {ICONS} from './icons';
 export type IllustName = string;
 type Props = {name: IllustName; size?: number; color?: 'primary' | 'accent'; animate?: boolean; t?: number};
 
-const KNOWN = new Set((names as {id: string}[]).map((x) => x.id));
+type NameRow = {id: string; industry: string; label?: string; must?: boolean; keywords?: string[]};
+const ROWS = names as NameRow[];
+// 只认「names.json 里有 + icons.tsx 真画了」的名字；names.json 里还没画的，当成不存在（否则会渲染出红色占位块）
+const KNOWN = new Set(ROWS.map((x) => x.id).filter((id) => !!ICONS[id]));
 export const isIllust = (name: unknown): name is IllustName => typeof name === 'string' && KNOWN.has(name);
-export const illustNames = (): string[] => (names as {id: string}[]).map((x) => x.id);
+export const illustNames = (): string[] => ROWS.map((x) => x.id).filter((id) => KNOWN.has(id));
+/** 插画所属行业（"food/bowl" → "food"） */
+export const illustIndustry = (name: string): string => name.split('/')[0] ?? '_base';
+
+/**
+ * 按文字（标题/标签/卖点）挑一张插画：names.json 的 keywords 里命中最长关键词的那张。
+ * industry 给了就只在该行业 + _base 里挑（防止「画面」里的「面」挑到面碗这类跨行业误配）。
+ * 一个都没命中返回 undefined，调用方再按行业默认图兜底。
+ */
+export const illustFor = (texts: Array<string | undefined>, industry?: string): string | undefined => {
+  const hay = texts.filter(Boolean).join(' ').toLowerCase();
+  if (!hay) return undefined;
+  let best: {id: string; score: number} | undefined;
+  for (const row of ROWS) {
+    if (!KNOWN.has(row.id) || !row.keywords?.length) continue;
+    if (industry && row.industry !== industry && row.industry !== '_base') continue;
+    for (const k of row.keywords) {
+      if (!hay.includes(k.toLowerCase())) continue;
+      // 行业内的图优先于 _base（同样长度时）
+      const score = Array.from(k).length * 10 + (row.industry === industry ? 1 : 0);
+      if (!best || score > best.score) best = {id: row.id, score};
+    }
+  }
+  return best?.id;
+};
+
+/** 每个行业的首选默认图（没给 illust、文字也没命中关键词时用；对应设计 §2.2 每行业的 ★ 首图） */
+export const DEFAULT_ILLUST: Record<string, string> = {
+  food: 'food/bowl',
+  ecommerce: 'ecommerce/parcel',
+  education: 'education/book',
+  beauty: 'beauty/hair-short',
+  travel: 'travel/house',
+  software: '_base/bubble',
+  _base: '_base/bubble',
+};
 
 const WARN = '#E4572E';
 

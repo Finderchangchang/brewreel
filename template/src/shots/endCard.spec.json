@@ -1,35 +1,107 @@
 {
   "type": "endCard",
-  "purpose": "片尾：logo/品牌图标 + 产品名 + 一句大字口号 + 1–3 个卖点胶囊 + 可选行动号召。放最后一镜。",
+  "purpose": "片尾：logo/品牌图标 + 产品名 + 一句大字口号 + 1–3 个卖点 + 可选行动号召。放最后一镜。三种版式（stack/panel/spotlight），不写按产品名自动挑。",
   "tips": [
     "slogan 两行最好看，第二行用 {} 包起来变强调色，如「回消息之前，\\n{先看懂对方}」",
     "points 写实在的承诺或适用范围（如「只给建议，不替你发送」），不要写极限词",
-    "cta 只能原样照抄 meta.cta（= 简报「获取方式」原文），简报没写就不放 cta；不许写网址、二维码、账号","brand 必须和 meta.product 一字不差",
-    "这一镜不要写 caption，大字写在 slogan 里"
+    "cta 只能原样照抄 meta.cta（= 简报「获取方式」原文），简报没写就不放 cta；不许写网址、二维码、账号",
+    "brand 必须和 meta.product 一字不差",
+    "这一镜不要写 caption，大字写在 slogan 里",
+    "layout 可不写：同一产品每次挑到同一种，不同产品大概率不同；想指定就写 stack（居中一列）/ panel（口号当标题 + 白卡清单）/ spotlight（大 logo + 光芒 + 一排小胶囊）",
+    "points 别和 meta.disclaimer / meta.notices 说同一句（组件会自动去掉重复的那条）"
   ],
-  "dur": {"default": 4, "min": 3, "max": 6},
+  "dur": {
+    "default": 4,
+    "min": 3,
+    "max": 6
+  },
   "mood": 0,
   "caption": "none",
   "exit": "none",
   "params": {
     "type": "object",
-    "required": ["brand", "slogan"],
+    "required": [
+      "brand",
+      "slogan"
+    ],
     "properties": {
-      "brand": {"type": "string", "maxLen": 10, "minLen": 1, "description": "产品名，必须和 meta.product 一字不差"},
-      "slogan": {"type": "string", "format": "caption", "maxLines": 2, "lineMax": 9, "maxLen": 16, "description": "大字口号：可用 \\n 换行（最多 2 行、每行 ≤9 字）和 {} 强调（最多 1 处）"},
-      "points": {"type": "array", "maxItems": 3, "items": {"type": "string", "maxLen": 14, "minLen": 1}, "description": "卖点胶囊，每条 ≤14 字"},
-      "cta": {"type": "string", "maxLen": 12, "description": "获取方式：原样照抄 meta.cta（简报原文），没有就不写；不许写网址/二维码/账号"},
-      "icon": {"type": "string", "format": "icon", "description": "没有 meta.logo 时代替 logo 的图标，默认 sparkle"}
+      "brand": {
+        "type": "string",
+        "maxLen": 10,
+        "minLen": 1,
+        "description": "产品名，必须和 meta.product 一字不差"
+      },
+      "slogan": {
+        "type": "string",
+        "format": "caption",
+        "maxLines": 2,
+        "lineMax": 9,
+        "maxLen": 16,
+        "description": "大字口号：可用 \\n 换行（最多 2 行、每行 ≤9 字）和 {} 强调（最多 1 处）"
+      },
+      "points": {
+        "type": "array",
+        "maxItems": 3,
+        "items": {
+          "type": "string",
+          "maxLen": 14,
+          "minLen": 1
+        },
+        "description": "卖点胶囊，每条 ≤14 字"
+      },
+      "cta": {
+        "type": "string",
+        "maxLen": 12,
+        "description": "获取方式：原样照抄 meta.cta（简报原文），没有就不写；不许写网址/二维码/账号"
+      },
+      "icon": {
+        "type": "string",
+        "format": "icon",
+        "description": "没有 meta.logo 时代替 logo 的图标，默认 sparkle"
+      },
+      "layout": {
+        "type": "string",
+        "enum": [
+          "stack",
+          "panel",
+          "spotlight"
+        ],
+        "description": "版式：stack 居中一列 / panel 口号当标题 + 白卡清单 / spotlight 大 logo + 光芒 + 一排小胶囊；不写就按产品名自动挑一种"
+      }
     }
   },
-  "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.3}, {"at": 0.55, "kind": "swish", "vol": 0.2}, {"at": 0.75, "kind": "thud", "vol": 0.3}, {"at": 1.5, "kind": "ding", "vol": 0.18}],
+  "sfx": [
+    {
+      "at": 0.05,
+      "kind": "pop",
+      "vol": 0.3
+    },
+    {
+      "at": 0.55,
+      "kind": "swish",
+      "vol": 0.2
+    },
+    {
+      "at": 0.75,
+      "kind": "thud",
+      "vol": 0.3
+    },
+    {
+      "at": 1.5,
+      "kind": "ding",
+      "vol": 0.18
+    }
+  ],
   "example": {
     "mood": 0,
     "dur": 4,
     "params": {
       "brand": "Jev 聊天助手",
       "slogan": "回消息之前，\n{先看懂对方}",
-      "points": ["只给建议，不替你发送", "安卓可用 · 支持多款聊天软件"],
+      "points": [
+        "只给建议，不替你发送",
+        "安卓可用 · 支持多款聊天软件"
+      ],
       "cta": "官网下载安卓版",
       "icon": "chat"
     }

@@ -5,3 +5,17 @@ Shared fields: see `industries/food/brief-template.en.md`.
 Beauty-specific: `storeName`, `city`/`area`, `subVertical` (hair/nail/lash/skincare), `services[]{id,name,price,unit,durationMin,includes,excludes,from}`, `addOns[]{cond,extra}`, `deal{price,comparePrice,basis,evidence}`, `photos[]{src,type,merchantShot,retouched,aiGenerated}`, `beforeAfterSets[]{before,after,consent,retouched,sameAngle}`, `artist{name,years,skills[]}`, `badges[]`, `products{brand,type,specialCosmeticRegChecked}`, `hours`, `licenses{business,hygiene,healthCerts}`, `audience`, `concerns[]`, `platform`, `attachDeal`, `prepaidCard{rule,contractSigned,refundable}`, `ownerSaid[]`.
 
 See `test-brief.md` for a worked example (fictional salon).
+
+<!-- round5 -->
+## Asset list (`assets`)
+List every image/video the video may use. The model copies it verbatim into `meta.assets` of `storyboard.json`; a file with no registered source is blocked.
+
+- `src` (required): file path, relative to the storyboard folder.
+- `source` (required): `merchant` = the merchant's own photo / customer-consented photo; `illustration` = drawing, design mock-up or AI image; `screenshot` = app / web / mini-program screenshot.
+- `kind` (recommended): dish / product / room / store / customer-before / customer-after / review …
+- `pair` (required for before/after): the before and after photo of the same customer share one value, e.g. `"A"`.
+
+Only `source: merchant` photos may carry on-screen "实拍 / N月实拍 / 顾客授权 / 未修图" labels. Files under 2KB, with a short side under 300px, undecodable files, anything under `_dev/`, and the repo's own sample screenshots (even renamed copies) are rejected. Screenshots go in `phone`, never in `photoShot`. If the merchant has no photos, write "none": the video falls back to illustrations (`source: "drawn"`), which only raises a warning.
+Before/after: two **different files**, `kind` = `customer-before` / `customer-after`, the same `pair`, and written customer consent. The same file twice, byte-identical copies, screenshots and illustrations are all blocked. No consented pair → skip `beforeAfter` and use `steps` + illustrations.
+## Keep each price and its conditions in one fact
+Copy the price list into `meta.facts` sentence by sentence (e.g. "Sun–Thu 368/night, Fri–Sat 468/night, public holidays 598/night", "Sep 26–Oct 7: 59 each after claiming a 20-yuan store coupon"). The validator checks the screen against each fact: weekend/holiday prices, coupon conditions, surcharges, validity dates, booking requirements, blackout days and fee amounts must all appear, and a day range that differs from the fact (e.g. counting Sunday as weekend) is blocked.

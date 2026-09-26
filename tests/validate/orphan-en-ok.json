@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "title": "orphan-en-ok",
+    "product": "Tidy",
+    "theme": "tech-dark",
+    "lang": "en",
+    "action": "Tap generate → the card is laid out"
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "Formatting again?\n{There is a faster way}",
+      "params": {
+        "visual": "icon",
+        "icon": "sparkle"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "Tap generate,\n{the card is laid out}",
+      "params": {
+        "kind": "editor",
+        "title": "Generate",
+        "input": "Weekly notes",
+        "button": "Go",
+        "items": [
+          {
+            "text": "Result one"
+          },
+          {
+            "text": "Result two"
+          }
+        ],
+        "done": "Done"
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "Tidy",
+        "slogan": "Know your day,\n{minute by minute}"
+      }
+    }
+  ]
+}

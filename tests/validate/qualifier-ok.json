@@ -1,0 +1,90 @@
+{
+  "meta": {
+    "title": "限定语齐全-正例",
+    "product": "示例民宿",
+    "theme": "warm-emotion",
+    "action": "看中大床房 → 价格和日期同屏说清",
+    "facts": [
+      {
+        "id": "f1",
+        "text": "大床房：周日至周四328元/晚，周五周六398元/晚",
+        "source": "简报·2026-09 价目表"
+      },
+      {
+        "id": "f2",
+        "text": "装满热水静置6小时后68℃",
+        "source": "简报·商家自测"
+      },
+      {
+        "id": "f3",
+        "text": "日常79元，领20元店铺券后59元",
+        "source": "简报·活动页"
+      }
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "周末想出城，\n{住哪儿不踩坑}",
+      "params": {
+        "visual": "icon",
+        "icon": "heart"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "看中大床房，\n{价格一眼看清}",
+      "params": {
+        "kind": "list",
+        "title": "房型",
+        "input": "大床房",
+        "items": [
+          {
+            "text": "大床房",
+            "value": "有房"
+          },
+          {
+            "text": "含双早",
+            "value": "已含"
+          }
+        ]
+      }
+    },
+    {
+      "type": "compare",
+      "dur": 4,
+      "params": {
+        "left": {
+          "title": "周日至周四",
+          "tone": "bad",
+          "items": [
+            "人少清静"
+          ],
+          "stat": "328元"
+        },
+        "right": {
+          "title": "周五周六",
+          "tone": "good",
+          "items": [
+            "气氛热闹"
+          ],
+          "stat": "398元"
+        }
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "示例民宿",
+        "slogan": "山里住一晚，\n{把日子过慢}",
+        "points": [
+          "6小时后还有68℃",
+          "领券后59元"
+        ]
+      }
+    }
+  ]
+}

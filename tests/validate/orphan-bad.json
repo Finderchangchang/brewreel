@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "孤字-反例",
+    "product": "示例",
+    "theme": "tech-dark",
+    "action": "点一下生成，卡片自动排好版"
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "手忙脚乱的排版，\n{到底要怎么办}",
+      "params": {
+        "visual": "icon",
+        "icon": "sparkle"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "不用自己排版，\n{点一下就生成}",
+      "params": {
+        "kind": "editor",
+        "title": "生成",
+        "input": "写一段文案",
+        "button": "生成",
+        "items": [
+          {
+            "text": "结果一"
+          },
+          {
+            "text": "结果二"
+          }
+        ],
+        "done": "已生成"
+      }
+    },
+    {
+      "type": "compare",
+      "dur": 4,
+      "params": {
+        "left": {
+          "title": "以前",
+          "tone": "bad",
+          "items": [
+            "复制粘贴排版全乱"
+          ]
+        },
+        "right": {
+          "title": "现在",
+          "tone": "good",
+          "items": [
+            "自动排好"
+          ]
+        }
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "示例",
+        "slogan": "关键信息\n{看得到}"
+      }
+    }
+  ]
+}

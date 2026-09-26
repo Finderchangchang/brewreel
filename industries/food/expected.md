@@ -37,3 +37,12 @@
 - `priceMatchesBrief` 只能做"同一 `itemId` 在 storyboard 内前后价格是否一致"的自洽检查，不能对照简报里的价格表。
 - `credVerbatim` / `reviewVerbatim` 降级成人工复核提醒，不做逐字比对。
 - `meta.subCategory` 还没有加进 `template/src/schema.ts` 的 `Meta.known` 字段列表，真用 `storyboard.json` 跑的话写了 `subCategory` 会被 `validate.mjs` 判成"不认识的字段"报错；本仓库的自动化测试（`scripts/test-rules.mjs`）绕过了这一层，直接调用规则引擎，所以架构已经就绪，等 schema 补上这个字段就能用。
+
+<!-- round5 -->
+## round5 新增检查（对应 tests/rules/food/04–07）
+- **素材真实性**（`assetTruth`）：photoShot/storeCard 用到的图必须在 `meta.assets` 登记来源；只有 `source: merchant` 能标「实拍」。评审里 `photos/*.jpg` 是 5–71 字节的占位文件——现在 < 2KB、短边 < 300px、`_dev/`、仓库示例截图（改名复制也算）一律拦（`04-placeholder-assets.json`）。
+- **不再死锁**（`mediaPolicy` / `firstPhotoWithin3s`）：抖音挂团购仍要求至少 1 镜商家实拍，但只在素材清单里**确有合格的商家照片**时才拦；测试环境没有可用照片时，插画兜底放行，给 warn「商家没有可用的实拍照片」+ 人工复核「正式发布前补实拍」，不再报「前 3 秒没有实拍」（`05-no-photo-fallback.json`）。有合格实拍却一张不用，照样拦（`06-photo-available-unused.json`）。
+- **核心动作**（`coreActionSurface`）：餐饮用 photoShot（实拍或插画）演示，用 `mockApp` 编点单/结算界面直接拦（`07-fake-app-ui.json`）。
+- **价格条件**（`priceConditions`）：团购价写进 `meta.facts` 后，限堂食、有效期、节假日不可用、锅底/茶位费金额等条件缺了就拦。
+
+本测试简报的照片是占位文件，按「没有可用实拍」处理：用插画兜底，`00-compliant.json` 用的是 `tests/rules/_assets/` 下的合格测试图。

@@ -11,7 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {runIndustryChecks} from './lib/industry.mjs';
-import {runTextChecks, FILLIN_BY_TYPE, FILLIN_DEFAULT, typeOfWhere} from './lib/text-checks.mjs';
+import {runTextChecks, FILLIN_BY_TYPE, FILLIN_DEFAULT, typeOfWhere, splitFacts} from './lib/text-checks.mjs';
 
 // ---------------- 可调清单（改这里） ----------------
 /** 《广告法》极限词。命中即报错；meta.allowWords 里的词豁免 */
@@ -79,9 +79,11 @@ const THEMES = readJson(path.join(TEMPLATE, 'src', 'core', 'themes.json'));
 const collectStrings = (v, out) => {
   if (typeof v === 'string') out.push(v);
   else if (Array.isArray(v)) v.forEach((x) => collectStrings(x, out));
-  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (!['icon', 'src', 'kind', 'visual', 'tone', 'chart', 'from', 'higherIs', 'type', 'mode'].includes(k)) collectStrings(x, out);
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (!NON_SCREEN_KEYS.includes(k)) collectStrings(x, out);
   return out;
 };
+/** 不上屏 / 结构性字段：不参与「和样例太像」、数字口径这些文字检查（插画 id「travel/house」、素材路径、来源说明等） */
+const NON_SCREEN_KEYS = ['icon', 'src', 'kind', 'visual', 'tone', 'chart', 'from', 'higherIs', 'type', 'mode', 'illust', 'layout', 'source', 'itemId', 'refs', 'evidence', 'hex'];
 const EXAMPLE_SEQS = [];
 const EXAMPLE_COUNTERS = [];
 let EXAMPLE_CACHE = null;
@@ -207,9 +209,24 @@ export const durations = (text) => {
     if (!Number.isFinite(n) || !k) continue;
     out.push({sec: n * k, raw: m[0].replace(/\s+/g, ''), fast: k === 1});
   }
-  const q = /秒出|秒级|秒回|秒懂|秒答|秒查|秒到|秒推送|秒达|秒批|秒生成|秒传|秒完成|秒上传/.exec(t);
-  if (q) out.push({sec: 5, raw: q[0], fast: true});
+  // 「几秒 / 几分钟」：没有具体数字，但同样是时长说法（几秒钟 = 秒级）
+  for (const m of t.matchAll(/几\s*个?\s*(秒钟|秒|分钟|小时|天)/g)) {
+    const k = TIME_UNIT(m[1]);
+    if (k) out.push({sec: 3 * k, raw: m[0].replace(/\s+/g, ''), fast: k === 1});
+  }
+  // 「秒 + 动词」的秒级说法：按模式抓，不再是固定词表（秒出/秒算/秒进/秒回…）。
+  // 即刻/瞬间/立刻/instantly 这类不带量的速度词只进下面的「速度说法」核对，不参与全片耗时口径比较（它们不是一个时长）
+  for (const m of t.matchAll(SEC_VERB_RE)) out.push({sec: 5, raw: m[0], fast: true});
   return out;
+};
+const SEC_VERB_RE = /(?<![\d几]\s*)秒(?![杀表针钟])[一-龥]/g;
+/** 速度说法（模式）。秒杀/秒表/秒针/N 秒钟 不算；「立即/马上/即刻 + 下载/试试/体验/开通…」是行动号召，不算 */
+const CTA_VERB = '(?!下载|试|体验|开始|开通|开启|解锁|生效|开课|观看|行动|购买|抢|领|预约|报名|咨询|加入|关注|使用|查看|点击|订|下单|入手|出发|收藏|安装|注册|登录|前往|参与)';
+export const SPEED_ZH_RE = new RegExp(`几\\s*秒|(?<![\\d几]\\s*)秒(?![杀表针钟])[一-龥]|即刻${CTA_VERB}|瞬间|立刻${CTA_VERB}|立即${CTA_VERB}|马上${CTA_VERB}|一眨眼|眨眼间|零等待|无需等待|不用等|转眼`, 'g');
+export const SPEED_EN_RE = /\b(instantly|instant|in seconds|within seconds|in no time|in a flash|in a snap|right away|immediately|zero wait|no waiting|lightning[- ]fast)\b/gi;
+export const speedClaims = (text) => {
+  const t = plainOf(text);
+  return [...t.matchAll(SPEED_ZH_RE), ...t.matchAll(SPEED_EN_RE)].map((m) => m[0]);
 };
 const fmtSec = (s) => (s >= 3600 ? `${fmtN(s / 3600)} 小时` : s >= 60 ? `${fmtN(s / 60)} 分钟` : `${fmtN(s)} 秒`);
 /** 是否按顺序包含（引用词可以省略中间几个字，如「你不懂我」对「你根本就不懂我」） */
@@ -250,6 +267,10 @@ export function crossCheck(type, p, W, err, warn) {
     if (v === 'phone' && !p.src) err(W('src'), 'visual 是 phone 时必须给截图', '补上 "src": "截图路径.png"，或把 visual 换成 icon / stat / bubble');
     if (v === 'icon' && !p.icon) err(W('icon'), 'visual 是 icon 时必须选一个主图标', '补上 "icon"，从图标清单里选');
     if ((v === 'bubble' || v === 'stat') && !p.text) err(W('text'), `visual 是 ${v} 时必须写 text`, v === 'bubble' ? '写那条扎心消息，如「你根本就不懂我」' : '写大数字，如「3 秒」「87%」');
+    if (v === 'illust' && !p.illust) err(W('illust'), 'visual 是 illust 时必须选一张插画', '补上 "illust"，从 template/src/illust/names.json 里选，如 "travel/window"；没有合适的插画就换成 icon');
+    // stat/statBar 没有数字时组件会退成大字卡：不拦，但提醒换 visual
+    if ((v === 'stat' || v === 'statBar') && typeof p.text === 'string' && !/\d/.test(p.text))
+      warn(W('text'), `visual 是 ${v}，但「${p.text}」里没有数字，画面会退成一张大字卡`, '说一处风景/一样东西用 illust，说一个功能用 icon；真有数字（且在 meta.facts 里）再用 stat');
   }
   if (type === 'meter') {
     const max = num(p.max) ? p.max : 10;
@@ -308,7 +329,9 @@ export function crossCheck(type, p, W, err, warn) {
 }
 
 // ---------------- 校验主体 ----------------
-export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}) {
+/** 「没有简报依据」类错误的统一标记（checkSpecs 单镜自检时按它过滤，单镜示例本来就没有 meta.facts） */
+const NO_BASIS = '没有简报依据';
+export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null} = {}) {
   const errors = [];
   const warnings = [];
   const texts = []; // [{where, text}] 画面上会出现的字，统一扫网址/极限词
@@ -486,8 +509,17 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
   else {
     const known = [
       'title', 'product', 'bpm', 'theme', 'brandColor', 'disclaimer', 'logo', 'allowWords', 'cta', 'facts',
-      'industry', 'lang', 'platform', 'notices', 'action', 'durationRange', 'subCategory', 'attachDeal',
+      'industry', 'lang', 'platform', 'notices', 'action', 'durationRange', 'subCategory', 'attachDeal', 'demoData',
+      // assets：素材清单 [{src, source: merchant|illustration|screenshot, kind?, pair?}]，结构和真实性由 scripts/checks/assets.mjs 校验
+      'assets',
     ];
+    // demoData：整片用的是演示数据（简报没给真数据，界面里的数字是示例）。只放行「演示界面里的内容」，不放行效果说法；
+    // 画面上必须有「演示/示例」提示（写在 meta.disclaimer，顶部胶囊会显示）
+    if (meta.demoData !== undefined) {
+      if (typeof meta.demoData !== 'boolean') err('meta.demoData', '应该是 true/false', '界面里用了示例数字就写 true，并在 meta.disclaimer 写「演示画面，数据为示例」；没用就删掉');
+      else if (meta.demoData && !(typeof meta.disclaimer === 'string' && /演示|示例|示意|模拟|虚构|sample|demo|simulated|illustrative/i.test(meta.disclaimer)))
+        err('meta.demoData', 'demoData 是 true，但画面上没有「演示数据」提示', meta?.lang === 'en' ? 'Set meta.disclaimer to something like "Demo screens, sample data"' : 'meta.disclaimer 写「演示画面，数据为示例」（顶部胶囊会显示）；不要写进 notices，免得重复');
+    }
     // subCategory / attachDeal：行业规则的 sub 层和 checks[].when 早就在用（merge-rules.mjs、util.mjs 的 evalWhen），
     // 但一直没进这份 known 字段清单，写了就被当成"不认识的字段"拦掉，规则等于永远触发不了（round4 修复）
     if (meta.subCategory !== undefined && (typeof meta.subCategory !== 'string' || !meta.subCategory.trim()))
@@ -503,6 +535,20 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
         else {
           if (typeof f.id !== 'string' || !f.id.trim()) err(`${w}.id`, '缺少 id（文字，给 refs 引用用）', '起一个短 id，如 "f1"');
           if (typeof f.text !== 'string' || !f.text.trim()) err(`${w}.text`, '缺少 text（简报原话）', '把简报里给的数字和来源原话抄进来');
+          // source：这条数字在简报里写的来源（2026-09 p2r2 起必填）。没有它，校验分不清「简报给的」和「模型自己编的」
+          if (typeof f.source !== 'string' || !f.source.trim())
+            err(`${w}.source`, '缺少 source（这条数字的来源）', '照抄简报「数字和来源」那栏写的来源，如 "source": "2026-09 价目表"、"后台统计至 8 月"；简报没写来源就写 "简报未注明来源"。不许自己编来源，也不许自己编 fact');
+          if (f.quote !== undefined && (typeof f.quote !== 'string' || !f.quote.trim())) err(`${w}.quote`, '应该是文字（简报原句）', '把简报里那一句原样抄进来；不需要就删掉');
+          for (const k of Object.keys(f)) if (!['id', 'text', 'source', 'quote'].includes(k)) err(`${w}.${k}`, '多了一个不认识的字段', '只能有 id、text、source、quote');
+          // --brief：有简报原文时逐条核对（数字必须在简报里出现；quote 必须逐字出现）
+          if (typeof brief === 'string' && brief.trim() && typeof f.text === 'string') {
+            const B = brief.replace(/\s+/g, '');
+            const bNums = new Set((brief.replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?/g) ?? []).map(Number));
+            const miss = (f.text.replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?/g) ?? []).map(Number).filter((n) => !bNums.has(n));
+            if (miss.length) err(`${w}.text`, `「${short(f.text, 24)}」里的 ${[...new Set(miss)].join('、')} 在简报里找不到（${NO_BASIS}）`, '这是自己编的数字：删掉这条 fact，画面上用到它的地方改成不带数字的说法');
+            if (typeof f.quote === 'string' && f.quote.trim() && !B.includes(f.quote.replace(/\s+/g, '')))
+              err(`${w}.quote`, `quote「${short(f.quote, 24)}」在简报里找不到原句（${NO_BASIS}）`, 'quote 只能逐字复制简报里的一句话；找不到就删掉这条 fact');
+          }
           // facts.text 不上屏（不进 texts 数组），所以不扫网址/极限词；它是给 refs 引用、给人和校验看的依据
         }
       });
@@ -674,6 +720,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
       return !!p.input && hasResult;
     }
     if (s?.type === 'photoShot') return Array.isArray(p.media) && p.media.length > 0;
+    // beforeAfter：美业/服务类的「做之前 → 做完」本身就是在演示服务结果
+    if (s?.type === 'beforeAfter') return !!(p.before && p.after);
     return false;
   };
   if (!shots.some(isDemo))
@@ -706,6 +754,30 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
     if (Math.abs(a - b) > 0.5 + 1e-6) warn(where(i, shots[i]?.type, 'mood'), `和上一镜的情绪从 ${a} 跳到 ${b}，跨度太大`, '中间插一镜过渡（mood 0.4–0.6，如 compare 或 mockApp 产品出场），或把两边往中间靠');
   }
   // 套路句式 / 照抄样例
+  // 「和样例太像」只针对模型自己写的文案：插画 id、简报原话（facts/notices/cta/product）、时间/价格/周几这类格式串不算照抄
+  const briefPool = [
+    ...(Array.isArray(meta?.facts) ? meta.facts.map((f) => f?.text) : []),
+    ...(Array.isArray(meta?.notices) ? meta.notices : []),
+    meta?.cta, meta?.product,
+  ].filter((x) => typeof x === 'string' && x.trim()).map((x) => plainOf(x).replace(/\s/g, ''));
+  // 有 --brief 时，简报原文里逐字出现的菜名/地址/评价也不算照抄样例（只认整段包含，不按二元组覆盖率算，简报太长会什么都放过）
+  const briefFlat = typeof brief === 'string' ? brief.replace(/\s/g, '') : '';
+  const coveredBy = (p, b) => {
+    const a = bigrams(p);
+    if (!a.size) return false;
+    const bb = bigrams(b);
+    let n = 0;
+    for (const g of a) if (bb.has(g)) n++;
+    return n / a.size >= 0.6;
+  };
+  const notOwnCopy = (s) => {
+    const p = plainOf(s).replace(/\s/g, '');
+    if (/^[a-z_]+\/[a-z_-]+$/.test(p)) return true;
+    const rest = p.replace(/\d+([:：.]\d+)?/g, '').replace(/周[一二三四五六日天]|[至到~～\-–—/·元¥￥晚起]/g, '');
+    if (Array.from(rest).filter((c) => /[一-龥A-Za-z]/.test(c)).length < 3) return true;
+    if (briefFlat && (briefFlat.includes(p) || briefFlat.includes(p.replace(/[×x]\d+$/i, '')))) return true;
+    return briefPool.some((b) => b.includes(p) || coveredBy(p, b));
+  };
   const selfTitle = meta?.title;
   for (const {where: w, text, caption} of texts) {
     if (!caption && !/slogan/.test(w)) continue;
@@ -715,7 +787,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
       const fillin = FILLIN_BY_TYPE[typeOfWhere(w)] ?? FILLIN_DEFAULT;
       warn(w, `字幕含「${cl}」，是样例里的套路句式`, `别用「三个能力，…」「这些时刻，你是不是也…」「这三步」这种万能句；可以按这个句型改写：「${fillin}」`);
     }
-    const ex = exampleLines().find((e) => e.title !== selfTitle && e.kind === 'caption' && similar(text, e.text) >= 0.5);
+    const ex = !notOwnCopy(text) && exampleLines().find((e) => e.title !== selfTitle && e.kind === 'caption' && similar(text, e.text) >= 0.5);
     if (ex) warn(w, `和样例 ${ex.file} 的「${short(ex.text.replace(/[{}\n]/g, ''), 14)}」太像`, '按这个产品自己的场景重写，别照抄样例');
   }
 
@@ -723,7 +795,40 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
   // facts 是 {id,text}[]（见 schema.ts Fact）；这里只取 text 参与数字/来源核对，id 留给以后的 refs 校验用
   const facts = Array.isArray(meta?.facts) ? meta.facts.filter((x) => x && typeof x === 'object' && typeof x.text === 'string').map((x) => x.text) : [];
   const factText = facts.join(' ');
-  const factNums = new Set((factText.match(/\d+(?:\.\d+)?/g) ?? []).map(Number));
+  // 2026-09 p2r2：facts 分两堆。real = 简报给的依据；demo = 模型自己标了「示例/演示/模拟/sample」的。
+  // demo 只能给「演示界面里的内容」用（且要 meta.demoData: true + 画面提示），不能给效果说法背书
+  const {real: realFacts, demo: demoFacts} = splitFacts(meta);
+  const numsOf = (arr) => new Set(arr.flatMap((f) => (f.text.replace(/(\d),(\d{3})/g, '$1$2').match(/\d+(?:\.\d+)?/g) ?? []).map(Number)));
+  const realNums = numsOf(realFacts);
+  const demoNums = numsOf(demoFacts);
+  const factNums = new Set([...realNums, ...demoNums]);
+  const realIds = new Set(realFacts.map((f) => f.id));
+  const demoOn = meta?.demoData === true;
+  const DEMO_UI_TYPES = ['mockApp', 'phone', 'chat', 'priceCard', 'factSheet', 'storeCard', 'photoShot'];
+  const EFFECT_TYPES = ['compare', 'counter', 'meter'];
+  const EFFECT_WORDS = /省|节省|缩短|提升|提高|降低|减少|只要|只需|仅需|就能|就够|变成|→|比上|比以前|比手动|相比|更快|加快|耗时|花了|要花|得花|多存|多赚|增长|翻倍|\bsaves?\b|faster|quicker|boost|down to/i;
+  /** 这个数字是不是「效果说法」：compare/counter/meter 里的数、秒级说法、字幕和卖点里的百分比/倍数、带「省/缩短/提升…」的时长和金额。
+   *  价格、有效期、营业时间、人数这类「条款」不算效果（示例数据可以在 demoData 下出现） */
+  const isEffect = (w, kind, text, fast = false) => {
+    if (w.startsWith('meta.')) return false;
+    const type = typeOfWhere(w);
+    if (EFFECT_TYPES.includes(type) || fast) return true;
+    if (kind === '百分比' || kind === '倍数') return !DEMO_UI_TYPES.includes(type) || /caption(\[\d+\])?$/.test(w);
+    if (kind === '时长' && type === 'hook') return true;
+    return EFFECT_WORDS.test(plainOf(text));
+  };
+  const EFFECT_FIX = '效果说法（耗时、速度、百分比、倍数、compare 的 stat/level、counter、meter 打分）只能用简报给的真数据。简报没给就删掉数字，写具体差别，如「少 3 步」「不用切窗口」「不用手动传图」；compare 可以只比过程：「找同事→等排期→拼表格」对「问一句→看图」';
+  const DEMO_DECLARE_FIX = 'meta 里写 "demoData": true，并在 meta.disclaimer 写「演示画面，数据为示例」；这类数字只能出现在 mockApp/phone/chat/priceCard 等演示界面里，不能写进字幕、compare、counter、meter 当效果';
+  /** 屏幕上一个数字的来源核对。返回 true = 有来源（或已报错） */
+  const sourceCheck = (w, v, what, noneFix, effect) => {
+    if (realNums.has(v)) return;
+    if (demoNums.has(v)) {
+      if (effect) err(w, `「${what}」只在你自己标了「示例/演示」的 fact 里有：这是你自己编的示例，不能当效果依据（${NO_BASIS}）`, EFFECT_FIX);
+      else if (!demoOn) err(w, `「${what}」来自标了「示例/演示」的 fact，但没声明这是演示数据`, DEMO_DECLARE_FIX);
+      return;
+    }
+    err(w, `「${what}」在 meta.facts 里找不到来源${facts.length ? '' : '（没写 meta.facts）'}`, noneFix);
+  };
   const shotTexts = shots.map((sh) => {
     if (!sh || typeof sh !== 'object') return [];
     const out = [];
@@ -753,8 +858,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
       }
     }
     // (2) 数字和来源要出自简报（没有来源的具体数字一律报错，不只是提醒）
-    for (const key of ['from', 'to']) if (num(P[key]) && P[key] !== 0 && !factNums.has(P[key]) && !(key === 'from' && !P.showFrom && P.from === 0))
-      err(W(`params.${key}`), `数字 ${P[key]} 在 meta.facts 里找不到来源${facts.length ? '' : '（没写 meta.facts）'}`, facts.length ? '简报给了这个数字就把原话抄进 meta.facts，id 随便起' : '简报没给数字就别编：改用其他镜头，或 sub 写「示例数据，以实际为准」，删掉这个具体数字');
+    for (const key of ['from', 'to']) if (num(P[key]) && P[key] !== 0 && !realNums.has(P[key]) && !(key === 'from' && !P.showFrom && P.from === 0))
+      sourceCheck(W(`params.${key}`), P[key], `数字 ${P[key]}`, facts.length ? '简报给了这个数字就把原话抄进 meta.facts（带 source），id 随便起' : '简报没给数字就别编：counter 讲的是效果，换成 compare（items 写具体差别）或 steps，删掉这个具体数字', true);
     if (typeof P.sub === 'string') {
       const miss = SOURCE_WORDS.filter((w) => P.sub.includes(w) && !factText.includes(w));
       if (miss.length) err(W('params.sub'), `sub 写了「${miss.join('」「')}」，但 meta.facts 里没有这个来源：来源不能自己编`, '简报给了来源就把原话抄进 meta.facts；简报没给，sub 改成「示例数据，以实际为准」');
@@ -776,20 +881,65 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
       const t = plainOf(text);
       for (const d of durations(t)) {
         const m = /(\d+(?:\.\d+)?)/.exec(d.raw);
-        if (!m) continue; // 中文数词（半天/三小时）不核对来源，避免误伤定性说法
+        if (!m) continue; // 中文数词（半天/三小时）不核对来源，避免误伤定性说法；秒级说法在下面「速度说法」单独核对
         const v = Number(m[1]);
-        if (v !== 0 && !factNums.has(v))
-          err(w, `「${d.raw}」这个时长在 meta.facts 里找不到来源${facts.length ? '' : '（没写 meta.facts）'}`, noFactsFix('时长'));
+        if (v !== 0) sourceCheck(w, v, d.raw, noFactsFix('时长'), isEffect(w, '时长', t, d.fast));
       }
       for (const {kind, re} of PERF_NUM_RES) {
         for (const m of t.matchAll(re)) {
           const v = Number(m[1] ?? m[2]);
-          if (!Number.isFinite(v) || v === 0 || factNums.has(v)) continue;
-          err(w, `「${m[0]}」（${kind}）在 meta.facts 里找不到来源${facts.length ? '' : '（没写 meta.facts）'}`, noFactsFix(kind));
+          if (!Number.isFinite(v) || v === 0) continue;
+          sourceCheck(w, v, m[0], noFactsFix(kind), isEffect(w, kind, t));
         }
       }
     }
   }
+  // 速度说法（几秒钟 / 即刻 / 秒算 / 秒进 / 瞬间 / instantly / in seconds…）：按模式抓，要有简报给的「秒级耗时」依据
+  {
+    const realFast = realFacts.some((f) => durations(f.text).some((d) => d.fast));
+    const demoFast = demoFacts.some((f) => durations(f.text).some((d) => d.fast));
+    if (!realFast)
+      for (const {where: w, text} of texts) {
+        if (w.startsWith('meta.') || /params\.cta$/.test(w)) continue; // 获取方式照抄简报；免责/提示条不是效果说法
+        const hits = [...new Set(speedClaims(text))];
+        if (!hits.length) continue;
+        err(w, meta?.lang === 'en'
+            ? `"${hits.join('", "')}" is a speed claim, but meta.facts has no timing from the brief${demoFast ? ' (only facts you labelled sample/demo, which you made up)' : ''} (${NO_BASIS})`
+            : `「${hits.join('」「')}」是速度说法，但${demoFast ? '只有你自己标了「示例/演示」的 fact 说到耗时：这是你自己编的示例，不能当依据' : 'meta.facts 里没有简报给的秒级耗时'}（${NO_BASIS}）`,
+          meta?.lang === 'en'
+            ? 'Drop the speed word and say the concrete difference instead, e.g. "3 fewer steps", "no app switching", "no manual upload"; only if the brief gives a timing, copy it into meta.facts (with source)'
+            : '删掉速度词，写具体差别，如「少 3 步」「不用切窗口」「不用手动传图」「问一句就出图」；简报真给了耗时（如「3 秒出结果」）才能说快，原话抄进 meta.facts（带 source）');
+      }
+  }
+  // compare 的 level、meter 的数值：画面上会印成「8/10」这类分数，像是量出来的，必须有简报依据
+  shots.forEach((sh, i) => {
+    const P = sh?.params;
+    if (!P || typeof P !== 'object') return;
+    const W = (f) => where(i, sh.type, f);
+    const refsReal = Array.isArray(P.refs) && P.refs.some((r) => realIds.has(r));
+    const backed = (vals) => refsReal || vals.every((v) => realNums.has(v));
+    const inDemo = (vals) => vals.every((v) => demoNums.has(v));
+    if (sh.type === 'compare') {
+      const lv = [P.left?.level, P.right?.level].filter(num);
+      if (lv.length && !backed(lv))
+        err(W(`params.${num(P.left?.level) ? 'left' : 'right'}.level`),
+          `level（${lv.join(' 对 ')}）会在画面上印成「${lv.map((v) => `${v}/10`).join('」「')}」，像是量出来的分数，但${inDemo(lv) ? '它只在你自己标了「示例/演示」的 fact 里：这是你自己编的示例，不能当依据' : 'meta.facts 里没有这个分数'}（${NO_BASIS}）`,
+          '删掉两栏的 level 和 meterLabel，把差别写进 items：「少 3 步」「不用切窗口」「不用手动传图」；简报真给了评分，原话抄进 meta.facts（带 source）才能写 level');
+    }
+    if (sh.type === 'meter' && num(P.value)) {
+      // 「变好了」（higherIs=good 往上 / higherIs=bad 往下）是效果说法；风险从 2 升到 7 这类是产品在演示里的读数，按单个读数处理
+      const change = num(P.from) && P.from !== P.value && (P.value - P.from) * (P.higherIs === 'good' ? 1 : -1) > 0;
+      const vals = change ? [P.value, P.from] : [P.value];
+      if (!backed(vals) && (change || !demoOn))
+        err(W(change ? 'params.from' : 'params.value'),
+          change
+            ? `指针从 ${P.from} 摆到 ${P.value}，这是在说效果变好/变差，但${inDemo(vals) ? '这两个数只在你自己标了「示例/演示」的 fact 里' : 'meta.facts 里没有这组数'}（${NO_BASIS}）`
+            : `读数 ${P.value} 没有依据（${NO_BASIS}）`,
+          change
+            ? '删掉 from（不演「从 3 到 7」）；想说前后变化，用 compare 的 items 写具体差别（「不用切窗口」「少 3 步」），或 meter 的 word 写定性判词；简报真给了前后数值才能写 from'
+            : '这个读数如果是产品在演示里给出的判断（如 AI 给这句话打的危险程度），写 meta.demoData: true 并在 meta.disclaimer 标「演示」；如果是在说效果/评分，简报没给就删掉这一镜，换成 compare（items 写具体差别）');
+    }
+  });
   // 同一个 compare 栏内部（stat vs items）耗时/数字别打架：同一栏说的是同一件事，只能有一个数量级
   shots.forEach((sh, i) => {
     if (sh?.type !== 'compare' || !sh.params || typeof sh.params !== 'object') return;
@@ -901,7 +1051,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
   const selfT = meta?.title;
   shots.forEach((sh, i) => {
     for (const x of shotTexts[i]) {
-      if (x.caption || units(x.text) < 5 || /示例数据|演示/.test(x.text) || [meta?.product, meta?.cta, meta?.disclaimer].includes(x.text)) continue;
+      if (x.caption || units(x.text) < 5 || /示例数据|演示/.test(x.text) || [meta?.product, meta?.cta, meta?.disclaimer].includes(x.text) || notOwnCopy(x.text)) continue;
       const ex = exampleLines().find((e) => e.title !== selfT && e.kind === 'param' && similar(x.text, e.text) >= 0.6);
       if (ex) warn(where(i, sh.type, 'params'), `「${short(plainOf(x.text), 14)}」和样例 ${ex.file} 的「${short(plainOf(ex.text), 14)}」太像`, '按这个产品自己的场景重写，别照抄样例');
     }
@@ -977,7 +1127,14 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs()} = {}
   const checkCtx = {baseDir, specs, texts, assets, slots, beat, meta};
   const ind = runIndustryChecks(sb, checkCtx);
   const txt = runTextChecks(sb, checkCtx);
-  errors.push(...(ind.errors ?? []), ...(txt.errors ?? []));
+  // 限定语一致（text-checks 的通用版）和行业规则 checks/price-conditions（价格专用版）会对同一处报两遍：同一位置行业规则已报，就不再重复
+  // chat 用错场景同理：行业规则 checks/core-action 已经对这一镜报了「演成了对话」，这里的通用版就不再重复
+  const indWhere = new Set((ind.errors ?? []).map((e) => e.where));
+  const shotOf = (w) => /^第\s*\d+\s*镜（[^）]+）/.exec(String(w))?.[0] ?? null;
+  const indChatShots = new Set((ind.errors ?? []).filter((e) => /对话|聊天|chat/i.test(e.problem)).map((e) => shotOf(e.where)).filter(Boolean));
+  const QUAL_DUP = /限定语丢了|和 facts 对不上：facts 里是/;
+  const CHAT_DUP = /chat 只用于|chat is for messaging/;
+  errors.push(...(ind.errors ?? []), ...(txt.errors ?? []).filter((e) => !(QUAL_DUP.test(e.problem) && indWhere.has(e.where)) && !(CHAT_DUP.test(e.problem) && indChatShots.has(shotOf(e.where)))));
   warnings.push(...(ind.warnings ?? []), ...(txt.warnings ?? []));
   const human = [...(ind.human ?? []), ...(txt.human ?? [])];
 
@@ -1006,7 +1163,7 @@ export function checkSpecs(specs = loadSpecs()) {
         if (
           !e.where.startsWith('总时长') && e.where !== 'shots' && e.where !== 'meta.action' &&
           !(type === 'hook' && e.where.includes('第 1 镜必须')) &&
-          !/在 meta\.facts 里找不到来源/.test(e.problem)
+          !/在 meta\.facts 里找不到来源|没有简报依据|示例\/演示」的 fact|没声明这是演示数据/.test(e.problem)
         )
           problems.push(`${type}.spec.json 示例：${e.where}：${e.problem}`);
     }
@@ -1077,16 +1234,21 @@ if (isMain) {
     console.log(`spec 自检通过：${Object.keys(loadSpecs()).length} 个镜头`);
     process.exit(0);
   }
-  const file = args.find((a) => !a.startsWith('--'));
+  // --brief <简报文件>：有简报原文时，逐条核对 meta.facts 的数字/quote 是否真的出自简报
+  const bi = args.indexOf('--brief');
+  const briefFile = bi >= 0 ? args[bi + 1] : null;
+  const file = args.find((a, k) => !a.startsWith('--') && !(bi >= 0 && k === bi + 1));
   if (!file) {
-    console.log('用法：node scripts/validate.mjs <storyboard.json> [--json]   或   node scripts/validate.mjs --specs');
+    console.log('用法：node scripts/validate.mjs <storyboard.json> [--json] [--brief 简报.md]   或   node scripts/validate.mjs --specs');
     process.exit(2);
   }
   const asJson = args.includes('--json');
+  const brief = briefFile && fs.existsSync(briefFile) ? fs.readFileSync(briefFile, 'utf8').replace(/^﻿/, '') : null;
+  if (briefFile && !brief) console.error(`（--brief 指定的简报文件读不到：${briefFile}，本次不核对 facts 是否出自简报）`);
   const parsed = parseFile(file);
   let r;
   if (parsed.error) r = {errors: [parsed.error], warnings: [], slots: [], total: 0, beat: 0.5, assets: [], human: []};
-  else r = validate(parsed.sb, {baseDir: path.dirname(path.resolve(file))});
+  else r = validate(parsed.sb, {baseDir: path.dirname(path.resolve(file)), brief});
   r.sb = parsed.sb;
   if (asJson) {
     console.log(JSON.stringify({ok: !r.errors.length, errors: r.errors, warnings: r.warnings, human: r.human ?? [], total: r.total, slots: r.slots.map(({i, type, start, dur, end}) => ({i, type, start, dur, end}))}, null, 2));

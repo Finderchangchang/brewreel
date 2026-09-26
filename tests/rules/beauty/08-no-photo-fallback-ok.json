@@ -1,0 +1,81 @@
+{
+  "name": "没有授权照片：steps + 插画兜底，不设 consent、不写实拍，照样放行",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "栗言发型工作室",
+      "industry": "beauty",
+      "notices": [
+        "生活美容 · 不提供医疗美容服务"
+      ],
+      "disclaimer": "画面为插画示意"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "steps",
+        "dur": 4,
+        "mood": 0.3,
+        "params": {
+          "items": [
+            {
+              "title": "洗护"
+            },
+            {
+              "title": "剪裁"
+            },
+            {
+              "title": "吹造型"
+            }
+          ]
+        },
+        "caption": "洗护到造型\n全程看得见"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "hero",
+          "media": [
+            {
+              "source": "drawn",
+              "illust": "beauty/hairdryer",
+              "tag": "示意",
+              "label": "吹造型"
+            }
+          ],
+          "title": "短发吹造型"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0
+  }
+}

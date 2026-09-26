@@ -15,9 +15,16 @@ template/.render.lock
 .env.*
 .privacy-denylist.local
 
-# test / render scratch output
+# test / render scratch output — never commit it.
+# make.mjs --round writes to ../promo-video-skill-tests/<round>/<slug>/ (outside the repo);
+# anything else that lands in promo/ or tests/ (except the regression fixtures) stays local.
+promo/
+tests/*
+!tests/rules/
+!tests/validate/
 tests/**/video.mp4
 tests/**/*.log
+*.rejected.mp4
 
 # OS / editor
 .DS_Store

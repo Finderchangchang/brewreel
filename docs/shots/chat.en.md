@@ -1,5 +1,12 @@
 # chat mock chat
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "chat", "dur": 5, "caption": "They are busy?\n{Here is what to say}",
+ "params": {"messages": [{"from": "peer", "text": "Busy, talk later"}, {"from": "me", "text": "Sure, no rush"}], "panel": {"title": "Reply ideas", "replies": ["Okay, take your time", "Ping me when free"]}}}
+```
+Only for messaging-type products: meta.action has to mention messages or replies.
+
 A neutral-colored chat window ("me" = theme accent color, "them" = light gray, doesn't resemble any specific IM app). Messages pop in one beat at a time → optionally "me" types in the input box → optionally the product's floating button lights up and a panel pops up (verdict + tags + candidate replies) → the first candidate reply flies into the input box on "fill in".
 
 ## When to use

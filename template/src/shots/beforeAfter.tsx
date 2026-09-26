@@ -4,6 +4,7 @@ import {clamp, pop} from '../core/anim';
 import {fitLine} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon} from '../core/icons';
+import {pick} from '../core/kit';
 import {Illust, isIllust} from '../illust';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, useTheme} from '../core/theme';
@@ -28,7 +29,6 @@ type P = {
 };
 
 const SUB_ICON: Record<string, string> = {hair: 'beauty/scissors', nail: 'beauty/polish', lash: 'beauty/tweezers'};
-const SUB_LABEL: Record<string, string> = {hair: '发型', nail: '美甲', lash: '美睫'};
 
 // ---------- 时间线：先停在「之前」，滑杆扫过，停在「之后」。按 dur 等比例分配，不写死 1.5/1/1.5 秒
 // （design §1.5 建议每侧≥1.5秒+擦除1秒，但镜头 dur 下限只有 2 秒，两者冲突；这里按比例压缩，dur 越长越接近设计建议）。
@@ -55,8 +55,9 @@ const Frame: React.FC<{src?: string; label?: string}> = ({src, label}) => {
   );
 };
 
-const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur}) => {
+const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur, meta}) => {
   const th = useTheme();
+  const lang = meta?.lang;
   const enter = pop(t, 0, 16, 170);
   const pl = plan(dur);
   const rv = interpolate(t, [pl.revealAt, pl.revealEnd], [0, 1], {...clamp, easing: Easing.inOut(Easing.cubic)});
@@ -69,8 +70,8 @@ const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur}) => {
   const beforeOp = interpolate(t, [pl.revealAt, pl.revealEnd], [1, 0.0], clamp);
   const afterOp = interpolate(t, [pl.revealAt, pl.revealEnd], [0, 1], clamp);
   const subIcon = p.subVertical ? SUB_ICON[p.subVertical] : undefined;
-  const beforeLabel = p.before?.label ?? '做之前';
-  const afterLabel = p.after?.label ?? '做完';
+  const beforeLabel = p.before?.label ?? pick(lang, '做之前', 'Before');
+  const afterLabel = p.after?.label ?? pick(lang, '做完', 'After');
   const labelSize = (txt: string) => fitLine(txt, 240, 34, 28);
 
   return (
@@ -89,10 +90,10 @@ const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur}) => {
           transform: `translateY(${(1 - enter) * 50}px) scale(${0.94 + 0.06 * enter})`,
         }}
       >
-        <Frame src={p.before?.src} label="做之前" />
+        <Frame src={p.before?.src} label={beforeLabel} />
         {rv > 0 && (
           <div style={{position: 'absolute', inset: 0, clipPath: rv < 1 ? `inset(0px 0px 0px ${hx}px)` : undefined}}>
-            <Frame src={p.after?.src} label="做完" />
+            <Frame src={p.after?.src} label={afterLabel} />
           </div>
         )}
         {/* 顶部固定角标：顾客授权实拍 · 未修图（模型不能改） */}
@@ -115,7 +116,7 @@ const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur}) => {
           }}
         >
           <Icon name="shield" size={24} color="#ffffff" stroke={2.4} />
-          顾客授权实拍 · 未修图
+          {pick(lang, '顾客授权实拍 · 未修图', 'Client consented · Unretouched')}
         </div>
         {/* 分项小图标 */}
         {subIcon && isIllust(subIcon) && (
@@ -188,7 +189,7 @@ const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur}) => {
       )}
       {/* 固定小字：效果因人而异（模型不能改，design 要求「自动显示」） */}
       <div style={{position: 'absolute', left: CARD.x0, width: W, top: top + H + (p.caption2 ? 68 : 24), textAlign: 'center', fontSize: 26, color: th.cardMuted, opacity: Math.min(1, enter * 1.6)}}>
-        效果因人而异，仅供参考
+        {pick(lang, '效果因人而异，仅供参考', 'Results vary from person to person')}
       </div>
     </div>
   );

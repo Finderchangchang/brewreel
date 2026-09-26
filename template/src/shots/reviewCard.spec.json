@@ -37,7 +37,7 @@
     "mood": 0.15,
     "dur": 3,
     "params": {
-      "quotes": [{"text": "汤很浓，肉给得实在", "month": "2026-08", "stars": 5}],
+      "quotes": [{"text": "排队不久，分量很足", "month": "2026-08", "stars": 5}],
       "evidence": "reviews/2026-08-screenshot-01.png"
     }
   }

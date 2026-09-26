@@ -1,0 +1,113 @@
+{
+  "name": "放行：消息类产品用 chat 演核心动作；compare「麻烦程度」bad 高 good 低方向正确；刻度名看不出方向只提醒",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "回话助手",
+      "action": "收到对方消息 → 看懂情绪，给出回复建议",
+      "disclaimer": "演示场景，对话为模拟"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2.5,
+        "mood": 0.8,
+        "params": {
+          "visual": "bubble",
+          "text": "你根本不在乎"
+        },
+        "caption": "对方这句话\n{该怎么接}"
+      },
+      {
+        "type": "chat",
+        "dur": 4,
+        "mood": 0.5,
+        "params": {
+          "peer": "对象",
+          "messages": [
+            {
+              "from": "peer",
+              "text": "你根本不在乎"
+            }
+          ],
+          "panel": {
+            "title": "分析",
+            "verdict": "对方想确认你在不在乎",
+            "replies": [
+              "我在乎，刚才是我没说清"
+            ]
+          }
+        }
+      },
+      {
+        "type": "compare",
+        "dur": 4,
+        "mood": 0.4,
+        "params": {
+          "left": {
+            "title": "自己琢磨",
+            "items": [
+              "越解释越乱"
+            ],
+            "tone": "bad",
+            "level": 8
+          },
+          "right": {
+            "title": "先看分析",
+            "items": [
+              "先说感受"
+            ],
+            "tone": "good",
+            "level": 3
+          },
+          "meterLabel": "麻烦程度"
+        }
+      },
+      {
+        "type": "compare",
+        "dur": 4,
+        "mood": 0.4,
+        "params": {
+          "left": {
+            "title": "以前",
+            "items": [
+              "来回猜"
+            ],
+            "tone": "bad",
+            "level": 7
+          },
+          "right": {
+            "title": "现在",
+            "items": [
+              "一眼看懂"
+            ],
+            "tone": "good",
+            "level": 3
+          },
+          "meterLabel": "时间"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "回话助手",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0,
+    "warn": [
+      "看不出「时间」是越高越好还是越高越差"
+    ]
+  }
+}

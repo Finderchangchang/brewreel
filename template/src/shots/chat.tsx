@@ -4,7 +4,8 @@ import {clamp, easeOut, fitTimeline, pop} from '../core/anim';
 import {emWidth} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
-import {Avatar, TapRipple} from '../core/kit';
+import {Avatar, TapRipple, pick} from '../core/kit';
+import type {Lang} from '../core/kit';
 import {CARD, SAFE} from '../core/safe';
 import {alpha, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
@@ -80,8 +81,10 @@ export const plan = (p: P, dur: number, beat: number) => {
 };
 type Plan = ReturnType<typeof plan>;
 
-const bubbleH = (text: string) => {
-  const lines = Math.max(1, Math.ceil((emWidth(text) * MSG.size) / (MSG.maxW - MSG.size * 1.16)));
+// 英文按词换行，行尾会空出半个词左右，估行数时把可用宽度打九折，免得气泡比预留的高、压到下一条
+const bubbleH = (text: string, lang?: Lang) => {
+  const room = (MSG.maxW - MSG.size * 1.16) * (lang === 'en' ? 0.9 : 1);
+  const lines = Math.max(1, Math.ceil((emWidth(text) * MSG.size) / room));
   return lines * MSG.size * 1.36 + MSG.size * 0.72;
 };
 
@@ -104,7 +107,7 @@ const inputState = (p: P, pl: Plan, t: number) => {
 const fieldLines = (text: string) => Math.max(1, Math.ceil((emWidth(text) * INPUT.font) / (W - 2 * INPUT.padX - INPUT.send - 14 - 2 * INPUT.fieldPadX - 30)));
 const barHeight = (text: string) => 2 * INPUT.padY + Math.max(INPUT.send, fieldLines(text) * INPUT.font * 1.4 + 2 * INPUT.fieldPadY + 4);
 
-const InputBar: React.FC<{text: string; focus: boolean; t: number; flashAt: number}> = ({text, focus, t, flashAt}) => {
+const InputBar: React.FC<{text: string; focus: boolean; t: number; flashAt: number; hint: string}> = ({text, focus, t, flashAt, hint}) => {
   const th = useTheme();
   const blink = Math.floor(t * 2) % 2 === 0;
   const flash = flashAt >= 0 ? interpolate(t, [flashAt, flashAt + 0.6], [1, 0], clamp) * (t >= flashAt ? 1 : 0) : 0;
@@ -125,7 +128,7 @@ const InputBar: React.FC<{text: string; focus: boolean; t: number; flashAt: numb
           boxShadow: flash > 0 ? `0 0 0 ${8 * flash}px ${alpha(th.accent, 0.35 * flash)}` : undefined,
         }}
       >
-        {text || (!focus ? <span style={{color: th.cardMuted}}>输入消息…</span> : null)}
+        {text || (!focus ? <span style={{color: th.cardMuted}}>{hint}</span> : null)}
         {focus && <span style={{display: 'inline-block', width: 4, height: INPUT.font * 1.1, marginLeft: 3, verticalAlign: 'middle', background: th.accent, opacity: blink ? 1 : 0}} />}
       </div>
       <div style={{width: INPUT.send, height: INPUT.send, borderRadius: INPUT.send / 2, background: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
@@ -159,7 +162,7 @@ const Ball: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
 const replyTop = (p: P, i: number) =>
   PANEL.top + PANEL.padY + PANEL.head + (p.panel?.verdict ? PANEL.verdict : 0) + (p.panel?.tags?.length ? PANEL.tags : 0) + PANEL.label + i * (PANEL.reply + PANEL.gap);
 
-const Panel: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
+const Panel: React.FC<{p: P; pl: Plan; t: number; lang?: Lang}> = ({p, pl, t, lang}) => {
   const th = useTheme();
   const panel = p.panel;
   if (!panel || pl.panelAt < 0 || t < pl.panelAt) return null;
@@ -224,7 +227,7 @@ const Panel: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
       {replies.length > 0 && (
         <>
           <div style={{height: PANEL.label, display: 'flex', alignItems: 'center', fontSize: 28, color: th.cardMuted, borderTop: `2px solid ${th.line}`}}>
-            {t < pl.replyAt[0] ? '生成中…' : '候选回复'}
+            {t < pl.replyAt[0] ? pick(lang, '生成中…', 'Thinking…') : pick(lang, '候选回复', 'Suggested replies')}
           </div>
           {replies.map((r, i) => {
             if (t < pl.replyAt[i]) return null;
@@ -271,7 +274,7 @@ const Panel: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
                     flex: 'none',
                   }}
                 >
-                  填入
+                  {pick(lang, '填入', 'Use')}
                 </div>
               </div>
               </div>
@@ -315,14 +318,15 @@ const Fly: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
   );
 };
 
-const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
+const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const th = useTheme();
+  const lang = meta?.lang;
   const pl = plan(p, dur, beat);
   const enter = pop(t, 0, 16, 170);
   const input = inputState(p, pl, t);
   const reply = p.panel?.replies?.[0];
   // 没有面板时按最终内容定卡片高度并在主体区居中，避免上半截大片空白；有面板时用满 780
-  const contentH = HEADER + (p.messages ?? []).reduce((a, m) => a + bubbleH(m.text) + MSG.gap, 0) + 32 + barHeight(p.typing ?? '') + 40;
+  const contentH = HEADER + (p.messages ?? []).reduce((a, m) => a + bubbleH(m.text, lang) + MSG.gap, 0) + 32 + barHeight(p.typing ?? '') + 40;
   const cardH = p.panel ? H : Math.max(440, Math.min(H, Math.round(contentH)));
   const cardY = Y + Math.round((H - cardH) / 2);
   const tapX = PANEL.left + PANEL.w - PANEL.padX - 16 - PILL_W / 2;
@@ -349,7 +353,7 @@ const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
         {/* 顶栏 */}
         <div style={{height: HEADER, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', borderBottom: `2px solid ${th.line}`, color: th.cardText}}>
           <span style={{position: 'absolute', left: 30, fontSize: 52, fontWeight: 300, lineHeight: 1}}>‹</span>
-          <span style={{fontSize: 36, fontWeight: 700}}>{p.peer || '对方'}</span>
+          <span style={{fontSize: 36, fontWeight: 700}}>{p.peer || pick(lang, '对方', 'Chat')}</span>
           {!p.panel && <span style={{position: 'absolute', right: 30, fontSize: 38, fontWeight: 700, letterSpacing: 3}}>···</span>}
         </div>
         {/* 消息区 */}
@@ -359,7 +363,7 @@ const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
             if (t < at) return null;
             const mine = m.from === 'me';
             const q = pop(t, at, 11, 220);
-            const hgt = (bubbleH(m.text) + MSG.gap) * easeOut(t, at, 0.2);
+            const hgt = (bubbleH(m.text, lang) + MSG.gap) * easeOut(t, at, 0.2);
             return (
               <div key={i} style={{height: hgt, flex: 'none', overflow: 'visible'}}>
                 <div
@@ -386,7 +390,9 @@ const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
                       borderRadius: MSG.size * 0.8,
                       borderTopLeftRadius: mine ? MSG.size * 0.8 : 10,
                       borderTopRightRadius: mine ? 10 : MSG.size * 0.8,
-                      wordBreak: 'break-all',
+                      // 中文任意处可断；英文只在词间断（break-all 会把英文单词从中间劈开）
+                      wordBreak: lang === 'en' ? 'normal' : 'break-all',
+                      overflowWrap: lang === 'en' ? 'break-word' : undefined,
                     }}
                   >
                     {m.text}
@@ -396,9 +402,9 @@ const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
             );
           })}
         </div>
-        <InputBar text={input.text} focus={input.focus} t={t} flashAt={input.filled ? pl.filledAt : -1} />
+        <InputBar text={input.text} focus={input.focus} t={t} flashAt={input.filled ? pl.filledAt : -1} hint={pick(lang, '输入消息…', 'Type a message…')} />
         <Ball p={p} pl={pl} t={t} />
-        <Panel p={p} pl={pl} t={t} />
+        <Panel p={p} pl={pl} t={t} lang={lang} />
         {reply && pl.tapAt >= 0 && <TapRipple x={tapX} y={tapY} d={t - pl.tapAt} />}
         <Fly p={p} pl={pl} t={t} />
       </div>

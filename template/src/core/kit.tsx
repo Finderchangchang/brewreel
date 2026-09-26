@@ -244,6 +244,41 @@ export const TapRipple: React.FC<{x: number; y: number; d: number}> = ({x, y, d}
     />
   ) : null;
 
+// ---------- 同一提示不重复出现 ----------
+// 全局层已经画了顶部免责小字（meta.disclaimer）和底部提示条（meta.notices）。镜头里的脚注/说明、片尾卖点
+// 如果和它们说的是同一句话，就别再画一遍（评审：「生活美容·不提供医疗美容服务」一帧里印了两次）。
+// 判定：去掉标点空白后相同 / 一方包含另一方（≥6 字）/ 两边都是「演示、示意、模拟」类的演示声明。
+const normHint = (s: string) => s.replace(/[\s{}·•,，。.、:：;；!！?？()（）「」“”"'\-—_/|]/g, '').toLowerCase();
+const DEMO_RE = /演示|示意|模拟|示例|仅供参考|以实际为准|sample|demo|simulat|illustrat/i;
+export const repeatsHint = (text: string, ref: {disclaimer?: string; notices?: string[]}): boolean => {
+  const a = normHint(text ?? '');
+  if (!a) return false;
+  const others = [ref.disclaimer, ...(ref.notices ?? [])].filter((x): x is string => typeof x === 'string' && x.trim().length > 0);
+  return others.some((o) => {
+    const b = normHint(o);
+    if (!b) return false;
+    if (a === b) return true;
+    const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+    if (Array.from(short).length >= 6 && long.includes(short)) return true;
+    return o === ref.disclaimer && DEMO_RE.test(text) && DEMO_RE.test(o);
+  });
+};
+
+// ---------- 主体区居中容器：卡片高度贴合内容，在 y 560–1340 里垂直居中 ----------
+// 以前不少卡片写死 ~780px 高，内容少时下半截大块留白（评审：storeCard/mockApp 卡片 40–60% 是空的）。
+// 新写的镜头把卡片放进这个容器、别给卡片定高，卡片就按内容长高、整体居中。
+export const CenterMain: React.FC<{top?: number; bottom?: number; gap?: number; style?: React.CSSProperties; children?: React.ReactNode}> = ({
+  top = 560,
+  bottom = 1340,
+  gap = 24,
+  style,
+  children,
+}) => (
+  <div style={{position: 'absolute', left: 150, width: 780, top, height: bottom - top, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'stretch', gap, ...style}}>
+    {children}
+  </div>
+);
+
 // ---------- 占位（未实现的镜头用） ----------
 export const Placeholder: React.FC<{type: string; t: number; lines?: string[]}> = ({type, t, lines = []}) => {
   const th = useTheme();
@@ -253,6 +288,7 @@ export const Placeholder: React.FC<{type: string; t: number; lines?: string[]}> 
       <Card style={{width: '100%', height: '100%', padding: 50, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 24, border: `4px dashed ${th.accentLine}`}}>
         <Icon name="doc" size={96} color={th.accent} />
         <div style={{fontSize: 72, fontWeight: 900, color: th.cardText}}>{type}</div>
+        {/* i18n-ignore：开发占位，只在镜头没实现时出现，validate 会先拦掉未知镜头 */}
         <div style={{fontSize: 34, color: th.cardSub}}>镜头待实现（占位）</div>
         {lines.slice(0, 4).map((l, i) => (
           <div key={i} style={{fontSize: 34, color: th.cardText, maxWidth: 680, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis'}}>

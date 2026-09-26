@@ -1,5 +1,12 @@
 # credCard Credential card / honor card
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "credCard", "dur": 3,
+ "params": {"layout": "person", "name": "Ms. Su", "role": "Slides coach", "creds": ["Former marketing lead"], "skills": ["Layout", "Charts"]}}
+```
+Numbers and credentials such as years or creds must be in meta.facts; the honor layout requires refs.
+
 Replaces empty claims like "master craftsman" or "gold-medal" with verifiable credentials. Two layouts:
 - `person`: an instructor's or technician's credential card — an initial-letter avatar (or a photo they've consented to) + name/role/years + credentials checked off one at a time + skill tags
 - `honor`: an award/certificate card — a hand-drawn badge (never imitating any official mark) + the award title + issuer · year

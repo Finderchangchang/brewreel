@@ -4,16 +4,54 @@ import {continueRender, delayRender, useCurrentFrame} from 'remotion';
 // ============================================================
 // 布局探针（make.mjs 自动用，镜头开发者不用管）。
 // props 里带 __probe: [帧号...] 时，渲到这些帧就把画面上每个文字块的包围盒用 console.error 打出来
-// （一行一帧：__LAYOUT__{json}__END__；Remotion 只在 --log=verbose 时把页面日志转出来），make.mjs 从渲染日志里收集，检查：
-//   文字被容器裁切 / 两个文字块相交 / 文字出了 x 150–930。
+// （一行一帧：__LAYOUT__{json}__END__；Remotion 只在 --log=verbose 时把页面日志转出来），make.mjs 从渲染日志里收集
+// （解析和判定在 scripts/lib/layout-check.mjs），检查：
+//   文字被容器裁切 / 两个文字块相交 / 文字出了 x 150–930 —— 只在「检查帧」上判；
+//   英文视频（lang=en）里出现汉字 —— 每个探针帧都判。lang=en 时 make.mjs 每半拍放一个探针帧，覆盖每一拍。
 // 文字块 = 最近的「非行内」祖先元素里所有文字的并集；带底色的块（角标、胶囊）用它自己的外框。
+// han = 整个画面 DOM（含背景层）里所有含汉字的文字节点，不管此刻是否可见（vis 标出是否可见）：
+//   组件写死的中文哪怕这一帧正在淡入、透明度还很低，也能抓到。
 // ============================================================
 export type ProbeBlock = {id: number; text: string; x0: number; y0: number; x1: number; y1: number; box: boolean; clip: null | [number, number, number, number]; anc: number[]};
+export type ProbeHan = {text: string; vis: boolean};
 
+const HAN_RE = /[㐀-鿿豈-﫿]/;
 const isInline = (d: string) => d === 'inline' || d === 'inline-block' || d === 'contents';
 const hasBg = (cs: CSSStyleDeclaration) => {
   const c = cs.backgroundColor;
   return (!!c && c !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(c)) || (cs.backgroundImage && cs.backgroundImage !== 'none');
+};
+
+/** 文字节点此刻是否看得见：祖先透明度连乘 ≥ 0.35、没有 visibility:hidden / display:none、有面积 */
+const visibility = (n: Node, parent: Element, stop: Element | null) => {
+  let op = 1;
+  let hidden = false;
+  for (let e: Element | null = parent; e && e !== stop; e = e.parentElement) {
+    const cs = getComputedStyle(e);
+    op *= parseFloat(cs.opacity || '1');
+    if (cs.visibility === 'hidden' || cs.display === 'none') hidden = true;
+  }
+  if (hidden || op < 0.35) return {vis: false, range: null as Range | null};
+  const range = document.createRange();
+  range.selectNodeContents(n);
+  const rr = range.getBoundingClientRect();
+  if (rr.width < 1 || rr.height < 1) return {vis: false, range: null as Range | null};
+  return {vis: true, range};
+};
+
+const scanHan = (scope: Element): ProbeHan[] => {
+  const out = new Map<string, boolean>();
+  const walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+    const txt = (n.textContent ?? '').trim();
+    if (!txt || !HAN_RE.test(txt)) continue;
+    const parent = n.parentElement;
+    if (!parent || /^(STYLE|SCRIPT)$/i.test(parent.tagName)) continue;
+    const {vis} = visibility(n, parent, scope.parentElement);
+    const key = txt.slice(0, 24);
+    out.set(key, (out.get(key) ?? false) || vis);
+  }
+  return [...out.entries()].map(([text, vis]) => ({text, vis}));
 };
 
 const measure = (root: HTMLElement): ProbeBlock[] => {
@@ -32,19 +70,8 @@ const measure = (root: HTMLElement): ProbeBlock[] => {
     if (!txt) continue;
     const parent = n.parentElement;
     if (!parent) continue;
-    // 可见性：祖先 opacity 连乘
-    let op = 1;
-    let hidden = false;
-    for (let e: Element | null = parent; e && e !== root.parentElement; e = e.parentElement) {
-      const cs = getComputedStyle(e);
-      op *= parseFloat(cs.opacity || '1');
-      if (cs.visibility === 'hidden' || cs.display === 'none') hidden = true;
-    }
-    if (hidden || op < 0.35) continue;
-    const range = document.createRange();
-    range.selectNodeContents(n);
-    const rr = range.getBoundingClientRect();
-    if (rr.width < 1 || rr.height < 1) continue;
+    const {vis, range} = visibility(n, parent, root.parentElement);
+    if (!vis || !range) continue;
     // 所属文字块
     let blockEl: Element = parent;
     while (blockEl !== root && isInline(getComputedStyle(blockEl).display) && blockEl.parentElement) blockEl = blockEl.parentElement;
@@ -108,8 +135,10 @@ export const LayoutProbe: React.FC<{frames?: number[]; children: React.ReactNode
     const h = delayRender('layout probe');
     const done = () => {
       try {
+        // 汉字扫描范围 = 探针外层（整片画面，含背景层），不只是探针包住的镜头/字幕
+        const scope = el.parentElement ?? el;
         // eslint-disable-next-line no-console
-        console.error(`__LAYOUT__${JSON.stringify({frame, blocks: measure(el)})}__END__`);
+        console.error(`__LAYOUT__${JSON.stringify({frame, blocks: measure(el), han: scanHan(scope)})}__END__`);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error(`__LAYOUT__${JSON.stringify({frame, error: String(e)})}__END__`);

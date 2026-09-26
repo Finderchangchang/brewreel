@@ -1,0 +1,79 @@
+{
+  "name": "把 App 截图/仓库示例图当顾客前后照片（登记为 screenshot，或压根没登记、pair 对不上）",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "栗言发型工作室",
+      "industry": "beauty",
+      "notices": [
+        "生活美容 · 不提供医疗美容服务"
+      ],
+      "assets": [
+        {
+          "src": "../../examples/assets/meeting-screen.png",
+          "source": "screenshot"
+        },
+        {
+          "src": "_assets/renamed-sample.png",
+          "source": "merchant",
+          "kind": "customer-after",
+          "pair": "B"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "stat",
+          "text": "50分钟",
+          "sub": "剪吹护理"
+        },
+        "caption": "她只说了一句\n别剪太短"
+      },
+      {
+        "type": "beforeAfter",
+        "dur": 4,
+        "mood": 0.2,
+        "params": {
+          "before": {
+            "src": "../../examples/assets/meeting-screen.png",
+            "label": "做之前"
+          },
+          "after": {
+            "src": "_assets/renamed-sample.png",
+            "label": "做完"
+          },
+          "consent": true,
+          "retouched": false,
+          "sameAngle": true,
+          "subVertical": "hair",
+          "caption2": "顾客授权实拍"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "栗言发型工作室",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "是仓库自带的示例截图",
+      "和仓库自带的示例图 template/public/sample-screen.png 内容完全一样",
+      "不是顾客照片"
+    ]
+  }
+}

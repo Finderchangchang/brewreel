@@ -3,10 +3,12 @@ import {Audio, Easing, Img, Sequence, interpolate, staticFile, useCurrentFrame} 
 import type {Storyboard} from '../schema';
 import {clamp} from './anim';
 import {FONT} from './font';
-import {Lang, glyph, parseRich} from './kit';
+import {Lang, glyph, parseRich, repeatsHint} from './kit';
 import {CAP, DISCLAIMER_Y, FPS} from './safe';
 import {fitLine, fitSize} from './fit';
-import {moodColors, useTheme} from './theme';
+import {Icon, isIcon} from './icons';
+import {alpha, mixHex, moodColors, useTheme} from './theme';
+import {Illust, isIllust} from '../illust';
 import type {Slot} from './timeline';
 import {EXIT} from './timeline';
 import type {SfxCue, ShotModule, ShotSpec} from './types';
@@ -23,8 +25,198 @@ const piecewise = (pts: [number, number][], t: number) => {
   return pts[pts.length - 1][1];
 };
 
-// ---------------- 背景：主题渐变随 mood 过渡 + 柔光 + 两团慢慢漂的光斑 ----------------
-export const Background: React.FC<{slots: Slot[]}> = ({slots}) => {
+// ---------------- 下三分之一氛围层（y 1340–1920，只放装饰，不放任何关键信息/文字） ----------------
+// 以前 y 1340 以下每一帧都是光秃秃的渐变（评审：「下三分之一全空、所有片子一个样」）。这里按主题画一层
+// 会动的氛围：图案由 themes.json 的 ambient.pattern 决定（圆泡/网格/水波/柱状天际线/纸屑/金线），
+// 速度与冷暖跟着 mood 走，每拍鼓一下；再叠一团品牌色地平线光、本片自己用到的插画/图标剪影（按内容来，
+// 不是固定图标）和一条按镜头分段的节拍进度条。全部没有文字，平台的文案/按钮盖上来也不丢信息。
+const hash01 = (i: number, salt = 0) => {
+  const x = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+const ICON_KEYS = new Set(['icon', 'deco', 'orbit', 'icons']);
+/** 本片分镜里真正用到的插画 id / 图标名（按出现顺序去重）：氛围层剪影只画这些，和产品有关 */
+const visualIdsOf = (v: unknown, key = '', out: {illust: string[]; icon: string[]} = {illust: [], icon: []}) => {
+  if (typeof v === 'string') {
+    if (isIllust(v) && !out.illust.includes(v)) out.illust.push(v);
+    else if (ICON_KEYS.has(key) && isIcon(v) && v !== 'sparkle' && !out.icon.includes(v)) out.icon.push(v);
+  } else if (Array.isArray(v)) v.forEach((x) => visualIdsOf(x, key, out));
+  else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) visualIdsOf(x, k, out);
+  return out;
+};
+
+const AMB_TOP = 1340;
+const AMB_H = 1920 - AMB_TOP;
+
+const AmbientPattern: React.FC<{kind: string; t: number; e: number; bb: number; a: string; b: string; hot: string}> = ({kind, t, e, bb, a, b, hot}) => {
+  if (kind === 'grid') {
+    const hz = 70;
+    const off = (t * 0.9 * e) % 1;
+    const rows = Array.from({length: 9}, (_, k) => hz + (AMB_H - hz) * Math.pow((k + off) / 8, 2.1));
+    const cols = Array.from({length: 23}, (_, k) => -780 + k * 120);
+    return (
+      <svg width={1080} height={AMB_H} style={{position: 'absolute', left: 0, top: 0}}>
+        {cols.map((x, k) => (
+          <line key={`c${k}`} x1={540 + (x - 540) * 0.08} y1={hz} x2={x} y2={AMB_H} stroke={alpha(a, 0.32)} strokeWidth={2} />
+        ))}
+        {rows.map((y, k) => (
+          <line key={`r${k}`} x1={0} y1={y} x2={1080} y2={y} stroke={alpha(a, 0.1 + 0.3 * ((y - hz) / (AMB_H - hz)))} strokeWidth={2} />
+        ))}
+        <rect x={0} y={hz - 3} width={1080} height={6} fill={alpha(b, 0.55 + 0.35 * bb)} />
+        <rect x={0} y={hz - 26} width={1080} height={52} fill={alpha(b, 0.12 + 0.1 * bb)} style={{filter: 'blur(14px)'}} />
+      </svg>
+    );
+  }
+  if (kind === 'waves') {
+    const wave = (amp: number, len: number, ph: number, base: number) => {
+      let d = `M 0 ${AMB_H} L 0 ${base}`;
+      for (let x = 0; x <= 1080; x += 30) d += ` L ${x} ${(base + Math.sin((x / len) * Math.PI * 2 + ph) * amp).toFixed(1)}`;
+      return `${d} L 1080 ${AMB_H} Z`;
+    };
+    const s = t * 0.9 * e;
+    return (
+      <svg width={1080} height={AMB_H} style={{position: 'absolute', left: 0, top: 0}}>
+        <path d={wave(26 + 14 * bb, 620, s, 170)} fill={alpha(a, 0.16)} />
+        <path d={wave(20 + 10 * bb, 480, -s * 1.3 + 1.7, 280)} fill={alpha(b, 0.2)} />
+        <path d={wave(16 + 8 * bb, 380, s * 1.6 + 3.1, 390)} fill={alpha(a, 0.24)} />
+      </svg>
+    );
+  }
+  if (kind === 'bars') {
+    const n = 16;
+    const w = 46;
+    const gap = (1080 - n * w) / (n + 1);
+    return (
+      <>
+        {Array.from({length: n}, (_, i) => {
+          const base = 150 + hash01(i, 3) * 220;
+          const h = base + Math.sin(t * 1.4 * e + i * 0.8) * 40 + (i % 3 === Math.floor(t * 2) % 3 ? bb * 46 : 0);
+          return (
+            <div
+              key={i}
+              style={{position: 'absolute', left: gap + i * (w + gap), top: AMB_H - h, width: w, height: h + 20, borderRadius: '14px 14px 0 0', background: `linear-gradient(180deg, ${alpha(i % 4 === 1 ? b : a, 0.42)} 0%, ${alpha(a, 0.06)} 100%)`}}
+            />
+          );
+        })}
+        <div style={{position: 'absolute', left: 0, right: 0, top: 90, height: 3, background: alpha(b, 0.25)}} />
+      </>
+    );
+  }
+  if (kind === 'confetti') {
+    return (
+      <>
+        {Array.from({length: 26}, (_, i) => {
+          const sp = 60 + hash01(i, 1) * 70;
+          const y = ((t * sp * e + hash01(i, 2) * (AMB_H + 80)) % (AMB_H + 80)) - 40;
+          const x = hash01(i, 4) * 1080 + Math.sin(t * 1.5 + i) * 24;
+          const c = i % 3 === 0 ? hot : i % 3 === 1 ? a : b;
+          return (
+            <div
+              key={i}
+              style={{position: 'absolute', left: x, top: y, width: 14 + (i % 3) * 5, height: 8 + (i % 2) * 6, borderRadius: 3, background: alpha(c, 0.55), transform: `rotate(${t * (90 + i * 13) + i * 40}deg)`}}
+            />
+          );
+        })}
+        {[150, 390, 690, 930].map((x, i) => (
+          <div
+            key={`g${i}`}
+            style={{position: 'absolute', left: x - 70, top: 400 + (i % 2) * 40, width: 140, height: 140, borderRadius: '50%', background: `radial-gradient(circle, ${alpha(a, 0.5 + 0.3 * bb)} 0%, ${alpha(a, 0)} 70%)`}}
+          />
+        ))}
+      </>
+    );
+  }
+  if (kind === 'rays') {
+    const sweep = ((t * 0.35 * e) % 1.6) - 0.3;
+    return (
+      <>
+        <div style={{position: 'absolute', inset: 0, background: `repeating-linear-gradient(115deg, ${alpha(a, 0.16)} 0px, ${alpha(a, 0.16)} 2px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 38px)`}} />
+        <div style={{position: 'absolute', top: -100, bottom: -100, left: sweep * 1080 - 160, width: 320, transform: 'skewX(-25deg)', background: `linear-gradient(90deg, ${alpha(b, 0)} 0%, ${alpha(b, 0.16)} 50%, ${alpha(b, 0)} 100%)`}} />
+        <div style={{position: 'absolute', left: 180, right: 180, top: 120, height: 2, background: alpha(a, 0.45 + 0.35 * bb)}} />
+      </>
+    );
+  }
+  // bubbles（默认）
+  return (
+    <>
+      {Array.from({length: 15}, (_, i) => {
+        const size = 36 + hash01(i, 5) * 90;
+        const sp = 40 + hash01(i, 6) * 50;
+        const y = AMB_H - ((t * sp * e + hash01(i, 7) * (AMB_H + 140)) % (AMB_H + 140)) + 20;
+        const x = hash01(i, 8) * 1080 + Math.sin(t * 0.9 + i) * 18;
+        const c = i % 3 === 0 ? b : a;
+        const pulse = i % 4 === 0 ? 1 + bb * 0.12 : 1;
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              left: x - size / 2,
+              top: y - size / 2,
+              width: size,
+              height: size,
+              borderRadius: '50%',
+              background: `radial-gradient(circle at 35% 30%, ${alpha(c, 0.5)} 0%, ${alpha(c, 0.14)} 60%, ${alpha(c, 0.05)} 100%)`,
+              border: `2px solid ${alpha(c, 0.3)}`,
+              transform: `scale(${pulse})`,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
+
+export const LowerAmbient: React.FC<{slots: Slot[]; t: number; m: number; beat: number}> = ({slots, t, m, beat}) => {
+  const th = useTheme();
+  const amb = (th as {ambient?: {pattern?: string; a?: string; b?: string}}).ambient ?? {};
+  const kind = amb.pattern ?? 'bubbles';
+  // mood 越高（紧张）动得越快、颜色越往 hot 偏；越低越慢越冷
+  const e = 0.6 + 0.8 * m;
+  const bp = beat > 0 ? (t % beat) / beat : 0;
+  const bb = Math.exp(-bp * 5); // 每拍起点 1 → 衰减
+  const a = mixHex(amb.a ?? '#FFFFFF', th.hot, Math.max(0, m - 0.5) * 0.8);
+  const b = amb.b ?? th.hot;
+  const total = slots.length ? slots[slots.length - 1].end : 1;
+  const cur = slots.find((s) => t >= s.start && t < s.end) ?? slots[slots.length - 1];
+  const film = visualIdsOf(slots.map((s) => s.shot.params ?? {}));
+  const mine = cur ? visualIdsOf(cur.shot.params ?? {}) : {illust: [], icon: []};
+  // 剪影：本镜自己用到的插画/图标优先，其次全片的；一个都没有就不画（不拿默认图标凑数）
+  const ills = [...mine.illust, ...film.illust.filter((x) => !mine.illust.includes(x))].slice(0, 3);
+  const icons = ills.length ? [] : [...mine.icon, ...film.icon.filter((x) => !mine.icon.includes(x))].slice(0, 3);
+  const sil = ills.length ? ills : icons;
+  const xs = sil.length === 1 ? [830] : sil.length === 2 ? [230, 850] : [200, 540, 880];
+  const glow = mixHex(th.accent, th.hot, Math.max(0, m - 0.4));
+  return (
+    <div style={{position: 'absolute', left: 0, top: AMB_TOP, width: 1080, height: AMB_H, overflow: 'hidden', WebkitMaskImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0px, #000 150px)', maskImage: 'linear-gradient(180deg, rgba(0,0,0,0) 0px, #000 150px)'}}>
+      {/* 品牌色地平线光：每拍亮一下 */}
+      <div style={{position: 'absolute', left: -160, top: 250, width: 1400, height: 560, borderRadius: '50%', background: `radial-gradient(ellipse at 50% 50%, ${alpha(glow, 0.42 + 0.14 * bb)} 0%, ${alpha(glow, 0)} 65%)`}} />
+      <AmbientPattern kind={kind} t={t} e={e} bb={bb} a={a} b={b} hot={th.hot} />
+      {sil.map((id, i) => (
+        <div key={id} style={{position: 'absolute', left: xs[i] - 95, top: 250 + (i % 2) * 50 + Math.sin(t * 1.3 + i * 1.7) * 10 - bb * 8, width: 190, height: 190, opacity: 0.3, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `rotate(${(i - 1) * 8}deg)`}}>
+          {ills.length ? <Illust name={id} size={190} /> : <Icon name={id} size={130} color={th.onBg} stroke={1.6} />}
+        </div>
+      ))}
+      {/* 节拍进度条：按镜头分段，已播部分亮、当前拍一个亮点（纯装饰，无文字） */}
+      <div style={{position: 'absolute', left: 180, width: 720, top: AMB_H - 50, height: 8, display: 'flex', gap: 8}}>
+        {slots.map((s) => {
+          const f = Math.max(0, Math.min(1, (t - s.start) / s.dur));
+          return (
+            <div key={s.i} style={{flex: s.dur, position: 'relative', height: 8, borderRadius: 4, background: alpha(th.onBg.startsWith('#') ? th.onBg : '#FFFFFF', 0.22), overflow: 'hidden'}}>
+              <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: `${f * 100}%`, borderRadius: 4, background: alpha(th.onBg.startsWith('#') ? th.onBg : '#FFFFFF', 0.7)}} />
+            </div>
+          );
+        })}
+      </div>
+      {total > 0 && (
+        <div style={{position: 'absolute', left: 180 + 720 * Math.min(1, t / total) - 9, top: AMB_H - 55, width: 18, height: 18, borderRadius: 9, background: th.hot, transform: `scale(${1 + bb * 0.5})`, boxShadow: `0 0 12px ${alpha(th.hot, 0.8)}`}} />
+      )}
+    </div>
+  );
+};
+
+// ---------------- 背景：主题渐变随 mood 过渡 + 柔光 + 两团慢慢漂的光斑 + 下三分之一氛围层 ----------------
+export const Background: React.FC<{slots: Slot[]; beat?: number}> = ({slots, beat = 0.5}) => {
   const th = useTheme();
   const t = useSec();
   // mood 就近归到 0 / 0.5 / 1 三档再过渡：两端色直接 RGB 插值的中间值（如 0.2）发灰，不好看
@@ -73,6 +265,7 @@ export const Background: React.FC<{slots: Slot[]}> = ({slots}) => {
         }}
       />
       <div style={{position: 'absolute', inset: 0, background: `radial-gradient(ellipse at 50% 35%, ${th.glow} 0%, rgba(255,255,255,0) 60%)`}} />
+      <LowerAmbient slots={slots} t={t} m={m} beat={beat} />
     </div>
   );
 };
@@ -96,7 +289,13 @@ export const MoodFlash: React.FC<{slots: Slot[]}> = ({slots}) => {
 // CAP.min=64 是给中文短句校准的下限；同样的字数上限（按「汉字 1/拉丁 0.5」折算）英文句子明显更宽
 // （单词间有空格、字母本身也没有汉字方正），64px 常常还是装不下、被挤出 x150–930。字幕不做自动换行
 // （行由模型手动拆 \n），所以英文字幕的下限单独放宽到 44px（仍在 26px 的全局字号地板之上很多）
-export const captionSize = (text: string, lang: Lang = 'zh') => fitSize(text, CAP.w, CAP.max, lang === 'en' ? 44 : CAP.min, 30);
+// 按关键内容区 x180–900（720 宽）来缩，而不是字幕带外框 780：make 的版式自查按 180–900 量字幕，
+// 以前按 780−30 缩出来的 10.5–11.7 字宽的行会出界 5–10px（p3 自测：「写纪要，从40分钟到3分钟」x173–907）
+// 两处再收紧（p3 集成）：
+// - 中文下限从 CAP.min(64) 放到 58：校验允许一行 12 字，12×64=768 会出 720 宽的区；12×58=696 放得下
+// - 英文按 680 宽估：粗体拉丁字母的实际宽度比 emWidth 估算宽约 4%（p3 样例：「Meant to focus,」估 712、实测 738，出界 9px）
+export const captionSize = (text: string, lang: Lang = 'zh') =>
+  fitSize(text, lang === 'en' ? 680 : 720, CAP.max, lang === 'en' ? 44 : Math.min(CAP.min, 58), 8);
 
 /** 字幕数组的分段：n 句平分这一镜，分界吸附到整拍（与 scripts/validate.mjs 的 captionSegments 同一算法） */
 export const captionSegments = (start: number, dur: number, n: number, beat: number): [number, number][] => {
@@ -218,8 +417,15 @@ export const Disclaimer: React.FC<{text?: string; lang?: Lang}> = ({text, lang =
 // ---------------- 底部常驻提示条（meta.notices，全程；和角落免责小字分开显示，互不冲突） ----------------
 // 安全位置：y ≥1344（主体区 1340 以下，watermark logo 在 1392 起），字号 ≥26px，半透明深色底衬保证可读。
 // 多条提示合并成一行（用 · 分隔），避免和下方 logo 水印叠高度；单条也够用绝大多数场景。
-export const Notices: React.FC<{items?: string[]; lang?: Lang}> = ({items, lang = 'zh'}) => {
-  const list = (items ?? []).map((s) => (typeof s === 'string' ? s.trim() : '')).filter(Boolean).slice(0, 3);
+// 同一提示不重复出现：和顶部免责小字说的是一回事（原话相同，或都是「演示/示意/模拟」这类演示声明）的条目不再画；
+// 多条之间互相重复的也只留一条（评审：顶部「演示画面，数据为示意」+ 底部「演示数据，以实际为准」每帧各一遍）。
+// disclaimer 由 Promo.tsx 传入（没传时只做条目之间的去重）
+export const Notices: React.FC<{items?: string[]; lang?: Lang; disclaimer?: string}> = ({items, lang = 'zh', disclaimer}) => {
+  const list = (items ?? [])
+    .map((s) => (typeof s === 'string' ? s.trim() : ''))
+    .filter(Boolean)
+    .filter((s, i, arr) => !repeatsHint(s, {disclaimer, notices: arr.slice(0, i)}))
+    .slice(0, 3);
   if (!list.length) return null;
   const text = list.join('   ·   ');
   // 内容宽度按安全区收窄到 720（和 MAIN/CARD 一致），字号仍有 26px 下限；就算 3 条提示拼满也让它换行，

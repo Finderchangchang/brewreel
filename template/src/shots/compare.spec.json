@@ -45,6 +45,8 @@
         }
       },
       "meterLabel": {"type": "string", "maxLen": 6, "minLen": 1, "description": "刻度条量的是什么，如「麻烦程度」「效率」；两栏写了 level 时才显示"},
+      "higherIs": {"type": "string", "enum": ["good", "bad"], "description": "这把尺子越高越好写 good（如「保温时长」），越高越差写 bad（如「麻烦程度」）；tone=good 那栏必须在这把尺子上占优"},
+      "refs": {"type": "array", "items": {"type": "string"}, "description": "写了 stat 数字或 level 时，指向 meta.facts 里给出这组数的条目 id；简报没给就删掉 stat/level，只比 items"},
       "verdict": {"type": "string", "maxLen": 12, "minLen": 1, "description": "底部结论胶囊，如「省下的时间拿去休息」"}
     }
   },

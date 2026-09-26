@@ -23,3 +23,11 @@ Dine-in restaurants, cafes/tea shops, quick-service/snack shops. Not for: delive
 - Sales figures → source + as-of date
 
 See `test-brief.md` / `expected.md` for a worked example and `rules.json` for the machine-checkable rules (each pattern cites its legal/platform source, or is marked "unverified").
+
+<!-- round5 -->
+## Core action and assets (enforced by the validator)
+- Food & beverage is a physical-goods / storefront industry: show the core action with **photoShot (merchant photo or illustrated scene)** and use `steps` for the process. **Do not invent app screens with `mockApp`** (order page, checkout, booking form); the validator blocks it. If the merchant really has a screenshot of its own mini-program or store page, show it in `phone`.
+- Register every image in `meta.assets` with its source (merchant / illustration / screenshot); only merchant photos may be labelled "实拍".
+- No photos: fall back to illustrations (`source: "drawn"`). You get an "add a real photo before publishing" reminder, not a block, and no "no real photo in the first 3 s" warning.
+- When both `compare` columns have a `level`, the `tone: "good"` column must score better on the `meterLabel` scale: "保温时长" (heat retention) higher is better; "降温速度" (cooling speed) or "麻烦程度" (hassle) higher is worse.
+- Price cards must carry every condition in `meta.facts`: weekend/holiday prices, coupon terms, surcharges, validity dates, booking, blackout days. If you mention a fee (extra bed, cleaning, broth base…), give the amount instead of just "extra".

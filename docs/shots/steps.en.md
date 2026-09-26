@@ -1,5 +1,11 @@
 # steps 1-2-3 flow
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "steps", "dur": 4,
+ "params": {"items": [{"title": "Connect"}, {"title": "Tap Generate"}, {"title": "Edit and send"}]}}
+```
+
 One flow card: nodes stacked vertically on the left, a light dot runs down the connecting line step by step, each node lighting up and its text sliding in as the dot reaches it; once all steps are done, every node gets a ✓ (with a ding). Communicates "this is easy to get started with."
 
 ## When to use

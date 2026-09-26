@@ -1,5 +1,5 @@
 {
-  "name": "团购套餐带货（抖音挂团购），对齐 test-brief 的合规版本",
+  "name": "团购套餐带货（抖音挂团购），对齐 test-brief 的合规版本：实拍登记在素材清单里",
   "storyboard": {
     "meta": {
       "title": "t",
@@ -19,6 +19,13 @@
         {
           "id": "f1",
           "text": "牛腱自家卤制，后厨视频为证"
+        }
+      ],
+      "assets": [
+        {
+          "src": "_assets/photo-a.png",
+          "source": "merchant",
+          "kind": "dish"
         }
       ]
     },
@@ -44,7 +51,8 @@
             {
               "source": "merchant",
               "tag": "实拍",
-              "label": "招牌款"
+              "label": "招牌款",
+              "src": "_assets/photo-a.png"
             }
           ],
           "title": "红烧牛肉面",
@@ -109,6 +117,12 @@
   },
   "expect": {
     "block": [],
-    "blockCount": 0
+    "blockCount": 0,
+    "absent": {
+      "warn": [
+        "商家没有可用的实拍照片",
+        "前 3 秒"
+      ]
+    }
   }
 }

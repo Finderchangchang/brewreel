@@ -1,5 +1,12 @@
 # beforeAfter 前后对比滑块
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "beforeAfter", "dur": 3,
+ "params": {"before": {"src": "photos/before.png"}, "after": {"src": "photos/after.png"}, "consent": true, "retouched": false, "subVertical": "hair"}}
+```
+只在美业开放。两张必须是同一位顾客的商家实拍，并在 meta.assets 登记：`[{"src": "photos/before.png", "source": "merchant", "kind": "customer-before", "pair": "A"}, {"src": "photos/after.png", "source": "merchant", "kind": "customer-after", "pair": "A"}]`。没有照片就改用 steps。
+
 同一位顾客做之前和做完的真实对比：一根滑杆从右往左扫过，露出「之后」。只有美业开放（发型 / 美甲 / 美睫）。
 
 ## 什么时候用

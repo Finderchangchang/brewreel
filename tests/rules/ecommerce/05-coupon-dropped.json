@@ -1,0 +1,89 @@
+{
+  "name": "评审原案：简报「领 20 元店铺券后 59 元/只」，价格卡没写领券和活动期，片尾写「现价59元」",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "fresh-light",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "暖屿保温杯",
+      "industry": "ecommerce",
+      "disclaimer": "画面为插画示意",
+      "facts": [
+        {
+          "id": "f7",
+          "text": "活动：2026-09-26 至 2026-10-07，领 20 元店铺券后 59 元/只"
+        }
+      ]
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.6,
+        "params": {
+          "visual": "illust",
+          "illust": "ecommerce/cup",
+          "text": "中午就凉了"
+        },
+        "caption": "早上的咖啡\n到中午就凉了"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "hero",
+          "media": [
+            {
+              "source": "drawn",
+              "illust": "ecommerce/cup",
+              "tag": "示意",
+              "label": "一键弹盖"
+            }
+          ],
+          "title": "暖屿保温杯"
+        }
+      },
+      {
+        "type": "priceCard",
+        "dur": 4,
+        "mood": 0.2,
+        "params": {
+          "layout": "card",
+          "items": [
+            {
+              "itemId": "p1",
+              "name": "保温杯",
+              "price": 59,
+              "unit": "只"
+            }
+          ],
+          "label": "售价"
+        },
+        "caption": "一只只要59元"
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.2,
+        "params": {
+          "brand": "暖屿保温杯",
+          "slogan": "喝口热的\n{再出发}",
+          "points": [
+            "现价59元"
+          ]
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "59 元在简报里是「领 20 元店铺券后 59 元/只」，画面没写领券/满减条件",
+      "画面没写截止日期（10月7日）",
+      "「现价59元」说 59 元，但简报里这个价要满足条件才有"
+    ]
+  }
+}

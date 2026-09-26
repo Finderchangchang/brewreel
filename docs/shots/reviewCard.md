@@ -1,5 +1,12 @@
 # reviewCard 真实顾客评价
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "reviewCard", "dur": 3,
+ "params": {"quotes": [{"text": "面很筋道，汤也够热", "month": "2026-08", "stars": 5}], "evidence": "团购平台 2026-08 顾客评价原文，昵称已隐去"}}
+```
+评价原文照抄，`evidence` 写出处，不上屏；教培行业不开放。
+
 摘录真实顾客评价：大引号 + 原文 + 星级 + 月份，星星一颗一颗点亮（不是一次性贴一排）。1–2 条评价，不放真人头像，改用首字圆标。
 
 ## 什么时候用
@@ -26,7 +33,7 @@
 ## 好例子
 ```json
 {"type": "reviewCard", "dur": 3, "mood": 0.15,
- "params": {"quotes": [{"text": "汤很浓，肉给得实在", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
+ "params": {"quotes": [{"text": "排队不久，分量很足", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
 ```
 ```json
 {"type": "reviewCard", "dur": 4.5, "mood": 0.15,

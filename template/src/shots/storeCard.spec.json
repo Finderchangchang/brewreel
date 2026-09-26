@@ -2,10 +2,13 @@
   "type": "storeCard",
   "purpose": "门店、位置和到店指引：讲清楚店在哪、几点开门、怎么过来，以及平台内怎么操作。schema 里不设电话/微信/二维码/网址/门牌号字段。",
   "tips": [
-    "layout=photo 门头实拍（photo.source 必须是 merchant）/ map 代码画的示意路线图（不模仿高德/百度/腾讯地图界面，不画国界省界市界轮廓）/ card 纯信息卡",
+    "layout=photo 门头实拍（photo.source 必须是 merchant；没有照片时横幅自动换成插画并标「示意」）/ map 代码画的示意路线图（不模仿任何地图 App 界面，不画国界省界市界轮廓）/ card 纯信息卡（内容少时上方自动补一条插画横幅）",
+    "routes 每条的 to 会上屏：map 布局画成目的地标签「城东高铁站 / 驾车 25分钟」，card 布局画成「城东高铁站 · 驾车 25分钟」，所以 to 要写真实的地名（照抄 facts），不要写「这里」「附近」；map 最多 4 条",
+    "map 布局下 landmark/hours/parking/pickup/badges/cta/disclaimer 会放在图下方的信息条里，都能显示",
     "landmark 写地铁口/商场楼层/镇村名，不写门牌号；basis 默认「导航估算」，画面会自动加小字「时间为导航估算，以实际路况为准」",
     "cta 按平台取预设值：抖音「点视频定位看团购」，视频号「点定位看路线」（具体按钮位置和文案未核实，先按行业规则的 platform 段覆盖）",
-    "美业 disclaimer 默认「生活美容 · 不提供医疗美容服务」"
+    "美业 disclaimer 默认「生活美容 · 不提供医疗美容服务」；和 meta.notices 里某条一样时画面只显示底部提示条那一份",
+    "英文片（meta.lang=en）routes[].mode 也照写中文枚举值，画面自动换成 Walk/Drive/Metro…"
   ],
   "dur": {"default": 3, "min": 2.5, "max": 4},
   "mood": 0.2,
@@ -27,7 +30,7 @@
           "type": "object",
           "required": ["to", "mode", "minutes"],
           "properties": {
-            "to": {"type": "string", "maxLen": 8},
+            "to": {"type": "string", "maxLen": 8, "description": "目的地，会上屏（如「高铁站」「县城」「地铁2号线」）"},
             "mode": {"type": "string", "enum": ["步行", "驾车", "打车", "公交", "地铁", "骑行", "接驳车"]},
             "minutes": {"type": "number", "minimum": 0, "maximum": 300},
             "km": {"type": "number", "minimum": 0}
@@ -48,11 +51,14 @@
     "mood": 0.2,
     "dur": 3,
     "params": {
-      "layout": "card",
-      "name": "巷口面馆",
-      "landmark": "地铁2号线桂园站B口",
-      "hours": "10:00–21:30",
-      "routes": [{"to": "地铁站", "mode": "步行", "minutes": 3}],
+      "layout": "map",
+      "name": "竹间茶舍",
+      "landmark": "滨江步行街北口",
+      "hours": "11:00–22:00",
+      "routes": [
+        {"to": "滨江公园站", "mode": "步行", "minutes": 6},
+        {"to": "城东客运站", "mode": "打车", "minutes": 18}
+      ],
       "basis": "导航估算"
     }
   }

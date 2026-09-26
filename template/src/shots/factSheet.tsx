@@ -3,7 +3,8 @@ import {bump, pop} from '../core/anim';
 import {fitLine} from '../core/fit';
 import {FONT, MONO} from '../core/font';
 import {Icon} from '../core/icons';
-import {IconDisc} from '../core/kit';
+import {IconDisc, pick} from '../core/kit';
+import type {Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
@@ -72,7 +73,7 @@ const KVRow: React.FC<{r: Row; t: number; at: number; w: number}> = ({r, t, at, 
 };
 
 // ---------- box：开箱方块（2 列） ----------
-const BoxTile: React.FC<{r: Row; t: number; at: number; w: number}> = ({r, t, at, w}) => {
+const BoxTile: React.FC<{r: Row; t: number; at: number; w: number; lang?: Lang}> = ({r, t, at, w, lang}) => {
   const th = useTheme();
   if (t < at) return null;
   const q = pop(t, at, 11, 230);
@@ -103,11 +104,11 @@ const BoxTile: React.FC<{r: Row; t: number; at: number; w: number}> = ({r, t, at
             background: th.hot,
             color: '#1b1a18',
             fontWeight: 900,
-            fontSize: 22,
+            fontSize: 26,
             boxShadow: '0 6px 14px rgba(0,0,0,0.22)',
           }}
         >
-          赠
+          {pick(lang, '赠', 'Gift')}
         </div>
       )}
       <div style={{fontSize: nameSize, fontWeight: 800, color: th.cardText, marginTop: r.isGift ? 10 : 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{r.key}</div>
@@ -117,13 +118,14 @@ const BoxTile: React.FC<{r: Row; t: number; at: number; w: number}> = ({r, t, at
 };
 
 // ---------- syllabus：章节行 + 圆点 ----------
-const SyllabusRow: React.FC<{r: Row; t: number; at: number; w: number}> = ({r, t, at, w}) => {
+const SyllabusRow: React.FC<{r: Row; t: number; at: number; w: number; lang?: Lang}> = ({r, t, at, w, lang}) => {
   const th = useTheme();
   if (t < at) return null;
   const q = pop(t, at, 13, 210);
   const name = r.name ?? r.key ?? '';
   const lessons = typeof r.lessons === 'number' ? r.lessons : undefined;
-  const nameSize = fitLine(name, w - 170, 38, 32);
+  const lessonsText = lessons === undefined ? '' : pick(lang, `${lessons}节`, `${lessons} ${lessons === 1 ? 'lesson' : 'lessons'}`);
+  const nameSize = fitLine(name, w - (lang === 'en' ? 220 : 170), 38, 32);
   return (
     <div style={{display: 'flex', alignItems: 'center', gap: 16, padding: '11px 0', opacity: Math.min(1, q * 1.7), transform: `translateX(${(1 - q) * 40}px)`}}>
       <div style={{width: 50, height: 50, borderRadius: 25, background: th.accent, color: th.accentText, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: MONO, fontWeight: 800, fontSize: 25}}>
@@ -131,7 +133,7 @@ const SyllabusRow: React.FC<{r: Row; t: number; at: number; w: number}> = ({r, t
       </div>
       <div style={{flex: 1, fontSize: nameSize, fontWeight: 800, color: th.cardText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{name}</div>
       {lessons !== undefined && (
-        <div style={{flex: 'none', padding: '6px 18px', borderRadius: 20, background: th.accentSoft, color: th.accent, fontWeight: 800, fontSize: 28, whiteSpace: 'nowrap'}}>{lessons}节</div>
+        <div style={{flex: 'none', padding: '6px 18px', borderRadius: 20, background: th.accentSoft, color: th.accent, fontWeight: 800, fontSize: 28, whiteSpace: 'nowrap'}}>{lessonsText}</div>
       )}
     </div>
   );
@@ -162,8 +164,9 @@ const Swatch: React.FC<{r: Row; t: number; at: number; hi: boolean}> = ({r, t, a
   );
 };
 
-const FactSheet: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
+const FactSheet: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const th = useTheme();
+  const lang = meta?.lang;
   const layout = asLayout(p.layout);
   const rows = (p.rows ?? []).slice(0, 6);
   const n = Math.max(1, rows.length);
@@ -206,13 +209,13 @@ const FactSheet: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
           {layout === 'box' ? (
             <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16}}>
               {rows.map((r, i) => (
-                <BoxTile key={i} r={r} t={t} at={pl.at[i]} w={(bodyW - 16) / 2} />
+                <BoxTile key={i} r={r} t={t} at={pl.at[i]} w={(bodyW - 16) / 2} lang={lang} />
               ))}
             </div>
           ) : layout === 'syllabus' ? (
             <div>
               {rows.map((r, i) => (
-                <SyllabusRow key={i} r={r} t={t} at={pl.at[i]} w={bodyW} />
+                <SyllabusRow key={i} r={r} t={t} at={pl.at[i]} w={bodyW} lang={lang} />
               ))}
             </div>
           ) : layout === 'swatch' ? (

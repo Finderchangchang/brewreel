@@ -1,5 +1,12 @@
 # compare
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "compare", "dur": 4, "caption": "Same report,\n{different effort}",
+ "params": {"left": {"title": "By hand", "items": ["Search chats", "Copy, paste"]}, "right": {"title": "With it", "items": ["Auto summary", "Tweak and send"]}}}
+```
+Compare the process only, with no stat numbers or level. Add stat/level only when the brief gives the numbers, and point `refs` at that fact.
+
 Two ways to play it:
 - `lr` (default): two side-by-side cards. The left card (the pain point) reveals its items one by one → a center divider draws down and "VS" pops in → the right card (using the product) reveals its items → the right card "wins": a glowing outline + badge (a warning icon if `right.tone` is `bad`, otherwise a checkmark), the left card dims → a closing verdict pill at the bottom.
 - `beforeAfter`: one wide card plays "before" first, then a handle wipes from right to left to reveal "after", and finally the verdict pill.

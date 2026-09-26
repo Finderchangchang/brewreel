@@ -1,10 +1,73 @@
 {
-  "meta": {"title": "English width bad", "product": "Demo", "theme": "tech-dark", "lang": "en", "action": "tap once, auto-sort the file",
-    "facts": [{"id": "f1", "text": "sample data"}]},
+  "meta": {
+    "title": "English width bad",
+    "product": "Demo",
+    "theme": "tech-dark",
+    "lang": "en",
+    "action": "tap once, auto-sort the file",
+    "facts": [
+      {
+        "id": "f1",
+        "text": "sample data",
+        "source": "简报·数字和来源"
+      }
+    ]
+  },
   "shots": [
-    {"type": "hook", "dur": 2.5, "caption": "This single caption line has way more than twenty two characters in it", "params": {"visual": "icon", "icon": "sparkle"}},
-    {"type": "mockApp", "dur": 4, "caption": "Files sort\n{themselves now}", "params": {"kind": "editor", "title": "Sort", "input": "Upload receipt", "button": "Sort", "items": [{"text": "Result one"}, {"text": "Result two"}], "done": "Sorted"}},
-    {"type": "steps", "dur": 5, "caption": "Open it up,\n{done in seconds}", "params": {"items": [{"title": "Open app"}, {"title": "Tap sort"}, {"title": "Get result"}]}},
-    {"type": "endCard", "dur": 4, "params": {"brand": "Demo", "slogan": "Sorting, handled\n{for you}"}}
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "This single caption line has way more than twenty two characters in it",
+      "params": {
+        "visual": "icon",
+        "icon": "sparkle"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "Files sort\n{themselves now}",
+      "params": {
+        "kind": "editor",
+        "title": "Sort",
+        "input": "Upload receipt",
+        "button": "Sort",
+        "items": [
+          {
+            "text": "Result one"
+          },
+          {
+            "text": "Result two"
+          }
+        ],
+        "done": "Sorted"
+      }
+    },
+    {
+      "type": "steps",
+      "dur": 5,
+      "caption": "Open it up,\n{done in seconds}",
+      "params": {
+        "items": [
+          {
+            "title": "Open app"
+          },
+          {
+            "title": "Tap sort"
+          },
+          {
+            "title": "Get result"
+          }
+        ]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "Demo",
+        "slogan": "Sorting, handled\n{for you}"
+      }
+    }
   ]
 }

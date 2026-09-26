@@ -40,6 +40,12 @@
 <a id="hook"></a>
 ## hook — opening hook
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "hook", "dur": 2.5, "caption": "Friday night,\n{report still blank}",
+ "params": {"visual": "icon", "icon": "doc", "text": "Friday again", "badge": "Draft it in one tap"}}
+```
+
 **Must be shot 1.** Frame 0 is the cover: big title (caption) + product highlight badge (badge) + one hero visual, all in place from the very first frame, no blank frame.
 
 ### When to use
@@ -49,19 +55,27 @@ Every video opens with it, exactly once. 2–3 seconds.
 | Field | Required | Notes |
 |---|---|---|
 | caption (shot-level field) | Yes | The cover headline: the viewer's pain point or a counter-intuitive question. ≤2 lines, ≤12 characters per line, wrap the sharpest 2–5 characters in `{}` |
-| visual | Yes | Pick by content first: `bubble` a raw message + warning card / `stat` a big number in a ring / `icon` a big icon with orbiting small icons / `phone` a real screenshot on a phone. Then pick a composition: `split` a left/right split of "pain point vs. product" / `statBar` a big number over a full-width bar |
-| text | Depends on visual | bubble: the message (≤14 chars); stat/statBar: the number or short phrase (≤6 chars reads best); icon: one line under the icon; phone: a sticky-note label; split: the right (product) side phrase (≤10 chars reads best) |
+| visual | Yes | Pick by content first: `bubble` a raw message + warning card / `stat` a big number in a ring (text must contain a number) / `icon` one big icon / `illust` an industry illustration / `phone` a real screenshot on a phone. Then pick a composition: `split` a left/right split of "pain point vs. product" / `statBar` a big number over a full-width bar |
+| text | Depends on visual | bubble: the message (≤14 chars); stat/statBar: a short phrase with a number (≤6 chars reads best; it auto-shrinks and breaks into two lines at → or a space if needed); icon/illust: one line under the visual; phone: a sticky-note label; split: the right (product) side phrase (≤10 chars reads best) |
 | sub | No | bubble: the warning card's title (e.g. "Red flag"); stat/statBar: a caption under the number (≤8 chars); split: one closing line at the bottom |
 | icon | Required for `icon` | Icon name (see the icon list); split: the right-side icon, defaults to `check` |
+| illust | Required for `illust` | Industry illustration id (`template/src/illust/names.json`), e.g. `travel/window` |
+| orbit | No | `icon` only: 3–6 small icons orbiting the main icon, picked for your product. **Leave it out and there is no orbit**: the main icon gets bigger and pulses on the beat |
+| pct | No | stat/statBar: the value as a share, 0–100; sets the ring's arc / the bar's length. Falls back to a percentage in `text` ("87%"); **with neither, no arc is drawn and the bar stays empty** |
 | leftText | For `split` | The left (pain point) side phrase (≤10 chars), e.g. "Doing it by hand" |
-| level | For `statBar` | Bar fill ratio, 0–10, defaults to 8 |
+| level | For `statBar` | Bar fill, 0–10; prints "x/10", so it needs a basis. Falls back to `pct` |
 | badge | Recommended | A one-line product pitch (≤10 chars), e.g. "AI checks it first"; shows the logo on the left when `meta.logo` is set |
 | src | Required for `phone` | Path to the portrait screenshot |
 | tone | No | Warning color: `bad` red (default) / `warn` orange / `good` green / `accent` brand color; on `split` it recolors the right side |
-| deco | No | Two floating side icons; `split` uses the first one for the left-side icon |
+| deco | No | Floating side icons. **Leave it out and none are drawn** (there are no theme defaults any more); `split` uses the first one for the left-side icon |
 
-### Don't reuse the same visual every time
-If every video in a batch uses `bubble`, or every one uses `stat`, the frame-0 covers all start to look like the same template with a new skin. For data/efficiency pitches, alternate between `stat` (a ring) and `statBar` (a full-width bar); for "before vs. now" pitches, try `split`.
+### Rings and bars only show numbers that mean something
+- The `stat` arc length is `pct` (or a percentage in `text`). If "6 h" is meant as "a quarter of the day", write `"pct": 25`. Without a share, leave it out: the ring is drawn with no arc.
+- If `text` has no number ("Bamboo outside the window", "Split by hand"), don't use `stat`: use `illust` for a place or an object, `icon` for a feature. A `stat` with no number falls back to a big-word card with no ring.
+- Same for `statBar`: with no `level`, `pct` or percentage, only the empty track and a light sweep are drawn, no "8/10".
+
+### Don't reuse the same visual, and don't lean on default decoration
+If every video in a batch uses `bubble`, or every one uses `stat`, the frame-0 covers all start to look like the same template with a new skin. For data/efficiency pitches, alternate between `stat` (a ring) and `statBar` (a full-width bar); for "before vs. now" pitches, try `split`; for an industry film about one object or place, use `illust`. Orbiting and floating icons are only drawn when you list them (`orbit` / `deco`); the old defaults that had nothing to do with the product are gone.
 
 ### Good examples
 ```json
@@ -73,17 +87,22 @@ If every video in a batch uses `bubble`, or every one uses `stat`, the frame-0 c
  "params": {"visual": "stat", "text": "60 min", "sub": "spent on reports every week", "badge": "AI writes it in 3 min"}}
 ```
 ```json
+{"type": "hook", "dur": 2.5, "caption": "Open the window:\n{a whole mountain}", "mood": 0.3,
+ "params": {"visual": "illust", "illust": "travel/window", "text": "Breakfast for two included", "tone": "good", "badge": "A night in the hills"}}
+```
+```json
 {"type": "hook", "dur": 2.5, "caption": "Still doing reports {by hand}?", "mood": 0.7,
  "params": {"visual": "split", "leftText": "By hand", "text": "Auto-generated", "badge": "AI writes it in 3 min"}}
 ```
 ```json
-{"type": "hook", "dur": 2.5, "caption": "The hassle just {dropped 80%}", "mood": 0.6,
- "params": {"visual": "statBar", "text": "-80%", "sub": "time spent on reports", "level": 9, "badge": "AI writes it in 3 min"}}
+{"type": "hook", "dur": 2.5, "caption": "The meeting's over.\n{Who writes the notes?}", "mood": 0.7,
+ "params": {"visual": "icon", "icon": "doc", "orbit": ["clock", "users", "check"], "text": "Meeting's over. Now what?", "badge": "Notes from the recording"}}
 ```
 
 ### Bad examples
 - caption is just the product name ("XX Assistant is here"): no hook.
 - `visual: "phone"` but the screenshot is just the home screen, no tension to it.
+- `visual: "stat"` with a phrase that has no number ("Split by hand"): nothing to count, and the ring means nothing.
 - Every video in a batch uses the same `visual`: all the frame-0 covers look identical, no differentiation.
 
 ### Params (auto-generated from hook.spec.json)
@@ -92,17 +111,20 @@ Duration 1.5–4s (default 2.5); caption required; default mood 0.85; exit push.
 
 | Field | Required | Type / values | Limit | Notes |
 |---|---|---|---|---|
-| `visual` | Yes | bubble / stat / icon / phone / split / statBar |  | 主视觉类型/构图 |
-| `text` |  | text | ≤14 chars | bubble：那条扎心消息；stat/statBar：大数字或短词（如「3 秒」「87%」，≤6 字最好看）；icon：大图标下的一行字；phone：贴在手机上的标签（可不填）；split：右侧（产品侧）短语（≤10 字最好看） |
+| `visual` | Yes | bubble / stat / icon / illust / phone / split / statBar |  | 主视觉类型/构图 |
+| `text` |  | text | ≤14 chars | bubble：那条扎心消息；stat/statBar：大数字（必须带数字，如「3 秒」「87%」，≤6 字最好看，放不下会自动缩字号/在 → 处拆两行）；icon/illust：主视觉下的一行字；phone：贴在手机上的标签（可不填）；split：右侧（产品侧）短语（≤10 字最好看） |
 | `sub` |  | text | ≤8 chars | bubble：警示卡标题（如「危险信号」）；stat/statBar：数字下面的说明；split：底部一句小结（可不填）；icon：不用 |
 | `icon` |  | text | icon name | bubble：警示卡图标（默认 alert）；icon：主图标（必填）；split：右侧（产品侧）图标（默认 check） |
 | `badge` |  | text | ≤10 chars | 标题下方的高亮胶囊：产品一句话卖点 |
 | `src` |  | text | asset png/jpg/jpeg/webp | phone 必填：竖屏截图路径（相对 storyboard.json） |
 | `tone` |  | bad / warn / good / accent |  | 警示色：bad 红（默认）/ warn 橙 / good 绿 / accent 品牌色；split 用来给右侧（产品侧）换色，默认品牌色 |
-| `deco` |  | array | 0–3 items | 两侧漂浮的小图标（bubble 用 3 个、stat/statBar 用 2 个，split 用第 1 个做左侧图标），不写就按主题取（business-blue = chart/clock/doc，warm-emotion = chat/heart/bell…）；选和产品有关的图标 |
+| `deco` |  | array | 0–3 items | 两侧漂浮的小图标（bubble 最多 3 个、stat/statBar/icon/illust 2 个、phone 1 个；split 用第 1 个做左侧图标）。不写就不画——不再按主题给默认图标；要加就选和产品有关的 |
 | `head` |  | text | ≤10 chars | bubble：消息卡顶部那行小字，默认「新消息 · 刚刚」；写成 "" 就不显示。B 端可写「群消息 · 刚刚」「工单 · 刚刚」 |
 | `leftText` |  | text | ≤10 chars | split 专用：左侧（痛点侧）短语，如「手动整理」 |
-| `level` |  | number | 0–10 | statBar 专用：条形填充比例 0–10，默认 8（越高越满） |
+| `level` |  | number | 0–10 | statBar 专用：条形填充比例 0–10（会显示「x/10」，要有依据）；不写时用 pct 或 text 里的百分数，都没有就不填条 |
+| `pct` |  | number | 0–100 | stat/statBar：数值占比 0–100，决定圆环弧长/条形长度（如 text「6 小时」对应一天的 25%）；不写就从 text 里的「87%」取，都没有就不画弧、不填条 |
+| `orbit` |  | array | 3–6 items | icon 专用：环绕主图标的 3–6 个小图标，选和产品有关的；不写就不环绕，主图标放大 + 每拍一圈脉冲 |
+| `illust` |  | text |  | illust 专用（必填）：行业插画 id，从 template/src/illust/names.json 里选，如 "travel/window" |
 
 Example (passes validation as-is):
 
@@ -114,6 +136,13 @@ Example (passes validation as-is):
 
 <a id="chat"></a>
 ## chat mock chat
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "chat", "dur": 5, "caption": "They are busy?\n{Here is what to say}",
+ "params": {"messages": [{"from": "peer", "text": "Busy, talk later"}, {"from": "me", "text": "Sure, no rush"}], "panel": {"title": "Reply ideas", "replies": ["Okay, take your time", "Ping me when free"]}}}
+```
+Only for messaging-type products: meta.action has to mention messages or replies.
 
 A neutral-colored chat window ("me" = theme accent color, "them" = light gray, doesn't resemble any specific IM app). Messages pop in one beat at a time → optionally "me" types in the input box → optionally the product's floating button lights up and a panel pops up (verdict + tags + candidate replies) → the first candidate reply flies into the input box on "fill in".
 
@@ -182,6 +211,13 @@ Example (passes validation as-is):
 
 <a id="phone"></a>
 ## phone screenshot + callouts
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "phone", "dur": 4, "caption": "Open it and see,\n{key points marked}",
+ "params": {"src": "assets/screen.png", "focus": [{"area": "middle", "label": "Key points marked", "style": "box"}]}}
+```
+Replace `src` with your own portrait screenshot; no screenshot → use mockApp.
 
 A centered phone frame holding a real screenshot or screen recording. 1–3 spots get circled one beat at a time, each with a short caption. The screenshot only lives inside the phone frame — it never zooms to full screen or shakes around.
 
@@ -263,6 +299,12 @@ Example (passes validation as-is):
 
 <a id="mockapp"></a>
 ## mockApp simulated product UI
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "mockApp", "dur": 4, "caption": "Type your notes,\n{get a first draft}",
+ "params": {"kind": "editor", "title": "Weekly report", "input": "What I did this week", "button": "Generate", "items": [{"text": "Shipped the new homepage"}, {"text": "Fixed the login bug"}], "done": "Done"}}
+```
 
 Use this when there's no screenshot: it draws a neutral-colored, realistic-looking app screen and animates it acting something out. Everything is driven by params — no image needed.
 
@@ -365,6 +407,7 @@ Duration 2.5–8s (default 4); caption optional; default mood 0.3; exit push.
 | `stat` |  | object |  | dashboard 顶部的大数字 |
 | `stat.value` | Yes | text | ≤6 chars | 如「128」「+36%」「3.2万」，数字部分会滚动 |
 | `stat.label` | Yes | text | ≤8 chars | 数字说明，如「今日新增订单」 |
+| `stat.live` |  | text | ≤4 chars | 可选：右上角状态角标文字，如「实时」/「Live」。不写就不画这个角标，不要默认当作实时数据；lang=en 时写英文，不要写中文 |
 | `series` |  | array | 2–12 items | dashboard 图表数据，5–8 个数最好看，如 [3, 5, 4, 7, 9] |
 | `chart` |  | line / bar |  | dashboard 图表：line 折线（默认）/ bar 柱状 |
 | `input` |  | text | ≤12 chars | editor：输入框里打出的需求；list：搜索框里打出的词；dashboard：顶部提问框里打出的问题（先问后出数） |
@@ -383,23 +426,54 @@ Example (passes validation as-is):
 <a id="photoshot"></a>
 ## photoShot Real photo / short video
 
+**Minimal valid params** (one with a real photo, one without; copy, change the text, and it passes validation):
+```json
+{"type": "photoShot", "dur": 2.5, "params": {"layout": "hero",
+  "media": [{"src": "photos/<real photo listed in the brief>.jpg", "source": "merchant", "tag": "实拍"}], "title": "<dish / product name>"}}
+```
+```json
+{"type": "photoShot", "dur": 2.5, "params": {"layout": "hero",
+  "media": [{"source": "drawn", "tag": "示意", "illust": "food/meatball"}], "title": "<dish / product name>"}}
+```
+
 The workhorse shot for non-software industries: a real merchant photo or short video fills the frame as the hero, with a dish/product name, one selling line, and a price tag overlaid. Five layouts (`layout`):
 - `hero`: one photo with a slow push-in, a bottom gradient caption bar for title/tagline/price. Good for a signature dish, a hero product, a room's main shot.
 - `clip`: same as hero but the media is a short video clip (with a play badge). Good for process shots, walking through a space.
-- `grid`: 2–4 photos tiled in with a staggered entrance, each with a short label. Good for multi-angle environment shots, several dishes shown together.
-- `callouts`: one photo with 1–3 leader-line callouts. Good for pointing out details in a single image (ingredients, craft, parts).
+- `grid`: 2–4 photos tiled in with a staggered entrance, each with a short label.
+- `callouts`: one photo with 1–3 leader-line callouts. Good for pointing out details in a single image.
 - `tour`: 2–5 photos shown one at a time with page dots. Good for walking through a few angles of one room/space.
 
-When there is no real asset, set that item's `source` to `"drawn"`. Skip `src` and give `illust` instead (an illustration name from `template/src/illust/names.json`, picked by industry, e.g. `"food/bowl"`). Leaving `illust` out is fine too — it falls back to a default illustration based on `meta.industry`. **The illustration fallback is not a free pass**: a clean real photo always beats an illustration — use one whenever you have it.
+### No real photo: a full-card illustrated scene
+Set that item's `source` to `"drawn"` and `tag` to `"示意"`, skip `src`, and give `illust`. The shot becomes a full-card illustrated scene: theme-colour background with texture, a main illustration about 480px wide, 2–3 props from the same industry drifting in, a slow push-in, and an industry particle layer (steam for food, sparkles for beauty/e-commerce, light bands for travel). The corner tag always says "示意" / "Illustration" — even if `tag` says "实拍", a drawing is never labelled as a real photo.
+
+**Pick an `illust` that matches what the item is about.** Common ones:
+
+| About | illust |
+|---|---|
+| noodles / noodle close-up (chopsticks lifting noodles) | `food/bowl` / `food/noodle-bowl-closeup` |
+| meatballs | `food/meatball` |
+| coffee / milk tea / hotpot / buns & dumplings | `food/coffee` / `food/tea` / `food/hotpot` / `food/steamer` |
+| storefront | `food/storefront` (food) / `_base/store` (other industries) |
+| thermos, cup / water bottle | `ecommerce/cup` / `ecommerce/bottle` |
+| shipping / gift box / tag & specs | `ecommerce/parcel` / `ecommerce/gift` / `ecommerce/tag` |
+| hairstyle, short cut / haircut / blow-dry | `beauty/hair-short` / `beauty/scissors` / `beauty/hairdryer` |
+| room type / bed | `travel/room` / `travel/bed` |
+| window view (window frame onto the landscape) | `travel/window-view` |
+| guesthouse exterior / breakfast / scenery | `travel/house` / `travel/breakfast` / `travel/landscape` |
+| course / spreadsheet / certificate | `education/book` / `education/sheet` / `_base/cert` |
+
+The full list is `template/src/illust/names.json` (only names actually drawn in icons.tsx are accepted; validation checks this). If `illust` is left out, one is picked from keywords in the item's `label` and the shot's `title`/`tagline`/`roomType` (e.g. "pork meatballs" → `food/meatball`, "380ml thermos" → `ecommerce/cup`); only when nothing matches does it fall back to the `meta.industry` default.
+
+**The illustration fallback is not a free pass**: a clean real photo always beats an illustration — use one whenever you have it.
 
 ### When to use
 - The merchant has real photos/video and you want them to be the visual lead of the shot (not stuffed into a phone frame as a screenshot).
 - You need to convey "what this is" and "how much / what tag" in the same shot.
 
 ### When not to use
-- The asset is an app UI / a demo of an interaction: use `phone` (a real screenshot) or `mockApp` (a simulated UI when there is no screenshot) instead of forcing photoShot.
-- One image can't carry the amount of information the shot needs: fold it into `features` or `quickList` instead, where an illustration icon is enough.
-- `grid` with missing photos padded out with a plain text list pretending to be an environment shot: skip the shot instead, or use a shot that actually has images.
+- The asset is an app UI / a demo of an interaction: use `phone` or `mockApp` instead; a UI screenshot must never be marked `source: "merchant"` as if it were a real photo.
+- One image can't carry the amount of information the shot needs: fold it into `features` or `quickList` instead.
+- `grid` with missing photos padded out with a plain text list pretending to be an environment shot: skip the shot instead.
 
 ### Parameters
 | Field | Required | Limit | Notes |
@@ -408,10 +482,10 @@ When there is no real asset, set that item's `source` to `"drawn"`. Skip `src` a
 | media | Yes | 1–5 items | hero/clip/callouts: 1 item; grid: 2–4; tour: 2–5 |
 | media[].src | Conditional | — | asset path; omit when `source: "drawn"` and give `illust` instead |
 | media[].source | Yes | — | `merchant` real shot / `ai` AI-generated / `drawn` illustration fallback |
-| media[].tag | Yes | — | `实拍`(real) / `示意`(illustrative) / `效果图`(rendering); must be `效果图` when `source` is `"ai"` |
-| media[].illust | No | — | pick one when `source: "drawn"` (see names.json) |
-| media[].label | No | 8 chars | short label under each photo in grid/tour |
-| media[].month | No | 1–12 | fill in for season/weather-dependent shots; renders as "shot in month N" |
+| media[].tag | Yes | — | `实拍`(real) / `示意`(illustrative) / `效果图`(rendering); `效果图` when `source` is `"ai"`, `示意` when `"drawn"`. Chinese values even on English videos — the corner tag is shown in English |
+| media[].illust | No | — | pick one when `source: "drawn"` (see the table above and names.json) |
+| media[].label | No | 8 chars | short label under each photo in grid/tour; also used to auto-pick an illustration |
+| media[].month | No | 1–12 | fill in for season/weather-dependent shots; renders as "Shot in <month>" |
 | title | No | 10 chars | dish / product / room-type name |
 | tagline | No | 12 chars | one selling line |
 | badge | No | 4 chars | e.g. "signature", "new" |
@@ -425,32 +499,28 @@ hero 1.5–3s; clip 2–4s; grid 2.5–4s; tour 1.2–3s per photo (total scales
 
 ### Good examples
 ```json
-{"type": "photoShot", "dur": 2.5, "caption": "Beef shank braised daily,\n{bone broth simmered 4 hours}", "mood": 0.3,
+{"type": "photoShot", "dur": 2.5, "caption": "Broth made fresh,\n{every single day}", "mood": 0.3,
  "params": {"layout": "hero",
-   "media": [{"src": "photos/beef_noodle.jpg", "source": "merchant", "tag": "实拍"}],
-   "title": "Braised Beef Noodles", "tagline": "House-braised shank", "badge": "Signature", "price": 22, "unit": "bowl",
+   "media": [{"src": "photos/house_noodle.jpg", "source": "merchant", "tag": "实拍"}],
+   "title": "House Noodles", "tagline": "Broth made daily", "badge": "Signature", "price": 18, "unit": "bowl",
    "refs": ["f2"]}}
 ```
+No real photos (room walkthrough):
 ```json
-{"type": "photoShot", "dur": 3, "mood": 0.25,
- "params": {"layout": "grid",
-   "media": [
-     {"src": "photos/hall.jpg", "source": "merchant", "tag": "实拍", "label": "Dining hall"},
-     {"src": "photos/room.jpg", "source": "merchant", "tag": "实拍", "label": "Private room"}
-   ]}}
-```
-Fallback with no real photo:
-```json
-{"params": {"layout": "hero",
-  "media": [{"source": "drawn", "illust": "food/bowl"}],
-  "title": "Signature Beef Noodles", "price": 22, "unit": "bowl"}}
+{"type": "photoShot", "dur": 4, "mood": 0.25,
+ "params": {"layout": "tour", "roomType": "Garden twin",
+  "media": [
+    {"source": "drawn", "tag": "示意", "illust": "travel/room", "label": "The room"},
+    {"source": "drawn", "tag": "示意", "illust": "travel/window-view", "label": "Garden view"}
+  ]}}
 ```
 
 ### Bad examples
 - `media[0].source: "merchant"` with no `src`: validation treats this as a missing asset path.
 - `source: "ai"` but `tag` set to "实拍" (real shot): AI-generated media must be tagged "效果图" (rendering), never passed off as real.
+- `source: "drawn"` with an unrelated illustration (meatballs shown as `food/receipt`, a thermos as `ecommerce/gift`): use a matching one from the table, or leave `illust` out and let the title pick it.
+- A beauty "our work" grid without real photos, using scissors/comb drawings: a drawing is not the salon's work; retitle it as a service ("cut & blow-dry") or skip the shot.
 - `layout: "grid"` with only 1 item: grid needs at least 2; use `hero` for a single item.
-- Setting this shot's `title` to something other than `meta.product`: photoShot describes a specific dish/product/room, not the whole product.
 
 ### Params (auto-generated from photoShot.spec.json)
 
@@ -463,7 +533,7 @@ Duration 1.2–12s (default 2.5); caption optional; default mood 0.3; exit push.
 | `media[].src` |  | text | asset png/jpg/jpeg/webp/mp4 | 商家实拍/AI生成的图或视频；source=drawn 时不填 src，改填 illust |
 | `media[].kind` |  | image / video |  | 不写按扩展名判断 |
 | `media[].source` | Yes | merchant / ai / drawn |  | merchant 商家实拍 / ai AI 生成 / drawn 代码绘制（插画兜底，不需要 src） |
-| `media[].illust` |  | text |  | source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 meta.industry 给默认图 |
+| `media[].illust` |  | text |  | source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 label/title 关键词挑，再按 meta.industry 给默认图 |
 | `media[].tag` | Yes | 实拍 / 示意 / 效果图 |  | source=ai 时必须是「效果图」 |
 | `media[].month` |  | integer | 1–12 | 季节/天气景观画面必填，渲染成「N月实拍」 |
 | `media[].label` |  | text | ≤8 chars | 房型/位置名/款式名 |
@@ -487,13 +557,20 @@ Duration 1.2–12s (default 2.5); caption optional; default mood 0.3; exit push.
 Example (passes validation as-is):
 
 ```json
-{"type": "photoShot", "dur": 2.5, "mood": 0.3, "params": {"layout": "hero", "media": [{"src": "sample-screen.png", "source": "merchant", "tag": "实拍", "label": "招牌款"}], "title": "招牌菜一份", "tagline": "现点现做", "badge": "招牌"}}
+{"type": "photoShot", "dur": 2.5, "mood": 0.3, "params": {"layout": "hero", "media": [{"source": "drawn", "tag": "示意", "illust": "food/noodle-bowl-closeup"}], "title": "招牌汤面", "tagline": "一人份刚刚好", "badge": "招牌"}}
 ```
 
 ---
 
 <a id="meter"></a>
 ## meter gauge / score
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "meter", "dur": 3, "caption": "Your tone\n{sounds harsher}",
+ "params": {"value": 7, "max": 10, "label": "Tone", "higherIs": "bad", "word": "Harsh"}}
+```
+If the reading is the product's own judgement in a demo, set `"demoData": true` in meta and say "demo" in the disclaimer. If it is a result or score, the numbers must come from meta.facts and `refs` must point to that fact.
 
 One card: the gauge's name is at the top, a needle springs from a starting value to the target value in the middle, on the beat it lands the number bumps, a verdict pill pops up, and a hit sound plays; the next beat a closing line fades up from the bottom of the card (a skeleton bar "loads" before that). Colors are automatic by band: the riskier it gets the redder, or the better it gets the greener.
 
@@ -567,6 +644,7 @@ Duration 2–6s (default 3); caption optional; default mood 0.7; exit push.
 | `word` |  | text | ≤4 chars | 数字下的判词胶囊，如「很危险」「很合拍」 |
 | `note` |  | text | ≤14 chars | 卡片底部的一句解释，如「对方在确认你在不在乎」 |
 | `icon` |  | text | icon name | 仪表名前的图标，默认 bad→alert、good→star |
+| `refs` |  | array |  | 读数是效果/评分时必填：指向 meta.facts 里给出这组数的条目 id；读数是产品在演示里给出的判断时，改写 meta.demoData: true |
 
 Example (passes validation as-is):
 
@@ -578,6 +656,13 @@ Example (passes validation as-is):
 
 <a id="compare"></a>
 ## compare
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "compare", "dur": 4, "caption": "Same report,\n{different effort}",
+ "params": {"left": {"title": "By hand", "items": ["Search chats", "Copy, paste"]}, "right": {"title": "With it", "items": ["Auto summary", "Tweak and send"]}}}
+```
+Compare the process only, with no stat numbers or level. Add stat/level only when the brief gives the numbers, and point `refs` at that fact.
 
 Two ways to play it:
 - `lr` (default): two side-by-side cards. The left card (the pain point) reveals its items one by one → a center divider draws down and "VS" pops in → the right card (using the product) reveals its items → the right card "wins": a glowing outline + badge (a warning icon if `right.tone` is `bad`, otherwise a checkmark), the left card dims → a closing verdict pill at the bottom.
@@ -656,6 +741,8 @@ Duration 2.5–7s (default 4); caption optional; default mood 0.5; exit push.
 | `right.stat` |  | text | ≤6 chars | 这一栏的大数字或短词，如「3 分钟」「1 步」 |
 | `right.level` |  | number | 0–10 | 0–10 刻度条的值（和左栏同一把尺子） |
 | `meterLabel` |  | text | ≤6 chars | 刻度条量的是什么，如「麻烦程度」「效率」；两栏写了 level 时才显示 |
+| `higherIs` |  | good / bad |  | 这把尺子越高越好写 good（如「保温时长」），越高越差写 bad（如「麻烦程度」）；tone=good 那栏必须在这把尺子上占优 |
+| `refs` |  | array |  | 写了 stat 数字或 level 时，指向 meta.facts 里给出这组数的条目 id；简报没给就删掉 stat/level，只比 items |
 | `verdict` |  | text | ≤12 chars | 底部结论胶囊，如「省下的时间拿去休息」 |
 
 Example (passes validation as-is):
@@ -668,6 +755,13 @@ Example (passes validation as-is):
 
 <a id="beforeafter"></a>
 ## beforeAfter Before/after wipe slider
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "beforeAfter", "dur": 3,
+ "params": {"before": {"src": "photos/before.png"}, "after": {"src": "photos/after.png"}, "consent": true, "retouched": false, "subVertical": "hair"}}
+```
+Beauty only. Both photos must be real merchant photos of the same customer, listed in meta.assets: `[{"src": "photos/before.png", "source": "merchant", "kind": "customer-before", "pair": "A"}, {"src": "photos/after.png", "source": "merchant", "kind": "customer-after", "pair": "A"}]`. No photos → use steps.
 
 A real before-and-after comparison of the same customer: a vertical handle wipes from right to left to reveal "after". Only enabled for the beauty industry (hair / nails / lashes).
 
@@ -742,8 +836,15 @@ Example (passes validation as-is):
 <a id="counter"></a>
 ## counter rolling number
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "counter", "dur": 3, "caption": "Teams already\n{use it every week}",
+ "params": {"to": 1200, "label": "Teams using it"}}
+```
+The number must come from a real fact in meta.facts, e.g. `{"id": "f1", "text": "1200 teams use it as of 2026-08", "source": "Admin stats, 2026-08"}`. No number in the brief → do not use counter.
+
 One card: an icon → a big number rolls from `from` to `to` (a ticking sound, a progress bar moving underneath) → on the beat it lands the number bumps, rays flash out, a ding plays → below it, `label` explains what the number means and `sub` gives its basis.
-Set `showFrom: true` and the old value shows above the number first, gets struck through right before it lands, and a change-amount pill is calculated automatically (e.g. "↓ 87%," "↑ 3x").
+Set `showFrom: true` and the old value shows above the number first. For money (¥ / $ / 元 …) the old value is struck through right before the number lands and a change pill is calculated automatically (e.g. "↓ 87%"). For other units (minutes, ℃ …) there is no strike-through and no percentage; the bar under the number sweeps from the old level to the new one.
 
 ### When to use
 
@@ -752,7 +853,7 @@ Set `showFrom: true` and the old value shows above the number first, gets struck
 
 ### When not to use
 
-- The number has no source or no clear basis: don't use it. If the brief gives you a number and a source, copy it into `meta.facts` verbatim first, then use it here; if it's purely illustrative, write "sample data, actual results vary" in `sub`. Don't invent your own source like "internal testing" (validation blocks this).
+- The number has no source or no clear basis: don't use counter (validation blocks it). If the brief gives you a number and a source, copy it into `meta.facts` (with `source`) first, then use it here. A number marked as sample data can't be shown in counter as a result; if the brief has no number, use compare and compare the process instead ("3 fewer steps", "no app switching"). Don't invent a source like "internal testing".
 - Comparing several things at once: use compare.
 - Scoring something out of a max (like a 1–10 score): use meter.
 
@@ -767,7 +868,7 @@ Set `showFrom: true` and the old value shows above the number first, gets struck
 | decimals | No | 0–2 | Decimal places, defaults to 0 |
 | prefix | No | 2 chars | Symbol before the number, e.g. "$," "+" |
 | suffix | No | 3 chars | Unit, e.g. "%," "x," "min" |
-| sub | No | 16 chars | Small-print basis/source: only write a source the brief actually gave you; if none, write "sample data, actual results vary" |
+| sub | No | 16 chars | Small-print basis/source: copy the `source` of that fact in meta.facts, e.g. "User survey, Aug 2026" |
 | icon | No | icon name | Icon above the number, defaults to `trend` |
 | tone | No | — | Number color: `accent` theme color (default) / `good` green / `bad` red |
 
@@ -779,12 +880,12 @@ Set `showFrom: true` and the old value shows above the number first, gets struck
 
 ```json
 {"type": "counter", "dur": 3, "caption": "No more late-night reports,\n{done in minutes}", "mood": 0.2,
- "params": {"from": 45, "to": 6, "suffix": "min", "showFrom": true, "label": "Per weekly report", "sub": "sample data, actual results vary", "icon": "clock", "tone": "good"}}
+ "params": {"from": 45, "to": 6, "suffix": "min", "showFrom": true, "label": "Per weekly report", "sub": "User survey, Aug 2026", "icon": "clock", "tone": "good"}}
 ```
 
 ```json
 {"type": "counter", "dur": 3, "caption": "Repeat orders\n{more than doubled}", "mood": 0.2,
- "params": {"to": 12800, "prefix": "$", "label": "Monthly repeat revenue", "sub": "sample data, actual results vary", "icon": "money"}}
+ "params": {"to": 12800, "prefix": "$", "label": "Monthly repeat revenue", "sub": "Admin stats, Aug 2026", "icon": "money"}}
 ```
 
 ### Bad examples
@@ -805,7 +906,7 @@ Duration 2–5s (default 3); caption optional; default mood 0.2; exit push.
 | `prefix` |  | text | ≤2 chars | 数字前的符号，如「¥」「+」 |
 | `suffix` |  | text | ≤3 chars | 数字后的单位，如「%」「倍」「分钟」 |
 | `label` | Yes | text | ≤12 chars | 数字的含义，如「整理一份周报」 |
-| `sub` |  | text | ≤16 chars | 小字：口径/来源。只写简报给的来源（要先抄进 meta.facts）；没给就写「示例数据，以实际为准」 |
+| `sub` |  | text | ≤16 chars | 小字：口径/来源。照抄 meta.facts 里那条的 source，如「2026-08 后台统计」 |
 | `icon` |  | text | icon name | 数字上方的图标，默认 trend |
 | `showFrom` |  | true/false |  | true = 在数字上方显示被划掉的旧值 + 变化幅度（需要写 from） |
 | `tone` |  | accent / good / bad |  | 数字颜色：accent 主题色（默认）/ good 绿 / bad 红 |
@@ -813,7 +914,7 @@ Duration 2–5s (default 3); caption optional; default mood 0.2; exit push.
 Example (passes validation as-is):
 
 ```json
-{"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2, "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "sub": "示例数据，以实际为准", "icon": "clock", "tone": "good"}}
+{"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2, "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "icon": "clock", "tone": "good"}}
 ```
 
 ---
@@ -821,15 +922,29 @@ Example (passes validation as-is):
 <a id="pricecard"></a>
 ## priceCard Price card / price list
 
-Bakes the "clearly marked price" layout rules into the component — you just fill in numbers and conditions; the price never gets hard to read, and it never flickers or shakes. Two layouts:
-- `card`: a price card for a single room type / package / product. Big price + unit + optional struck-through comparison price → item name → divider → included items → limits / extra fees / conditions / promo period → gift → footnote.
-- `menu`: a 2–6 row price list, name and price aligned with a dotted leader. Use this when you have several rows — don't cram them into `card`.
+**Minimal valid params** (copy, change the numbers, and it passes validation):
+```json
+{"type": "priceCard", "dur": 3, "params": {"layout": "card",
+  "items": [{"itemId": "<id from the brief's price table>", "name": "Set for two", "price": 79, "unit": "set"}]}}
+```
 
-**Never show the words "original price" on screen.** When there's a comparison price, `compare.basis` must state exactly what it's based on ("manufacturer's suggested retail price", "sum of items ordered separately", etc.) — the shot displays that basis text directly, never the word "original".
+Bakes the "clearly marked price" layout rules into the component — you just fill in numbers and conditions; the price never gets hard to read, and it never flickers or shakes. Two layouts:
+- `card`: a price card for 1–3 prices. With one item: big price + unit + optional struck-through comparison price → item name. With 2–3 items the prices stack as rows ("name / note + price"), each landing in turn. Below that: divider → included items → limits / extra fees / conditions / promo period → gift → footnote.
+- `menu`: a 2–6 row price list, name and price aligned with a dotted leader.
+
+**Every item you give is shown; nothing is dropped.** A `card` with 4+ items switches to `menu` automatically. If the content is too tall for the main zone, included items go into two columns, spacing tightens, and as a last resort the whole card scales down — no row is ever removed.
+
+**One room type / package with two prices** (weekday/weekend, one/two people): write two `items` with the same `name` and put each date range or condition from the facts in `note`. The card shows the name once as a heading and each price row carries its own dates. Writing only one item and pushing the other price into `conditions` (or leaving it out) makes viewers think there is only one price.
+
+**Never show the words "original price" on screen.** When there's a comparison price, `compare.basis` must state exactly what it's based on — the shot displays that basis text directly.
+
+The card is as tall as its content and centred in the main zone, so there is no big blank area. When `footnote` matches one of `meta.notices` (ignoring spaces and punctuation), only the bottom notice pill is shown, not both.
+
+**English videos:** `label` and `compare.basis` must still use the Chinese enum values from the params table (validation checks those); with `meta.lang: "en"` the card shows them in English (e.g. 团购价 → "Deal price", 单点合计 → "Items ordered separately"), and "from"/"Basis:"/"Extra:"/"Free:" are shown in English too.
 
 ### When to use
-- Any shot that needs a clearly stated price: a package deal, a ticket, a course fee, a haircut price, a price list.
-- Net/after-coupon prices that need stated conditions: put them in `conditions`.
+- Any shot that needs a clearly stated price: a package deal, a ticket, a course fee, a haircut price, a price list, weekday/weekend room rates.
+- Net/after-coupon prices that need stated conditions: put them in `conditions` (e.g. "after a ¥20 coupon").
 
 ### When not to use
 - You just want a small price tag in the corner of another shot (e.g. on a dish photo): use `photoShot`'s `price`/`unit` fields instead of a separate priceCard shot.
@@ -838,55 +953,55 @@ Bakes the "clearly marked price" layout rules into the component — you just fi
 ### Parameters
 | Field | Required | Limit | Notes |
 |---|---|---|---|
-| layout | No | — | `card` (default) / `menu` |
-| items | Yes | 1–6 items | card layout only shows item[0]; menu layout lists every row |
+| layout | No | — | `card` (default, 1–3 items) / `menu` (2–6 items) |
+| items | Yes | 1–6 items | all shown; a card with more than 3 switches to menu |
 | items[].itemId | Yes | 20 chars | id matching the brief's price table |
-| items[].name | No | card 10 chars / menu 8 chars | product / package name |
+| items[].name | No | card 10 chars / menu 8 chars | product / package / room name; use the same name for two prices of one room type |
 | items[].price | Yes | — | a number; gimmick prices like 0/1/9.9 are not allowed |
 | items[].unit | Yes | 4 chars | bowl/cup/piece/night/session/seat/person/ticket/set |
-| items[].from | No | — | true adds a "starting at" suffix; card layout then needs fromNote, menu layout needs addOns |
-| items[].fromNote | Required with from=true (card) | 12 chars | explains what "starting at" refers to |
-| items[].note | No | 12 chars | one small note line |
-| label | No | — | one of: sale price / net price / coupon price / group-buy price / package price / promo price / ticket |
+| items[].from | No | — | true adds a "from" marker; card layout then needs fromNote, menu layout needs addOns |
+| items[].fromNote | Required with from=true (card) | 12 chars | explains what "from" refers to |
+| items[].note | No | 12 chars | one small note line; when items share a name it becomes that row's title (e.g. "Mon–Thu") |
+| label | No | — | Chinese enum: 售价/到手价/券后价/团购价/套餐价/活动价/门票 (shown in English on English videos) |
 | people | No | 6 chars | e.g. "2–3 people" |
 | includes | No | ≤6 items, 8 chars each | what's included, with quantities |
 | excludes | No | 14 chars | extra fees; write "no extra fees" if required but none apply |
 | limits | No | ≤3 items, 14 chars each | e.g. "dine-in only", "not combinable" |
 | conditions | No | 16 chars | conditions for a net/coupon price |
 | period | No | 16 chars | promo start–end dates |
-| addOns | No | ≤4 items | {cond, extra}, e.g. "hair below waist" + "+¥160" |
-| compare | No | — | {price, basis, evidence}; basis is picked from a fixed list, evidence never appears on screen |
+| addOns | No | ≤4 items | {cond, extra}, e.g. "waist-length hair" + "+¥160" |
+| compare | No | — | {price, basis, evidence}; basis from the Chinese enum list, evidence never appears on screen |
 | gift | No | — | {name, qty}, e.g. "hair treatment" ×1 |
-| footnote | No | 24 chars | fixed wording (set per industry) — don't rewrite it yourself |
+| footnote | No | 24 chars | fixed wording (set per industry) — don't rewrite it; hidden when it duplicates a notice |
 
 ### Duration
-card 2–4.5s; menu at least 3s (give 4–4.5s for more rows).
+card with 1 item 2–3s, 2–3 items 3–4s; menu at least 3s (give 4–4.5s for more rows).
 
 ### Good examples
 ```json
-{"type": "priceCard", "dur": 4, "caption": "Two-person set,\n{group price ¥59}", "mood": 0.15,
- "params": {"layout": "card",
-   "items": [{"itemId": "deal-1", "name": "Signature Set for Two", "price": 59, "unit": "set"}],
-   "label": "Group price", "people": "2 people",
-   "includes": ["Braised beef noodles×2", "Hand-pounded meatballs×1 (6pc)", "Cold shredded salad×1"],
-   "limits": ["Dine-in only", "Not combinable"],
-   "compare": {"price": 68, "basis": "sum of items ordered separately", "evidence": "menu photo photos/menu.jpg"},
-   "footnote": "See the group-buy page for details"}}
+{"type": "priceCard", "dur": 3.5, "caption": "Weekday or weekend,\n{prices up front}", "mood": 0.15,
+ "params": {"layout": "card", "label": "售价", "people": "2 guests",
+   "items": [
+     {"itemId": "room-a-weekday", "name": "Garden twin", "price": 328, "unit": "night", "note": "Mon–Thu"},
+     {"itemId": "room-a-weekend", "name": "Garden twin", "price": 428, "unit": "night", "note": "Fri–Sun"}
+   ],
+   "includes": ["Breakfast for 2", "Free parking"]}}
 ```
 ```json
-{"params": {"layout": "menu",
+{"params": {"layout": "menu", "label": "售价",
   "items": [
-    {"itemId": "a", "name": "Braised Beef Noodles", "price": 22, "unit": "bowl"},
-    {"itemId": "b", "name": "Hand-pounded Meatballs", "price": 16, "unit": "portion"},
-    {"itemId": "c", "name": "Small Beef Noodles", "price": 12, "unit": "bowl", "note": "Great for solo diners"}
-  ], "label": "Menu price"}}
+    {"itemId": "a", "name": "House noodles", "price": 18, "unit": "bowl"},
+    {"itemId": "b", "name": "Pork wontons", "price": 15, "unit": "bowl"},
+    {"itemId": "c", "name": "Small noodles", "price": 12, "unit": "bowl", "note": "Good for one"}
+  ]}}
 ```
 
 ### Bad examples
 - `price: 9.9` as a gimmick teaser price: industry rules block gimmick prices.
-- Writing `compare` with a `basis` outside the fixed list, or without `evidence`: validation blocks it — a price comparison must have a stated basis.
-- The word "original price" appearing on screen: use `compare.basis`'s own wording instead (e.g. "manufacturer's suggested retail price").
-- `items[].from: true` without `fromNote` (card) or `addOns` (menu): a "starting at" price must explain what it starts from.
+- Weekday 368 and weekend 468, but only one item (368) with the weekend price in `conditions` or missing: viewers only see one price. Write two items.
+- `label: "Group price"` in English: not in the enum, validation fails. Write `"团购价"`; the card shows "Deal price".
+- Writing `compare` with a `basis` outside the fixed list, or without `evidence`: validation blocks it.
+- `items[].from: true` without `fromNote` (card) or `addOns` (menu): a "from" price must explain what it starts from.
 
 ### Params (auto-generated from priceCard.spec.json)
 
@@ -894,7 +1009,7 @@ Duration 2–4.5s (default 3); caption optional; default mood 0.15; exit push.
 
 | Field | Required | Type / values | Limit | Notes |
 |---|---|---|---|---|
-| `layout` | Yes | card / menu |  | card 单个房型/套餐/商品 / menu 2–6 项价目表 |
+| `layout` | Yes | card / menu |  | card 1–3 个价格（逐行堆叠）/ menu 2–6 项价目表；card 给 4 项以上自动换 menu |
 | `items` | Yes | array | 1–6 items |  |
 | `items[].itemId` | Yes | text | ≤20 chars | 对应 brief 价格表里的 id |
 | `items[].name` |  | text | ≤10 chars | card 布局 ≤10 字，menu 布局建议 ≤8 字 |
@@ -926,7 +1041,7 @@ Duration 2–4.5s (default 3); caption optional; default mood 0.15; exit push.
 Example (passes validation as-is):
 
 ```json
-{"type": "priceCard", "dur": 3, "mood": 0.15, "params": {"layout": "card", "items": [{"itemId": "deal-1", "name": "双人套餐", "price": 59, "unit": "份", "note": "含两菜一汤"}], "label": "团购价", "people": "2人", "includes": ["主菜两份", "例汤一份"], "limits": ["限堂食"]}}
+{"type": "priceCard", "dur": 3, "mood": 0.15, "params": {"layout": "card", "items": [{"itemId": "room-a-weekday", "name": "庭院双床房", "price": 328, "unit": "晚", "note": "周一至周四"}, {"itemId": "room-a-weekend", "name": "庭院双床房", "price": 428, "unit": "晚", "note": "周五至周日"}], "label": "售价", "people": "2人", "includes": ["两份早餐", "免费停车"], "limits": ["需提前一天预订"]}}
 ```
 
 ---
@@ -934,16 +1049,27 @@ Example (passes validation as-is):
 <a id="storecard"></a>
 ## storeCard Store, location & directions
 
+**Minimal valid params** (copy, change the text, and it passes validation):
+```json
+{"type": "storeCard", "dur": 3, "params": {"layout": "card", "name": "<store name>", "landmark": "<subway exit / mall floor / town>", "hours": "11:00–22:00"}}
+```
+
 Explains where the store is, its hours, how to get there, and what to tap inside the platform. **There are no phone, WeChat, QR code, website, or street-address fields** — that kind of contact info was never meant to be on screen. Three layouts:
-- `photo`: a real storefront photo banner plus an info card. Use when you have a storefront photo.
-- `map`: a code-drawn abstract diagram (a few street lines + a location pin + a transit dot), not imitating any map app's UI. Use when there's no storefront photo, or to emphasize directions.
-- `card`: a plain typographic info card, works without any photo — the most general-purpose option.
+- `photo`: a real storefront photo banner plus an info card. Without a photo the banner becomes an illustrated scene tagged "Illustration", never passed off as a real photo.
+- `map`: a code-drawn abstract map (city blocks + roads + a location pin). Each route is a dashed line from its destination to the store, and each destination gets a two-line label: the place name / "Drive 25 min". landmark, hours, parking, pickup, badges, cta and disclaimer go in an info strip under the map. It does not imitate any map app's UI.
+- `card`: a plain typographic info card, works without any photo — the most general-purpose option. The card is as tall as its content; when there is little content an illustrated banner (storefront, guesthouse… by industry) is added above it, so there is no big blank area.
+
+**Every field you fill is shown; nothing is dropped silently.** A route's `to` appears as "HSR station · Drive 25 min" on the card layout and as a destination label on the map, so write a real place name (copied from the facts), not "here" or "nearby".
+
+When `disclaimer` matches one of `meta.notices` (ignoring spaces and punctuation), only the bottom notice pill is shown, not both.
+
+**English videos:** `routes[].mode` and `basis` must still use the Chinese enum values (步行/驾车/打车/公交/地铁/骑行/接驳车, 导航估算/实测). With `meta.lang: "en"` the screen shows Walk/Drive/Taxi/Bus/Metro/Bike/Shuttle, "min", "Parking:", "Pickup:" and the estimate note in English.
 
 ### When to use
 - A shot that needs to explain the route, hours, and in-platform action prompt — typically right before the end card in group-buy / visit-the-store content.
 
 ### When not to use
-- You want to put a phone number, WeChat ID, or QR code to drive people off-platform: this shot's schema has no such fields on purpose. Use `cta` for the platform's own in-app prompt instead (e.g. "tap the video's location pin to see the deal").
+- You want to put a phone number, WeChat ID, or QR code to drive people off-platform: this shot's schema has no such fields on purpose. Use `cta` for the platform's own in-app prompt instead.
 - You just want a one-line "welcome" at the end: use `endCard` instead of a separate storeCard shot.
 
 ### Parameters
@@ -954,35 +1080,34 @@ Explains where the store is, its hours, how to get there, and what to tap inside
 | landmark | No | 14 chars | subway exit / mall floor / town name — no street address |
 | hours | No | 14 chars | opening hours |
 | photo | No | — | storefront photo path, used with `layout: "photo"`, must be a real merchant shot |
-| routes | No | 0–4 items | {to, mode, minutes, km}; mode is one of walk/drive/taxi/bus/subway/bike/shuttle |
-| basis | No | — | navigation estimate (default, adds a small disclaimer automatically) / measured |
+| routes | No | 0–4 items | {to, mode, minutes, km}; `to` is the destination and is shown on screen; mode is a Chinese enum value (see above) |
+| basis | No | — | 导航估算 navigation estimate (default, adds a small note automatically) / 实测 measured |
 | parking | No | 10 chars | parking info |
 | pickup | No | 12 chars | shuttle info; state the fee if it's not free |
 | badges | No | ≤4 items, 8 chars each | e.g. "sanitized between guests", "by appointment" |
 | cta | No | 10 chars | in-platform action prompt, preset per publishing platform |
-| disclaimer | No | 16 chars | small disclaimer text; beauty-category default is "cosmetic services only — no medical aesthetics" |
+| disclaimer | No | 16 chars | small disclaimer text; hidden when it duplicates a notice |
 
 ### Duration
-2.5–4s.
+2.5–4s; give the map layout 3.5–4s when it has 3 or more routes.
 
 ### Good examples
 ```json
-{"type": "storeCard", "dur": 3, "caption": "3 minutes' walk\n{from Exit B}", "mood": 0.2,
- "params": {"layout": "photo", "name": "Corner Noodle House",
-   "landmark": "Line 2, Guiyuan Station Exit B", "hours": "10:00-21:30",
-   "photo": "photos/storefront.jpg",
-   "routes": [{"to": "the station", "mode": "walk", "minutes": 3}],
-   "cta": "Tap the pin to see the deal"}}
+{"type": "storeCard", "dur": 3.5, "caption": "Off the train,\n{30 min by car}", "mood": 0.2,
+ "params": {"layout": "map", "name": "Bamboo Tea House", "landmark": "North end of Riverside St",
+  "routes": [{"to": "East HSR station", "mode": "驾车", "minutes": 30}, {"to": "Riverside Park", "mode": "步行", "minutes": 6}],
+  "parking": "6 free spots"}}
 ```
 ```json
-{"params": {"layout": "map", "name": "Corner Noodle House",
-  "routes": [{"to": "the station", "mode": "subway", "minutes": 8}, {"to": "the office", "mode": "taxi", "minutes": 12}]}}
+{"params": {"layout": "card", "name": "Corner Soup House", "landmark": "Line 5, Nanhu Exit C", "hours": "09:30–21:00",
+  "routes": [{"to": "Nanhu station", "mode": "步行", "minutes": 3}]}}
 ```
 
 ### Bad examples
 - Slipping "add my WeChat" or "scan to join the group" into any field: this shot doesn't do off-platform traffic — it will be blocked.
+- `"mode": "walk"`: not in the enum, validation fails. Write `"步行"`; an English video shows "Walk".
 - `layout: "photo"` with a `photo` asset tagged `source: "ai"` or not a real merchant shot: a storefront photo must be the merchant's own.
-- `landmark` written as a full street address (e.g. "88 XX Road, 3rd Floor"): rewrite as a subway exit / mall floor / town name instead — nothing address-precise.
+- `landmark` written as a full street address: rewrite as a subway exit / mall floor / town name instead.
 
 ### Params (auto-generated from storeCard.spec.json)
 
@@ -996,7 +1121,7 @@ Duration 2.5–4s (default 3); caption optional; default mood 0.2; exit push.
 | `hours` |  | text | ≤14 chars |  |
 | `photo` |  | text | asset png/jpg/jpeg/webp |  |
 | `routes` |  | array | 0–4 items |  |
-| `routes[].to` | Yes | text | ≤8 chars |  |
+| `routes[].to` | Yes | text | ≤8 chars | 目的地，会上屏（如「高铁站」「县城」「地铁2号线」） |
 | `routes[].mode` | Yes | 步行 / 驾车 / 打车 / 公交 / 地铁 / 骑行 / 接驳车 |  |  |
 | `routes[].minutes` | Yes | number | 0–300 |  |
 | `routes[].km` |  | number | 0–… |  |
@@ -1011,13 +1136,20 @@ Duration 2.5–4s (default 3); caption optional; default mood 0.2; exit push.
 Example (passes validation as-is):
 
 ```json
-{"type": "storeCard", "dur": 3, "mood": 0.2, "params": {"layout": "card", "name": "巷口面馆", "landmark": "地铁2号线桂园站B口", "hours": "10:00–21:30", "routes": [{"to": "地铁站", "mode": "步行", "minutes": 3}], "basis": "导航估算"}}
+{"type": "storeCard", "dur": 3, "mood": 0.2, "params": {"layout": "map", "name": "竹间茶舍", "landmark": "滨江步行街北口", "hours": "11:00–22:00", "routes": [{"to": "滨江公园站", "mode": "步行", "minutes": 6}, {"to": "城东客运站", "mode": "打车", "minutes": 18}], "basis": "导航估算"}}
 ```
 
 ---
 
 <a id="reviewcard"></a>
 ## reviewCard Real customer review
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "reviewCard", "dur": 3,
+ "params": {"quotes": [{"text": "Springy noodles, hot soup", "month": "2026-08", "stars": 5}], "evidence": "Customer review on the deal page, 2026-08, name removed"}}
+```
+Copy the review word for word; `evidence` says where it came from and is not shown. Not available for education.
 
 Quotes a real customer review: a large quotation mark + the original text + a star rating + the month, with the stars lighting up one at a time (not all at once). 1–2 quotes; no real headshots, an initial-letter avatar instead.
 
@@ -1045,7 +1177,7 @@ Quotes a real customer review: a large quotation mark + the original text + a st
 ### Good examples
 ```json
 {"type": "reviewCard", "dur": 3, "mood": 0.15,
- "params": {"quotes": [{"text": "Rich broth, generous portion of meat", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
+ "params": {"quotes": [{"text": "Short wait, big portions", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
 ```
 ```json
 {"type": "reviewCard", "dur": 4.5, "mood": 0.15,
@@ -1076,13 +1208,19 @@ Duration 2–4.5s (default 3); caption optional; default mood 0.15; exit push.
 Example (passes validation as-is):
 
 ```json
-{"type": "reviewCard", "dur": 3, "mood": 0.15, "params": {"quotes": [{"text": "汤很浓，肉给得实在", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-screenshot-01.png"}}
+{"type": "reviewCard", "dur": 3, "mood": 0.15, "params": {"quotes": [{"text": "排队不久，分量很足", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-screenshot-01.png"}}
 ```
 
 ---
 
 <a id="factsheet"></a>
 ## factSheet Spec table / box list / syllabus / exam info / color swatch
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "factSheet", "dur": 4,
+ "params": {"layout": "spec", "title": "Course info", "rows": [{"key": "Format", "value": "Recorded"}, {"key": "Lessons", "value": "20"}]}}
+```
 
 One card, five layouts, rows lighting up one at a time — the moving element is "facts being proven one by one," not everything dumped on screen at once:
 - `spec`: a parameter table (key: value) with table rules
@@ -1151,8 +1289,8 @@ Duration 3–8s (default 4); caption optional; default mood 0.1; exit push.
 | `layout` | Yes | spec / box / syllabus / exam / swatch |  |  |
 | `title` | Yes | text | ≤12 chars |  |
 | `rows` | Yes | array | 2–6 items |  |
-| `rows[].key` | Yes | text | ≤6 chars |  |
-| `rows[].value` | Yes | text | ≤10 chars |  |
+| `rows[].key` |  | text | ≤6 chars |  |
+| `rows[].value` |  | text | ≤10 chars |  |
 | `rows[].qty` |  | integer | 0–… | box 布局专用 |
 | `rows[].isGift` |  | true/false |  | box 布局专用：赠品方块加「赠」角标 |
 | `rows[].no` |  | text | ≤4 chars | syllabus 布局专用：章节号 |
@@ -1177,6 +1315,13 @@ Example (passes validation as-is):
 
 <a id="credcard"></a>
 ## credCard Credential card / honor card
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "credCard", "dur": 3,
+ "params": {"layout": "person", "name": "Ms. Su", "role": "Slides coach", "creds": ["Former marketing lead"], "skills": ["Layout", "Charts"]}}
+```
+Numbers and credentials such as years or creds must be in meta.facts; the honor layout requires refs.
 
 Replaces empty claims like "master craftsman" or "gold-medal" with verifiable credentials. Two layouts:
 - `person`: an instructor's or technician's credential card — an initial-letter avatar (or a photo they've consented to) + name/role/years + credentials checked off one at a time + skill tags
@@ -1255,6 +1400,12 @@ Example (passes validation as-is):
 <a id="features"></a>
 ## features selling-point cards
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "features", "dur": 4,
+ "params": {"items": [{"icon": "doc", "title": "Auto summary", "desc": "Chats and docs in one"}, {"icon": "send", "title": "One-tap send", "desc": "Straight to your team"}]}}
+```
+
 2–4 cards pop in one at a time on the beat (icon + title + one benefit line); a yellow spotlight frame follows "the card being talked about right now." Cards not reached yet show as a dashed, numbered outline.
 
 ### When to use
@@ -1324,6 +1475,12 @@ Example (passes validation as-is):
 <a id="steps"></a>
 ## steps 1-2-3 flow
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "steps", "dur": 4,
+ "params": {"items": [{"title": "Connect"}, {"title": "Tap Generate"}, {"title": "Edit and send"}]}}
+```
+
 One flow card: nodes stacked vertically on the left, a light dot runs down the connecting line step by step, each node lighting up and its text sliding in as the dot reaches it; once all steps are done, every node gets a ✓ (with a ding). Communicates "this is easy to get started with."
 
 ### When to use
@@ -1390,6 +1547,12 @@ Example (passes validation as-is):
 
 <a id="quicklist"></a>
 ## quickList quick-cut list
+
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "quickList", "dur": 3,
+ "params": {"items": [{"text": "Weekly report"}, {"text": "Meeting notes"}, {"text": "Daily update"}]}}
+```
 
 3–6 rows of white cards fly in one per beat, alternating left and right; as each one lands, a "stamp" appears on the right: a score rolling from 0 to its target (optionally with a verdict word), or a colored tag dropping in. A color bar on the left fills in by tone. Fast pace, strong feeling.
 
@@ -1481,7 +1644,23 @@ Example (passes validation as-is):
 <a id="endcard"></a>
 ## endCard end card
 
-logo (`meta.logo`, or an icon disc if unset) → product name → a two-line headline → 1–3 selling-point pills → an optional call to action. This is always the last shot and never exits off-screen.
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "endCard", "dur": 4,
+ "params": {"brand": "ReportPal", "slogan": "Friday afternoon,\n{report done}"}}
+```
+`brand` must match meta.product exactly.
+
+logo (`meta.logo`, or an icon disc if unset) → product name → a two-line headline → 1–3 selling points → an optional call to action. This is always the last shot and never exits off-screen. The whole group is centred around y≈880 (its bottom never goes past y 1320), and the logo grows when there is little content.
+
+### Three layouts
+| layout | What it looks like |
+|---|---|
+| `stack` | One centred column: logo → product-name pill → big headline → selling-point pills → call to action |
+| `panel` | The headline sits on top like a title; below it one white card that grows with its content: logo + product name on one row, one ticked row per selling point, a full-width call-to-action button |
+| `spotlight` | A big logo with light rays turning on the beat behind it; the product name in big type, the headline, the selling points as a row of small chips, the call to action |
+
+**Leave `layout` out and one is picked from the product name**: the same product always gets the same layout, and different products usually get different ones, so a batch of films doesn't end on identical cards. `panel` is never picked when there are no selling points.
 
 ### Params
 
@@ -1489,19 +1668,28 @@ logo (`meta.logo`, or an icon disc if unset) → product name → a two-line hea
 |---|---|---|
 | brand | Yes | Product name (≤10 chars) |
 | slogan | Yes | Headline, ≤2 lines, ≤9 chars per line, may use `\n` and one `{}` span — it's best if the whole second line is the `{}` |
-| points | No | Up to 3 selling points/promises/use cases, ≤14 chars each |
+| points | No | Up to 3 selling points/promises/use cases, ≤14 chars each. A point that says the same thing as `meta.disclaimer` or a `meta.notices` entry is dropped automatically (no repeated notice) |
 | cta | No | How to get it (≤12 chars): must match `meta.cta` exactly (the brief's "how to get it" text, verbatim); leave it out if the brief doesn't give one. No URLs, QR codes, or account handles |
 | icon | No | Brand icon shown when there's no logo, defaults to `sparkle` |
+| layout | No | `stack` / `panel` / `spotlight`; picked automatically when left out |
 
 **This shot never has a `caption`.** `mood` should be 0 (a cool-toned close). Duration 3–5s.
 
-### Good example
+### Good examples
 
 ```json
 {"type": "endCard", "dur": 4, "mood": 0,
  "params": {"brand": "FocusPilot", "slogan": "Less scrolling,\n{more finishing}",
             "points": ["Blocks distracting apps", "One tap to start"], "cta": "Try it free", "icon": "clock"}}
 ```
+```json
+{"type": "endCard", "dur": 4, "mood": 0,
+ "params": {"brand": "MeetNotes", "slogan": "Meeting's done,\n{notes are too}", "layout": "panel",
+            "points": ["Notes from the recording", "To-dos assigned"], "cta": "Free trial on our site", "icon": "doc"}}
+```
+
+### Bad example
+- A selling point that reads "Demo data, may differ": the disclaimer at the top already says that, so it would appear twice.
 
 ### Params (auto-generated from endCard.spec.json)
 
@@ -1514,6 +1702,7 @@ Duration 3–6s (default 4); caption not allowed; default mood 0; exit none.
 | `points` |  | array | 0–3 items | 卖点胶囊，每条 ≤14 字 |
 | `cta` |  | text | ≤12 chars | 获取方式：原样照抄 meta.cta（简报原文），没有就不写；不许写网址/二维码/账号 |
 | `icon` |  | text | icon name | 没有 meta.logo 时代替 logo 的图标，默认 sparkle |
+| `layout` |  | stack / panel / spotlight |  | 版式：stack 居中一列 / panel 口号当标题 + 白卡清单 / spotlight 大 logo + 光芒 + 一排小胶囊；不写就按产品名自动挑一种 |
 
 Example (passes validation as-is):
 

@@ -5,6 +5,9 @@
 // storyboard 只需要 meta + shots（镜头用 11 个旧镜头或 7 个新镜头的 spec 字段，dur 用显式数字）。
 // expect 里的每个字符串按子串匹配对应档位（block→errors / warn→warnings / human→human）里
 // 任意一条 problem 或 fix；全部命中才算这个文件通过。
+// expect.absent = {"block": [...], "warn": [...], "human": [...]}：这些子串在对应档位里「不能出现」（测误报/该放行的场景）。
+// expect.blockCount：block 条数必须正好等于它。
+// 素材文件（tests/rules/_assets/ 下的测试图）按 tests/rules/ 为基准目录解析，和 validate.mjs 以 storyboard 目录为基准一致。
 //
 // 用法：node scripts/test-rules.mjs [industry ...]（不传参数=跑全部）
 //
@@ -84,6 +87,9 @@ function runOne(fixture) {
   for (const level of ['block', 'warn', 'human']) {
     for (const needle of expect?.[level] ?? []) {
       if (!hay[level].includes(needle)) fails.push(`缺少 ${level} 命中："${needle}"`);
+    }
+    for (const needle of expect?.absent?.[level] ?? []) {
+      if (hay[level].includes(needle)) fails.push(`不该出现的 ${level} 命中："${needle}"`);
     }
   }
   if (expect?.blockCount !== undefined && r.errors.length !== expect.blockCount) fails.push(`block 数量 ${r.errors.length} != 期望 ${expect.blockCount}`);

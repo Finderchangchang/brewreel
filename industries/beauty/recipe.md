@@ -45,3 +45,11 @@ hook 2 → quickList(3 个该问清的问题) 6 → compare(subject=habit) 5 →
 3. "永久""无副作用""100%满意"——保证类用语一律拦截。
 4. "黄脸婆""显老""没人要"——制造容貌焦虑一律拦截。
 5. "起"价没写清加价项——menu 布局要有 `addOns`，card 布局要有 `fromNote`。
+
+<!-- round5 -->
+## 核心动作和素材（校验会拦）
+- 美业是实物/门店行业：核心动作用 **photoShot（商家实拍或插画场景）** 演示，过程用 `steps`。**不要用 `mockApp` 编点单页、结算页、预订页**，校验直接拦；商家真有自己小程序/店铺页的截图，用 `phone` 放截图。
+- 用到的每张图先在 `meta.assets` 登记来源（merchant / illustration / screenshot）；只有 merchant 的能标「实拍」。
+- 商家没照片：用插画兜底（`source: "drawn"`），会有「正式发布前补实拍」的提醒，不会拦，也不会再报「前 3 秒没有实拍」。
+- `compare` 两栏写了 `level` 时，`tone: "good"` 那栏在 `meterLabel` 这把尺子上必须更优：「保温时长」越高越好，「降温速度」「麻烦程度」越高越差。
+- `beforeAfter` 的前后两张必须是素材清单里同一个 `pair` 的 `customer-before` / `customer-after`，不能是同一个文件或内容相同的两张。

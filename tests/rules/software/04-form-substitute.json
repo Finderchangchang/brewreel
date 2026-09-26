@@ -1,0 +1,64 @@
+{
+  "name": "评审原案：聊天助手为了避开样例，把「收到消息 → 分析 → 回复」换成填「情绪标签/危险程度」的表单",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "回话助手",
+      "action": "收到对方消息 → 看懂情绪，给出回复建议"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2.5,
+        "mood": 0.8,
+        "params": {
+          "visual": "bubble",
+          "text": "我们好像没那么懂彼此"
+        },
+        "caption": "对方这句话\n{该怎么接}"
+      },
+      {
+        "type": "mockApp",
+        "dur": 4,
+        "mood": 0.4,
+        "params": {
+          "kind": "form",
+          "title": "情绪分析",
+          "items": [
+            {
+              "text": "情绪标签",
+              "value": "委屈"
+            },
+            {
+              "text": "危险程度",
+              "value": "8 级"
+            }
+          ],
+          "button": "提交",
+          "done": "已生成建议"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "回话助手",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [
+      "这一镜却用 form 表单代替",
+      "是消息/聊天类，全片却没有 chat",
+      "全片没有一镜 chat / phone（真截图）/ mockApp（非表单）"
+    ]
+  }
+}

@@ -5,8 +5,7 @@
     "theme": "business-blue",
     "disclaimer": "演示画面，内容为模拟",
     "action": "说话开会 → 自动生成纪要和待办",
-    "cta": "官网申请免费试用",
-    "facts": [{"id": "f1", "text": "整理一份会议纪要：手写约 40 分钟，用会议速记约 3 分钟（示例数据）"}]
+    "cta": "官网申请免费试用"
   },
   "shots": [
     {
@@ -47,11 +46,17 @@
       }
     },
     {
-      "type": "counter",
-      "dur": 3,
-      "caption": "写纪要，\n{从 40 分钟到 3 分钟}",
-      "mood": 0.15,
-      "params": {"from": 40, "to": 3, "showFrom": true, "suffix": "分钟", "label": "整理一份会议纪要", "sub": "示例数据，以实际为准", "icon": "clock", "tone": "good"}
+      "type": "compare",
+      "dur": 4,
+      "caption": "写纪要这件事，\n{不用会后补}",
+      "mood": 0.35,
+      "params": {
+        "mode": "beforeAfter",
+        "left": {"title": "手写纪要", "items": ["边听边记漏要点", "会后再整理", "待办靠回忆"], "tone": "bad", "icon": "clock", "stat": "会后补"},
+        "right": {"title": "会议速记", "items": ["录音自动转写", "要点自动归纳", "待办分给人"], "tone": "good", "icon": "sparkle", "stat": "会上就好"},
+        "verdict": "开完会纪要就在"
+      },
+      "note": "简报没给耗时数据，只比过程，不写分钟数"
     },
     {
       "type": "steps",

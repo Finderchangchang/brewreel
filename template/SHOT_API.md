@@ -127,14 +127,13 @@ node scripts/validate.mjs --specs                       # spec 结构 + 示例�
 
 cd template
 # props 一律先写进 json 文件再传路径（pwsh 7 里 --props='{\"type\":...}' 会被 Remotion 报「neither valid JSON」）
-#   ..\tests\<你>\lab-meter.json 内容：{"type":"meter"}            ← 不给 params 就用 spec.example
-#   ..\tests\<你>\lab-meter-dark.json：{"type":"meter","theme":"tech-dark"}
-npx remotion still src/index.ts ShotLab ..\tests\<你>\meter-45.png --frame=45 --props=..\tests\<你>\lab-meter.json
+#   ..\..\promo-video-skill-tests\<你>\lab-meter.json 内容：{"type":"meter"}            ← 不给 params 就用 spec.example
+#   ..\..\promo-video-skill-tests\<你>\lab-meter-dark.json：{"type":"meter","theme":"tech-dark"}
+npx remotion still src/index.ts ShotLab ..\..\promo-video-skill-tests\<你>\meter-45.png --frame=45 --props=..\..\promo-video-skill-tests\<你>\lab-meter.json
 
 # 要反复出很多帧时：先打包一次（约 10 秒），之后对打包目录出帧，每帧省掉重新打包
-npx remotion bundle src/index.ts --out-dir ..\tests\<你>\bundle
-npx remotion still ..\tests\<你>\bundle ShotLab ..\tests\<你>\m-30.png --frame=30 --props=..\tests\<你>\lab-meter.json
-# 参考脚本：tests\_dev\phone-mock\stills.ps1（多帧拼成一条横图）
+npx remotion bundle src/index.ts --out-dir ..\..\promo-video-skill-tests\<你>\bundle
+npx remotion still ..\..\promo-video-skill-tests\<你>\bundle ShotLab ..\..\promo-video-skill-tests\<你>\m-30.png --frame=30 --props=..\..\promo-video-skill-tests\<你>\lab-meter.json
 
 # Screen 合成：把一个镜头（通常 mockApp）渲成干净的「App 截图」（无字幕/免责/音效），给 phone 镜头当示意素材
 npx remotion still src/index.ts Screen ..\examples\assets\x-screen.png --frame=145 --props=..\examples\_src\screen-props.json
@@ -143,7 +142,7 @@ npx remotion still src/index.ts Screen ..\examples\assets\x-screen.png --frame=1
 - ShotLab / Screen 的 props：`{type, theme?, brandColor?, params?, caption?, dur?, mood?}`，不给 params 就用 spec.example。
 - 多人同时跑报缓存/锁错误时加 `--bundle-cache=false`。
 - 测试素材放 `template/public/`，路径直接写文件名（已有 `sample-screen.png`）。
-- 整片验收：写一份分镜 → `node scripts/make.mjs tests\<你>\x.json --out tests\<你>\x`，看 `sheet.png` 和 `check/`。只要几帧：`--stills 0.5,2,3.5`。
+- 整片验收：写一份分镜 → `node scripts/make.mjs ..\promo-video-skill-tests\<你>\x.json --out ..\promo-video-skill-tests\<你>\x`（测试产物放仓库外，不进仓库），看 `sheet.png` 和 `check/`。只要几帧：`--stills 0.5,2,3.5`。
 - 别同时开多个整片渲染（8 核）；make.mjs 会自动排队。
 
 ## 10. 质量底线（真实反馈教训）

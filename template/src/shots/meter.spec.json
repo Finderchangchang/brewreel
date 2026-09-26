@@ -26,7 +26,8 @@
       "higherIs": {"type": "string", "enum": ["good", "bad"], "description": "数值越高越好（绿）还是越坏（红），默认 bad"},
       "word": {"type": "string", "maxLen": 4, "description": "数字下的判词胶囊，如「很危险」「很合拍」"},
       "note": {"type": "string", "maxLen": 14, "description": "卡片底部的一句解释，如「对方在确认你在不在乎」"},
-      "icon": {"type": "string", "format": "icon", "description": "仪表名前的图标，默认 bad→alert、good→star"}
+      "icon": {"type": "string", "format": "icon", "description": "仪表名前的图标，默认 bad→alert、good→star"},
+      "refs": {"type": "array", "items": {"type": "string"}, "description": "读数是效果/评分时必填：指向 meta.facts 里给出这组数的条目 id；读数是产品在演示里给出的判断时，改写 meta.demoData: true"}
     }
   },
   "sfx": [{"at": 0.05, "kind": "pop", "vol": 0.2}, {"at": 0.4, "kind": "swish", "vol": 0.22}, {"at": 1.0, "kind": "thud", "vol": 0.42}],

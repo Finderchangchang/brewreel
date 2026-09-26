@@ -1,44 +1,51 @@
 #!/usr/bin/env node
 // ============================================================
-// 一条命令出片：校验 → 复制素材 → 配乐 → 渲染 → 拼图 + 检查帧
-//   node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5,6] [--no-bgm] [--keep]
+// 一条命令出片：校验 → 机器自查 → 复制素材 → 配乐 → 渲染（带布局 / 汉字探针）→ 拼图 + 检查帧 → manifest.json
+//   node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5,6] [--no-bgm] [--keep] [--queue-timeout 20]
+//   node scripts/make.mjs <storyboard.json> (--out <目录> | --round ...) --verify     核对目录里的成片是否还对应这份分镜
 //     --out      输出目录（一个目录放一份分镜，否则输出会互相覆盖）
-//     --round    测试用：产物统一放到 tests/<轮次>/<片名>/（片名默认取 storyboard 所在目录名，文件名不是 storyboard.json 时取文件名）
-//                --out 和 --round 必须给一个，不再默认写到 storyboard 旁边，也不要自己按秒生成时间戳目录
-//     --stills   只渲染这些时间点（秒）的单帧到 <out>/check/，不出整片（镜头自测用，快）
+//     --round    测试用：产物放到【仓库外】<仓库同级>/promo-video-skill-tests/<轮次>/<片名>/（设 PROMO_TEST_DIR 可换根目录）；
+//                片名默认取 storyboard 所在目录名，文件名不是 storyboard.json 时取文件名。开跑第一行会打印实际输出目录。
+//                --out 和 --round 必须给一个；不要自己按秒生成时间戳目录
+//     --stills   只渲染这些时间点（秒）的单帧到 <out>/check/，不出整片（镜头自测用，快；不是交付）
 //     --no-bgm   不生成配乐（静音）
 //     --keep     保留 template/public/_run/<id>/（调试用）
-// 并发：可以同时开多个实例。Remotion 渲染/出单帧这一步用 template/.render.lock 串行（打印「排队中」），
-//       校验、素材复制、配乐、拼图各自并行；每个实例的素材目录 _run/<id> 和输出目录互不干扰。
-// 输出：video.mp4、sheet.png（每秒一帧拼图）、check/00-frame0.png + 每镜结束前 0.45 秒的全尺寸帧（动画已演完）、props.json、report.txt、
-//       layout.json（检查帧上每个文字块的包围盒；report.txt 末尾「布局自查」写裁切 / 相交 / 出界）
+//     --queue-timeout <分钟>  渲染排队最多等多久（默认 20），超时写「未出片：渲染排队超时」，退出码 5
+//     --accept-layout         仅供人工复核后放行版式 ✗（manifest 里记 acceptedByHuman），模型 / 自动测试不许用
+//
+// 交付规则（模型和测试脚本都按这个判断成没成）：
+//   - 开跑先清掉输出目录里上一次 make 的产物（video.mp4、sheet.png、check/*.png、layout.json、report.txt、manifest.json…），别的文件不动
+//   - 机器自查 / 文字排版 / 布局自查 / 英文片汉字扫描，任何一项有 ✗ 都不交付：退出码 3，打印「未通过，不能交付」，
+//     成片改名 video.rejected.mp4、拼图改名 sheet.rejected.png（留着给人看哪里坏了）
+//   - 成功时写 manifest.json（分镜 sha256、mp4 sha256 / 时长 / 大小、生成时间、各项检查结论），
+//     stdout 最后一行「交付：<mp4 路径>」，report.txt 最后一行「成片：OK <mp4 路径>」；失败时 report.txt 最后一行「成片：无（原因）」。
+//     报告里的 mp4 路径只能抄这两行或 manifest.json；没有「交付：」这一行就是没出片。
+// 退出码：0 交付 / 1 分镜校验没过 / 2 参数错 / 3 有 ✗ 不能交付 / 4 渲染失败或没出 mp4 / 5 渲染排队超时 / 6 内部错误 / 130 被中断
+// 并发：可以同时开多个实例。Remotion 这一步用 template/.render.lock 串行（打印「排队中」和剩余等待时间）；
+//       锁里记 pid + 心跳，持锁进程死了或心跳停 15 分钟会被自动回收。
+// 拼图 sheet.png 用 Remotion 的 Sheet 合成出（不需要系统 ffmpeg）；设了 FFMPEG 环境变量时先用 ffmpeg 的 tile 滤镜拼，失败再退回 Sheet。
 // ============================================================
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {CAPTION, TEMPLATE, captionSegments, formatReport, loadSpecs, parseFile, validate} from './validate.mjs';
+import {TEMPLATE, formatReport, loadSpecs, parseFile, validate} from './validate.mjs';
+import {clearStaleOutputs, mp4Duration, sha256Of, verifyDelivery, writeManifest} from './lib/delivery.mjs';
+import {layoutCheck, parseProbeLog} from './lib/layout-check.mjs';
+import {hasCross, machineCheck, reportTextWrap} from './lib/precheck.mjs';
+import {QueueTimeoutError, acquireRenderLock, pidAlive} from './lib/render-lock.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-// ffmpeg 解析：优先 FFMPEG 环境变量 → 其次 PATH 里的系统 ffmpeg（滤镜齐全）→ 最后退回 Remotion 自带的精简版
-// （通过 `npx remotion ffmpeg` 调用；这个精简版只编译了少数滤镜，不含 tile/pad，见下面 sheet.png 那步的兜底）。
 const REMOTION = path.join(TEMPLATE, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
-const resolveSystemFfmpeg = () => {
-  const probe = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['ffmpeg'], {encoding: 'utf8'});
-  if (probe.status === 0) {
-    const first = (probe.stdout || '').split(/\r?\n/).find((l) => l.trim());
-    return first ? first.trim() : null;
-  }
-  return null;
-};
-const FFMPEG_BIN = process.env.FFMPEG || resolveSystemFfmpeg();
 const LOCK = path.join(TEMPLATE, '.render.lock');
+const FPS = 30;
 // Windows 的 python.org 安装默认叫 python；macOS/Linux 通常只有 python3。PYTHON 环境变量可覆盖。
 const PY = process.env.PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
+const EXIT = {OK: 0, INVALID: 1, USAGE: 2, REJECTED: 3, RENDER: 4, QUEUE: 5, INTERNAL: 6, INTERRUPTED: 130};
 
 const t0 = Date.now();
+const startedAt = new Date().toISOString();
 const log = (...a) => console.log(`[make ${((Date.now() - t0) / 1000).toFixed(0).padStart(3)}s]`, ...a);
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ---------------- 参数 ----------------
 const argv = process.argv.slice(2);
@@ -46,160 +53,185 @@ const opt = (name) => {
   const i = argv.indexOf(name);
   return i >= 0 ? argv[i + 1] : undefined;
 };
-const VALUED = ['--out', '--stills', '--round', '--slug'];
+const VALUED = ['--out', '--stills', '--round', '--slug', '--queue-timeout', '--brief'];
+const USAGE = '用法：node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5] [--no-bgm] [--keep] [--queue-timeout 20] [--verify]';
 const sbFile = argv.find((a, i) => !a.startsWith('--') && !VALUED.includes(argv[i - 1]));
 if (!sbFile) {
-  console.log('用法：node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5] [--no-bgm] [--keep]');
-  process.exit(2);
+  console.log(USAGE);
+  process.exit(EXIT.USAGE);
 }
 const sbPath = path.resolve(sbFile);
+if (!fs.existsSync(sbPath)) {
+  console.log(`找不到分镜文件：${sbPath}\n${USAGE}`);
+  process.exit(EXIT.USAGE);
+}
 const round = opt('--round');
 if (!opt('--out') && !round) {
-  console.log('缺少输出位置：正式出片用 --out <目录>；测试用 --round <轮次>（产物放 tests/<轮次>/<片名>/，同一轮的几支片子放同一个轮次目录，不要按秒生成时间戳目录）');
-  process.exit(2);
+  console.log('缺少输出位置：正式出片用 --out <目录>；测试用 --round <轮次>（产物放仓库外的 promo-video-skill-tests/<轮次>/<片名>/，同一轮的几支片子放同一个轮次目录，不要按秒生成时间戳目录）');
+  process.exit(EXIT.USAGE);
 }
 const slugOf = () => {
   const b = path.basename(sbPath, path.extname(sbPath));
   const raw = opt('--slug') ?? (b.toLowerCase() === 'storyboard' ? path.basename(path.dirname(sbPath)) : b);
   return raw.replace(/[^A-Za-z0-9_.-]/g, '_') || 'video';
 };
-const outDir = path.resolve(opt('--out') ?? path.join(ROOT, 'tests', String(round).replace(/[^A-Za-z0-9_.-]/g, '_'), slugOf()));
+// 测试产物一律放仓库外，不进开源树
+const TESTS_ROOT = process.env.PROMO_TEST_DIR ? path.resolve(process.env.PROMO_TEST_DIR) : path.resolve(ROOT, '..', 'promo-video-skill-tests');
+const outDir = path.resolve(opt('--out') ?? path.join(TESTS_ROOT, String(round).replace(/[^A-Za-z0-9_.-]/g, '_'), slugOf()));
 const stills = opt('--stills')
   ?.split(',')
   .map((x) => Number(x.trim()))
   .filter((x) => Number.isFinite(x) && x >= 0);
+if (opt('--stills') !== undefined && !stills?.length) {
+  console.log(`--stills 要给秒数，逗号分隔，如 --stills 0,1.5,6\n${USAGE}`);
+  process.exit(EXIT.USAGE);
+}
 const noBgm = argv.includes('--no-bgm');
 const keep = argv.includes('--keep');
+const acceptLayout = argv.includes('--accept-layout');
+const queueMin = Number(opt('--queue-timeout') ?? 20);
+if (!Number.isFinite(queueMin) || queueMin <= 0) {
+  console.log(`--queue-timeout 要给正数（分钟）\n${USAGE}`);
+  process.exit(EXIT.USAGE);
+}
+
+// ---------------- --verify：只核对，不出片 ----------------
+if (argv.includes('--verify')) {
+  const v = verifyDelivery(outDir, sbPath);
+  console.log(`核对 ${outDir}：\n${v.lines.join('\n')}`);
+  console.log(v.ok ? '核对通过：成片对应当前分镜，可以交付' : '✗ 成片和分镜不一致或没有可交付的成片，请重跑 make');
+  process.exit(v.ok ? EXIT.OK : EXIT.REJECTED);
+}
+
+// ---------------- 0. 输出目录：建好、清掉上一次的产物 ----------------
+const reportFile = path.join(outDir, 'report.txt');
+const videoPath = path.join(outDir, 'video.mp4');
+const checkDir = path.join(outDir, 'check');
+let sbSha = null;
+try {
+  sbSha = sha256Of(fs.readFileSync(sbPath));
+  fs.mkdirSync(checkDir, {recursive: true});
+  const removed = clearStaleOutputs(outDir, [sbPath]);
+  log(`输出目录：${outDir}${removed.length ? `（已清掉上一次的产物 ${removed.length} 个）` : ''}`);
+} catch (e) {
+  console.error(`未出片：输出目录准备失败——${e.message}\nNot delivered: could not prepare the output folder (${e.message})`);
+  process.exit(EXIT.INTERNAL);
+}
+if (!path.relative(ROOT, outDir).startsWith('..') && !path.isAbsolute(path.relative(ROOT, outDir))) {
+  log('⚠ 输出目录在仓库里面：测试 / 渲染产物请放仓库外（--round 默认就放仓库外的 promo-video-skill-tests/）');
+}
+
+// 顺手清掉 template/public/_run 里崩掉的旧任务留下的素材目录（目录名末尾是 pid；进程已不在且超过 2 小时）
+try {
+  const runRoot = path.join(TEMPLATE, 'public', '_run');
+  for (const d of fs.existsSync(runRoot) ? fs.readdirSync(runRoot) : []) {
+    const pid = Number(/-(\d+)$/.exec(d)?.[1]);
+    const abs = path.join(runRoot, d);
+    if (pid && !pidAlive(pid) && Date.now() - fs.statSync(abs).mtimeMs > 2 * 3600 * 1000) fs.rmSync(abs, {recursive: true, force: true});
+  }
+} catch {}
+
+// ---------------- 收尾：所有出口都走这里（报告最后一行 + manifest + 退出码） ----------------
+const state = {runDir: null, lock: null, child: null, finishing: false, video: null, sheet: null, checkFrames: [], checks: {}};
+const cleanupRun = () => {
+  if (state.runDir && !keep) {
+    try {
+      fs.rmSync(state.runDir, {recursive: true, force: true});
+    } catch {}
+  }
+};
+const finish = (status, code, reason = null, reasonEn = null) => {
+  if (state.finishing) process.exit(code);
+  state.finishing = true;
+  try {
+    state.child?.kill();
+  } catch {}
+  state.lock?.release();
+  cleanupRun();
+  const delivered = status === 'delivered';
+  // 只有交付的成片叫 video.mp4；失败时留下的半成品 / 时长不对的成片改名，免得被当成交付物引用
+  if (!delivered && fs.existsSync(videoPath)) {
+    try {
+      fs.renameSync(videoPath, path.join(outDir, 'video.rejected.mp4'));
+      if (state.video?.path === videoPath) state.video.path = path.join(outDir, 'video.rejected.mp4');
+    } catch {}
+  }
+  const manifest = {
+    status,
+    exitCode: code,
+    reason,
+    storyboard: {source: sbPath, sha256: sbSha, copy: fs.existsSync(path.join(outDir, 'storyboard.json')) ? path.join(outDir, 'storyboard.json') : null},
+    video: state.video,
+    sheet: state.sheet,
+    checkFrames: state.checkFrames,
+    checks: state.checks,
+    outDir,
+    startedAt,
+    finishedAt: new Date().toISOString(),
+  };
+  let manifestPath = null;
+  try {
+    manifestPath = writeManifest(outDir, manifest);
+  } catch {}
+  const last = delivered ? `成片：OK ${state.video.path}` : `成片：无（${reason}）`;
+  try {
+    fs.appendFileSync(reportFile, `${manifestPath ? `交付清单：${manifestPath}\n` : ''}${last}\n`, 'utf8');
+  } catch {}
+  if (delivered) {
+    log(`完成：
+  成片     ${state.video.path}（${state.video.durationSec?.toFixed(2) ?? '?'} 秒）
+  拼图     ${state.sheet ?? '（没生成，见上面的提示）'}
+  检查帧   ${checkDir}
+  交付清单 ${manifestPath}`);
+    console.log(`交付：${state.video.path}`);
+  } else if (status === 'stills') {
+    console.log(`单帧：${checkDir}（--stills 只出单帧，不是成片，不能交付）`);
+  } else {
+    console.log(`${status === 'rejected' ? '未通过，不能交付' : '未出片'}：${reason}${reasonEn ? `\nNot delivered: ${reasonEn}` : ''}`);
+    if (manifestPath) console.log(`（详情见 ${reportFile}；状态记在 ${manifestPath}）`);
+  }
+  process.exit(code);
+};
+process.on('uncaughtException', (e) => finish('failed', EXIT.INTERNAL, `内部错误：${e?.message ?? e}`, `internal error: ${e?.message ?? e}`));
+process.on('unhandledRejection', (e) => finish('failed', EXIT.INTERNAL, `内部错误：${e?.message ?? e}`, `internal error: ${e?.message ?? e}`));
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  try {
+    process.on(sig, () => finish('failed', EXIT.INTERRUPTED, `被中断（${sig}）`, `interrupted (${sig})`));
+  } catch {}
+}
+process.on('exit', () => state.lock?.release());
 
 // ---------------- 1. 校验 ----------------
 const parsed = parseFile(sbPath);
-const r = parsed.error ? {errors: [parsed.error], warnings: [], slots: [], total: 0, beat: 0.5, assets: []} : validate(parsed.sb, {baseDir: path.dirname(sbPath)});
+const r = parsed.error ? {errors: [parsed.error], warnings: [], slots: [], total: 0, beat: 0.5, assets: []} : validate(parsed.sb, {baseDir: path.dirname(sbPath), brief: opt('--brief') ? path.resolve(opt('--brief')) : undefined});
 r.sb = parsed.sb;
 const report = formatReport(r, sbFile);
 console.log(report);
-if (r.errors.length) process.exit(1);
-fs.mkdirSync(path.join(outDir, 'check'), {recursive: true});
-log(`输出目录：${outDir}`);
+fs.writeFileSync(reportFile, report + '\n', 'utf8');
+state.checks.validate = {errors: r.errors.length, warnings: r.warnings.length, human: r.human?.length ?? 0};
+if (r.errors.length) finish('failed', EXIT.INVALID, `分镜校验没过（${r.errors.length} 个错误，见 report.txt 开头）`, `storyboard validation failed (${r.errors.length} errors)`);
+const lang = parsed.sb.meta?.lang === 'en' ? 'en' : 'zh';
 
-// ---------------- 1b. 机器自查（不靠模型自评；结果写进 report.txt） ----------------
-const machineCheck = (sb0) => {
-  const lines = [];
-  const ok = (cond, good, bad) => lines.push(cond ? `  ✓ ${good}` : `  ✗ ${bad}`);
-  // 画面文字里的反斜杠（字面 \n 等转义残留）
-  const bs = [];
-  const walk = (v, w) => {
-    if (typeof v === 'string') {
-      if (/\\/.test(v) && !/(^|\.)(src|logo|bgm)$/.test(w)) bs.push(`${w}「${v.slice(0, 16)}」`);
-    } else if (Array.isArray(v)) v.forEach((x, k) => walk(x, `${w}[${k}]`));
-    else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k !== 'note') walk(x, w ? `${w}.${k}` : k);
-  };
-  walk(sb0, '');
-  ok(!bs.length, '画面文字里没有反斜杠（封面没有字面 \\n）', `画面文字里有反斜杠：${bs.join('；')}`);
-  // 产品名 / CTA 一致
-  const end = (sb0.shots ?? []).find((s) => s.type === 'endCard');
-  if (end) {
-    ok(end.params?.brand === sb0.meta?.product, `片尾产品名 = meta.product（${sb0.meta?.product}）`, `片尾产品名「${end.params?.brand}」≠ meta.product「${sb0.meta?.product}」`);
-    ok((end.params?.cta ?? '') === (sb0.meta?.cta ?? ''), end.params?.cta ? `片尾获取方式 = meta.cta（${sb0.meta.cta}）` : '片尾没放获取方式（简报没给）', `片尾 cta「${end.params?.cta ?? ''}」≠ meta.cta「${sb0.meta?.cta ?? ''}」`);
-  }
-  // 字幕最长停留
-  let longest = {d: 0, text: ''};
-  r.slots.forEach((s, i) => {
-    const c = sb0.shots[i]?.caption;
-    const caps = Array.isArray(c) ? c : typeof c === 'string' ? [c] : [];
-    captionSegments(s.start, s.dur, Math.max(1, caps.length), r.beat).forEach(([a, b], k) => {
-      if (caps[k] && b - a > longest.d) longest = {d: b - a, text: caps[k]};
-    });
-  });
-  ok(longest.d <= CAPTION.maxHold + 1e-6, `单句字幕最长停 ${longest.d.toFixed(1)} 秒（≤${CAPTION.maxHold}）`, `「${longest.text.replace(/\n/g, '⏎')}」停 ${longest.d.toFixed(1)} 秒`);
-  // 片尾图标光圈 vs 免责胶囊（几何常量与 core/safe.ts DISCLAIMER_Y、shots/endCard.tsx 一致）
-  if (end && sb0.meta?.disclaimer) {
-    const discBottom = 216 + Math.round(26 * 1.3 + 8);
-    const haloTop = Math.round(306 + 85 - (85 + 20) * 1.12);
-    ok(haloTop - discBottom >= 8, `片尾图标光圈（y≥${haloTop}）和免责胶囊（y≤${discBottom}）不相碰`, `片尾图标光圈顶 y=${haloTop} 贴着免责胶囊底 y=${discBottom}`);
-  }
-  return lines;
-};
-const mc = machineCheck(parsed.sb);
-
-// ---------------- 1c. 文字排版报告：模拟换行，报出会断词的行 / 明显超宽的行 ----------------
-// 和 template/src/core/fit.ts 的 glueBreaks() 同一套「中文按 Intl.Segmenter 分词、词内不断行」的判断
-// 规则，但 Node 不能直接 import 这个 .ts 文件（没有 ts-node/tsx），这里复刻一份最小逻辑。
-// 改分词/标点规则要同步改 fit.ts 那边的注释里也提了这件事。
-const isWideCp = (cp) =>
-  (cp >= 0x2e80 && cp <= 0x9fff) ||
-  (cp >= 0xac00 && cp <= 0xd7af) ||
-  (cp >= 0xf900 && cp <= 0xfaff) ||
-  (cp >= 0xfe30 && cp <= 0xfe4f) ||
-  (cp >= 0xff00 && cp <= 0xff60) ||
-  (cp >= 0xffe0 && cp <= 0xffe6) ||
-  (cp >= 0x3000 && cp <= 0x303f) ||
-  cp === 0x201c || cp === 0x201d || cp === 0x2018 || cp === 0x2019 || cp === 0x2026 || cp === 0x00b7;
-const isIdeographCp = (cp) => (cp >= 0x3400 && cp <= 0x9fff) || (cp >= 0xf900 && cp <= 0xfaff);
-const charUnitsOf = (s) => Array.from(String(s).replace(/[{}]/g, '')).reduce((n, ch) => n + (isWideCp(ch.codePointAt(0)) ? 1 : 0.5), 0);
-let zhSegmenter;
-const getZhSegmenter = () => {
-  try {
-    return (zhSegmenter ??= new Intl.Segmenter('zh', {granularity: 'word'}));
-  } catch {
-    return undefined;
-  }
-};
-// 安全区文字行宽 780px、正文字号下限 40px（SHOT_API §4/§5）折算出的「一行大约能放几个字」，
-// 用来近似判断一行是不是长到会触发换行——不是逐镜头像素级校验，只是诊断用的粗略阈值
-const LINE_UNITS = 780 / 40;
-const reportTextWrap = (sb0, specs) => {
-  const lines = [];
-  const seg = getZhSegmenter();
-  const addField = (loc, val, fmt) => {
-    if (typeof val !== 'string' || !val) return;
-    if (fmt === 'note' || fmt === 'asset' || fmt === 'icon' || fmt === 'illust' || fmt === 'color') return;
-    for (const raw of val.split('\n')) {
-      const line = raw.trim();
-      if (!line) continue;
-      const units = charUnitsOf(line);
-      if (units > LINE_UNITS * 2.2) {
-        lines.push(`  ✗ 超宽：${loc}「${line.slice(0, 22)}${line.length > 22 ? '…' : ''}」约 ${units.toFixed(1)} 字，正文下限 40px 也装不下一行`);
-        continue;
-      }
-      if (units <= LINE_UNITS || !seg) continue;
-      const words = Array.from(seg.segment(line.replace(/[{}]/g, ''))).map((s) => s.segment);
-      const risky = words.filter((w) => {
-        const cs = Array.from(w);
-        return cs.length >= 2 && cs.some((c) => isIdeographCp(c.codePointAt(0)));
-      });
-      if (risky.length) lines.push(`  ! 可能断词：${loc}「${line}」超一行宽度且含多字词「${risky.slice(0, 3).join('、')}」——渲染它的组件要用 core/fit.ts 的 glueBreaks() 保护词边界，否则可能被从词中间拆到下一行`);
-    }
-  };
-  addField('meta.disclaimer', sb0.meta?.disclaimer);
-  (sb0.meta?.notices ?? []).forEach((n, i) => addField(`meta.notices[${i}]`, n));
-  const walkParam = (val, schema, loc) => {
-    if (!schema || val == null) return;
-    if (schema.type === 'string') return addField(loc, val, schema.format);
-    if (schema.type === 'array' && Array.isArray(val)) val.forEach((v, k) => walkParam(v, schema.items, `${loc}[${k}]`));
-    else if (schema.type === 'object' && val && typeof val === 'object') for (const [k, v] of Object.entries(val)) walkParam(v, schema.properties?.[k], `${loc}.${k}`);
-  };
-  (sb0.shots ?? []).forEach((shot, i) => {
-    const tag = `${i + 1}-${shot.type}`;
-    const caps = Array.isArray(shot.caption) ? shot.caption : typeof shot.caption === 'string' ? [shot.caption] : [];
-    caps.forEach((c, k) => addField(`${tag}.caption[${k}]`, c, 'caption'));
-    const spec = specs[shot.type];
-    if (spec) for (const [k, v] of Object.entries(shot.params || {})) walkParam(v, spec.params?.properties?.[k], `${tag}.params.${k}`);
-  });
-  return lines.length ? [...new Set(lines)] : ['  ✓ 没发现明显会断词或超宽的行'];
-};
-const specsForReport = loadSpecs();
-const tw = reportTextWrap(parsed.sb, specsForReport);
-
-const fullReport = `${report}\n机器自查（make.mjs 自动做，不靠模型自评）：\n${mc.join('\n')}\n文字排版报告（模拟换行，按安全区行宽 780px / 正文下限 40px 粗估，不是逐镜头像素级校验）：\n${tw.join('\n')}`;
+// ---------------- 1b. 机器自查 + 文字排版（不靠模型自评） ----------------
+const specs = loadSpecs();
+const mc = machineCheck(parsed.sb, r);
+const tw = reportTextWrap(parsed.sb, specs);
+fs.appendFileSync(reportFile, `机器自查（make.mjs 自动做，不靠模型自评）：\n${mc.join('\n')}\n文字排版报告（模拟换行，按安全区行宽 780px / 正文下限 40px 粗估，不是逐镜头像素级校验）：\n${tw.join('\n')}\n`, 'utf8');
 console.log(`机器自查：\n${mc.join('\n')}`);
 console.log(`文字排版报告：\n${tw.join('\n')}`);
-fs.writeFileSync(path.join(outDir, 'report.txt'), fullReport + '\n', 'utf8');
+const preBad = [...mc, ...tw].filter((l) => /^\s*✗/.test(l)).map((l) => l.trim().replace(/^✗\s*/, ''));
+state.checks.machine = {ok: !hasCross(mc), issues: mc.filter((l) => /^\s*✗/.test(l)).map((l) => l.trim())};
+state.checks.textWrap = {ok: !hasCross(tw), issues: tw.filter((l) => /^\s*✗/.test(l)).map((l) => l.trim())};
+if (preBad.length && !stills && !acceptLayout) {
+  finish('rejected', EXIT.REJECTED, `机器自查 / 文字排版有 ${preBad.length} 处 ✗，没有渲染：${preBad.slice(0, 3).join('；')}`, `${preBad.length} pre-render check(s) failed; nothing was rendered`);
+}
 
 // ---------------- 2. 素材复制到 template/public/_run/<id>/ ----------------
 const base = path.basename(sbPath, path.extname(sbPath)).replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 24) || 'sb';
 const id = `${base}-${Date.now().toString(36)}-${process.pid}`;
 const runDir = path.join(TEMPLATE, 'public', '_run', id);
 fs.mkdirSync(runDir, {recursive: true});
+state.runDir = runDir;
 const sb = JSON.parse(JSON.stringify(parsed.sb));
 const map = new Map();
 r.assets.forEach((a, k) => {
@@ -218,15 +250,10 @@ sb.shots = rewrite(sb.shots);
 if (sb.meta.logo) sb.meta.logo = map.get(sb.meta.logo) ?? sb.meta.logo;
 log(`素材 ${map.size} 个 → template/public/_run/${id}/`);
 
-const cleanup = () => {
-  if (!keep) fs.rmSync(runDir, {recursive: true, force: true});
-};
-
 // ---------------- 3. 配乐 ----------------
 const bgmScript = path.join(ROOT, 'scripts', 'make_bgm.py');
 if (!noBgm && !stills && fs.existsSync(bgmScript)) {
   const bgmOut = path.join(runDir, 'bgm.wav');
-  const specs = loadSpecs();
   const args = [
     bgmScript,
     '--duration', r.total.toFixed(3),
@@ -246,226 +273,238 @@ if (!noBgm && !stills && fs.existsSync(bgmScript)) {
   } else log(`配乐失败，改为静音：${(p.stderr || p.error?.message || '').trim().split('\n').slice(-3).join(' | ')}`);
 } else if (!stills) log(noBgm ? '按 --no-bgm 静音' : '没有 scripts/make_bgm.py，静音');
 
-// 检查帧时间点：第 0 帧 + 每镜「结束前 0.45 秒」（此时本镜动画已演完、还没开始退场）
+// ---------------- 探针帧 ----------------
+// 检查帧：第 0 帧 + 每镜「结束前 0.45 秒」（此时本镜动画已演完、还没开始退场）——版式在这些帧上判
+const lastFrame = Math.max(0, Math.round(r.total * FPS) - 1);
+const frameOf = (sec) => Math.min(Math.round(sec * FPS), lastFrame);
 const checkTimes = [0, ...r.slots.map((s) => Math.max(s.start + s.dur / 2, s.end - 0.45))];
-const lastFrame = Math.round(r.total * 30) - 1;
-const frameOf = (sec) => Math.min(Math.round(sec * 30), lastFrame);
-sb.__probe = (stills ?? checkTimes).map(frameOf);
+const checkFrames = stills ? stills.map(frameOf) : checkTimes.map(frameOf);
+// 英文片的汉字扫描：每半拍一帧（覆盖每一拍）+ 每镜 25% / 50% / 75%，组件在任何一拍冒出的写死中文都能抓到
+const hanFrames = new Set(checkFrames);
+if (lang === 'en' && !stills) {
+  const step = r.beat / 2;
+  for (let t = 0; t < r.total - 1e-6; t += step) hanFrames.add(frameOf(t));
+  for (const s of r.slots) for (const f of [0.25, 0.5, 0.75]) hanFrames.add(frameOf(s.start + s.dur * f));
+}
+sb.__probe = [...hanFrames].sort((a, b) => a - b);
 const propsPath = path.join(outDir, 'props.json');
 fs.writeFileSync(propsPath, JSON.stringify(sb, null, 2), 'utf8');
-// 存一份「模型实际写的那份分镜」（未经素材路径重写、不带 __probe/bgm），方便复核时对照——
-// 之前只有 props.json（内部重写版），复核者常常对不上模型到底改了什么（round4 修复）
-fs.writeFileSync(path.join(outDir, 'storyboard.json'), JSON.stringify(parsed.sb, null, 2), 'utf8');
+// 存一份「模型实际写的那份分镜」（未经素材路径重写、不带 __probe/bgm），方便复核时对照
+if (path.resolve(path.join(outDir, 'storyboard.json')).toLowerCase() !== sbPath.toLowerCase()) fs.writeFileSync(path.join(outDir, 'storyboard.json'), JSON.stringify(parsed.sb, null, 2), 'utf8');
+// 不带探针的一份（拼图 / 补检查帧用，放 _run 里，跑完删）
+const plainSb = {...sb};
+delete plainSb.__probe;
+const plainPropsPath = path.join(runDir, 'props-plain.json');
+fs.writeFileSync(plainPropsPath, JSON.stringify(plainSb), 'utf8');
 
-// ---------------- 4. 渲染（锁文件串行） ----------------
-const alive = (pid) => {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (e) {
-    return e.code === 'EPERM';
-  }
-};
-const acquire = async () => {
-  let lastMsg = 0;
-  for (;;) {
+// ---------------- 4. Remotion（异步子进程：排队心跳、进度提示不被卡住） ----------------
+const runRemotion = (args) =>
+  new Promise((resolve) => {
+    const probeLines = [];
+    const tail = [];
+    let buf = '';
+    let progress = '';
+    const eat = (chunk) => {
+      buf += chunk;
+      const parts = buf.split(/\r?\n|\r/);
+      buf = parts.pop() ?? '';
+      for (const l of parts) {
+        if (l.includes('__LAYOUT__')) probeLines.push(l);
+        else if (l.trim()) {
+          tail.push(l);
+          if (tail.length > 300) tail.shift();
+          const m = /Rendered\s+(\d+)\s*\/\s*(\d+)/i.exec(l);
+          if (m) progress = `${m[1]}/${m[2]} 帧`;
+        }
+      }
+    };
+    let p;
     try {
-      const fd = fs.openSync(LOCK, 'wx');
-      fs.writeSync(fd, JSON.stringify({pid: process.pid, id, at: Date.now()}));
-      fs.closeSync(fd);
-      return;
+      p = spawn(process.execPath, [REMOTION, ...args], {cwd: TEMPLATE, windowsHide: true});
     } catch (e) {
-      if (e.code !== 'EEXIST') throw e;
-      let info = {};
-      try {
-        info = JSON.parse(fs.readFileSync(LOCK, 'utf8'));
-      } catch {}
-      const stale = (info.pid && !alive(info.pid)) || (info.at && Date.now() - info.at > 40 * 60 * 1000);
-      if (stale) {
-        log(`清掉失效的锁（${info.id ?? '?'}）`);
-        fs.rmSync(LOCK, {force: true});
-        continue;
-      }
-      if (Date.now() - lastMsg > 15000) {
-        log(`排队中：等待 ${info.id ?? '另一个任务'} 渲染完成…`);
-        lastMsg = Date.now();
-      }
-      await sleep(2000);
+      resolve({status: -1, probe: '', tail: [String(e.message)], progress: () => ''});
+      return;
     }
-  }
-};
-let locked = false;
-const release = () => {
-  if (!locked) return;
-  locked = false;
+    state.child = p;
+    p.stdout.setEncoding('utf8');
+    p.stderr.setEncoding('utf8');
+    p.stdout.on('data', eat);
+    p.stderr.on('data', eat);
+    const done = (status, extra) => {
+      state.child = null;
+      if (buf) eat('\n');
+      if (extra) tail.push(extra);
+      resolve({status, probe: probeLines.join('\n'), tail});
+    };
+    p.on('error', (e) => done(-1, e.message));
+    p.on('close', (code) => done(code ?? -1));
+    runRemotion.progress = () => progress;
+  });
+const remotion = async (args, label) => {
+  const tStart = Date.now();
+  const tick = setInterval(() => {
+    const pr = runRemotion.progress?.();
+    log(`${label}中… 已用 ${Math.round((Date.now() - tStart) / 1000)} 秒${pr ? `（${pr}）` : ''}`);
+  }, 30000);
   try {
-    const info = JSON.parse(fs.readFileSync(LOCK, 'utf8'));
-    if (info.pid === process.pid) fs.rmSync(LOCK, {force: true});
-  } catch {}
-};
-process.on('exit', release);
-for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => {
-  release();
-  cleanup();
-  process.exit(130);
-});
-
-// 布局探针的页面日志只有 --log=verbose 才会转出来；verbose 输出很多，只在失败时打印其中的报错行
-const remotion = (args) => {
-  const run = (extra) => spawnSync(process.execPath, [REMOTION, ...args, ...extra], {cwd: TEMPLATE, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024});
-  let p = run(['--log=verbose']);
-  if (p.status !== 0 && /cache|lock|EBUSY|EPERM/i.test(p.stderr + p.stdout)) {
-    log('打包缓存冲突，关掉缓存重试…');
-    p = run(['--log=verbose', '--bundle-cache=false']);
+    let p = await runRemotion([...args, '--log=verbose']);
+    if (p.status !== 0 && /cache|lock|EBUSY|EPERM/i.test(p.tail.join('\n'))) {
+      log('打包缓存冲突，关掉缓存重试…');
+      p = await runRemotion([...args, '--log=verbose', '--bundle-cache=false']);
+    }
+    if (p.status !== 0) {
+      const all = p.tail.filter((l) => !/INFO:CONSOLE/.test(l));
+      const errs = all.filter((l) => /error|Error|错误|failed|Failed/.test(l));
+      const e = new Error(`Remotion ${label}失败（退出码 ${p.status}）`);
+      e.detail = (errs.length ? errs : all).slice(-40).join('\n');
+      throw e;
+    }
+    return p.probe;
+  } finally {
+    clearInterval(tick);
   }
-  if (p.status !== 0) {
-    const all = ((p.stderr || '') + (p.stdout || '')).split('\n').filter((l) => !/__LAYOUT__|INFO:CONSOLE/.test(l));
-    const errs = all.filter((l) => /error|Error|错误|failed|Failed/.test(l));
-    console.error((errs.length ? errs : all).slice(-60).join('\n'));
-    throw new Error('Remotion 失败');
-  }
-  return p;
 };
 
-const videoPath = path.join(outDir, 'video.mp4');
+const renderFail = (e) => {
+  if (e?.detail) console.error(e.detail);
+  const first = String(e?.detail ?? '').split('\n').filter(Boolean).slice(-1)[0] ?? '';
+  finish('failed', EXIT.RENDER, `${e?.message ?? e}${first ? `：${first.slice(0, 200)}` : ''}`, `Remotion render failed: ${first.slice(0, 200) || e?.message}`);
+};
+
+try {
+  state.lock = await acquireRenderLock({file: LOCK, id, log, timeoutMs: queueMin * 60 * 1000});
+} catch (e) {
+  if (e instanceof QueueTimeoutError) finish('failed', EXIT.QUEUE, `渲染排队超时：${e.message}。等前面的任务跑完再重跑，或加 --queue-timeout 40 多等一会儿`, `render queue timed out after ${queueMin} min`);
+  finish('failed', EXIT.INTERNAL, `拿不到渲染锁：${e.message}`, `could not take the render lock: ${e.message}`);
+}
+log('拿到渲染锁');
+
 const probeLogs = [];
-await acquire();
-locked = true;
 try {
   if (stills) {
     for (const s of stills) {
       const fr = frameOf(s);
-      const png = path.join(outDir, 'check', `still-${s.toFixed(2)}s.png`);
+      const png = path.join(checkDir, `still-${s.toFixed(2)}s.png`);
       log(`出单帧 ${s}s（第 ${fr} 帧）…`);
-      const p = remotion(['still', 'src/index.ts', 'Promo', png, `--frame=${fr}`, `--props=${propsPath}`]);
-      probeLogs.push((p.stderr || '') + (p.stdout || ''));
+      probeLogs.push(await remotion(['still', 'src/index.ts', 'Promo', png, `--frame=${fr}`, `--props=${propsPath}`], '出单帧'));
+      if (fs.existsSync(png)) state.checkFrames.push(png);
     }
   } else {
-    log(`渲染整片 ${r.total.toFixed(1)} 秒…`);
-    const p = remotion(['render', 'src/index.ts', 'Promo', videoPath, `--props=${propsPath}`, '--codec=h264']);
-    probeLogs.push((p.stderr || '') + (p.stdout || ''));
+    log(`渲染整片 ${r.total.toFixed(1)} 秒${lang === 'en' ? `（英文片：${sb.__probe.length} 个探针帧扫汉字，每半拍一帧）` : ''}…`);
+    probeLogs.push(await remotion(['render', 'src/index.ts', 'Promo', videoPath, `--props=${propsPath}`, '--codec=h264'], '渲染'));
     log('渲染完成');
   }
 } catch (e) {
-  release();
-  cleanup();
-  console.error(String(e.message || e));
-  process.exit(1);
+  renderFail(e);
 }
-release();
-cleanup();
+if (!stills && (!fs.existsSync(videoPath) || fs.statSync(videoPath).size < 1024)) {
+  finish('failed', EXIT.RENDER, `Remotion 说渲染完了，但 ${videoPath} 不存在或是空文件`, 'Remotion exited but video.mp4 is missing or empty');
+}
 
-// ---------------- 4b. 布局自查：渲染时探针打出的文字包围盒 → 裁切 / 相交 / 出界 ----------------
-const layoutCheck = (logText) => {
-  const frames = new Map();
-  for (const m of logText.matchAll(/__LAYOUT__(\{.*?\})__END__/g)) {
-    try {
-      const o = JSON.parse(m[1]);
-      frames.set(o.frame, o);
-    } catch {}
-  }
-  const issues = [];
-  const slotOf = (fr) => {
-    const sec = fr / 30;
-    return r.slots.find((x) => sec >= x.start - 1e-6 && sec < x.end - 1e-6) ?? r.slots[r.slots.length - 1];
-  };
-  const at = (fr) => {
-    const s = slotOf(fr);
-    return `${(fr / 30).toFixed(1)}s 第 ${s.i + 1} 镜（${s.type}）`;
-  };
-  const q = (b) => `「${b.text.slice(0, 12)}」`;
-  const lang = r.sb?.meta?.lang === 'en' ? 'en' : 'zh';
-  const HAN_RE = /[㐀-鿿]/;
-  for (const [fr, o] of [...frames.entries()].sort((a, b) => a[0] - b[0])) {
-    if (o.error) {
-      issues.push(`${at(fr)}：探针出错 ${o.error}`);
-      continue;
-    }
-    const vis = [];
-    const slot = slotOf(fr);
-    for (const b of o.blocks ?? []) {
-      const [x0, y0, x1, y1] = b.tx;
-      const c = b.clip;
-      if (c && (x1 <= c[0] || x0 >= c[2] || y1 <= c[1] || y0 >= c[3])) continue; // 整块在裁切框外 = 看不见
-      if (x1 <= 0 || x0 >= 1080 || y1 <= 0 || y0 >= 1920) continue;
-      vis.push(b);
-      // 裁切：底边 / 左右被容器切掉（顶边切掉多是聊天记录上滚，属正常）
-      if (c) {
-        const cut = [];
-        if (y1 > c[3] + 3) cut.push(`底边切掉 ${Math.round(y1 - c[3])}px`);
-        if (x1 > c[2] + 3) cut.push(`右边切掉 ${Math.round(x1 - c[2])}px`);
-        if (x0 < c[0] - 3) cut.push(`左边切掉 ${Math.round(c[0] - x0)}px`);
-        if (cut.length) issues.push(`${at(fr)}：文字${q(b)}被容器裁切（${cut.join('，')}）`);
-      }
-      // 全局字幕带（y260–540）和 endCard 的大字（brand/slogan/points）算"关键内容"，按 SAFE 的 x180–900 核对；
-      // 其余卡片内容仍按 CARD 的 x150–930（round4 修复：之前所有文字统一用 150–930，比字幕/片尾该守的 180–900 松）
-      const isKeyContent = (y0 >= 245 && y1 <= 555) || slot?.type === 'endCard';
-      const [lo, hi] = isKeyContent ? [178, 902] : [148, 932];
-      if (x0 < lo || x1 > hi) issues.push(`${at(fr)}：文字${q(b)}出了 x${isKeyContent ? 180 : 150}–${isKeyContent ? 900 : 930}（x ${x0}–${x1}）`);
-      // 英文视频画面上不该有中文字（含组件写死的字符串，探针量到的是渲染后的真实文字，能抓到 storyboard 之外的硬编码）
-      if (lang === 'en' && HAN_RE.test(b.text)) issues.push(`${at(fr)}：英文视频（meta.lang: "en"）画面上出现中文字${q(b)}`);
-    }
-    for (let i = 0; i < vis.length; i++)
-      for (let j = i + 1; j < vis.length; j++) {
-        const a = vis[i];
-        const b = vis[j];
-        if (a.anc.includes(b.id) || b.anc.includes(a.id)) continue;
-        const ix = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
-        const iy = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
-        if (ix <= 4 || iy <= 4) continue;
-        const area = (z) => Math.max(1, (z.x1 - z.x0) * (z.y1 - z.y0));
-        if (ix * iy < 300 || ix * iy < 0.08 * Math.min(area(a), area(b))) continue;
-        issues.push(`${at(fr)}：文字${q(a)}和${q(b)}相交（重叠 ${ix}×${iy}px）`);
-      }
-  }
-  return {frames: [...frames.values()], issues: [...new Set(issues)]};
-};
-const lc = layoutCheck(probeLogs.join('\n'));
-fs.writeFileSync(path.join(outDir, 'layout.json'), JSON.stringify(lc.frames, null, 1), 'utf8');
-const layoutLines = !lc.frames.length
-  ? ['  ? 没收到布局探针数据（layout.json 为空），这一项没查']
-  : lc.issues.length
-    ? lc.issues.map((x) => `  ✗ ${x}`)
-    : [`  ✓ ${lc.frames.length} 个检查帧：文字没有被容器裁切、没有互相压住、字幕/片尾大字都在 x180–900 内，其余卡片内容都在 x150–930 内`];
-fs.appendFileSync(path.join(outDir, 'report.txt'), `布局自查（渲染时量出每个文字块的位置，不靠看图）：\n${layoutLines.join('\n')}\n`, 'utf8');
+// ---------------- 4b. 布局 / 汉字自查：渲染时探针打出的文字包围盒 ----------------
+const probed = parseProbeLog(probeLogs.join('\n'));
+const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS});
+fs.writeFileSync(path.join(outDir, 'layout.json'), JSON.stringify([...probed.values()].filter((o) => checkFrames.includes(o.frame)), null, 1), 'utf8');
+const missingProbe = [...new Set(checkFrames)].filter((f) => !probed.has(f));
+const layoutLines = [];
+if (!lc.checked) layoutLines.push('  ✗ 没收到布局探针数据（layout.json 为空）：版式没法自查，不能交付。重跑一次；还不行就是 Remotion 没把页面日志转出来（需要 --log=verbose）');
+else if (missingProbe.length) layoutLines.push(`  ✗ ${missingProbe.length} 个检查帧没收到探针数据（第 ${missingProbe.join('、')} 帧），这些时刻的版式没查到`);
+for (const x of lc.errors) layoutLines.push(`  ✗ ${x}`);
+for (const x of lc.layoutIssues) layoutLines.push(`  ✗ ${x}`);
+if (lc.checked && !lc.layoutIssues.length && !lc.errors.length && !missingProbe.length)
+  layoutLines.push(`  ✓ ${lc.checked} 个检查帧：文字没有被容器裁切、没有互相压住、字幕/片尾大字都在 x180–900 内，其余卡片内容都在 x150–930 内`);
+const hanLines = [];
+if (lang === 'en') {
+  if (lc.hanIssues.length) for (const x of lc.hanIssues) hanLines.push(`  ✗ ${x}`);
+  else if (lc.scanned) hanLines.push(`  ✓ 扫了 ${lc.scanned} 个探针帧（${stills ? '只扫 --stills 给的帧' : '每半拍一帧，覆盖每一拍'}），画面 DOM 里没有任何汉字`);
+  else hanLines.push('  ✗ 没收到探针数据，汉字没扫到');
+}
+fs.appendFileSync(reportFile, `布局自查（渲染时量出每个文字块的位置，不靠看图）：\n${layoutLines.join('\n')}\n${hanLines.length ? `英文片汉字扫描（组件写死的中文也算）：\n${hanLines.join('\n')}\n` : ''}`, 'utf8');
 console.log(`布局自查：\n${layoutLines.join('\n')}`);
+if (hanLines.length) console.log(`英文片汉字扫描：\n${hanLines.join('\n')}`);
+const layoutBad = layoutLines.filter((l) => /^\s*✗/.test(l));
+const hanBad = hanLines.filter((l) => /^\s*✗/.test(l));
+state.checks.layout = {ok: !layoutBad.length, checkedFrames: lc.checked, issues: layoutBad.map((l) => l.trim()), acceptedByHuman: acceptLayout && layoutBad.length > 0};
+state.checks.han = lang === 'en' ? {ok: !hanBad.length, scannedFrames: lc.scanned, coverage: stills ? 'stills only' : 'every half beat + 25/50/75% of every shot', issues: hanBad.map((l) => l.trim())} : {skipped: true, reason: 'meta.lang 不是 en'};
+const blocking = [...layoutBad, ...hanBad].map((l) => l.trim().replace(/^✗\s*/, ''));
+const rejected = blocking.length > 0 && !acceptLayout;
 
-if (stills) {
-  log(`完成：单帧在 ${path.join(outDir, 'check')}`);
-  process.exit(0);
-}
+if (stills) finish('stills', rejected ? EXIT.REJECTED : EXIT.OK, rejected ? `单帧版式有 ${blocking.length} 处 ✗` : null);
 
-// ---------------- 5. 拼图 + 检查帧（并行安全，只读 video.mp4） ----------------
-const ff = (args) =>
-  FFMPEG_BIN
-    ? spawnSync(FFMPEG_BIN, ['-y', '-hide_banner', '-loglevel', 'error', ...args], {encoding: 'utf8'})
-    : spawnSync(process.execPath, [REMOTION, 'ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', ...args], {
-        cwd: TEMPLATE,
-        encoding: 'utf8',
-        maxBuffer: 512 * 1024 * 1024,
-      });
-const cols = 10;
-const rows = Math.max(1, Math.ceil(r.total / cols));
-const sheetResult = ff([
-  '-ss', '0.5', '-i', videoPath,
-  '-vf', `fps=1,scale=270:480,pad=280:490:5:5:white,tile=${cols}x${rows}`,
-  '-frames:v', '1', path.join(outDir, 'sheet.png'),
-]);
-if (sheetResult.status !== 0 || !fs.existsSync(path.join(outDir, 'sheet.png'))) {
-  log(
-    '⚠ 拼图 sheet.png 生成失败：tile/pad 滤镜不在当前 ffmpeg 里（Remotion 自带的精简版 ffmpeg 只编译了少数滤镜）。' +
-      '装一个完整版系统 ffmpeg 并设 FFMPEG 环境变量指向它即可修复；不影响成片 video.mp4 和检查帧 check/*.png。',
-  );
+// ---------------- 5. 拼图 + 检查帧（仍在锁里：_run 素材还在，Remotion 补帧不和别人抢） ----------------
+const findFfmpeg = () => {
+  if (process.env.FFMPEG) return process.env.FFMPEG;
+  const p = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['ffmpeg'], {encoding: 'utf8'});
+  return p.status === 0 ? (p.stdout || '').split(/\r?\n/).find((l) => l.trim())?.trim() ?? null : null;
+};
+const FF = findFfmpeg();
+const ff = (args, bin = FF) =>
+  bin
+    ? spawnSync(bin, ['-y', '-hide_banner', '-loglevel', 'error', ...args], {encoding: 'utf8'})
+    : spawnSync(process.execPath, [REMOTION, 'ffmpeg', '-y', '-hide_banner', '-loglevel', 'error', ...args], {cwd: TEMPLATE, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024});
+
+const sheetPath = path.join(outDir, rejected ? 'sheet.rejected.png' : 'sheet.png');
+const sheetFrames = Array.from({length: Math.max(1, Math.ceil(r.total))}, (_, k) => frameOf(k + 0.5));
+let sheetOk = false;
+if (process.env.FFMPEG) {
+  const cols = 10;
+  const rows = Math.max(1, Math.ceil(r.total / cols));
+  const res = ff(['-ss', '0.5', '-i', videoPath, '-vf', `fps=1,scale=270:480,pad=280:490:5:5:white,tile=${cols}x${rows}`, '-frames:v', '1', sheetPath], process.env.FFMPEG);
+  sheetOk = res.status === 0 && fs.existsSync(sheetPath);
+  if (!sheetOk) log('FFMPEG 拼图失败，改用 Remotion 的 Sheet 合成');
 }
-for (const f of fs.readdirSync(path.join(outDir, 'check'))) if (f.endsWith('.png')) fs.rmSync(path.join(outDir, 'check', f));
-ff(['-i', videoPath, '-frames:v', '1', path.join(outDir, 'check', '00-frame0.png')]);
+if (!sheetOk) {
+  const sheetProps = path.join(runDir, 'sheet-props.json');
+  fs.writeFileSync(sheetProps, JSON.stringify({storyboard: plainSb, frames: sheetFrames, cols: 10}), 'utf8');
+  log(`拼图（Remotion Sheet，${sheetFrames.length} 格）…`);
+  try {
+    await remotion(['still', 'src/index.ts', 'Sheet', sheetPath, `--props=${sheetProps}`], '拼图');
+    sheetOk = fs.existsSync(sheetPath);
+  } catch (e) {
+    log(`⚠ 拼图 sheet.png 没生成：${e.message}${e.detail ? `\n${e.detail.split('\n').slice(-5).join('\n')}` : ''}（不影响成片和检查帧）`);
+  }
+}
+state.sheet = sheetOk ? sheetPath : null;
+
+// 检查帧：先从成片里抽（和观众看到的一致），抽不出来的用 Remotion 单帧补
+const wanted = [{name: '00-frame0.png', sec: 0, frame: 0}];
 for (const s of r.slots) {
-  // 取「结束前 0.45 秒」：此时本镜动画已演完、还没开始退场（中点常卡在卡片刚要弹出的过渡瞬间）
   const mid = Math.max(s.start + s.dur / 2, s.end - 0.45);
-  const name = `${String(s.i + 1).padStart(2, '0')}-${s.type}-${mid.toFixed(1)}s.png`;
-  ff(['-ss', mid.toFixed(3), '-i', videoPath, '-frames:v', '1', path.join(outDir, 'check', name)]);
+  wanted.push({name: `${String(s.i + 1).padStart(2, '0')}-${s.type}-${mid.toFixed(1)}s.png`, sec: mid, frame: frameOf(mid)});
 }
-log(`完成：
-  成片   ${videoPath}
-  拼图   ${path.join(outDir, 'sheet.png')}（每秒一帧，取 x.5 秒）
-  检查帧 ${path.join(outDir, 'check')}`);
+const missing = [];
+for (const w of wanted) {
+  const png = path.join(checkDir, w.name);
+  ff(w.sec > 0 ? ['-ss', w.sec.toFixed(3), '-i', videoPath, '-frames:v', '1', png] : ['-i', videoPath, '-frames:v', '1', png]);
+  if (!fs.existsSync(png) || fs.statSync(png).size < 1024) missing.push(w);
+}
+for (const w of missing) {
+  const png = path.join(checkDir, w.name);
+  try {
+    await remotion(['still', 'src/index.ts', 'Promo', png, `--frame=${w.frame}`, `--props=${plainPropsPath}`], '补检查帧');
+  } catch (e) {
+    log(`⚠ 检查帧 ${w.name} 没生成：${e.message}`);
+  }
+}
+state.checkFrames = wanted.map((w) => path.join(checkDir, w.name)).filter((p) => fs.existsSync(p));
+if (state.checkFrames.length < wanted.length) log(`⚠ 检查帧只生成了 ${state.checkFrames.length}/${wanted.length} 张`);
+state.lock.release();
+state.lock = null;
+cleanupRun();
+
+// ---------------- 6. 成片和分镜绑定：哈希 + 时长 ----------------
+const dur = mp4Duration(videoPath);
+const finalVideo = rejected ? path.join(outDir, 'video.rejected.mp4') : videoPath;
+if (rejected) fs.renameSync(videoPath, finalVideo);
+state.video = {path: finalVideo, sha256: sha256Of(finalVideo), bytes: fs.statSync(finalVideo).size, durationSec: dur, expectedSec: Number(r.total.toFixed(3))};
+if (dur == null) log('⚠ 读不出 mp4 时长（moov/mvhd），manifest 里时长留空');
+else if (Math.abs(dur - r.total) > 0.5) {
+  finish('failed', EXIT.RENDER, `成片时长 ${dur.toFixed(2)} 秒和分镜 ${r.total.toFixed(2)} 秒对不上，渲染可能被截断，请重跑`, `video duration ${dur.toFixed(2)}s does not match storyboard ${r.total.toFixed(2)}s`);
+}
+if (rejected) {
+  console.log(`版式 / 汉字自查有 ${blocking.length} 处 ✗（成片已改名 ${path.basename(finalVideo)}，只给人看哪里坏了，不能交付）：`);
+  for (const b of blocking.slice(0, 12)) console.log(`  ✗ ${b}`);
+  finish('rejected', EXIT.REJECTED, `版式 / 汉字自查有 ${blocking.length} 处 ✗：${blocking[0]}`, `${blocking.length} layout/Han check(s) failed; see report.txt`);
+}
+if (acceptLayout && blocking.length) log(`⚠ 按 --accept-layout 人工放行 ${blocking.length} 处 ✗（manifest 里记为 acceptedByHuman）`);
+finish('delivered', EXIT.OK);

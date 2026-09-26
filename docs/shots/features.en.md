@@ -1,5 +1,11 @@
 # features selling-point cards
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "features", "dur": 4,
+ "params": {"items": [{"icon": "doc", "title": "Auto summary", "desc": "Chats and docs in one"}, {"icon": "send", "title": "One-tap send", "desc": "Straight to your team"}]}}
+```
+
 2–4 cards pop in one at a time on the beat (icon + title + one benefit line); a yellow spotlight frame follows "the card being talked about right now." Cards not reached yet show as a dashed, numbered outline.
 
 ## When to use

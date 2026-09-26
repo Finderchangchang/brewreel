@@ -16,11 +16,15 @@ One line: a skill for AI coding assistants (Claude Code / Codex / opencode…) t
 
 ## Examples
 
-| Software (Jev chat-assistant sample) | Food & beverage (Guangfu Coffee sample) |
-| --- | --- |
-| ![Software industry example](docs/images/software-jev.png) | ![Food industry example](docs/images/food.png) |
+Each image shows frame 0 (the cover) on the left and one frame from the middle on the right. The storyboards are in `examples/`; the products and numbers are fictional, and every one passes validation and renders with `make.mjs` as-is.
 
-Storyboard samples for the other industries (ecommerce, education, beauty, travel) are already in `examples/`; preview images for them are still being filled in — see "Known gaps" below, an expected gap in this early preview.
+| Software · relationship chat (jev) | Software · budgeting (ledger) | Software · meeting notes (meeting) |
+| --- | --- | --- |
+| ![jev](docs/images/jev.png) | ![ledger](docs/images/ledger.png) | ![meeting](docs/images/meeting.png) |
+| **English captions (en-focus)** | **Food launch (food)** | **Physical goods (ecommerce)** |
+| ![en-focus](docs/images/en-focus.png) | ![food](docs/images/food.png) | ![ecommerce](docs/images/ecommerce.png) |
+| **Education course (education)** | **Beauty, no real photos (beauty)** | **Travel & lodging (travel)** |
+| ![education](docs/images/education.png) | ![beauty](docs/images/beauty.png) | ![travel](docs/images/travel.png) |
 
 ## What it does and doesn't do
 
@@ -127,14 +131,12 @@ This is an early preview. It has been tested by generating storyboards in bulk w
 
 Known gaps (as currently understood; issues with concrete counter-examples are welcome):
 
-- **English videos can still show a stray Chinese string.** The renderer scans the actual on-screen text and flags any Han character when `meta.lang` is `"en"`, but this currently covers only the most commonly used shot components — a handful of less-common components still have hard-coded Chinese strings without an English variant, so a leak is still possible in principle.
-- **Numeric claims aren't fully verified.** Amounts, durations and scores get a basic cross-check against `meta.facts`, but colloquial phrasing (like "in seconds", "instantly") and qualifiers attached to a number (a date range, whether it's a post-coupon price, a count) aren't cross-checked yet, so a model-invented number can still slip through.
-- **The `compare` shot's direction/score is model-written content.** The validator only checks that a basis is stated, not whether the higher-scoring side actually makes sense — we've seen a generated storyboard pass validation with the comparison direction reversed.
-- **Asset-truth checks are incomplete.** Obvious placeholder stubs (<1KB) and `_dev/`-path assets are caught, but a content-level issue like the same photo being used for both "before" and "after" is not.
-- **Bottom third of the frame is often bare background** in many shots — visual density there is a known gap for a future pass, not something the validator enforces.
-- **Template feel**: different products in the same industry sometimes converge on a similar cover composition (e.g. the same icon-ring layout); there's no diversity enforcement yet.
-- **`make.mjs` currently reports layout issues without blocking the render.** A `✗` line under "layout self-check" in `report.txt` means that render has clipped/overlapping/out-of-bounds text — it's a signal for a human to judge whether to re-render, not an automatic gate.
-- All 9 bundled `examples/*.json` storyboards pass validation (0 errors), but only 2 of them (software, food) have been rendered end-to-end with a preview image so far; preview images for the rest are still being filled in.
+- **The Chinese-character check for English videos covers on-screen text only.** Hard-coded strings in the components now all switch language (`node scripts/check-i18n.mjs` finds none), and when rendering, one frame every half beat is scanned for Han characters anywhere on screen; any hit blocks delivery. The industry compliance rules, however, still work from Chinese word lists, so compliance checks on English copy are thinner than on Chinese copy.
+- **Number checks depend on facts and the brief.** Cross-field problems such as speed claims, sample data used as results, and a number that lost its date range or coupon condition are now blocked. Without `--brief`, validation can only check that the screen matches the facts, not that the facts were really copied from the brief; one price split across two facts, or a condition missing from the fact itself, also goes unnoticed.
+- **compare scale direction**: when both sides have a `level`, validation checks that the `tone: good` side comes out ahead. It reads `higherIs` first and otherwise guesses from the meterLabel wording; when it can't tell, it only warns.
+- **Asset checks work at the file level.** The same image twice, a renamed copy, placeholders, a screenshot passed off as a real photo, and an illustration labelled as real are blocked. Whether two different photos show the same customer, or whether consent was really obtained, can only go on the human-review list.
+- **Template feel**: the hook no longer draws a fixed icon ring, the end card has three layouts picked by product name, and the lower third now has a theme-based decoration layer. Videos in the same industry can still end up with similar structures; there is no enforced diversity.
+- **`make.mjs` now gates delivery.** Any ✗ in the layout check, the English Han scan, the machine self-check, or the text-layout report makes make exit with 3 and renames the video `video.rejected.mp4`; it is not a delivery. In an extreme case (a priceCard crammed with 6 prices, 6 included items and every kind of term) the card scales down to 0.8 and some small text drops below 26px; validation does not catch this yet.
 
 ## Directory structure
 
@@ -182,8 +184,8 @@ This repo pins `remotion` / `@remotion/cli` to `4.0.529`. After upgrading to 5.0
 **`--props` fails with "neither valid JSON" on Windows?**
 The Windows shell mangles quotes inside JSON strings, so storyboards are always passed as a file path (`--props=./storyboard.json`), never as an inline JSON string on the command line. `make.mjs`/`llm_make.py` already do this the file-path way.
 
-**`sheet.png` (the contact-sheet mosaic) isn't generated?**
-Remotion's bundled, slimmed-down ffmpeg doesn't compile the `tile`/`pad` filters — it's only meant for audio/video encoding, not compositing. Install a full system ffmpeg (from ffmpeg.org or your OS package manager), set the `FFMPEG=/path/to/ffmpeg` environment variable, and re-run; this doesn't affect the final `video.mp4` or the `check/*.png` review frames.
+**Do I need a system ffmpeg?**
+No. The contact sheet `sheet.png` is rendered by Remotion's `Sheet` composition (one frame per second of the video, tiled as thumbnails, each labelled with its time and shot number). The review frames `check/*.png` are extracted from the video with Remotion's bundled ffmpeg, and any frame that can't be extracted is rendered as a Remotion still instead. If you set `FFMPEG=/path/to/ffmpeg`, the sheet is tiled with its `tile` filter first and falls back to the `Sheet` composition if that fails. A missing sheet never affects `video.mp4`; the terminal prints the reason.
 
 ## License
 

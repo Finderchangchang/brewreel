@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Sequence, useCurrentFrame} from 'remotion';
 import type {Shot, Storyboard, ThemeName} from './schema';
 import {FONT} from './core/font';
-import {Placeholder} from './core/kit';
+import {Placeholder, pick} from './core/kit';
 import {Background, Bgm, Captions, Disclaimer, MoodFlash, Notices, SfxTrack, Watermark, collectSfx} from './core/layers';
 import {FPS} from './core/safe';
 import {ThemeProvider, resolveTheme} from './core/theme';
@@ -41,7 +41,7 @@ const ShotHost: React.FC<{slot: Slot; beat: number; sb: Storyboard; isLast: bool
           meta={sb.meta}
         />
       ) : (
-        <Placeholder type={`未知镜头 ${slot.shot.type}`} t={t} />
+        <Placeholder type={pick(sb.meta?.lang, `未知镜头 ${slot.shot.type}`, `Unknown shot ${slot.shot.type}`)} t={t} />
       )}
     </AbsoluteFill>
   );
@@ -56,7 +56,7 @@ export const Promo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
   return (
     <ThemeProvider theme={theme}>
       <AbsoluteFill style={{fontFamily: FONT, overflow: 'hidden', background: theme.bgBot[0]}}>
-        <Background slots={slots} />
+        <Background slots={slots} beat={beat} />
         <LayoutProbe frames={sb.__probe}>
         {slots.map((s) => {
           const isLast = s.i === slots.length - 1;
@@ -71,7 +71,7 @@ export const Promo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
         <MoodFlash slots={slots} />
         <Captions slots={slots} beat={beat} lang={sb.meta?.lang} />
         <Disclaimer text={sb.meta?.disclaimer} lang={sb.meta?.lang} />
-        <Notices items={sb.meta?.notices} lang={sb.meta?.lang} />
+        <Notices items={sb.meta?.notices} lang={sb.meta?.lang} disclaimer={sb.meta?.disclaimer} />
         <Watermark logo={sb.meta?.logo} slots={slots} />
         </LayoutProbe>
         <SfxTrack cues={cues} />
@@ -94,6 +94,7 @@ export const labStoryboard = (p: LabProps): Storyboard => {
     mood: p.mood ?? ex.mood,
     params: p.params ?? ex.params,
   };
+  // i18n-ignore：ShotLab/ShotScreen 是开发自测和中文示意截图，不进正式片
   return {meta: {title: 'lab', product: 'lab', theme: p.theme ?? 'warm-emotion', brandColor: p.brandColor, disclaimer: '演示场景，内容为模拟'}, shots: [shot]};
 };
 

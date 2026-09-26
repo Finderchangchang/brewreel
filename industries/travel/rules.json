@@ -4,6 +4,7 @@
   "version": "2026-09-26",
   "note": "民宿、小型酒店、景区、周边游、营地。行程类产品（一日游/跟团/包车）要求旅行社资质，本阶段没有 brief 加载器可核对资质，一律先进人工复核而不是静默放行。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
   "enabledShots": ["hook", "photoShot", "priceCard", "storeCard", "reviewCard", "compare", "steps", "quickList", "counter", "credCard", "endCard"],
+  "coreAction": {"surface": "physical", "note": "核心动作用照片或插画场景演示（photoShot 实拍或 source:drawn 插画 / beforeAfter）；不许用 mockApp 编 App 界面，见 scripts/checks/core-action.mjs"},
   "mediaPolicy": {
     "shots": ["photoShot", "hook", "storeCard"],
     "allowSources": ["merchant", "drawn"],
@@ -32,7 +33,7 @@
     {"fn": "reviewVerbatim"}
   ],
   "requiredNotices": [
-    {"id": "N-weekend", "text": "周末及节假日价格另计，以下单页为准", "when": {"hasShot": "priceCard"}}
+    {"id": "N-weekend", "text": "周末及节假日价格另计，以下单页为准", "textEn": "Weekend and holiday rates differ", "when": {"hasShot": "priceCard"}}
   ],
   "shotRules": {
     "priceCard": {"footnote": "周末及节假日价格另计，以下单页为准", "forbidCompareWhen": {"platform": "douyin"}},

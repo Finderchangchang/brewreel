@@ -4,6 +4,7 @@
   "version": "2026-09-26",
   "note": "第一阶段的软件产品宣传片（App/工具类）。meta.industry 缺省时按这个行业处理，保证旧分镜不受影响。软件行业已有的规则（字数/断词、极限词、网址二维码、核心动作演示、quickList 与 counter 互斥等）都在 scripts/validate.mjs 主体和 SKILL.md 里，本文件不重复。主力仍是 hook/chat/phone/mockApp/meter/compare/counter/features/steps/quickList/endCard 这 11 个既有镜头；7 个新镜头不强制禁用（scripts/validate.mjs --specs 的自检要用默认行业跑遍每个镜头类型的示例，禁用会导致新镜头自己的 spec 示例过不了自检），软件产品片要用 photoShot/priceCard 这类镜头也可以，只是本阶段没有针对性文案规则。beforeAfter 仍按 _base 默认禁用（美业专属，见 industries/beauty/rules.json）。",
   "enabledShots": ["hook", "chat", "phone", "mockApp", "meter", "compare", "counter", "features", "steps", "quickList", "endCard"],
+  "coreAction": {"surface": "ui", "note": "核心动作在产品自己的界面里演示（chat / phone 真截图 / mockApp）；mockApp kind=form 只给本来就是填表的产品，见 scripts/checks/core-action.mjs"},
   "disabledShots": [],
   "patterns": [],
   "checks": [],

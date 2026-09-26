@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "title": "演示数据没声明-反例",
+    "product": "示例",
+    "theme": "tech-dark",
+    "action": "问一句 → 看板出数",
+    "disclaimer": "演示画面",
+    "facts": [
+      {
+        "id": "f1",
+        "text": "演示看板示例：转化率 12%（示例数据）",
+        "source": "示例"
+      }
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "手忙脚乱的排版，\n{到底要怎么办}",
+      "params": {
+        "visual": "icon",
+        "icon": "sparkle"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 4,
+      "caption": "问一句，\n{看板就出数}",
+      "params": {
+        "kind": "dashboard",
+        "title": "今日概览",
+        "input": "今日转化率多少",
+        "stat": {
+          "value": "12%",
+          "label": "今日转化率"
+        },
+        "series": [
+          3,
+          5,
+          4,
+          7,
+          9
+        ],
+        "items": [
+          {
+            "icon": "trend",
+            "text": "转化率",
+            "value": "12%",
+            "tone": "good"
+          }
+        ]
+      }
+    },
+    {
+      "type": "compare",
+      "dur": 4,
+      "params": {
+        "left": {
+          "title": "以前",
+          "tone": "bad",
+          "items": [
+            "找同事要数"
+          ]
+        },
+        "right": {
+          "title": "现在",
+          "tone": "good",
+          "items": [
+            "问一句就出"
+          ]
+        }
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "示例",
+        "slogan": "关键信息\n{看得到}"
+      }
+    }
+  ]
+}

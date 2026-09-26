@@ -1,0 +1,78 @@
+{
+  "name": "测试环境/小商家没有可用实拍：抖音挂团购也不再死锁，插画兜底放行 + 提醒，不报「前 3 秒没有实拍」",
+  "storyboard": {
+    "meta": {
+      "title": "t",
+      "theme": "warm-emotion",
+      "durationRange": [
+        3,
+        60
+      ],
+      "product": "巷口牛肉面",
+      "industry": "food",
+      "notices": [
+        "图片仅供参考 以实物为准",
+        "以团购详情页为准"
+      ],
+      "platform": "douyin",
+      "disclaimer": "画面为插画示意"
+    },
+    "shots": [
+      {
+        "type": "hook",
+        "dur": 2,
+        "mood": 0.3,
+        "params": {
+          "visual": "illust",
+          "illust": "food/bowl",
+          "text": "一碗面"
+        },
+        "caption": "下班路上\n来碗热汤面"
+      },
+      {
+        "type": "photoShot",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "layout": "hero",
+          "media": [
+            {
+              "source": "drawn",
+              "illust": "food/noodle-bowl-closeup",
+              "tag": "示意",
+              "label": "招牌牛肉面"
+            }
+          ],
+          "title": "招牌牛肉面"
+        }
+      },
+      {
+        "type": "endCard",
+        "dur": 3,
+        "mood": 0.3,
+        "params": {
+          "brand": "巷口牛肉面",
+          "slogan": "好好生活\n{慢慢来}"
+        }
+      }
+    ]
+  },
+  "expect": {
+    "block": [],
+    "blockCount": 0,
+    "warn": [
+      "商家没有可用的实拍照片"
+    ],
+    "human": [
+      "这一版全是插画兜底"
+    ],
+    "absent": {
+      "warn": [
+        "前 3 秒"
+      ],
+      "block": [
+        "整片至少 1 镜商家实拍"
+      ]
+    }
+  }
+}

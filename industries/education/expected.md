@@ -23,3 +23,9 @@
 
 ## 已知限制
 `syllabusSum` 只能对照同一镜头 `factSheet.params.facts` 里写的"总课时"条目，不对照 brief 的 `totalLessons` 字段（无 brief 加载器）；`credVerbatim` 同理降级为人工复核。
+
+<!-- round5 -->
+## round5 新增检查
+- **核心动作在软件界面里演**（`coreActionSurface`，对应 `tests/rules/education/04-form-substitute.json`）：技巧课「输第一行，按 Ctrl+E → 整列拆好」用 `mockApp kind:"form"` 填表单演示 → 拦；要用 `mockApp` 演按键和表格变化，或 `phone` 放真录屏截图。
+- **价格条件**（`priceConditions`）：活动价写进 `meta.facts` 后（如「国庆期间（9月27日至10月7日）活动价129元」），价格卡要写活动截止日。
+- **素材真实性**：讲师照片、证书照片放进 photoShot 前先在 `meta.assets` 登记来源。

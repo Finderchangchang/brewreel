@@ -32,3 +32,13 @@ AI 使用：配音使用 AI 语音合成（需要加 AI 生成标识）
 - "名额只剩最后 20 个，不学就被淘汰"（焦虑营销）
 - "课程终身免费更新"（终身卖点）
 - "顺便做一条给初中生的 Excel 入门课"（K12，整份拒绝）
+
+## 测试环境说明（素材）
+
+- 上面列的照片、视频、截图文件**不随仓库提供**。用这份简报测试时，按「商家没有可用照片」处理：photoShot 的 media 写 `{"source": "drawn", "tag": "示意", "illust": "<插画 id>"}` 用插画兜底，不写「实拍」「顾客授权」「未修图」，不设 consent；beforeAfter 没有照片就不用，改用 steps。
+- 校验对插画兜底会放行，并在「需人工复核」里提醒；只有商家给了照片、片子却一张没用时才会拦。
+- 真出片时，把照片放进分镜目录，每个用到的文件都在 `meta.assets` 登记来源（merchant 商家实拍 / illustration 插画 / screenshot 截图），例如：
+
+```json
+"assets": [{"src": "screens/<课程录屏截图>.png", "source": "screenshot"}, {"src": "photos/<讲师照片>.jpg", "source": "merchant"}]
+```

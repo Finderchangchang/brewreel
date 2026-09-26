@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "样例相似噪音-正例",
+    "product": "示例面馆",
+    "theme": "warm-emotion",
+    "action": "到店点一碗面 → 看到汤底和评价",
+    "facts": [
+      {
+        "id": "f1",
+        "text": "顾客评价原话：汤很浓，肉给得实在（2026-08 点评）",
+        "source": "简报·顾客评价"
+      },
+      {
+        "id": "f2",
+        "text": "营业时间 10:00–21:30",
+        "source": "简报·门店信息"
+      }
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "下班了，\n{来碗热汤面}",
+      "params": {
+        "visual": "icon",
+        "icon": "heart"
+      }
+    },
+    {
+      "type": "photoShot",
+      "dur": 3,
+      "caption": "一碗热汤面，\n{汤底熬得够久}",
+      "params": {
+        "layout": "hero",
+        "media": [
+          {
+            "source": "drawn",
+            "illust": "travel/house",
+            "tag": "示意"
+          }
+        ],
+        "title": "招牌汤面"
+      }
+    },
+    {
+      "type": "reviewCard",
+      "dur": 3,
+      "params": {
+        "quotes": [
+          {
+            "text": "汤很浓，肉给得实在",
+            "month": "2026-08",
+            "stars": 5
+          }
+        ],
+        "evidence": "reviews/2026-08.png"
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "params": {
+        "brand": "示例面馆",
+        "slogan": "下班路上，\n{一碗热汤}"
+      }
+    }
+  ]
+}

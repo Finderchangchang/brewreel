@@ -23,11 +23,29 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - `meta.action`: **required**, one sentence — "what the user does → what the product gives back" (e.g. "snap a receipt photo → amount and category filled in automatically"). It never appears on screen. A demo shot (chat/phone/mockApp/photoShot) must show this action in its on-screen text; validation checks for the overlap.
    - If the brief gives a "how to get it," copy it verbatim into `meta.cta`, and the end card's `cta` copies that; if the brief says "none," leave both unset. **Never invent** something like "search for X in the app store."
    - Don't put a feature into selling points or the end card if the brief never mentioned it.
-   - If the brief gives "numbers and sources," copy each one into `meta.facts`, formatted as `[{"id":"f1","text":"…verbatim…"}]` (**not a plain string array**). Any on-screen number with a unit (duration, percentage, multiplier, headcount, money) must have the same number appear somewhere in `meta.facts`, or it's an error, not a warning — if the brief really gives no number, write a qualitative statement instead of inventing one. A shot's `params.refs: ["f1"]` can tie a specific claim (like "made fresh") to a fact entry, for industry rules to check against.
+   - If the brief gives "numbers and sources," copy each one into `meta.facts`, formatted as `[{"id":"f1","text":"…verbatim…","source":"…"}]` (**not a plain string array**):
+     - `source` is **required**: copy the source the brief gives ("2026-09 price list", "admin stats through August"). If the brief names no source, write `"source not given in brief"`. Never invent a source or a fact.
+     - `quote` is optional: the brief's original sentence, copied word for word.
+     - Any on-screen number with a unit (duration, percentage, multiplier, headcount, money) must have the same number in `meta.facts`, or it's an error. If the brief gives no number, write a qualitative statement.
+     - A shot's `params.refs: ["f1"]` ties a claim (like "made fresh", compare's stat/level, a meter reading) to a fact entry.
+   - **Keep sample data apart from result claims** (validation blocks this):
+     - A fact whose text or source says "sample / demo / simulated / fictional" (示例 / 演示 / 模拟 / 虚构) is sample data and **can't back a result claim**. Result claims = compare stat/level, counter numbers, a meter moving "for the better", percentages/multipliers in captions or selling points, time or money after "save / cut / boost".
+     - When the UI can only show sample numbers (no real data in the brief): set `"demoData": true` in meta and put "Demo screens, sample data" in `meta.disclaimer`. Sample numbers may only appear in demo UI (mockApp/phone/chat/priceCard) and in price terms.
+     - No result data in the brief → compare the process only (items like "3 fewer steps", "no app switching"), no stat numbers, no level, no counter.
+     - Speed claims ("in seconds", "instantly", "zero wait") need a real fact with a time in seconds. A call to action like "try it now" doesn't count.
+   - **Qualifiers travel with the number** (validation blocks this): when an on-screen number matches a fact, the conditions attached to it in that fact must appear in the same shot (caption, card, or bottom notice):
+     - Copy date ranges as written: if the fact says "Sun–Thu 328", the screen says "Sun–Thu", not "weekdays" or "Mon–Thu".
+     - Coupon / member price, "from N", add-on fees with amounts, promotion dates, booking required, not valid on holidays: keep every one. Example: "29.9 after coupon" can't become "final price 29.9".
+     - If the fact says "keeps warm 6 hours", the screen can't say "keeps warm all day"; if the fact has a fixed checkout time, the screen can't say "flexible checkout".
    - **The whole video should only use one number for the same duration claim**: if counter says 3 minutes, nothing else can say "instant" or "3 seconds"; if the hook says "half a day," counter's old value has to be half a day too — validation blocks mismatches. Within one `compare` side, `stat` and `items` can't contradict each other either (e.g. the left side saying both "5 minutes" and "three days").
    - To override the default 15–45s total-duration range (e.g. an industry-recommended structure that needs 27s+), set `meta.durationRange: [15, 60]` (a two-element array).
-   - For a persistent small-print notice at the bottom (e.g. "limited-time offer, see the deal page for terms"), use `meta.notices`: a string array, up to 3 entries, merged into one line at the bottom.
-3. **Create a folder**: `promo/<english-slug>/`, with the storyboard at `promo/<english-slug>/storyboard.json`. Copy any screenshots/recordings/logo the user gave you into the same folder.
+   - For a persistent small-print notice at the bottom (e.g. "limited-time offer, see the deal page for terms"), use `meta.notices`: a string array, up to 3 entries, merged into one line at the bottom. A notice must not repeat `meta.disclaimer` (both saying "demo" counts as a repeat; validation blocks it).
+3. **Create a folder and list your assets**: `promo/<english-slug>/`, with the storyboard at `promo/<english-slug>/storyboard.json`. Copy any screenshots/recordings/logo/photos the user gave you into the same folder.
+   - Every file used by a photo shot (`photoShot`, `beforeAfter`, `storeCard.photo`) must be listed in `meta.assets`:
+     `"assets": [{"src": "photos/dish.jpg", "source": "merchant"}]`. `source` is one of `merchant` (real photo from the business) / `illustration` / `screenshot` (software screenshot).
+   - A screenshot can't go into photoShot; an illustration can't be labelled as a real photo. Files under 2KB, with a short side under 300px, the repo's own sample images, and anything under `_dev/` count as placeholders and are blocked.
+   - `beforeAfter` needs **two different photos of the same customer**: both listed as `merchant`, `kind` set to `customer-before` / `customer-after`, and the same `pair` value (e.g. `"A"`). The same image twice, or a renamed copy, is blocked.
+   - **The business has no usable photos**: write photoShot media as `{"source": "drawn", "tag": "示意", "illust": "<illustration id>"}`. Validation lets it through and lists it for human review. Don't say "real photo" or "customer consent", and don't set consent. It is only blocked when the business supplied photos and the video uses none of them.
 4. **Pick a theme** (`meta.theme`):
    - Emotional, social, lifestyle → `warm-emotion`
    - Developer, AI, hardcore tooling → `tech-dark`
@@ -37,8 +55,12 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Premium, minimal, design-forward → `mono-premium`
    If there's a brand color, set `meta.brandColor` (#RRGGBB) — it only swaps the accent color.
 5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, an 18-shot overview table is at the top). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
-   **At least one shot must demonstrate the core action** (the `meta.action` from step 2) — validation blocks the video otherwise:
-   `chat` with messages + panel (question → answer); or `mockApp` with `input` (what the user typed/asked) + a result (dashboard's `stat`, editor's `items`/`done`); use `phone` if you have a screenshot.
+   **At least one shot must demonstrate the core action** (the `meta.action` from step 2). The allowed shots depend on the industry; validation blocks the video otherwise:
+   - **software, education (UI products)**: `chat` with messages + panel (question → answer); or `mockApp` with `input` (what the user typed/asked) + a result (dashboard's `stat`, editor's `items`/`done`); use `phone` if you have a screenshot.
+     - A messaging/reply product needs chat (or a real phone screenshot); a product that isn't about chatting must not be shown as a chat.
+     - `mockApp kind:"form"` is only for products that really are forms; don't use a form in place of the core action.
+     - A mockApp dashboard's `input` and `stat.label` must match as question and answer ("new merchants in Guangzhou last month" → stat "New merchants, Guangzhou, last month"); items can't be filler words like "data" or "info".
+   - **food, ecommerce, beauty, travel (physical goods / stores)**: **no mockApp** (no made-up ordering or booking screens). Use at least one `photoShot` (real or illustrated fallback) or `beforeAfter`, plus steps / priceCard.
    `meta.industry` determines which shots you're allowed to use (see `enabledShots` in `industries/<industry>/rules.json`, or just read recipe.en.md) — picking a shot that's not open for this industry is a validation error. 7 industry shots (all closed by default for software):
    - `photoShot` real photos/short clips (dishes, products, work, rooms, common areas, kitchen)
    - `priceCard` price list; `storeCard` location/map/booking; `reviewCard` a real customer review (quoted verbatim, never rewritten to sound more impressive)
@@ -50,7 +72,8 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    For the software industry, some combos to start from and adapt (other industries: follow the recommended structure in `industries/<industry>/recipe.en.md` directly):
    - **Consumer emotional/social** (chat, feelings, companionship): hook(bubble) → chat demo (written as 2–3 caption lines) → meter or compare on "how much this line of text really weighs" → quickList quick-cut → endCard
    - **Productivity tool** (writing, budgeting, publishing, editing): hook(stat) → compare "before vs. now" → mockApp editor/form demoing "input → result" → steps on how to use it → endCard; or hook → quickList on the hassle → mockApp → steps → endCard
-   - **B2B data/office** (reports, meetings, CRM): hook(icon) → phone with callouts, or mockApp dashboard with `input` ("ask a question → get numbers") → compare or meter on the payoff → steps → endCard; only use counter if the brief actually gave you a duration number (and if so, drop quickList)
+   - **B2B data/office** (reports, meetings, CRM): hook(icon or split) → phone with callouts, or mockApp dashboard with `input` ("ask a question → get numbers") → compare on how the process differs → steps → endCard; only use counter if the brief actually gave you a duration number (and if so, drop quickList)
+   - Vary the hook `visual` across a batch: bubble for one painful message, stat for a real number, illust for a place or an object, split for pain vs. product. When compare has `level`, the `tone: good` side must come out ahead on that scale (set `higherIs` to say whether higher is better or worse).
    Total runtime of 20–30s is ideal (15–45 allowed, or your custom `meta.durationRange`). Don't repeat the same shot type back to back. Don't let `mood` jump more than 0.5 between adjacent shots (insert a transitional shot instead), or the background will cut jarringly.
 6. **Write captions** (each shot's `caption`): one line of thought per shot, big bold TikTok-style text, **spoken to the viewer, never a description of what the screen is doing** (❌ "Cards pop in one by one, explaining what it can do" — that's a stage direction, not a caption).
    - English: measured in raw Latin characters against a scaled line budget (roughly 1.8× the Chinese character limit) — exact numbers are in each shot's own doc (`docs/shots/<type>.en.md`). Still at most 2 lines, break with `\n`.
@@ -65,27 +88,30 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Don't duplicate words for padding, don't chop a word down to hit a length limit, avoid the common misspellings in the typo list, and rewrite the whole sentence when it's over the limit rather than trimming individual characters.
    - Avoid absolute claims ("handles everything," "completely clear," "100% safe," "guaranteed") — the product usually can't back these up; validation flags them, use a more grounded phrase instead.
    - Line breaks are a single `\n`; use quotation marks, not double quotes `"`, inside caption text.
+   - Don't start items or points with ✓ • · - or "1.": the component draws icons and numbers. Don't leave a single word alone on the last line, and don't break a line after a function word like your / the / to.
 7. **Set `mood`** (0–1): pain point/tension 0.8–1, turning point 0.5, product and selling points 0–0.3, end card 0. Background color and music follow it.
 8. **Write storyboard.json**, format shown in the full example at the end. Duration is `dur` (seconds), in multiples of 0.5.
    **The file must be UTF-8.** On Chinese Windows the system default is GBK: write UTF-8 directly with your editor/file tool; in PowerShell use `[IO.File]::WriteAllText($p, $json, [Text.UTF8Encoding]::new($false))`; in Python use `open(p, "w", encoding="utf-8")`. Don't use `echo >` or Windows PowerShell 5.1's `Out-File` for non-ASCII text.
    `chat`'s `panel.replies` are what the product suggests **"me"** sends to the other person — write them from me's point of view (if I said I have to work overtime, the suggested reply can't be "stop working overtime and spend time with me" — that's the other person's voice). Don't set `typing` when there's a `panel`.
-9. **Validate**, fix every reported issue, repeat until it passes:
+9. **Validate**, fix every reported issue, repeat until it passes. If the brief is a file, add `--brief` so validation checks that the numbers and quotes in facts really are in the brief:
    ```
-   node <SKILL>/scripts/validate.mjs promo/<name>/storyboard.json
+   node <SKILL>/scripts/validate.mjs promo/<name>/storyboard.json --brief promo/<name>/brief.md
    ```
    The error format is "Shot N (type) field: problem → how to fix," follow the fix instructions. Results come in three tiers:
    - **Errors**: must fix — the video won't render until these are clear.
    - **Warnings**: fix them when you reasonably can (copy quality, structure not looking too template-like); it's OK to render with warnings left, but be ready to explain to the user why you left them.
    - **Human review**: things validation can't judge on its own (like "is this review quoted exactly, with no changes" or "does this credential really come from the brief") — **don't edit the storyboard for these**, list them for the user verbatim so they can confirm.
-10. **Render** (about 2 minutes, music is generated automatically):
+10. **Render** (2–4 minutes, music is generated automatically; if another video is rendering, this one queues and prints its place every 15 seconds):
     ```
-    node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name>
+    node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name> --brief promo/<name>/brief.md
     ```
-    `--out` is required (use `--round <round-name>` instead while testing — output always lands under `tests/<round-name>/<slug>/`, use the same round name for videos made together in one batch, **never invent a timestamp-based folder yourself**).
-    Output: `video.mp4`, `sheet.png` (one frame per second, tiled), `check/` (frame 0 + a full-size frame near the end of every shot), `report.txt` (includes a text-layout report: any words broken across lines, any overly wide lines), `layout.json`.
-    To preview a few frames quickly without a full render: add `--stills 0,3.5,8` (seconds).
-11. **Read the end of `report.txt` first — "machine self-check," "text-layout report," "layout self-check"** (all done automatically by make.mjs: backslashes, product name, CTA, how long a caption stays on screen, whether the end-card icon and disclaimer overlap, any broken/overly-wide lines; it also measures where every text block actually rendered, checking for clipping, overlapping text, or anything outside x150–930). Fix any ✗ first (a layout ✗ usually means one field has too much text — trim items or shorten the copy). Then check `sheet.png` and `check/` against the checklist below; if something's off, edit storyboard.json and go back to step 9.
-12. **Deliver**: hand the user the `video.mp4` and `sheet.png` paths, plus a "pre-publish checklist" (below) — copy step 9's "human review" items into it verbatim, one by one, and let the user confirm each — don't decide for them.
+    - `--out` is required. While testing use `--round <round-name>` instead: output goes **outside the repo** to `promo-video-skill-tests/<round-name>/<slug>/` (next to the repo folder). Use the same round name for videos made together, **never invent a timestamp-based folder**, and never write test output into the repo.
+    - Output: `video.mp4`, `sheet.png` (one frame per second, tiled), `check/` (frame 0 + a full-size frame near the end of every shot), `report.txt`, `layout.json`, `manifest.json` (sha256 of storyboard and video, duration, every check result). The previous run's copies of these files are cleared first.
+    - To preview a few frames without a full render: add `--stills 0,3.5,8` (seconds). This is not a delivery.
+    - **Only the last line counts**: on success the last line is `交付：<mp4 path>` ("delivered"). The path you give the user **must be copied from that line**. No such line means the run failed; never hand over some other mp4.
+    - Exit codes: 0 deliverable / 1 validation failed / 2 bad arguments / 3 a ✗ in the layout or Han-character check (the video is renamed `video.rejected.mp4`, only for seeing what broke) / 4 render failed or wrong duration / 5 queue timeout / 6 internal error / 130 interrupted.
+11. **Read `report.txt`**: **any single ✗** in "machine self-check," "text-layout report," or "layout self-check" means the video can't be delivered (make exits with 3). The layout check measures every text block after rendering: clipped by a card, two text blocks overlapping, key text outside x180–900, and for English videos any Chinese character on screen (one probe frame every half beat). A ✗ usually means a field has too much text: trim items or shorten the copy, then go back to step 9. Once everything is ✓, check `sheet.png` and `check/` against the checklist below.
+12. **Deliver**: before delivering you can run `node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name> --verify` to confirm the video still matches the current storyboard (after an edit it reports that they differ and you must re-run make). Hand the user the mp4 path from make's last line and the `sheet.png` path, plus a "pre-publish checklist" (below) — copy step 9's "human review" items into it verbatim, one by one, and let the user confirm each — don't decide for them.
 
 ## Self-check list (look at the frame sheet, write a conclusion for each line against the actual image — don't just tick boxes)
 
@@ -119,14 +145,19 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
 - On-screen text can't contain a literal backslash (writing `\\n` in the JSON shows up as literal characters on screen)
 - Nothing on screen may show: a URL, a QR code, "scan the code," an @handle, "account: name," "follow/search for account X." Your own product's category name (e.g. a tool for formatting "official accounts" posts) doesn't count as traffic-diversion — add the word to `meta.allowWords`, **don't rename the product just to pass validation**
 - No absolute/superlative advertising terms: best, #1, only, first, exclusive, top-tier, absolute, 100%, guaranteed, unmatched... Only add one to `meta.allowWords` if you actually have evidence for it
-- Any number with a unit (duration/percentage/multiplier/headcount/money) must have the same number appear in `meta.facts`, or it's always an error — no invented figures
+- Any number with a unit (duration/percentage/multiplier/headcount/money) must have the same number appear in `meta.facts`, or it's always an error — no invented figures; every fact needs a `source`
+- Sample data (a fact marked sample/demo/simulated/fictional) can't back a result claim; sample numbers in demo UI need `meta.demoData: true` plus a disclaimer that says demo/sample
+- When a number matches a fact, the fact's date range, coupon condition, "from", add-on amounts and promotion dates must be on screen too (same shot or notices)
+- Files used by photo shots must be listed in `meta.assets` with their source; beforeAfter needs two different real photos of the same customer
+- Physical-goods/store industries (food/ecommerce/beauty/travel) can't use mockApp; software/education must demo the core action in a UI (chat/phone/mockApp)
 - Industry rules come in three tiers: **block is always enforced** (e.g. medical-aesthetic efficacy claims, a struck-through price with no stated basis, a real review missing its date); **warn flags but doesn't stop you**; **human can't be judged by validation, list it for the user at delivery** (see item 1 of the pre-publish checklist above)
 - Asset paths are relative to the folder holding storyboard.json, and the file must exist; screenshots support png/jpg/webp, recordings support mp4
 
 ## Don't
 
 - Don't edit anything under `template/`, `scripts/`, or `industries/`; don't write coordinates, pixels, frame numbers, CSS
-- Don't invent data or sources the user never gave you; every on-screen number must trace back to `meta.facts` — if there's no source, write "sample data, actual results vary"
+- Don't invent data or sources the user never gave you; every on-screen number must trace back to `meta.facts`. Without real data: skip result shots (counter, compare with numbers, a meter moving "for the better"), and declare sample numbers in demo UI with `demoData`
+- Don't use the same image as before and after, and don't call an illustration or a screenshot a real photo
 - Don't show a third-party app's name, logo, or brand color (like a specific chat app's green bubble); refer to people as "them," "a coworker," "a customer"
 - Don't use real names, phone numbers, or account handles
 - Don't set the `bgm` field yourself (make.mjs fills it in automatically)
@@ -154,7 +185,18 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
 | Literal \n found in text | JSON line breaks should be a single backslash |
 | Contains a platform name (warning) | Your own product's category term: add it to `meta.allowWords`; if it's traffic-diversion, remove it |
 | Missing required field meta.action | Write one sentence: "what the user does → what the product gives back" |
-| Number not found in meta.facts | If the brief gave this number, copy it verbatim into `meta.facts` (as `{"id":"f1","text":"…"}`); if not, replace the specific number with a qualitative statement |
+| Number not found in meta.facts | If the brief gave this number, copy it verbatim into `meta.facts` (as `{"id":"f1","text":"…","source":"…"}`); if not, replace the specific number with a qualitative statement |
+| meta.facts[N].source missing | Copy the source from the brief; if it names none, write `"source not given in brief"` |
+| Comes from a fact marked sample/demo, but demo data isn't declared | Set `"demoData": true` in meta and put "Demo screens, sample data" in the disclaimer |
+| Only in a fact you marked as sample/demo | That's a result claim sample data can't back: drop the number, compare the process only; replace counter with steps or compare |
+| level (8 vs 2) … no such score in meta.facts | Remove both sides' level and meterLabel; put the difference in items |
+| The scale points the wrong way | Make the `tone: good` side win on that scale, or set `higherIs` / reword meterLabel |
+| Reading N has no basis | A judgement the product shows in a demo → `demoData: true`; a result or score → copy the number into facts and add refs, or drop the shot |
+| Qualifier dropped (the fact's date range is missing) | Copy the fact's date range or condition into the same shot word for word; don't rewrite it as "weekdays" / "weekend" |
+| Price needs a condition in the brief | Put the condition in the same line, e.g. "29.9 after coupon"; if it doesn't fit, don't quote the price there |
+| Physical/store industry, mockApp is a made-up app screen | Remove mockApp; show the core action with photoShot (real or illustrated) + steps |
+| Asset not listed / before and after are the same file | List every file's source in `meta.assets`; use two different photos of the same customer, or switch to steps |
+| "Made fresh"-type claim needs evidence | Point `refs` at the brief's fact; if the shot has no refs field, drop the claim |
 | Caption contains shot-direction wording (like "cards pop in one by one") | Captions are spoken to the viewer, not editing notes — rewrite from the viewer's point of view |
 | "登陆" is a typo — should be "登录" (Chinese-only check) | Applies to Chinese text only |
 | Absolute claim like "completely clear" | Use a more grounded phrase, e.g. "the key info is visible" |
@@ -172,10 +214,12 @@ npx remotion still src/index.ts Screen <absolute-path-to-storyboard-folder>/scre
 
 ## More examples (structurally different — pick by "type of product," don't copy the captions)
 
-- `<SKILL>/examples/jev.json`: consumer/emotional, software industry (chat demo with 2 caption lines → gauge → quick-cut list → end card; CTA "download the Android app from our site")
-- `<SKILL>/examples/ledger.json`: productivity tool, software industry (pain-point quick-cut → compare → mockApp snapping a receipt for a result → counter → end card; brief gave no CTA, so the end card has none)
-- `<SKILL>/examples/meeting.json`: B2B office tool, software industry (screenshot with callouts → simulated UI → counter → steps → end card; CTA "request a free trial on our site")
-- `<SKILL>/examples/en-focus.json`: an `meta.lang: "en"` example (a fictional app) — the full example below
+All 9 examples pass validation and render as-is; the products and numbers are fictional:
+- `<SKILL>/examples/jev.json`: consumer/emotional, software (chat demo with 2 caption lines → compare → gauge → quick-cut list → end card; the gauge reading is a demo judgement, so `demoData` is set)
+- `<SKILL>/examples/ledger.json`: productivity tool, software (pain-point quick-cut → process-only compare → mockApp snapping a receipt → budget reading → end card; no real result data, so no counter)
+- `<SKILL>/examples/meeting.json`: B2B office tool, software (screenshot with callouts → to-do list → before/after compare → steps → end card)
+- `<SKILL>/examples/en-focus.json`: a `meta.lang: "en"` example — the full example below
+- `<SKILL>/examples/food.json`, `ecommerce.json`, `education.json`, `beauty.json`, `travel.json`: one per industry (Chinese captions). beauty shows the no-photo fallback; travel shows date ranges copied from facts; ecommerce shows a coupon price with its condition
 - For the other industries (food/ecommerce/education/beauty/travel), see `industries/<industry>/test-brief.md` + `expected.md`: test-brief is a sample client brief, and expected.md spells out exactly what a storyboard written from that brief would get blocked for, and why. Read both before your first video in a new industry.
 
 ## Full example (examples/en-focus.json, passes validation as-is)
@@ -188,6 +232,7 @@ npx remotion still src/index.ts Screen <absolute-path-to-storyboard-folder>/scre
     "theme": "fresh-light",
     "lang": "en",
     "disclaimer": "Demo screens, sample data",
+    "demoData": true,
     "action": "Tap start → it blocks distracting apps",
     "cta": "Try it free"
   },
@@ -237,7 +282,7 @@ npx remotion still src/index.ts Screen <absolute-path-to-storyboard-folder>/scre
       "dur": 3,
       "caption": "One tap,\n{a calmer afternoon}",
       "mood": 0.4,
-      "params": {"value": 8, "from": 3, "max": 10, "label": "Focus score", "style": "gauge", "higherIs": "good", "word": "Great", "note": "Based on this session"}
+      "params": {"value": 8, "max": 10, "label": "Focus score", "style": "gauge", "higherIs": "good", "word": "Great", "note": "Based on this session"}
     },
     {
       "type": "endCard",

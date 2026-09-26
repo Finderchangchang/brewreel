@@ -181,8 +181,10 @@ def extract_json(text):
     return t[a:b + 1] if a >= 0 and b > a else t
 
 
-def validate(sb_path):
-    p = subprocess.run(['node', os.path.join(ROOT, 'scripts', 'validate.mjs'), sb_path, '--json'],
+def validate(sb_path, brief_path=None):
+    # 传 --brief：校验会核对 meta.facts 里的数字和 quote 是否真在简报里（防止模型自己编 fact）
+    extra = ['--brief', brief_path] if brief_path else []
+    p = subprocess.run(['node', os.path.join(ROOT, 'scripts', 'validate.mjs'), sb_path, '--json', *extra],
                        capture_output=True, encoding='utf-8', errors='replace')
     try:
         return json.loads(p.stdout)
@@ -234,7 +236,7 @@ def main():
         content, usage = call_llm(messages, key, base, model)
         raw = extract_json(content)
         write(sb_path, raw + '\n')
-        r = validate(sb_path)
+        r = validate(sb_path, brief_path)
         log.append({'round': rnd + 1, 'usage': usage, 'ok': r.get('ok'), 'errors': r.get('errors', [])})
         if r.get('ok'):
             ok = True
@@ -293,7 +295,7 @@ def main():
             content, usage = call_llm(rt_fix_messages, key, base, model)
             new_raw = extract_json(content)
             write(sb_path, new_raw + '\n')
-            rv = validate(sb_path)
+            rv = validate(sb_path, brief_path)
             log.append({'round': f'readthrough-{rt_round}-revalidate', 'usage': usage, 'ok': rv.get('ok'), 'errors': rv.get('errors', [])})
             if rv.get('ok'):
                 raw = new_raw
@@ -310,7 +312,7 @@ def main():
     print(f'分镜：{sb_path}')
     if a.no_render:
         return 0
-    p = subprocess.run(['node', os.path.join(ROOT, 'scripts', 'make.mjs'), sb_path, '--out', out_dir])
+    p = subprocess.run(['node', os.path.join(ROOT, 'scripts', 'make.mjs'), sb_path, '--out', out_dir, '--brief', brief_path])
     return p.returncode
 
 

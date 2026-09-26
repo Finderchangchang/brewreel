@@ -10,6 +10,10 @@
 //   - 必须依赖 brief 原文才能证实的部分，降级成 human（人工复核），不误报也不放行。
 // ============================================================
 import {where, indexTexts, evalWhen, shotsOfType, mkFinding} from './util.mjs';
+import {assetTruth, usableMerchantAssets, usedMerchantPhotos, isSpecSelfTest} from './assets.mjs';
+import {compareDirection} from './compare.mjs';
+import {coreActionSurface} from './core-action.mjs';
+import {priceConditions} from './price-conditions.mjs';
 
 const F = mkFinding;
 const cite = (fix, source) => (source ? `${fix}（依据：${source}）` : fix);
@@ -25,13 +29,11 @@ export function mediaPolicy(sb, ctx, rules) {
   // rules.json 没写就是"这条策略不启用"，所以这里显式判断字段存不存在，不能直接丢给 evalWhen
   const blockAi = !!policy.blockAiWhen && evalWhen(policy.blockAiWhen, {meta: ctx.meta, shotTypes});
   const requirePhoto = !!policy.requireAtLeastOnePhotoWhen && evalWhen(policy.requireAtLeastOnePhotoWhen, {meta: ctx.meta, shotTypes});
-  let hasMerchantPhoto = false;
   for (const type of targetTypes) {
     for (const {i, shot} of shotsOfType(sb, type)) {
       const media = Array.isArray(shot.params?.media) ? shot.params.media : shot.params?.photo ? [shot.params.photo] : [];
       for (const [k, m] of media.entries()) {
         if (!m || typeof m !== 'object') continue;
-        if (m.source === 'merchant') hasMerchantPhoto = true;
         if (m.source && !allowSources.includes(m.source))
           out.push(F('warn', where(i, type, `params.media[${k}].source`), `素材来源「${m.source}」不在本行业允许列表（${allowSources.join('/')}）`, '换成允许的来源，或改用插画兜底'));
         if (m.source === 'ai' && blockAi)
@@ -41,8 +43,18 @@ export function mediaPolicy(sb, ctx, rules) {
       }
     }
   }
-  if (requirePhoto && !hasMerchantPhoto)
-    out.push(F('block', 'shots', '当前平台/挂车条件要求整片至少 1 镜商家实拍，但没有找到', `在 ${targetTypes.join('/')} 任一镜头的 media 里加一张 source="merchant" 的实拍`));
+  // 「整片至少 1 镜商家实拍」只在商家真有可用照片时才拦（round5 修复：测试环境/小商家没有照片时，这条规则永远过不去，
+  // 模型改 4 轮也出不了片）。可用 = meta.assets 里 source=merchant、文件找得到、不是占位/示例图（见 assets.mjs）。
+  // 商家确实没有照片：放行插画兜底，给 warn + 人工复核「正式发布前补 1 张商家实拍」。
+  if (requirePhoto && !isSpecSelfTest(ctx) && !usedMerchantPhotos(sb, ctx).length) {
+    const avail = usableMerchantAssets(ctx);
+    if (avail.length)
+      out.push(F('block', 'shots', `当前平台/挂车条件要求整片至少 1 镜商家实拍；素材清单里有可用的商家照片（${avail.slice(0, 3).map((a) => a.src).join('、')}），但片子里一张都没用`, `在 photoShot 里用上它，如 media 写 {"src": "${avail[0].src}", "source": "merchant", "tag": "实拍"}`));
+    else {
+      out.push(F('warn', 'shots', '商家没有可用的实拍照片（meta.assets 里没有合格的 source=merchant 文件），这一版按插画兜底出片', '可以先出片；正式发布前补 1 张商家实拍（门头或招牌菜品/商品），登记进 meta.assets 后换掉一镜插画'));
+      out.push(F('human', 'shots', '当前平台/挂车条件要求至少 1 镜商家实拍，这一版全是插画兜底', '正式发布前补 1 张商家实拍（门头或菜品/商品），不要用网图或 AI 图顶替'));
+    }
+  }
   return out;
 }
 
@@ -300,10 +312,19 @@ export function textShotRatio(sb, ctx) {
 }
 
 // ---- firstPhotoWithin3s：前 3 秒要有实拍 ----
+// round5：只有「真实照片」才算实拍——photoShot/storeCard/beforeAfter 里用了素材清单登记为 merchant 的合格文件，或 phone 放了截图；
+// 插画兜底的 photoShot 不算。商家压根没有可用实拍时（meta.assets 里没有合格 merchant 文件）不再报这条：
+// 那种情况 mediaPolicy 已经给了「按插画兜底」的提醒，再报「前 3 秒没有实拍」只会逼模型去找不存在的照片。
 export function firstPhotoWithin3s(sb, ctx) {
   const out = [];
-  const slot = (ctx.slots ?? []).find((s) => s.type === 'photoShot' || s.type === 'phone');
-  if (!slot || slot.start > 3) out.push(F('warn', 'shots', '前 3 秒内没有出现实拍画面（photoShot/phone）', '把第一个实拍镜头往前挪，或在前 3 秒内插一镜'));
+  if (isSpecSelfTest(ctx)) return out;
+  if (!usableMerchantAssets(ctx).length) return out;
+  const realShots = new Set(usedMerchantPhotos(sb, ctx).map((u) => u.i));
+  (sb.shots ?? []).forEach((s, i) => {
+    if (s?.type === 'phone' && s.params?.src) realShots.add(i);
+  });
+  const slot = (ctx.slots ?? []).find((s) => realShots.has(s.i));
+  if (!slot || slot.start > 3) out.push(F('warn', 'shots', '素材清单里有商家实拍，但前 3 秒内没有出现（插画兜底的 photoShot 不算实拍）', '把用了商家实拍的镜头往前挪到 3 秒内，或在前 3 秒内插一镜'));
   return out;
 }
 
@@ -340,7 +361,10 @@ export function requiredNotices(sb, ctx, rules) {
   const have = [...(ctx.meta?.notices ?? []), ctx.meta?.disclaimer ?? ''].join(' | ');
   for (const n of rules.requiredNotices ?? []) {
     if (!evalWhen(n.when, {meta: ctx.meta, shotTypes})) continue;
-    if (!have.includes(n.text)) out.push(F('block', 'meta.notices', `缺少必备提示语「${n.text}」`, `加进 meta.notices，如 ["${n.text}"]`));
+    // 英文片（meta.lang=en）画面上不能有汉字：规则给了 textEn 时，写英文版提示语也算覆盖到
+    const en = ctx.meta?.lang === 'en' && n.textEn;
+    if (!have.includes(n.text) && !(en && have.includes(n.textEn)))
+      out.push(F('block', 'meta.notices', en ? `Missing required notice "${n.textEn}"` : `缺少必备提示语「${n.text}」`, en ? `Add it to meta.notices, e.g. ["${n.textEn}"]` : `加进 meta.notices，如 ["${n.text}"]`));
   }
   return out;
 }
@@ -383,4 +407,9 @@ export const REGISTRY = {
   rejectBrief,
   requiredNotices,
   priceMatchesBrief: priceInternalConsistency,
+  // round5（对照 p2r2 两份评审）：
+  assetTruth, // 素材真实性：before≠after、meta.assets 登记来源、实拍字样只配 merchant、占位/示例图直接拦
+  compareDirection, // compare 刻度方向：tone=good 那栏在 meterLabel/higherIs 这把尺子上必须更优
+  coreActionSurface, // 核心动作在产品自己的样子里演：软件用界面不用表单，实物/门店用照片或插画不编 App
+  priceConditions, // 价格条件不许丢：周末/节假日价、券后、加价、有效期、预约、附加费金额
 };

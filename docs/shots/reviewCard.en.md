@@ -1,5 +1,12 @@
 # reviewCard Real customer review
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "reviewCard", "dur": 3,
+ "params": {"quotes": [{"text": "Springy noodles, hot soup", "month": "2026-08", "stars": 5}], "evidence": "Customer review on the deal page, 2026-08, name removed"}}
+```
+Copy the review word for word; `evidence` says where it came from and is not shown. Not available for education.
+
 Quotes a real customer review: a large quotation mark + the original text + a star rating + the month, with the stars lighting up one at a time (not all at once). 1–2 quotes; no real headshots, an initial-letter avatar instead.
 
 ## When to use it
@@ -26,7 +33,7 @@ Quotes a real customer review: a large quotation mark + the original text + a st
 ## Good examples
 ```json
 {"type": "reviewCard", "dur": 3, "mood": 0.15,
- "params": {"quotes": [{"text": "Rich broth, generous portion of meat", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
+ "params": {"quotes": [{"text": "Short wait, big portions", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
 ```
 ```json
 {"type": "reviewCard", "dur": 4.5, "mood": 0.15,

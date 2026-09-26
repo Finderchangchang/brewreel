@@ -23,7 +23,7 @@
 | [features](#features) | 卖点卡：2–4 张带图标的卖点卡按拍依次弹入，黄色聚光框跟着「当前讲到的那张」移动 | 2.5–7（默认 4） | 可选 |
 | [steps](#steps) | 1-2-3 流程：一张流程卡，左边节点竖排、连线上的光点一步步跑下去，每到一步节点点亮、文字滑入，全部走完每个节点打 ✓ | 2.5–7（默认 4） | 可选 |
 | [quickList](#quicklist) | 快切列表：3–6 行白卡按拍左右交替飞入，每行右边「盖章」出判定：分数滚动落定（可带判词），或一个彩色标签砸下来；左边色条按语气色长满 | 2–6（默认 3） | 可选 |
-| [endCard](#endcard) | 片尾：logo/品牌图标 + 产品名 + 一句大字口号 + 1–3 个卖点胶囊 + 可选行动号召 | 3–6（默认 4） | 不能写 |
+| [endCard](#endcard) | 片尾：logo/品牌图标 + 产品名 + 一句大字口号 + 1–3 个卖点 + 可选行动号召 | 3–6（默认 4） | 不能写 |
 
 **常规结构**：hook（0–3 秒）→ 痛点/场景（chat / quickList / compare / meter）→ 产品出场（phone / mockApp / photoShot）→ 卖点/演示（features / counter / meter / steps）→ endCard。
 
@@ -40,6 +40,12 @@
 <a id="hook"></a>
 ## hook 首帧钩子
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "hook", "dur": 2.5, "caption": "周报写到半夜，\n{还没写完}",
+ "params": {"visual": "icon", "icon": "doc", "text": "又到周五了", "badge": "一键出周报初稿"}}
+```
+
 **必须是第 1 镜。** 第 0 帧就是封面：大标题（caption）+ 产品高亮胶囊（badge）+ 一个主视觉，全部在位，不留空帧。
 
 ### 什么时候用
@@ -49,19 +55,27 @@
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | caption（镜头字段） | 是 | 封面大标题：用户痛点/反常识问题，≤2 行、每行 ≤12 字，{} 包最扎心的 2–5 个字 |
-| visual | 是 | 先按内容选：`bubble` 扎心消息 + 警示卡 / `stat` 大数字圆环 / `icon` 大图标 + 环绕小图标 / `phone` 手机真截图；再看构图要不要换：`split` 左右分屏「痛点 vs 产品」/ `statBar` 大数字 + 通栏刻度条 |
-| text | 视 visual | bubble：那条消息（≤14）；stat/statBar：数字或短词（≤6 最好看）；icon：图标下一行字；phone：贴纸标签；split：右侧（产品侧）短语（≤10 最好看） |
+| visual | 是 | 先按内容选：`bubble` 扎心消息 + 警示卡 / `stat` 大数字圆环（text 必须带数字）/ `icon` 大图标 / `illust` 行业插画 / `phone` 手机真截图；再看构图要不要换：`split` 左右分屏「痛点 vs 产品」/ `statBar` 大数字 + 通栏刻度条 |
+| text | 视 visual | bubble：那条消息（≤14）；stat/statBar：带数字的短词（≤6 最好看，放不下会自动缩字号、在 → 或空格处拆两行）；icon/illust：主视觉下一行字；phone：贴纸标签；split：右侧（产品侧）短语（≤10 最好看） |
 | sub | 否 | bubble：警示卡标题（如「危险信号」）；stat/statBar：数字说明（≤8）；split：底部一句小结 |
 | icon | icon 必填 | 图标名（见图标清单）；split：右侧（产品侧）图标，默认 check |
+| illust | illust 必填 | 行业插画 id（`template/src/illust/names.json`），如 `travel/window` |
+| orbit | 否 | icon 专用：环绕主图标的 3–6 个小图标，选和产品有关的；**不写就不环绕**，主图标放大、每拍一圈脉冲 |
+| pct | 否 | stat/statBar：数值占比 0–100，决定圆环弧长/条形长度；不写就从 text 里的「87%」取，**都没有就不画弧、不填条** |
 | leftText | split 用 | 左侧（痛点侧）短语（≤10），如「手动整理」 |
-| level | statBar 用 | 条形填充比例 0–10，默认 8 |
+| level | statBar 用 | 条形填充 0–10，会显示「x/10」，要有依据；不写时看 pct |
 | badge | 建议 | 产品一句话卖点（≤10），如「AI 先帮你看一眼」；有 meta.logo 时胶囊左侧显示 logo |
 | src | phone 必填 | 竖屏截图路径 |
 | tone | 否 | 警示色 bad（默认）/ warn / good / accent；split 用来给右侧换色 |
-| deco | 否 | 两侧漂浮小图标；split 用第 1 个做左侧图标 |
+| deco | 否 | 两侧漂浮小图标。**不写就不画**（不再按主题给默认图标）；split 用第 1 个做左侧图标 |
 
-### 别总用同一个 visual
-同一批素材（多支不同产品的片子）如果全用 `bubble` 或全用 `stat`，首帧会看着像同一个模板换了个壳。数据/效率类卖点可以在 `stat`（圆环）和 `statBar`（通栏条）之间换着用；「以前 vs 现在」类可以试试 `split`。
+### 圆环和刻度条只表达有含义的数
+- stat 的弧长 = `pct`（或 text 里的百分数）。写「6 小时」想表达「一天的四分之一」就写 `"pct": 25`；没有占比就不写，组件只画环、不画弧。
+- text 里没有数字（如「推开窗 整片竹林」「手动拆分」）别用 stat：说一处风景/一样东西用 `illust`，说一个功能用 `icon`。组件遇到没数字的 stat 会退成一张大字卡，不套环。
+- statBar 同理：没有 `level`、`pct`、百分数时只画刻度槽和一道扫光，不写「8/10」。
+
+### 别总用同一个 visual，也别靠默认装饰
+同一批素材（多支不同产品的片子）如果全用 `bubble` 或全用 `stat`，首帧会看着像同一个模板换了个壳。数据/效率类卖点可以在 `stat`（圆环）和 `statBar`（通栏条）之间换着用；「以前 vs 现在」类可以试试 `split`；行业片说的是一样东西/一处场景时用 `illust`。环绕小图标和两侧漂浮图标只画你写了的（`orbit` / `deco`），和产品无关的默认装饰已经去掉。
 
 ### 好例子
 ```json
@@ -73,17 +87,22 @@
  "params": {"visual": "stat", "text": "60 分钟", "sub": "每周花在周报上", "badge": "AI 三分钟写完"}}
 ```
 ```json
+{"type": "hook", "dur": 2.5, "caption": "推开窗，\n是{一整片山}", "mood": 0.3,
+ "params": {"visual": "illust", "illust": "travel/window", "text": "住一晚含双早", "tone": "good", "badge": "山里住一晚"}}
+```
+```json
 {"type": "hook", "dur": 2.5, "caption": "还在{手动}整理周报？", "mood": 0.7,
  "params": {"visual": "split", "leftText": "手动整理", "text": "自动生成", "badge": "AI 三分钟写完"}}
 ```
 ```json
-{"type": "hook", "dur": 2.5, "caption": "麻烦程度{降了 8 成}", "mood": 0.6,
- "params": {"visual": "statBar", "text": "省下 80%", "sub": "整理周报的时间", "level": 9, "badge": "AI 三分钟写完"}}
+{"type": "hook", "dur": 2.5, "caption": "周会开了一小时，\n{待办}没人记", "mood": 0.7,
+ "params": {"visual": "icon", "icon": "doc", "orbit": ["clock", "users", "check"], "text": "谁来跟进这件事？", "badge": "边开会边记待办"}}
 ```
 
 ### 坏例子
 - caption 写产品名（「XX 助手上线了」）：没有钩子。
 - visual 用 phone 但截图只是首页、没有冲突感。
+- `visual: "stat"` 配一句没有数字的话（「手动拆分」）：环里的字没有数，环也没有含义。
 - 一批片子里每支都用同一个 visual：首帧全长一个样，没有区分度。
 
 ### 参数速查（自动生成自 hook.spec.json）
@@ -92,17 +111,20 @@
 
 | 字段 | 必填 | 类型 / 可选值 | 限制 | 说明 |
 |---|---|---|---|---|
-| `visual` | 是 | bubble / stat / icon / phone / split / statBar |  | 主视觉类型/构图 |
-| `text` |  | 文字 | ≤14 字 | bubble：那条扎心消息；stat/statBar：大数字或短词（如「3 秒」「87%」，≤6 字最好看）；icon：大图标下的一行字；phone：贴在手机上的标签（可不填）；split：右侧（产品侧）短语（≤10 字最好看） |
+| `visual` | 是 | bubble / stat / icon / illust / phone / split / statBar |  | 主视觉类型/构图 |
+| `text` |  | 文字 | ≤14 字 | bubble：那条扎心消息；stat/statBar：大数字（必须带数字，如「3 秒」「87%」，≤6 字最好看，放不下会自动缩字号/在 → 处拆两行）；icon/illust：主视觉下的一行字；phone：贴在手机上的标签（可不填）；split：右侧（产品侧）短语（≤10 字最好看） |
 | `sub` |  | 文字 | ≤8 字 | bubble：警示卡标题（如「危险信号」）；stat/statBar：数字下面的说明；split：底部一句小结（可不填）；icon：不用 |
 | `icon` |  | 文字 | 图标名 | bubble：警示卡图标（默认 alert）；icon：主图标（必填）；split：右侧（产品侧）图标（默认 check） |
 | `badge` |  | 文字 | ≤10 字 | 标题下方的高亮胶囊：产品一句话卖点 |
 | `src` |  | 文字 | 素材 png/jpg/jpeg/webp | phone 必填：竖屏截图路径（相对 storyboard.json） |
 | `tone` |  | bad / warn / good / accent |  | 警示色：bad 红（默认）/ warn 橙 / good 绿 / accent 品牌色；split 用来给右侧（产品侧）换色，默认品牌色 |
-| `deco` |  | 数组 | 0–3 项 | 两侧漂浮的小图标（bubble 用 3 个、stat/statBar 用 2 个，split 用第 1 个做左侧图标），不写就按主题取（business-blue = chart/clock/doc，warm-emotion = chat/heart/bell…）；选和产品有关的图标 |
+| `deco` |  | 数组 | 0–3 项 | 两侧漂浮的小图标（bubble 最多 3 个、stat/statBar/icon/illust 2 个、phone 1 个；split 用第 1 个做左侧图标）。不写就不画——不再按主题给默认图标；要加就选和产品有关的 |
 | `head` |  | 文字 | ≤10 字 | bubble：消息卡顶部那行小字，默认「新消息 · 刚刚」；写成 "" 就不显示。B 端可写「群消息 · 刚刚」「工单 · 刚刚」 |
 | `leftText` |  | 文字 | ≤10 字 | split 专用：左侧（痛点侧）短语，如「手动整理」 |
-| `level` |  | 数字 | 0–10 | statBar 专用：条形填充比例 0–10，默认 8（越高越满） |
+| `level` |  | 数字 | 0–10 | statBar 专用：条形填充比例 0–10（会显示「x/10」，要有依据）；不写时用 pct 或 text 里的百分数，都没有就不填条 |
+| `pct` |  | 数字 | 0–100 | stat/statBar：数值占比 0–100，决定圆环弧长/条形长度（如 text「6 小时」对应一天的 25%）；不写就从 text 里的「87%」取，都没有就不画弧、不填条 |
+| `orbit` |  | 数组 | 3–6 项 | icon 专用：环绕主图标的 3–6 个小图标，选和产品有关的；不写就不环绕，主图标放大 + 每拍一圈脉冲 |
+| `illust` |  | 文字 |  | illust 专用（必填）：行业插画 id，从 template/src/illust/names.json 里选，如 "travel/window" |
 
 示例（能直接通过校验）：
 
@@ -114,6 +136,13 @@
 
 <a id="chat"></a>
 ## chat 模拟聊天
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "chat", "dur": 5, "caption": "对方说在忙，\n{该怎么回}",
+ "params": {"messages": [{"from": "peer", "text": "在忙，晚点说"}, {"from": "me", "text": "好的，不急"}], "panel": {"title": "回复建议", "replies": ["好，你先忙", "忙完跟我说一声"]}}}
+```
+只给「消息/聊天/回复」类产品用：meta.action 要写到消息或回复。
 
 中性配色的聊天窗（我方 = 主题强调色，对方 = 浅灰，不像任何具体 IM）。消息逐拍弹出 → 可选「我」在输入框打字 → 可选产品悬浮球变色弹出分析面板（结论 + 标签 + 候选）→ 点第 1 条候选「填入」飞进输入框。
 
@@ -178,6 +207,13 @@
 
 <a id="phone"></a>
 ## phone 手机截图 + 圈注
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "phone", "dur": 4, "caption": "打开就能看，\n{要点都标好}",
+ "params": {"src": "assets/screen.png", "focus": [{"area": "middle", "label": "要点自动标好", "style": "box"}]}}
+```
+`src` 换成你自己的竖屏截图；没有截图就改用 mockApp。
 
 手机框居中，里面放用户给的真截图或录屏。按拍依次圈出 1–3 处，每处配一句短说明。截图只在手机里，不会整屏放大、不会来回晃。
 
@@ -253,6 +289,12 @@
 
 <a id="mockapp"></a>
 ## mockApp 模拟产品界面
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "mockApp", "dur": 4, "caption": "写下本周要点，\n{初稿就出来}",
+ "params": {"kind": "editor", "title": "写周报", "input": "本周做了什么", "button": "生成", "items": [{"text": "完成首页改版"}, {"text": "修复登录问题"}], "done": "已生成"}}
+```
 
 没有截图时用它：画一个中性配色、看起来像真产品的 App 界面，并让它「动起来演一遍」。全部由参数决定，不用画图。
 
@@ -346,6 +388,7 @@ dashboard 3.5–4 秒；list 3.5–4 秒；editor 4.5–5 秒（有 input 时）
 | `stat` |  | 对象 |  | dashboard 顶部的大数字 |
 | `stat.value` | 是 | 文字 | ≤6 字 | 如「128」「+36%」「3.2万」，数字部分会滚动 |
 | `stat.label` | 是 | 文字 | ≤8 字 | 数字说明，如「今日新增订单」 |
+| `stat.live` |  | 文字 | ≤4 字 | 可选：右上角状态角标文字，如「实时」/「Live」。不写就不画这个角标，不要默认当作实时数据；lang=en 时写英文，不要写中文 |
 | `series` |  | 数组 | 2–12 项 | dashboard 图表数据，5–8 个数最好看，如 [3, 5, 4, 7, 9] |
 | `chart` |  | line / bar |  | dashboard 图表：line 折线（默认）/ bar 柱状 |
 | `input` |  | 文字 | ≤12 字 | editor：输入框里打出的需求；list：搜索框里打出的词；dashboard：顶部提问框里打出的问题（先问后出数） |
@@ -364,6 +407,16 @@ dashboard 3.5–4 秒；list 3.5–4 秒；editor 4.5–5 秒（有 input 时）
 <a id="photoshot"></a>
 ## photoShot 实拍照片/短视频
 
+**最小可用写法**（有实拍图 / 没有实拍图各一份，照抄改字即可通过校验）：
+```json
+{"type": "photoShot", "dur": 2.5, "params": {"layout": "hero",
+  "media": [{"src": "photos/<简报里登记的实拍图>.jpg", "source": "merchant", "tag": "实拍"}], "title": "<菜名/商品名>"}}
+```
+```json
+{"type": "photoShot", "dur": 2.5, "params": {"layout": "hero",
+  "media": [{"source": "drawn", "tag": "示意", "illust": "food/meatball"}], "title": "<菜名/商品名>"}}
+```
+
 非软件行业的主力镜头：把商家的实拍照片或短视频放大做主角，叠上菜名/商品名、一句卖点、价签这类信息。五种构图（`layout`）：
 - `hero`：单张照片缓慢推近，底部渐变字幕带放标题/卖点/价签，适合招牌菜、主打商品、房型大图。
 - `clip`：同 hero，素材换成一段短视频（带播放小标），适合制作过程、环境走动。
@@ -371,14 +424,35 @@ dashboard 3.5–4 秒；list 3.5–4 秒；editor 4.5–5 秒（有 input 时）
 - `callouts`：一张照片 + 1–3 处引线圈注，适合讲清楚一张图里的几个细节（用料、工艺、部件）。
 - `tour`：2–5 张依次轮播（带页码点），适合带看一个房间/一个空间的几个角度。
 
-没有真实素材时，把这一项的 `source` 写成 `"drawn"`，不用给 `src`，改给 `illust`（插画名，从 `template/src/illust/names.json` 里按行业选，如 `"food/bowl"`）；不写 `illust` 也可以，会按 `meta.industry` 给一张默认插画。**插画兜底不是万能的**：一张干净的商家实拍永远比插画更有说服力，能拍就拍。
+### 没有实拍图时：整卡插画场景
+把这一项的 `source` 写成 `"drawn"`、`tag` 写 `"示意"`，不用给 `src`，改给 `illust`。画面是一整张插画场景：主题色底 + 纹理、约 480px 的主插画、同行业 2–3 个小道具飘进来、慢推、按行业的粒子（餐饮热气、美业/电商闪光、文旅光带），角标固定显示「示意」（`tag` 写成「实拍」也不会照抄，画的不能冒充实拍）。
+
+**illust 要和这张图说的东西对得上**，常用的：
+
+| 说的是 | illust |
+|---|---|
+| 面、汤面 / 牛肉面特写（筷子挑面） | `food/bowl` / `food/noodle-bowl-closeup` |
+| 肉丸、丸子 | `food/meatball` |
+| 咖啡 / 奶茶 / 火锅 / 包子点心 | `food/coffee` / `food/tea` / `food/hotpot` / `food/steamer` |
+| 门头、门店 | `food/storefront`（餐饮）/ `_base/store`（其他行业） |
+| 保温杯、杯子 / 水瓶 | `ecommerce/cup` / `ecommerce/bottle` |
+| 快递发货 / 礼盒 / 吊牌规格 | `ecommerce/parcel` / `ecommerce/gift` / `ecommerce/tag` |
+| 发型作品、短发造型 / 剪发 / 吹发 | `beauty/hair-short` / `beauty/scissors` / `beauty/hairdryer` |
+| 房型、客房 / 床 | `travel/room` / `travel/bed` |
+| 推窗见景、窗外竹林山景 | `travel/window-view` |
+| 民宿外观 / 早餐 / 山水 | `travel/house` / `travel/breakfast` / `travel/landscape` |
+| 课程 / 表格 / 结业证书 | `education/book` / `education/sheet` / `_base/cert` |
+
+完整名单见 `template/src/illust/names.json`（只有 icons.tsx 里真画了的才能用，校验会查）。不写 `illust` 时，按这一张的 `label` 和镜头的 `title`/`tagline`/`roomType` 里的关键词自动挑（如「鲜肉丸子」→ `food/meatball`、「380ml保温杯」→ `ecommerce/cup`），都没命中才按 `meta.industry` 给默认图。
+
+**插画兜底不是万能的**：一张干净的商家实拍永远比插画更有说服力，能拍就拍。
 
 ### 什么时候用
 - 商家有真实照片/视频，想让它做画面主角（不是塞进手机框里当截图）。
 - 需要在同一镜里把「这是什么」和「多少钱/什么标签」一起交代清楚。
 
 ### 什么时候别用
-- 素材是 App 界面/操作演示：用 `phone`（真截图）或 `mockApp`（没截图时的模拟界面），不要用 photoShot 硬装。
+- 素材是 App 界面/操作演示：用 `phone`（真截图）或 `mockApp`（没截图时的模拟界面），不要用 photoShot 硬装；界面截图也不能标 `source: "merchant"` 冒充实拍。
 - 一张图撑不起一整镜的信息量：并进 `features`、`quickList` 这类镜头，插画图标挂在那边就够。
 - `grid` 缺图硬凑纯文字列表冒充环境照：直接跳过这一镜，或换用有图的镜头。
 
@@ -389,9 +463,9 @@ dashboard 3.5–4 秒；list 3.5–4 秒；editor 4.5–5 秒（有 input 时）
 | media | 是 | 1–5 项 | hero/clip/callouts 各 1 项；grid 2–4 项；tour 2–5 项 |
 | media[].src | 条件必填 | — | 素材路径；`source: "drawn"` 时不填，改填 `illust` |
 | media[].source | 是 | — | `merchant` 商家实拍 / `ai` AI 生成 / `drawn` 插画兜底 |
-| media[].tag | 是 | — | `实拍` / `示意` / `效果图`；`source: "ai"` 时必须是「效果图」 |
-| media[].illust | 否 | — | `source: "drawn"` 时选一张插画（见 names.json） |
-| media[].label | 否 | 8 字 | grid/tour 每张图下的短标签 |
+| media[].tag | 是 | — | `实拍` / `示意` / `效果图`；`source: "ai"` 时必须是「效果图」，`drawn` 写「示意」 |
+| media[].illust | 否 | — | `source: "drawn"` 时选一张插画（见上表和 names.json） |
+| media[].label | 否 | 8 字 | grid/tour 每张图下的短标签；也用来自动挑插画 |
 | media[].month | 否 | 1–12 | 季节/天气相关的画面填这个，会自动显示「N月实拍」 |
 | title | 否 | 10 字 | 菜名/商品名/房型名 |
 | tagline | 否 | 12 字 | 一句卖点 |
@@ -401,15 +475,17 @@ dashboard 3.5–4 秒；list 3.5–4 秒；editor 4.5–5 秒（有 input 时）
 | callouts | layout=callouts 时必填 | 2–4 条，每条 text ≤8 字 | 引线圈注文字 |
 | refs | 否 | — | 指向 meta.facts 的 id，给「现熬」「开了10年」这类说法当依据 |
 
+英文片（`meta.lang: "en"`）：`tag` 仍写中文枚举值，角标自动显示 Real photo / Illustration / Concept render / AI-generated。
+
 ### 时长
 hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒（总时长按张数给）；callouts 跟 hero 一样按内容给（默认 2.5 秒，圈注多给到 3.5–4 秒）。
 
 ### 好例子
 ```json
-{"type": "photoShot", "dur": 2.5, "caption": "牛腱现卤，\n{骨汤熬足4小时}", "mood": 0.3,
+{"type": "photoShot", "dur": 2.5, "caption": "骨汤现熬，\n{一碗料给足}", "mood": 0.3,
  "params": {"layout": "hero",
-   "media": [{"src": "photos/beef_noodle.jpg", "source": "merchant", "tag": "实拍"}],
-   "title": "红烧牛肉面", "tagline": "牛腱自家卤", "badge": "招牌", "price": 22, "unit": "碗",
+   "media": [{"src": "photos/house_noodle.jpg", "source": "merchant", "tag": "实拍"}],
+   "title": "招牌汤面", "tagline": "骨汤每天现熬", "badge": "招牌", "price": 18, "unit": "碗",
    "refs": ["f2"]}}
 ```
 ```json
@@ -420,16 +496,21 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
      {"src": "photos/room.jpg", "source": "merchant", "tag": "实拍", "label": "包间"}
    ]}}
 ```
-没有实拍图时的兜底写法：
+没有实拍图时的兜底写法（房型带看）：
 ```json
-{"params": {"layout": "hero",
-  "media": [{"source": "drawn", "illust": "food/bowl"}],
-  "title": "招牌牛肉面", "price": 22, "unit": "碗"}}
+{"type": "photoShot", "dur": 4, "mood": 0.25,
+ "params": {"layout": "tour", "roomType": "庭院双床房",
+  "media": [
+    {"source": "drawn", "tag": "示意", "illust": "travel/room", "label": "房间全貌"},
+    {"source": "drawn", "tag": "示意", "illust": "travel/window-view", "label": "窗外庭院"}
+  ]}}
 ```
 
 ### 坏例子
 - `media[0].source: "merchant"` 但没给 `src`：校验会当成素材路径缺失。
 - `source: "ai"` 却把 `tag` 写成「实拍」：AI 生成的画面必须标「效果图」，不能冒充实拍。
+- `source: "drawn"` 配一张和标题无关的插画（标题「鲜肉丸子」配 `food/receipt` 小票、保温杯配 `ecommerce/gift` 礼盒）：换成上表里对得上的，或者不写 illust 让它按标题自动挑。
+- 美业作品图没有实拍，用剪刀/梳子插画配「本店同款作品」这类字：插画不是作品，标题改成「剪吹造型」这类服务说明，或者跳过这一镜。
 - `layout: "grid"` 只给 1 张：grid 至少要 2 张，1 张改用 `hero`。
 - 把这一镜的 `title` 写成和 `meta.product` 不一致的产品名：photoShot 讲的是具体的菜/商品/房型，不是整个产品。
 
@@ -444,7 +525,7 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 | `media[].src` |  | 文字 | 素材 png/jpg/jpeg/webp/mp4 | 商家实拍/AI生成的图或视频；source=drawn 时不填 src，改填 illust |
 | `media[].kind` |  | image / video |  | 不写按扩展名判断 |
 | `media[].source` | 是 | merchant / ai / drawn |  | merchant 商家实拍 / ai AI 生成 / drawn 代码绘制（插画兜底，不需要 src） |
-| `media[].illust` |  | 文字 |  | source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 meta.industry 给默认图 |
+| `media[].illust` |  | 文字 |  | source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 label/title 关键词挑，再按 meta.industry 给默认图 |
 | `media[].tag` | 是 | 实拍 / 示意 / 效果图 |  | source=ai 时必须是「效果图」 |
 | `media[].month` |  | 整数 | 1–12 | 季节/天气景观画面必填，渲染成「N月实拍」 |
 | `media[].label` |  | 文字 | ≤8 字 | 房型/位置名/款式名 |
@@ -468,13 +549,20 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 示例（能直接通过校验）：
 
 ```json
-{"type": "photoShot", "dur": 2.5, "mood": 0.3, "params": {"layout": "hero", "media": [{"src": "sample-screen.png", "source": "merchant", "tag": "实拍", "label": "招牌款"}], "title": "招牌菜一份", "tagline": "现点现做", "badge": "招牌"}}
+{"type": "photoShot", "dur": 2.5, "mood": 0.3, "params": {"layout": "hero", "media": [{"source": "drawn", "tag": "示意", "illust": "food/noodle-bowl-closeup"}], "title": "招牌汤面", "tagline": "一人份刚刚好", "badge": "招牌"}}
 ```
 
 ---
 
 <a id="meter"></a>
 ## meter 仪表 / 评分
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "meter", "dur": 3, "caption": "这句话的语气，\n{比你想的重}",
+ "params": {"value": 7, "max": 10, "label": "语气强度", "higherIs": "bad", "word": "偏重"}}
+```
+读数是产品在演示里给出的判断时，meta 写 `"demoData": true` 并在 disclaimer 标「演示」；读数是效果/评分时，数字必须来自 meta.facts，并用 `refs` 指过去。
 
 一张卡片：顶上是仪表名，中间的指针从起点弹簧摆到目标值，落定那一拍数字弹一下、判词胶囊弹出、响一声重音；下一拍卡片底部浮出一句结论（之前是骨架条在「加载」）。分段颜色自动：越危险越红，或越好越绿。
 
@@ -540,6 +628,7 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 | `word` |  | 文字 | ≤4 字 | 数字下的判词胶囊，如「很危险」「很合拍」 |
 | `note` |  | 文字 | ≤14 字 | 卡片底部的一句解释，如「对方在确认你在不在乎」 |
 | `icon` |  | 文字 | 图标名 | 仪表名前的图标，默认 bad→alert、good→star |
+| `refs` |  | 数组 |  | 读数是效果/评分时必填：指向 meta.facts 里给出这组数的条目 id；读数是产品在演示里给出的判断时，改写 meta.demoData: true |
 
 示例（能直接通过校验）：
 
@@ -551,6 +640,13 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 
 <a id="compare"></a>
 ## compare 对比
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "compare", "dur": 4, "caption": "同一份周报，\n{做法不一样}",
+ "params": {"left": {"title": "手动整理", "items": ["翻聊天记录", "复制粘贴"]}, "right": {"title": "用了之后", "items": ["自动汇总", "改两句就发"]}}}
+```
+只比做法，不写 stat 数字和 level；简报真给了数字，才加 stat/level 并用 `refs` 指向那条 fact。
 
 两种演法：
 - `lr`（默认）：左右两张卡。左卡（痛点）先逐条出现 → 中线画下来、VS 弹出 → 右卡（用了产品）逐条出现 → 右卡胜出：发光描边 + 角标（right.tone 是 bad 时是警示号，否则是对勾），左卡变灰 → 底部结论胶囊。
@@ -629,6 +725,8 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 | `right.stat` |  | 文字 | ≤6 字 | 这一栏的大数字或短词，如「3 分钟」「1 步」 |
 | `right.level` |  | 数字 | 0–10 | 0–10 刻度条的值（和左栏同一把尺子） |
 | `meterLabel` |  | 文字 | ≤6 字 | 刻度条量的是什么，如「麻烦程度」「效率」；两栏写了 level 时才显示 |
+| `higherIs` |  | good / bad |  | 这把尺子越高越好写 good（如「保温时长」），越高越差写 bad（如「麻烦程度」）；tone=good 那栏必须在这把尺子上占优 |
+| `refs` |  | 数组 |  | 写了 stat 数字或 level 时，指向 meta.facts 里给出这组数的条目 id；简报没给就删掉 stat/level，只比 items |
 | `verdict` |  | 文字 | ≤12 字 | 底部结论胶囊，如「省下的时间拿去休息」 |
 
 示例（能直接通过校验）：
@@ -641,6 +739,13 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 
 <a id="beforeafter"></a>
 ## beforeAfter 前后对比滑块
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "beforeAfter", "dur": 3,
+ "params": {"before": {"src": "photos/before.png"}, "after": {"src": "photos/after.png"}, "consent": true, "retouched": false, "subVertical": "hair"}}
+```
+只在美业开放。两张必须是同一位顾客的商家实拍，并在 meta.assets 登记：`[{"src": "photos/before.png", "source": "merchant", "kind": "customer-before", "pair": "A"}, {"src": "photos/after.png", "source": "merchant", "kind": "customer-after", "pair": "A"}]`。没有照片就改用 steps。
 
 同一位顾客做之前和做完的真实对比：一根滑杆从右往左扫过，露出「之后」。只有美业开放（发型 / 美甲 / 美睫）。
 
@@ -715,15 +820,22 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 <a id="counter"></a>
 ## counter 大数字滚动
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "counter", "dur": 3, "caption": "这么多团队，\n{已经在用}",
+ "params": {"to": 1200, "suffix": "个", "label": "团队在用"}}
+```
+数字必须来自 meta.facts 里的一条真实数据，如 `{"id": "f1", "text": "截至2026-08已有1200个团队在用", "source": "2026-08 后台统计"}`；简报没给数字就别用 counter。
+
 一张卡片：图标 → 大数字从 `from` 滚到 `to`（嗒嗒声，下方进度条同步走）→ 落定那一拍数字弹一下、放射光线、叮一声 → 下面是这个数字的含义 `label` 和口径 `sub`。
-写 `showFrom: true` 时，数字上方先显示旧值，落定前被一笔划掉，并自动算出变化幅度胶囊（如「↓ 87%」「↑ 3 倍」）。
+写 `showFrom: true` 时，数字上方先显示旧值。单位是钱（¥ / 元 / $ 等）时，旧值落定前被一笔划掉，并自动算出变化幅度胶囊（如「↓ 87%」）；其他单位（分钟、℃ 等）不划线、不算百分比，数字下面的条从旧值的位置刷到新值。
 
 ### 什么时候用
 - 产品效果有一个硬数字：省了多少时间、多少钱、提升几倍、服务了多少人。
 - 前后对比只有一个数：旧耗时 → 新耗时（`from` 旧值、`to` 新值、`showFrom: true`），两个数都要出自简报；全片别处再提耗时，必须和 `to` 是同一个数（counter 说 3 分钟，别处就不能写「秒出」「3 秒」）。
 
 ### 什么时候别用
-- 数字没有来源 / 口径：别用；简报给了数字和来源，先原样抄进 `meta.facts` 再用；只想示意就在 sub 写「示例数据，以实际为准」。不要自己编「内部测试」「实测」（校验会拦）。
+- 数字没有来源 / 口径：别用 counter（校验会拦）。简报给了数字和来源，先原样抄进 `meta.facts`（带 `source`）再用。标了「示例数据」的数字不能放进 counter 当效果；简报没给数字，就改用 compare 只比做法（「少 3 步」「不用切窗口」）。不要自己编「内部测试」「实测」。
 - 要同时比好几项：用 compare。
 - 要打分（满分 10 分那种）：用 meter。
 
@@ -737,7 +849,7 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 | decimals | 否 | 0–2 | 小数位，默认 0 |
 | prefix | 否 | 2 字 | 数字前的符号，如「¥」「+」 |
 | suffix | 否 | 3 字 | 单位，如「%」「倍」「分钟」 |
-| sub | 否 | 16 字 | 小字口径/来源：只写简报给的来源；没给就写「示例数据，以实际为准」 |
+| sub | 否 | 16 字 | 小字口径/来源：照抄 meta.facts 里那条的 source，如「2026-08 后台统计」 |
 | icon | 否 | 图标名 | 数字上方的图标，默认 trend |
 | tone | 否 | — | 数字颜色：`accent` 主题色（默认）/ `good` 绿 / `bad` 红 |
 
@@ -747,11 +859,11 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 ### 好例子
 ```json
 {"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2,
- "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "sub": "示例数据，以实际为准", "icon": "clock", "tone": "good"}}
+ "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "sub": "2026-08 用户调研", "icon": "clock", "tone": "good"}}
 ```
 ```json
 {"type": "counter", "dur": 3, "caption": "老客复购{翻了一倍多}", "mood": 0.2,
- "params": {"to": 12800, "prefix": "¥", "label": "单店月复购金额", "sub": "示例数据，以实际为准", "icon": "money"}}
+ "params": {"to": 12800, "prefix": "¥", "label": "单店月复购金额", "sub": "2026-08 后台统计", "icon": "money"}}
 ```
 
 ### 坏例子
@@ -771,7 +883,7 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 | `prefix` |  | 文字 | ≤2 字 | 数字前的符号，如「¥」「+」 |
 | `suffix` |  | 文字 | ≤3 字 | 数字后的单位，如「%」「倍」「分钟」 |
 | `label` | 是 | 文字 | ≤12 字 | 数字的含义，如「整理一份周报」 |
-| `sub` |  | 文字 | ≤16 字 | 小字：口径/来源。只写简报给的来源（要先抄进 meta.facts）；没给就写「示例数据，以实际为准」 |
+| `sub` |  | 文字 | ≤16 字 | 小字：口径/来源。照抄 meta.facts 里那条的 source，如「2026-08 后台统计」 |
 | `icon` |  | 文字 | 图标名 | 数字上方的图标，默认 trend |
 | `showFrom` |  | true/false |  | true = 在数字上方显示被划掉的旧值 + 变化幅度（需要写 from） |
 | `tone` |  | accent / good / bad |  | 数字颜色：accent 主题色（默认）/ good 绿 / bad 红 |
@@ -779,7 +891,7 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 示例（能直接通过校验）：
 
 ```json
-{"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2, "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "sub": "示例数据，以实际为准", "icon": "clock", "tone": "good"}}
+{"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2, "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "icon": "clock", "tone": "good"}}
 ```
 
 ---
@@ -787,15 +899,27 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 <a id="pricecard"></a>
 ## priceCard 价格卡/价目表
 
+**最小可用写法**（照抄改数字即可通过校验）：
+```json
+{"type": "priceCard", "dur": 3, "params": {"layout": "card",
+  "items": [{"itemId": "<简报价格表里的 id>", "name": "双人套餐", "price": 79, "unit": "份"}]}}
+```
+
 把明码标价的排版规则做进组件里，模型只填数字和条件，价格区不会因为排版问题看不清、不会闪烁抖动。两种布局：
-- `card`：单个房型/套餐/商品的价格卡。大价格 + 单位 + （可选）划线对比价 → 商品名 → 分隔线 → 包含项清单 → 限制/另收费用/条件/活动期 → 赠品 → 脚注。
-- `menu`：2–6 行的价目表，名称和价格用虚线对齐，行数多的时候用它，不要硬塞进 card。
+- `card`：1–3 个价格的价格卡。1 项时是大价格 + 单位 + （可选）划线对比价 → 商品名；2–3 项时逐行堆叠，每行「名称/说明 + 价格」依次落定。下面是分隔线 → 包含项清单 → 限制/另收费用/条件/活动期 → 赠品 → 脚注。
+- `menu`：2–6 行的价目表，名称和价格用虚线对齐。
+
+**给了几项就显示几项，一项都不丢。** card 给 4 项以上会自动换成 menu；内容多到主体区放不下时，包含项改成两列、间距收紧，最后整体缩小，但不会删掉任何一行。
+
+**同一房型/套餐分两档价**（平日/周末、单人/双人）：写两项 items，`name` 相同，`note` 分别照抄 facts 里的日期范围或条件。画面把名字写一次当小标题，两行价格各带自己的日期。只写一项、把另一档价写进 conditions 或干脆不写，都会让观众以为只有一个价。
 
 **不写「原价」二字。** 有划线对比价时，`compare.basis` 必须写清楚这个对比价是什么依据（「厂商建议零售价」「单点合计」……），画面直接显示这个依据文字，不出现「原价」。
 
+卡片高度跟着内容走，在主体区里垂直居中，不会留一大片空白。`footnote` 和 `meta.notices` 里某一条相同（忽略空格和标点）时，画面只显示底部提示条那一份，不重复。
+
 ### 什么时候用
-- 需要明确标价的镜头：套餐价、门票、课时费、理发价、商品价目表。
-- 到手价/券后价这类需要写清楚条件的场景：写进 `conditions`。
+- 需要明确标价的镜头：套餐价、门票、课时费、理发价、商品价目表、房型平日/周末价。
+- 到手价/券后价这类需要写清楚条件的场景：写进 `conditions`（如「领20元券后」）。
 
 ### 什么时候别用
 - 只是想在别的镜头角落带一个小价签（比如菜品照片上的价签）：用 `photoShot` 的 `price`/`unit` 字段，不用单独开一镜 priceCard。
@@ -804,16 +928,16 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 ### 参数
 | 字段 | 必填 | 上限 | 说明 |
 |---|---|---|---|
-| layout | 否 | — | `card`（默认）/ `menu` |
-| items | 是 | 1–6 项 | card 布局只看第 1 项；menu 布局逐行显示 |
+| layout | 否 | — | `card`（默认，1–3 项）/ `menu`（2–6 项） |
+| items | 是 | 1–6 项 | 全部显示；card 超过 3 项自动换 menu |
 | items[].itemId | 是 | 20 字 | 对应简报价格表里的 id |
-| items[].name | 否 | card 10 字 / menu 8 字 | 商品/套餐名 |
+| items[].name | 否 | card 10 字 / menu 8 字 | 商品/套餐/房型名；同一房型两档价就写同一个名字 |
 | items[].price | 是 | — | 数字，不允许 0/1/9.9 这类噱头价 |
 | items[].unit | 是 | 4 字 | 碗/杯/只/晚/次/位/人/张/套 |
 | items[].from | 否 | — | true 时价格后带「起」；card 布局要配 fromNote，menu 布局要配 addOns |
 | items[].fromNote | from=true 时必填（card） | 12 字 | 「起」价的说明 |
-| items[].note | 否 | 12 字 | 一行小字说明 |
-| label | 否 | — | 售价/到手价/券后价/团购价/套餐价/活动价/门票 |
+| items[].note | 否 | 12 字 | 一行小字说明；多项同名时就是这一行的标题（如「周一至周四」） |
+| label | 否 | — | 售价/到手价/券后价/团购价/套餐价/活动价/门票（英文片也写中文值，画面自动换成英文） |
 | people | 否 | 6 字 | 如「2–3人」 |
 | includes | 否 | ≤6 项，每项 8 字 | 包含项清单，写清数量 |
 | excludes | 否 | 14 字 | 另收费用；要求必填时没有就写「无其他收费」 |
@@ -821,38 +945,49 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 | conditions | 否 | 16 字 | 到手价/券后价的条件 |
 | period | 否 | 16 字 | 活动起止日期 |
 | addOns | 否 | ≤4 项 | {cond, extra}，如「及腰长发」+「160元」 |
-| compare | 否 | — | {price, basis, evidence}；basis 从固定选项里选，evidence 不上屏 |
+| compare | 否 | — | {price, basis, evidence}；basis 从固定选项里选（英文片同样写中文值），evidence 不上屏 |
 | gift | 否 | — | {name, qty}，如「焗油」×1 |
-| footnote | 否 | 24 字 | 固定文案（各行业统一口径），不要自己改写 |
+| footnote | 否 | 24 字 | 固定文案（各行业统一口径），不要自己改写；和 notices 重复时不显示 |
 
 ### 时长
-card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
+card 1 项 2–3 秒，2–3 项 3–4 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 
 ### 好例子
 ```json
-{"type": "priceCard", "dur": 4, "caption": "双人招牌餐，\n{团购价59元}", "mood": 0.15,
- "params": {"layout": "card",
-   "items": [{"itemId": "deal-1", "name": "双人招牌餐", "price": 59, "unit": "份"}],
-   "label": "团购价", "people": "2人",
-   "includes": ["红烧牛肉面×2", "手打牛肉丸×1份(6颗)", "凉拌三丝×1"],
-   "limits": ["限堂食", "不可叠加"],
-   "compare": {"price": 68, "basis": "单点合计", "evidence": "菜单图 photos/menu.jpg"},
-   "footnote": "以团购详情页为准"}}
+{"type": "priceCard", "dur": 3.5, "caption": "平日周末，\n{价格写清楚}", "mood": 0.15,
+ "params": {"layout": "card", "label": "售价", "people": "2人",
+   "items": [
+     {"itemId": "room-a-weekday", "name": "庭院双床房", "price": 328, "unit": "晚", "note": "周一至周四"},
+     {"itemId": "room-a-weekend", "name": "庭院双床房", "price": 428, "unit": "晚", "note": "周五至周日"}
+   ],
+   "includes": ["两份早餐", "免费停车"],
+   "conditions": "法定节假日另计"}}
 ```
 ```json
-{"params": {"layout": "menu",
+{"type": "priceCard", "dur": 4, "caption": "三人小聚，\n{套餐价99元}", "mood": 0.15,
+ "params": {"layout": "card",
+   "items": [{"itemId": "set-3", "name": "三人小聚餐", "price": 99, "unit": "份"}],
+   "label": "套餐价", "people": "3人",
+   "includes": ["招牌锅底×1", "时蔬拼盘×1", "饮品×3"],
+   "limits": ["限堂食", "不可叠加"],
+   "compare": {"price": 128, "basis": "单点合计", "evidence": "菜单图 photos/menu.jpg"}}}
+```
+```json
+{"params": {"layout": "menu", "label": "售价",
   "items": [
-    {"itemId": "a", "name": "红烧牛肉面", "price": 22, "unit": "碗"},
-    {"itemId": "b", "name": "手打牛肉丸", "price": 16, "unit": "份"},
-    {"itemId": "c", "name": "小份牛肉面", "price": 12, "unit": "碗", "note": "一个人也能点"}
-  ], "label": "菜单价"}}
+    {"itemId": "a", "name": "招牌汤面", "price": 18, "unit": "碗"},
+    {"itemId": "b", "name": "鲜肉馄饨", "price": 15, "unit": "碗"},
+    {"itemId": "c", "name": "小份汤面", "price": 12, "unit": "碗", "note": "一个人也能点"}
+  ]}}
 ```
 
 ### 坏例子
 - `price: 9.9` 当引流噱头价：会被行业规则拦（噱头价不允许）。
+- 平日 368、周末 468 只写了一项 368，周末价写进 conditions 或不写：观众看到的就只有一个价。写两项 items。
 - 写了 `compare` 但 `basis` 不在固定选项里，或没给 `evidence`：校验会拦，价格对比必须有依据。
 - 画面上出现「原价」二字：改成 `compare.basis` 本身的说法（如「厂商建议零售价」）。
 - `items[].from: true` 却不给 `fromNote`（card）或 `addOns`（menu）：起价必须说明「起」在哪。
+- `note` 自己改写日期范围（facts 写「周一至周四」，卡上写「周一到周五」）：照抄 facts。
 
 ### 参数速查（自动生成自 priceCard.spec.json）
 
@@ -860,7 +995,7 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 
 | 字段 | 必填 | 类型 / 可选值 | 限制 | 说明 |
 |---|---|---|---|---|
-| `layout` | 是 | card / menu |  | card 单个房型/套餐/商品 / menu 2–6 项价目表 |
+| `layout` | 是 | card / menu |  | card 1–3 个价格（逐行堆叠）/ menu 2–6 项价目表；card 给 4 项以上自动换 menu |
 | `items` | 是 | 数组 | 1–6 项 |  |
 | `items[].itemId` | 是 | 文字 | ≤20 字 | 对应 brief 价格表里的 id |
 | `items[].name` |  | 文字 | ≤10 字 | card 布局 ≤10 字，menu 布局建议 ≤8 字 |
@@ -892,7 +1027,7 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 示例（能直接通过校验）：
 
 ```json
-{"type": "priceCard", "dur": 3, "mood": 0.15, "params": {"layout": "card", "items": [{"itemId": "deal-1", "name": "双人套餐", "price": 59, "unit": "份", "note": "含两菜一汤"}], "label": "团购价", "people": "2人", "includes": ["主菜两份", "例汤一份"], "limits": ["限堂食"]}}
+{"type": "priceCard", "dur": 3, "mood": 0.15, "params": {"layout": "card", "items": [{"itemId": "room-a-weekday", "name": "庭院双床房", "price": 328, "unit": "晚", "note": "周一至周四"}, {"itemId": "room-a-weekend", "name": "庭院双床房", "price": 428, "unit": "晚", "note": "周五至周日"}], "label": "售价", "people": "2人", "includes": ["两份早餐", "免费停车"], "limits": ["需提前一天预订"]}}
 ```
 
 ---
@@ -900,10 +1035,20 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 <a id="storecard"></a>
 ## storeCard 门店/位置/到店指引
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "storeCard", "dur": 3,
+ "params": {"layout": "card", "name": "<店名>", "landmark": "<地铁口/商场楼层/镇村名>", "hours": "11:00–22:00"}}
+```
+
 讲清楚店在哪、几点开门、怎么过来，以及平台内怎么操作。**不设电话、微信、二维码、网址、门牌号字段**——这些信息本来就不该出现在画面上。三种布局：
-- `photo`：门头实拍横幅 + 信息卡，适合有门头照的门店。
-- `map`：代码画的抽象示意图（几条街道线 + 定位针 + 地铁点），不模仿任何地图 App 的界面风格，适合没有门头照或想强调「怎么走」的场景。
-- `card`：纯排版信息卡，没有照片也能用，最通用。
+- `photo`：门头实拍横幅 + 信息卡，适合有门头照的门店。没有照片时横幅自动换成插画场景，角标标「示意」，不会冒充实拍。
+- `map`：代码画的抽象示意图（街区色块 + 道路 + 定位针），每条路线画一条虚线从目的地连到店，目的地标签两行：「城东高铁站」/「驾车 25分钟」。landmark、hours、parking、pickup、badges、cta、disclaimer 放在图下方的信息条里。不模仿任何地图 App 的界面风格，适合想强调「怎么走」的场景。
+- `card`：纯排版信息卡，没有照片也能用，最通用。卡片高度跟内容走；内容少时上方自动补一条插画横幅（按行业：门头、民宿小屋……），不会留大片空白。
+
+**填了的字段都会上屏，不会静默丢掉**：routes 的 `to` 在 card 布局显示成「城东高铁站 · 驾车 25分钟」，在 map 布局显示成目的地标签。所以 `to` 要写真实地名（照抄 facts），不要写「这里」「附近」。
+
+`disclaimer` 和 `meta.notices` 里某一条相同（忽略空格和标点）时，画面只显示底部提示条那一份，不重复。
 
 ### 什么时候用
 - 需要讲清楚到店路线、营业时间、平台内操作提示的镜头（团购/到店类内容的收尾前一镜）。
@@ -920,35 +1065,38 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 | landmark | 否 | 14 字 | 地铁口/商场楼层/镇村名，不写门牌号 |
 | hours | 否 | 14 字 | 营业时间 |
 | photo | 否 | — | 门头照路径，`layout: "photo"` 时用，必须是商家实拍 |
-| routes | 否 | 0–4 项 | {to, mode, minutes, km}；mode 取步行/驾车/打车/公交/地铁/骑行/接驳车 |
+| routes | 否 | 0–4 项 | {to, mode, minutes, km}；to 是目的地（会上屏）；mode 取步行/驾车/打车/公交/地铁/骑行/接驳车（英文片也写中文值，画面自动换成 Walk/Drive…） |
 | basis | 否 | — | 导航估算（默认，会自动加小字说明）/ 实测 |
 | parking | 否 | 10 字 | 停车说明 |
 | pickup | 否 | 12 字 | 接站说明，收费的要写明金额 |
 | badges | 否 | ≤4 项，每项 8 字 | 如「一客一消毒」「预约制」 |
 | cta | 否 | 10 字 | 平台内操作提示，按发布平台取预设值 |
-| disclaimer | 否 | 16 字 | 免责小字；美业类目默认「生活美容 · 不提供医疗美容服务」 |
+| disclaimer | 否 | 16 字 | 免责小字；美业类目默认「生活美容 · 不提供医疗美容服务」；和 notices 重复时不显示 |
 
 ### 时长
-2.5–4 秒。
+2.5–4 秒；map 布局 3 条以上路线给到 3.5–4 秒。
 
 ### 好例子
 ```json
-{"type": "storeCard", "dur": 3, "caption": "桂园站B口，\n{步行3分钟就到}", "mood": 0.2,
- "params": {"layout": "photo", "name": "巷口面馆",
-   "landmark": "地铁2号线桂园站B口", "hours": "10:00-21:30",
+{"type": "storeCard", "dur": 3, "caption": "南湖站C口，\n{走过来3分钟}", "mood": 0.2,
+ "params": {"layout": "photo", "name": "街角汤面馆",
+   "landmark": "地铁5号线南湖站C口", "hours": "09:30–21:00",
    "photo": "photos/storefront.jpg",
-   "routes": [{"to": "地铁站", "mode": "步行", "minutes": 3}],
+   "routes": [{"to": "南湖站", "mode": "步行", "minutes": 3}],
    "cta": "点视频定位看团购"}}
 ```
 ```json
-{"params": {"layout": "map", "name": "巷口面馆",
-  "routes": [{"to": "地铁站", "mode": "地铁", "minutes": 8}, {"to": "公司", "mode": "打车", "minutes": 12}]}}
+{"type": "storeCard", "dur": 3.5, "caption": "高铁下来，\n{开车半小时}", "mood": 0.2,
+ "params": {"layout": "map", "name": "竹间茶舍", "landmark": "滨江步行街北口",
+  "routes": [{"to": "城东高铁站", "mode": "驾车", "minutes": 30}, {"to": "滨江公园站", "mode": "步行", "minutes": 6}],
+  "parking": "门口可停6辆"}}
 ```
 
 ### 坏例子
 - 在 `badges` 或任何字段里塞入「加微信」「扫码进群」「私信领券」：这个镜头不做站外导流，写了会被拦。
 - `layout: "photo"` 但 `photo` 的素材标了 `source: "ai"` 或不是商家实拍：门头照必须是商家自己的实拍。
 - `landmark` 写成完整门牌号（如「XX路88号3楼」）：改写成地铁口/商场楼层/镇村名这类不精确到门牌的说法。
+- routes 写 `{"to": "这里", ...}`：`to` 会上屏，要写真实地名。
 
 ### 参数速查（自动生成自 storeCard.spec.json）
 
@@ -962,7 +1110,7 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 | `hours` |  | 文字 | ≤14 字 |  |
 | `photo` |  | 文字 | 素材 png/jpg/jpeg/webp |  |
 | `routes` |  | 数组 | 0–4 项 |  |
-| `routes[].to` | 是 | 文字 | ≤8 字 |  |
+| `routes[].to` | 是 | 文字 | ≤8 字 | 目的地，会上屏（如「高铁站」「县城」「地铁2号线」） |
 | `routes[].mode` | 是 | 步行 / 驾车 / 打车 / 公交 / 地铁 / 骑行 / 接驳车 |  |  |
 | `routes[].minutes` | 是 | 数字 | 0–300 |  |
 | `routes[].km` |  | 数字 | 0–… |  |
@@ -977,13 +1125,20 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 示例（能直接通过校验）：
 
 ```json
-{"type": "storeCard", "dur": 3, "mood": 0.2, "params": {"layout": "card", "name": "巷口面馆", "landmark": "地铁2号线桂园站B口", "hours": "10:00–21:30", "routes": [{"to": "地铁站", "mode": "步行", "minutes": 3}], "basis": "导航估算"}}
+{"type": "storeCard", "dur": 3, "mood": 0.2, "params": {"layout": "map", "name": "竹间茶舍", "landmark": "滨江步行街北口", "hours": "11:00–22:00", "routes": [{"to": "滨江公园站", "mode": "步行", "minutes": 6}, {"to": "城东客运站", "mode": "打车", "minutes": 18}], "basis": "导航估算"}}
 ```
 
 ---
 
 <a id="reviewcard"></a>
 ## reviewCard 真实顾客评价
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "reviewCard", "dur": 3,
+ "params": {"quotes": [{"text": "面很筋道，汤也够热", "month": "2026-08", "stars": 5}], "evidence": "团购平台 2026-08 顾客评价原文，昵称已隐去"}}
+```
+评价原文照抄，`evidence` 写出处，不上屏；教培行业不开放。
 
 摘录真实顾客评价：大引号 + 原文 + 星级 + 月份，星星一颗一颗点亮（不是一次性贴一排）。1–2 条评价，不放真人头像，改用首字圆标。
 
@@ -1011,7 +1166,7 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 ### 好例子
 ```json
 {"type": "reviewCard", "dur": 3, "mood": 0.15,
- "params": {"quotes": [{"text": "汤很浓，肉给得实在", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
+ "params": {"quotes": [{"text": "排队不久，分量很足", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-01.png"}}
 ```
 ```json
 {"type": "reviewCard", "dur": 4.5, "mood": 0.15,
@@ -1042,13 +1197,19 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 示例（能直接通过校验）：
 
 ```json
-{"type": "reviewCard", "dur": 3, "mood": 0.15, "params": {"quotes": [{"text": "汤很浓，肉给得实在", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-screenshot-01.png"}}
+{"type": "reviewCard", "dur": 3, "mood": 0.15, "params": {"quotes": [{"text": "排队不久，分量很足", "month": "2026-08", "stars": 5}], "evidence": "reviews/2026-08-screenshot-01.png"}}
 ```
 
 ---
 
 <a id="factsheet"></a>
 ## factSheet 参数表 / 清单 / 大纲 / 考试信息 / 色卡
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "factSheet", "dur": 4,
+ "params": {"layout": "spec", "title": "课程信息", "rows": [{"key": "形式", "value": "录播课"}, {"key": "课时", "value": "20节"}]}}
+```
 
 五种排版共用一张卡，逐行点亮，主角是「信息被一条条证实」的过程，不是一次性摆满：
 - `spec`：规格参数表（key: value），画表格线
@@ -1117,8 +1278,8 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 | `layout` | 是 | spec / box / syllabus / exam / swatch |  |  |
 | `title` | 是 | 文字 | ≤12 字 |  |
 | `rows` | 是 | 数组 | 2–6 项 |  |
-| `rows[].key` | 是 | 文字 | ≤6 字 |  |
-| `rows[].value` | 是 | 文字 | ≤10 字 |  |
+| `rows[].key` |  | 文字 | ≤6 字 |  |
+| `rows[].value` |  | 文字 | ≤10 字 |  |
 | `rows[].qty` |  | 整数 | 0–… | box 布局专用 |
 | `rows[].isGift` |  | true/false |  | box 布局专用：赠品方块加「赠」角标 |
 | `rows[].no` |  | 文字 | ≤4 字 | syllabus 布局专用：章节号 |
@@ -1143,6 +1304,13 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 
 <a id="credcard"></a>
 ## credCard 资历卡 / 荣誉卡
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "credCard", "dur": 3,
+ "params": {"layout": "person", "name": "苏老师", "role": "数据分析讲师", "creds": ["企业财务分析出身"], "skills": ["表格建模", "图表表达"]}}
+```
+写了 years、creds 这类数字或资历时，要能在 meta.facts 里找到；honor 布局必须写 refs。
 
 用可核实的资历替代「名师」「金牌」这类空话。两种布局：
 - `person`：讲师、手艺人的资历卡——首字圆标（或本人已同意的照片）+ 姓名/角色/年限 + 资历逐条打勾 + 技能标签
@@ -1221,6 +1389,12 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 <a id="features"></a>
 ## features 卖点卡
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "features", "dur": 4,
+ "params": {"items": [{"icon": "doc", "title": "自动汇总", "desc": "聊天和文档一起整理"}, {"icon": "send", "title": "一键发送", "desc": "直接发到工作群"}]}}
+```
+
 2–4 张卖点卡按拍依次弹入（图标 + 标题 + 一句好处），黄色聚光框跟着「当前讲到的那张」移动；还没讲到的卡先显示成带序号的虚线框。
 
 ### 什么时候用
@@ -1284,6 +1458,12 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 <a id="steps"></a>
 ## steps 1-2-3 流程
 
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "steps", "dur": 4,
+ "params": {"items": [{"title": "连上日历"}, {"title": "点「生成」"}, {"title": "改两句发出"}]}}
+```
+
 一张流程卡：左边节点竖排，连线上的光点一步步往下跑，每到一步节点点亮、文字滑入；全部走完后每个节点打 ✓（叮一声）。表现「上手很简单」。
 
 ### 什么时候用
@@ -1344,6 +1524,12 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 
 <a id="quicklist"></a>
 ## quickList 快切列表
+
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "quickList", "dur": 3,
+ "params": {"items": [{"text": "周报"}, {"text": "会议纪要"}, {"text": "项目日报"}]}}
+```
 
 3–6 行白卡一拍一行、左右交替飞入；每行落定后右边「盖章」出判定：分数从 0 滚到目标值（可带判词），或一个彩色标签砸下来；左边色条按语气色长满。节奏快，情绪强。
 
@@ -1428,16 +1614,33 @@ card 2–4.5 秒；menu 不少于 3 秒（行数多给到 4–4.5 秒）。
 <a id="endcard"></a>
 ## endCard 片尾
 
-logo（meta.logo，没有就用 icon 图标圆盘）→ 产品名 → 两行大字口号 → 1–3 个卖点胶囊 → 可选行动号召。放最后一镜，不退场。
+**最小可用写法**（照抄改字即可通过校验）：
+```json
+{"type": "endCard", "dur": 4,
+ "params": {"brand": "周报助手", "slogan": "周五下午，\n{周报自己写好}"}}
+```
+`brand` 必须和 meta.product 一字不差。
+
+logo（meta.logo，没有就用 icon 图标圆盘）→ 产品名 → 两行大字口号 → 1–3 个卖点 → 可选行动号召。放最后一镜，不退场。整组内容以 y≈880 为中心往下放（下沿不过 y 1320），内容少时 logo 自动放大。
+
+### 三种版式
+| layout | 样子 |
+|---|---|
+| `stack` | 居中一列：logo → 品牌名胶囊 → 口号大字 → 卖点胶囊 → 行动号召 |
+| `panel` | 口号大字当标题放在上方，下面一张按内容长高的白卡：logo + 品牌名一行、卖点逐行打勾、行动号召按钮通栏 |
+| `spotlight` | 大 logo，背后一圈跟着节拍转的光芒；品牌名大字、口号、卖点排成一排小胶囊、行动号召 |
+
+**不写 layout 就按产品名自动挑一种**：同一个产品每次挑到的一样，不同产品大概率不同，一批片子的片尾不会长成一个样。没有卖点时不会挑 `panel`。
 
 ### 参数
 | 字段 | 必填 | 说明 |
 |---|---|---|
 | brand | 是 | 产品名（≤10） |
 | slogan | 是 | 口号，≤2 行、每行 ≤9 字，可用 \n 和 1 处 {}，建议第二行整句 {} |
-| points | 否 | ≤3 条卖点/承诺/适用范围，每条 ≤14 |
+| points | 否 | ≤3 条卖点/承诺/适用范围，每条 ≤14。和 meta.disclaimer、meta.notices 说同一句的会被自动去掉（不重复出现） |
 | cta | 否 | 获取方式（≤12）：原样照抄 meta.cta（= 简报「获取方式」原文），简报没写就不放；不许网址/二维码/账号 |
 | icon | 否 | 没有 logo 时的品牌图标，默认 sparkle |
+| layout | 否 | `stack` / `panel` / `spotlight`，不写自动挑 |
 
 **这一镜不写 caption。** mood 建议 0（冷色收尾）。时长 3–5 秒。
 
@@ -1447,6 +1650,14 @@ logo（meta.logo，没有就用 icon 图标圆盘）→ 产品名 → 两行大�
  "params": {"brand": "Jev 聊天助手", "slogan": "回消息之前，\n{先看懂对方}",
             "points": ["只给建议，不替你发送", "安卓可用 · 支持多款聊天软件"], "cta": "官网下载安卓版", "icon": "chat"}}
 ```
+```json
+{"type": "endCard", "dur": 4, "mood": 0,
+ "params": {"brand": "周会助手", "slogan": "散会的时候，\n{待办已经分好}", "layout": "panel",
+            "points": ["会上边说边记", "会后自动发给参会人"], "cta": "官网申请试用", "icon": "doc"}}
+```
+
+### 坏例子
+- 卖点写「演示数据，以实际为准」：顶部免责小字已经说了，这里再写就是同一句话出现两遍。
 
 ### 参数速查（自动生成自 endCard.spec.json）
 
@@ -1459,6 +1670,7 @@ logo（meta.logo，没有就用 icon 图标圆盘）→ 产品名 → 两行大�
 | `points` |  | 数组 | 0–3 项 | 卖点胶囊，每条 ≤14 字 |
 | `cta` |  | 文字 | ≤12 字 | 获取方式：原样照抄 meta.cta（简报原文），没有就不写；不许写网址/二维码/账号 |
 | `icon` |  | 文字 | 图标名 | 没有 meta.logo 时代替 logo 的图标，默认 sparkle |
+| `layout` |  | stack / panel / spotlight |  | 版式：stack 居中一列 / panel 口号当标题 + 白卡清单 / spotlight 大 logo + 光芒 + 一排小胶囊；不写就按产品名自动挑一种 |
 
 示例（能直接通过校验）：
 

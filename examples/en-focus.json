@@ -5,6 +5,7 @@
     "theme": "fresh-light",
     "lang": "en",
     "disclaimer": "Demo screens, sample data",
+    "demoData": true,
     "action": "Tap start → it blocks distracting apps",
     "cta": "Try it free"
   },
@@ -54,7 +55,7 @@
       "dur": 3,
       "caption": "One tap,\n{a calmer afternoon}",
       "mood": 0.4,
-      "params": {"value": 8, "from": 3, "max": 10, "label": "Focus score", "style": "gauge", "higherIs": "good", "word": "Great", "note": "Based on this session"}
+      "params": {"value": 8, "max": 10, "label": "Focus score", "style": "gauge", "higherIs": "good", "word": "Great", "note": "Based on this session"}
     },
     {
       "type": "endCard",

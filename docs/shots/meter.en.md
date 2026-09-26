@@ -1,5 +1,12 @@
 # meter gauge / score
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "meter", "dur": 3, "caption": "Your tone\n{sounds harsher}",
+ "params": {"value": 7, "max": 10, "label": "Tone", "higherIs": "bad", "word": "Harsh"}}
+```
+If the reading is the product's own judgement in a demo, set `"demoData": true` in meta and say "demo" in the disclaimer. If it is a result or score, the numbers must come from meta.facts and `refs` must point to that fact.
+
 One card: the gauge's name is at the top, a needle springs from a starting value to the target value in the middle, on the beat it lands the number bumps, a verdict pill pops up, and a hit sound plays; the next beat a closing line fades up from the bottom of the card (a skeleton bar "loads" before that). Colors are automatic by band: the riskier it gets the redder, or the better it gets the greener.
 
 ## When to use

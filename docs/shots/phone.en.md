@@ -1,5 +1,12 @@
 # phone screenshot + callouts
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "phone", "dur": 4, "caption": "Open it and see,\n{key points marked}",
+ "params": {"src": "assets/screen.png", "focus": [{"area": "middle", "label": "Key points marked", "style": "box"}]}}
+```
+Replace `src` with your own portrait screenshot; no screenshot → use mockApp.
+
 A centered phone frame holding a real screenshot or screen recording. 1–3 spots get circled one beat at a time, each with a short caption. The screenshot only lives inside the phone frame — it never zooms to full screen or shakes around.
 
 Three callout styles:

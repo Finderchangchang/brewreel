@@ -56,6 +56,9 @@ export const bump = (t: number, t0: number, dur = 0.45) => {
 /** 常驻漂浮（首帧装饰用，第 0 帧就在位） */
 export const float = (t: number, phase = 0, amp = 8, period = 1.6) => Math.sin((t / period) * Math.PI * 2 + phase) * amp;
 
+/** 卡拍脉冲：每拍起点为 1，随后指数衰减到接近 0（首帧装饰「跟着节拍动」用；beat = props.beat） */
+export const beatPulse = (t: number, beat = 0.5, decay = 5) => (beat > 0 && t >= 0 ? Math.exp(-((t % beat) / beat) * decay) : 0);
+
 /** 打字机：返回 t 时已经打出的文字 */
 export const typewriter = (text: string, t: number, t0: number, charSec = 0.1) => {
   const chars = Array.from(text);

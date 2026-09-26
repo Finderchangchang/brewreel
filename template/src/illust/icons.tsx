@@ -623,6 +623,218 @@ const TrainIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
   );
 };
 
+// ============================================================ 2026-09 补画（photoShot 兜底常用：保温杯/水瓶/肉丸/面碗特写/窗景/房型/短发/证书/门头/气泡） ============================================================
+
+const CertIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const rot = 6 * Math.sin((t * Math.PI * 2) / 1.6);
+  return (
+    <g>
+      <rect x={30} y={44} width={140} height={104} rx={10} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+      <rect x={42} y={56} width={116} height={80} rx={6} fill="none" stroke={stroke} strokeWidth={4} opacity={0.3} />
+      <line x1={68} y1={76} x2={132} y2={76} stroke={stroke} strokeWidth={7} strokeLinecap="round" />
+      <line x1={58} y1={96} x2={118} y2={96} stroke={stroke} strokeWidth={5} strokeLinecap="round" opacity={0.4} />
+      <line x1={58} y1={112} x2={104} y2={112} stroke={stroke} strokeWidth={5} strokeLinecap="round" opacity={0.4} />
+      <g transform={`rotate(${rot.toFixed(2)} 138 132)`}>
+        <path d="M126 140 L120 174 L134 164 L144 176 L146 142 Z" fill={fillPop} stroke={stroke} strokeWidth={5} strokeLinejoin="round" />
+        <circle cx={138} cy={132} r={20} fill={fillPop} stroke={stroke} strokeWidth={6} />
+        <circle cx={138} cy={132} r={9} fill="none" stroke={stroke} strokeWidth={4} opacity={0.6} />
+      </g>
+    </g>
+  );
+};
+
+const BubbleIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const dot = (i: number) => 0.3 + 0.7 * Math.max(0, Math.sin((t * Math.PI * 2) / 1.2 - i * 0.9));
+  return (
+    <g>
+      <path d="M40 56 a16 16 0 0 1 16 -16 h88 a16 16 0 0 1 16 16 v58 a16 16 0 0 1 -16 16 h-54 l-26 24 v-24 h-8 a16 16 0 0 1 -16 -16 Z" fill={fillMain} stroke={stroke} strokeWidth={SW} strokeLinejoin="round" />
+      {[0, 1, 2].map((i) => (
+        <circle key={i} cx={76 + i * 24} cy={86} r={9} fill={fillPop} stroke={stroke} strokeWidth={4} opacity={dot(i)} />
+      ))}
+    </g>
+  );
+};
+
+const StorefrontIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const sway = 1.5 * Math.sin((t * Math.PI * 2) / 1.6);
+  const glow = 0.45 + 0.3 * Math.sin((t * Math.PI * 2) / 1.4);
+  return (
+    <g>
+      <rect x={36} y={78} width={128} height={90} fill={fillMain} stroke={stroke} strokeWidth={SW} strokeLinejoin="round" />
+      <rect x={52} y={40} width={96} height={24} rx={6} fill={fillMain} stroke={stroke} strokeWidth={7} />
+      <line x1={72} y1={52} x2={128} y2={52} stroke={stroke} strokeWidth={5} strokeLinecap="round" opacity={0.4} />
+      <g transform={`skewX(${sway.toFixed(2)})`} style={{transformOrigin: '100px 64px'}}>
+        <path
+          d="M28 64 H172 L166 88 q-11 10 -22 0 q-11 10 -22 0 q-11 10 -22 0 q-11 10 -22 0 q-11 10 -22 0 q-11 10 -22 0 Z"
+          fill={fillPop}
+          stroke={stroke}
+          strokeWidth={7}
+          strokeLinejoin="round"
+        />
+      </g>
+      <rect x={52} y={104} width={40} height={34} rx={4} fill={fillPop} opacity={glow} stroke={stroke} strokeWidth={5} />
+      <rect x={108} y={104} width={40} height={64} rx={4} fill={fillMain} stroke={stroke} strokeWidth={6} />
+      <circle cx={140} cy={138} r={3.5} fill={stroke} />
+      <line x1={24} y1={168} x2={176} y2={168} stroke={stroke} strokeWidth={SW} strokeLinecap="round" />
+    </g>
+  );
+};
+
+const MeatballIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const balls: Array<[number, number]> = [
+    [70, 132],
+    [100, 136],
+    [130, 132],
+    [85, 108],
+    [115, 108],
+    [100, 84],
+  ];
+  const shine = 0.55 + 0.35 * Math.sin((t * Math.PI * 2) / 1.4);
+  return (
+    <g>
+      <Steam cx={100} top={62} t={t} stroke={stroke} w={30} />
+      <ellipse cx={100} cy={152} rx={76} ry={16} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+      {balls.map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r={18} fill={fillPop} stroke={stroke} strokeWidth={7} />
+          <circle cx={x - 6} cy={y - 6} r={5} fill={fillMain} opacity={shine} />
+        </g>
+      ))}
+    </g>
+  );
+};
+
+const NoodleCloseupIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const lift = 5 * Math.sin((t * Math.PI * 2) / 1.6);
+  return (
+    <g>
+      <Steam cx={62} top={70} t={t} stroke={stroke} w={24} />
+      <path d="M20 112 C20 100 180 100 180 112 C176 150 144 176 100 176 C56 176 24 150 20 112 Z" fill={fillMain} stroke={stroke} strokeWidth={SW} strokeLinejoin="round" />
+      <ellipse cx={100} cy={112} rx={80} ry={16} fill={fillPop} opacity={0.55} stroke={stroke} strokeWidth={6} />
+      <ellipse cx={60} cy={112} rx={16} ry={6} fill={fillPop} stroke={stroke} strokeWidth={4} />
+      <circle cx={138} cy={114} r={4} fill={stroke} opacity={0.5} />
+      <circle cx={126} cy={108} r={3} fill={stroke} opacity={0.5} />
+      <g transform={`translate(0 ${(-Math.abs(lift)).toFixed(2)})`}>
+        {[0, 1, 2].map((i) => (
+          <path
+            key={i}
+            d={`M${96 + i * 8} 64 q-8 12 0 24 q8 12 0 24`}
+            fill="none"
+            stroke={stroke}
+            strokeWidth={5}
+            strokeLinecap="round"
+          />
+        ))}
+        <line x1={150} y1={24} x2={96} y2={66} stroke={stroke} strokeWidth={7} strokeLinecap="round" />
+        <line x1={160} y1={34} x2={114} y2={68} stroke={stroke} strokeWidth={7} strokeLinecap="round" />
+      </g>
+    </g>
+  );
+};
+
+const CupIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const wave = (i: number) => 0.25 + 0.45 * Math.max(0, Math.sin((t * Math.PI * 2) / 1.4 - i * 0.8));
+  return (
+    <g>
+      <Sparkle cx={50} cy={60} t={t} fill={fillPop} r={9} />
+      {[0, 1, 2].map((i) => (
+        <path key={i} d={`M${146 + i * 12} 150 q-8 -14 0 -28 q8 -14 0 -28`} fill="none" stroke={stroke} strokeWidth={5} strokeLinecap="round" opacity={wave(i)} />
+      ))}
+      <path d="M84 50 q16 -20 32 0" fill="none" stroke={stroke} strokeWidth={7} strokeLinecap="round" />
+      <rect x={72} y={50} width={56} height={24} rx={8} fill={fillPop} stroke={stroke} strokeWidth={SW} />
+      <rect x={66} y={74} width={68} height={104} rx={16} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+      <rect x={66} y={98} width={68} height={16} fill={fillPop} opacity={0.85} stroke={stroke} strokeWidth={5} />
+      <line x1={80} y1={124} x2={80} y2={164} stroke={stroke} strokeWidth={5} strokeLinecap="round" opacity={0.3} />
+    </g>
+  );
+};
+
+const BottleIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const w = 5 * Math.sin((t * Math.PI * 2) / 1.3);
+  const lvl = 112;
+  const bub = (i: number) => 164 - (((t / 1.6 + i * 0.33) % 1) * 44);
+  return (
+    <g>
+      <rect x={82} y={30} width={36} height={18} rx={5} fill={fillPop} stroke={stroke} strokeWidth={7} />
+      <path d="M86 48 h28 v14 q20 6 20 26 v72 a16 16 0 0 1 -16 16 h-36 a16 16 0 0 1 -16 -16 v-72 q0 -20 20 -26 Z" fill={fillMain} stroke={stroke} strokeWidth={SW} strokeLinejoin="round" />
+      <path
+        d={`M72 ${lvl} q14 ${(-6 + w).toFixed(1)} 28 0 q14 ${(6 - w).toFixed(1)} 28 0 V160 a12 12 0 0 1 -12 12 h-32 a12 12 0 0 1 -12 -12 Z`}
+        fill={fillPop}
+        opacity={0.7}
+      />
+      {[0, 1, 2].map((i) => (
+        <circle key={i} cx={88 + i * 12} cy={bub(i).toFixed(1)} r={3.5} fill={fillMain} opacity={0.8} />
+      ))}
+    </g>
+  );
+};
+
+const WindowViewIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const sway = 3 * Math.sin((t * Math.PI * 2) / 1.8);
+  const sunY = 70 + 3 * Math.sin((t * Math.PI * 2) / 1.8 + 1);
+  return (
+    <g>
+      <rect x={28} y={28} width={144} height={138} rx={10} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+      <rect x={42} y={42} width={116} height={106} rx={4} fill={fillPop} opacity={0.22} />
+      <circle cx={126} cy={sunY.toFixed(1)} r={13} fill={fillPop} stroke={stroke} strokeWidth={5} />
+      <path d="M42 130 L74 88 L96 110 L120 84 L158 130 V148 H42 Z" fill={fillPop} stroke={stroke} strokeWidth={6} strokeLinejoin="round" />
+      <g transform={`rotate(${sway.toFixed(2)} 58 148)`} stroke={stroke} strokeLinecap="round">
+        <line x1={56} y1={148} x2={56} y2={70} strokeWidth={6} />
+        <line x1={50} y1={112} x2={62} y2={112} strokeWidth={4} opacity={0.6} />
+        <line x1={50} y1={90} x2={62} y2={90} strokeWidth={4} opacity={0.6} />
+        <path d="M56 84 q12 -8 20 -4" fill="none" strokeWidth={4} />
+      </g>
+      <path d={`M42 42 q${(14 + sway).toFixed(1)} 40 ${(4 + sway).toFixed(1)} 106 h-4 V42 Z`} fill={fillMain} stroke={stroke} strokeWidth={5} strokeLinejoin="round" />
+      <path d={`M158 42 q${(-14 - sway).toFixed(1)} 40 ${(-4 - sway).toFixed(1)} 106 h4 V42 Z`} fill={fillMain} stroke={stroke} strokeWidth={5} strokeLinejoin="round" />
+      <rect x={22} y={160} width={156} height={12} rx={4} fill={fillMain} stroke={stroke} strokeWidth={6} />
+    </g>
+  );
+};
+
+const RoomIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const glow = 0.35 + 0.3 * Math.sin((t * Math.PI * 2) / 1.6);
+  return (
+    <g>
+      <rect x={70} y={30} width={60} height={40} rx={4} fill={fillPop} opacity={0.3} stroke={stroke} strokeWidth={5} />
+      <path d="M78 62 L94 46 L106 58 L116 50 L124 62 Z" fill={fillPop} opacity={0.8} />
+      <circle cx={160} cy={92} r={22} fill={fillPop} opacity={glow} />
+      <path d="M150 80 h20 l6 18 h-32 Z" fill={fillPop} stroke={stroke} strokeWidth={5} strokeLinejoin="round" />
+      <line x1={160} y1={98} x2={160} y2={126} stroke={stroke} strokeWidth={5} />
+      <rect x={146} y={126} width={30} height={40} rx={4} fill={fillMain} stroke={stroke} strokeWidth={6} />
+      <rect x={24} y={86} width={112} height={40} rx={10} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+      <rect x={34} y={104} width={34} height={20} rx={7} fill={fillPop} stroke={stroke} strokeWidth={5} />
+      <rect x={76} y={104} width={34} height={20} rx={7} fill={fillPop} stroke={stroke} strokeWidth={5} />
+      <rect x={20} y={124} width={120} height={32} rx={8} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+      <line x1={24} y1={156} x2={24} y2={168} stroke={stroke} strokeWidth={7} strokeLinecap="round" />
+      <line x1={136} y1={156} x2={136} y2={168} stroke={stroke} strokeWidth={7} strokeLinecap="round" />
+      <line x1={12} y1={170} x2={188} y2={170} stroke={stroke} strokeWidth={5} strokeLinecap="round" opacity={0.3} />
+    </g>
+  );
+};
+
+const HairShortIcon: React.FC<IconProps> = ({fillMain, fillPop, stroke, t}) => {
+  const tilt = 2.5 * Math.sin((t * Math.PI * 2) / 1.8);
+  return (
+    <g>
+      <Sparkle cx={156} cy={56} t={t} fill={fillPop} r={11} />
+      <Sparkle cx={44} cy={80} t={t} fill={fillPop} r={7} phase={2} />
+      <path d="M44 180 q2 -40 56 -44 q54 4 56 44 Z" fill={fillMain} stroke={stroke} strokeWidth={SW} strokeLinejoin="round" />
+      <rect x={90} y={120} width={20} height={20} fill={fillMain} stroke={stroke} strokeWidth={6} />
+      <g transform={`rotate(${tilt.toFixed(2)} 100 130)`}>
+        <ellipse cx={100} cy={92} rx={30} ry={36} fill={fillMain} stroke={stroke} strokeWidth={SW} />
+        <path
+          d="M62 118 C54 70 70 40 100 40 C130 40 146 70 138 118 L126 118 C128 92 122 74 100 68 C82 74 74 86 74 118 Z"
+          fill={fillPop}
+          stroke={stroke}
+          strokeWidth={7}
+          strokeLinejoin="round"
+        />
+        <path d="M86 50 q-10 16 -12 34" fill="none" stroke={stroke} strokeWidth={4} opacity={0.4} strokeLinecap="round" />
+      </g>
+    </g>
+  );
+};
+
 // ============================================================ 注册表 ============================================================
 
 export const ICONS: Record<string, React.FC<IconProps>> = {
@@ -630,8 +842,14 @@ export const ICONS: Record<string, React.FC<IconProps>> = {
   '_base/subway': SubwayIcon,
   '_base/clock': ClockIcon,
   '_base/calendar': CalendarIcon,
+  '_base/cert': CertIcon,
+  '_base/bubble': BubbleIcon,
+  '_base/store': StorefrontIcon,
 
   'food/bowl': BowlIcon,
+  'food/noodle-bowl-closeup': NoodleCloseupIcon,
+  'food/meatball': MeatballIcon,
+  'food/storefront': StorefrontIcon,
   'food/coffee': CoffeeIcon,
   'food/tea': TeaIcon,
   'food/receipt': ReceiptIcon,
@@ -644,6 +862,8 @@ export const ICONS: Record<string, React.FC<IconProps>> = {
   'ecommerce/tag': TagIcon,
   'ecommerce/battery': BatteryIcon,
   'ecommerce/bag': BagIcon,
+  'ecommerce/cup': CupIcon,
+  'ecommerce/bottle': BottleIcon,
 
   'education/laptop': LaptopIcon,
   'education/sheet': SheetIcon,
@@ -658,6 +878,7 @@ export const ICONS: Record<string, React.FC<IconProps>> = {
   'beauty/tweezers': TweezersIcon,
   'beauty/comb': CombIcon,
   'beauty/chair': ChairIcon,
+  'beauty/hair-short': HairShortIcon,
 
   'travel/bed': BedIcon,
   'travel/window': WindowIcon,
@@ -665,4 +886,6 @@ export const ICONS: Record<string, React.FC<IconProps>> = {
   'travel/breakfast': BreakfastIcon,
   'travel/landscape': LandscapeIcon,
   'travel/train': TrainIcon,
+  'travel/window-view': WindowViewIcon,
+  'travel/room': RoomIcon,
 };

@@ -7,10 +7,11 @@
     "disclaimer": "演示画面以到店为准",
     "industry": "food",
     "platform": "shipinhao",
-    "action": "自助点单选桂花丝绒拿铁 → 出取号和取杯提醒",
+    "action": "到店点一杯桂花丝绒拿铁 → 现萃浓缩加自熬糖浆出杯",
     "facts": [
-      {"id": "f1", "text": "新品桂花丝绒拿铁使用现萃浓缩打底（依据：出品间操作记录，商家自证）"},
-      {"id": "f2", "text": "桂花糖浆为店内自熬，提前48小时腌渍桂花后熬煮（依据：后厨熬煮流程记录，商家自证）"}
+      {"id": "f1", "text": "新品桂花丝绒拿铁使用现萃浓缩打底", "source": "出品间操作记录（商家自证）"},
+      {"id": "f2", "text": "桂花糖浆为店内自熬，提前48小时腌渍桂花后熬煮", "source": "后厨熬煮流程记录（商家自证）"},
+      {"id": "f3", "text": "桂花丝绒拿铁默认甜度为5档里的第3档（微甜）", "source": "门店菜单标注"}
     ],
     "notices": ["图片仅供参考 以实物为准"]
   },
@@ -50,27 +51,25 @@
       "note": "行业插画兜底示例：这家虚构店没有真实后厨素材，用 food/steamer 插画代替实拍"
     },
     {
-      "type": "mockApp",
+      "type": "steps",
       "dur": 4,
       "mood": 0.25,
-      "caption": "选好这杯\n{一步}下单取号",
+      "caption": "到店点这杯，\n{三步就拿到}",
       "params": {
-        "kind": "editor",
-        "title": "自助点单",
-        "input": "桂花丝绒拿铁",
-        "button": "下单",
-        "items": [{"text": "取号 C3"}, {"text": "制作中", "tone": "warn"}, {"text": "到店取杯"}],
-        "done": "已下单",
-        "highlight": 1
+        "items": [
+          {"title": "柜台点单", "desc": "选好杯型和甜度", "icon": "check"},
+          {"title": "吧台制作", "desc": "浓缩打底加糖浆", "icon": "sparkle"},
+          {"title": "叫号取杯", "desc": "听到号码来拿", "icon": "bell"}
+        ]
       },
-      "note": "核心动作演示：用户在自助点单里选新品 → 出取号和制作状态"
+      "note": "餐饮是实物/门店行业，不用 mockApp 编点单界面；核心动作靠 photoShot + steps 演出来"
     },
     {
       "type": "meter",
       "dur": 2.5,
       "mood": 0.2,
       "caption": "甜度刻在\n{刚刚好}那格",
-      "params": {"value": 3, "max": 5, "label": "甜度", "style": "gauge", "higherIs": "good", "word": "微甜", "note": "带一点桂花蜜香尾韵"}
+      "params": {"refs": ["f3"], "value": 3, "max": 5, "label": "甜度", "style": "gauge", "higherIs": "good", "word": "微甜", "note": "带一点桂花蜜香尾韵"}
     },
     {
       "type": "priceCard",
@@ -94,7 +93,7 @@
       "params": {
         "brand": "浮光咖啡",
         "slogan": "这个秋天\n{先喝一口}再说",
-        "points": ["自助点单 出杯更快", "门店直营 用料透明"],
+        "points": ["秋季限定新品", "桂花香丝绒口感"],
         "icon": "sparkle"
       }
     }

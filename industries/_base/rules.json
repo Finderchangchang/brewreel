@@ -135,7 +135,11 @@
     {"fn": "compareHasBasis"},
     {"fn": "promoHasPeriod"},
     {"fn": "mediaPolicy"},
-    {"fn": "evidenceRefs"}
+    {"fn": "evidenceRefs"},
+    {"fn": "assetTruth"},
+    {"fn": "compareDirection"},
+    {"fn": "coreActionSurface"},
+    {"fn": "priceConditions"}
   ],
   "requiredNotices": [],
   "humanReview": [],

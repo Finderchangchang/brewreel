@@ -35,3 +35,13 @@ AI：使用 AI 配音（应提示发布时勾选"AI生成"声明）
 - "假一赔十"（brief.services 里没有，应拦截）
 - "比 XX 牌保温杯强多了"（贬低竞品；把 XX 牌加进 competitorBrands 后应拦截）
 - "12 小时保温"（没有测试条件和来源，应拦截或要求补 condition）
+
+## 测试环境说明（素材）
+
+- 上面列的照片、视频、截图文件**不随仓库提供**。用这份简报测试时，按「商家没有可用照片」处理：photoShot 的 media 写 `{"source": "drawn", "tag": "示意", "illust": "<插画 id>"}` 用插画兜底，不写「实拍」「顾客授权」「未修图」，不设 consent；beforeAfter 没有照片就不用，改用 steps。
+- 校验对插画兜底会放行，并在「需人工复核」里提醒；只有商家给了照片、片子却一张没用时才会拦。
+- 真出片时，把照片放进分镜目录，每个用到的文件都在 `meta.assets` 登记来源（merchant 商家实拍 / illustration 插画 / screenshot 截图），例如：
+
+```json
+"assets": [{"src": "photos/<商品主图>.jpg", "source": "merchant"}, {"src": "screens/<详情页截图>.png", "source": "screenshot"}]
+```

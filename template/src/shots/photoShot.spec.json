@@ -1,12 +1,13 @@
 {
   "type": "photoShot",
-  "purpose": "实拍照片或短视频：放商家实拍的菜品/商品/作品/房间/公区/后厨片段，叠上菜名、价签、卖点。非软件行业的主力镜头；没有照片时不画拟真实物、不调用 AI 生图，换成本行业的插画信息卡兜底（见 template/src/illust）。",
+  "purpose": "实拍照片或短视频：放商家实拍的菜品/商品/作品/房间/公区/后厨片段，叠上菜名、价签、卖点。非软件行业的主力镜头；没有照片时不画拟真实物、不调用 AI 生图，换成整卡插画场景兜底（主插画约 480px + 同行业小道具飘入 + 慢推 + 粒子，角标固定「示意」，见 template/src/illust）。",
   "tips": [
     "layout=hero 单张全屏缓推（media 1 项）/ clip 单段视频（1 项）/ grid 2–4 张拼贴 / callouts 商品图加引线圈注（配 callouts 字段）/ tour 2–5 张依次出现",
     "media 每项要写 source（merchant 商家实拍 / ai AI生成 / drawn 代码绘制插画）和 tag（实拍 / 示意 / 效果图）；source=ai 时 tag 必须是「效果图」，画面会自动加「AI生成 · 效果示意」角标",
     "refs 指向 meta.facts 里条目的 id，给「现熬」「开了10年」这类说法当依据；没有依据就别写这类说法",
     "没有照片时不要用这个镜头硬凑：按行业换成插画信息卡（features/steps/quickList 挂 illust 图标），或直接跳过这一镜",
-    "确实要用插画兜底某一张时，这一项写 \"source\": \"drawn\"，不用给 src，改给 illust（如 \"food/bowl\"）；不写 illust 就按 meta.industry 出一张默认插画",
+    "确实要用插画兜底某一张时，这一项写 \"source\": \"drawn\"、\"tag\": \"示意\"，不用给 src，改给 illust；illust 要和这张图说的东西对得上：肉丸 food/meatball、牛肉面 food/noodle-bowl-closeup、保温杯 ecommerce/cup、水瓶 ecommerce/bottle、房型 travel/room、窗景 travel/window-view、发型作品 beauty/hair-short、证书 _base/cert、门头 food/storefront",
+    "不写 illust 时按这一张的 label 和镜头 title 里的关键词自动挑图（如「鲜肉丸子」→ food/meatball），都没命中才按 meta.industry 出默认图；插画兜底的角标一律显示「示意」，tag 写「实拍」也不会照抄",
     "月份/季节相关的画面（如「10月实拍」）要给对应 media 项写 month（1–12）"
   ],
   "dur": {"default": 2.5, "min": 1.2, "max": 12},
@@ -30,7 +31,7 @@
             "src": {"type": "string", "format": "asset", "accept": ["png", "jpg", "jpeg", "webp", "mp4"], "description": "商家实拍/AI生成的图或视频；source=drawn 时不填 src，改填 illust"},
             "kind": {"type": "string", "enum": ["image", "video"], "description": "不写按扩展名判断"},
             "source": {"type": "string", "enum": ["merchant", "ai", "drawn"], "description": "merchant 商家实拍 / ai AI 生成 / drawn 代码绘制（插画兜底，不需要 src）"},
-            "illust": {"type": "string", "format": "illust", "description": "source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 meta.industry 给默认图"},
+            "illust": {"type": "string", "format": "illust", "description": "source=drawn 时选一张插画（见 template/src/illust/names.json）；不写就按 label/title 关键词挑，再按 meta.industry 给默认图"},
             "tag": {"type": "string", "enum": ["实拍", "示意", "效果图"], "description": "source=ai 时必须是「效果图」"},
             "month": {"type": "integer", "minimum": 1, "maximum": 12, "description": "季节/天气景观画面必填，渲染成「N月实拍」"},
             "label": {"type": "string", "maxLen": 8, "description": "房型/位置名/款式名"},
@@ -72,9 +73,9 @@
     "dur": 2.5,
     "params": {
       "layout": "hero",
-      "media": [{"src": "sample-screen.png", "source": "merchant", "tag": "实拍", "label": "招牌款"}],
-      "title": "招牌菜一份",
-      "tagline": "现点现做",
+      "media": [{"source": "drawn", "tag": "示意", "illust": "food/noodle-bowl-closeup"}],
+      "title": "招牌汤面",
+      "tagline": "一人份刚刚好",
       "badge": "招牌"
     }
   }

@@ -1,7 +1,14 @@
 # counter rolling number
 
+**Minimal valid JSON** (copy it, change the text, and it passes validation):
+```json
+{"type": "counter", "dur": 3, "caption": "Teams already\n{use it every week}",
+ "params": {"to": 1200, "label": "Teams using it"}}
+```
+The number must come from a real fact in meta.facts, e.g. `{"id": "f1", "text": "1200 teams use it as of 2026-08", "source": "Admin stats, 2026-08"}`. No number in the brief → do not use counter.
+
 One card: an icon → a big number rolls from `from` to `to` (a ticking sound, a progress bar moving underneath) → on the beat it lands the number bumps, rays flash out, a ding plays → below it, `label` explains what the number means and `sub` gives its basis.
-Set `showFrom: true` and the old value shows above the number first, gets struck through right before it lands, and a change-amount pill is calculated automatically (e.g. "↓ 87%," "↑ 3x").
+Set `showFrom: true` and the old value shows above the number first. For money (¥ / $ / 元 …) the old value is struck through right before the number lands and a change pill is calculated automatically (e.g. "↓ 87%"). For other units (minutes, ℃ …) there is no strike-through and no percentage; the bar under the number sweeps from the old level to the new one.
 
 ## When to use
 
@@ -10,7 +17,7 @@ Set `showFrom: true` and the old value shows above the number first, gets struck
 
 ## When not to use
 
-- The number has no source or no clear basis: don't use it. If the brief gives you a number and a source, copy it into `meta.facts` verbatim first, then use it here; if it's purely illustrative, write "sample data, actual results vary" in `sub`. Don't invent your own source like "internal testing" (validation blocks this).
+- The number has no source or no clear basis: don't use counter (validation blocks it). If the brief gives you a number and a source, copy it into `meta.facts` (with `source`) first, then use it here. A number marked as sample data can't be shown in counter as a result; if the brief has no number, use compare and compare the process instead ("3 fewer steps", "no app switching"). Don't invent a source like "internal testing".
 - Comparing several things at once: use compare.
 - Scoring something out of a max (like a 1–10 score): use meter.
 
@@ -25,7 +32,7 @@ Set `showFrom: true` and the old value shows above the number first, gets struck
 | decimals | No | 0–2 | Decimal places, defaults to 0 |
 | prefix | No | 2 chars | Symbol before the number, e.g. "$," "+" |
 | suffix | No | 3 chars | Unit, e.g. "%," "x," "min" |
-| sub | No | 16 chars | Small-print basis/source: only write a source the brief actually gave you; if none, write "sample data, actual results vary" |
+| sub | No | 16 chars | Small-print basis/source: copy the `source` of that fact in meta.facts, e.g. "User survey, Aug 2026" |
 | icon | No | icon name | Icon above the number, defaults to `trend` |
 | tone | No | — | Number color: `accent` theme color (default) / `good` green / `bad` red |
 
@@ -37,12 +44,12 @@ Set `showFrom: true` and the old value shows above the number first, gets struck
 
 ```json
 {"type": "counter", "dur": 3, "caption": "No more late-night reports,\n{done in minutes}", "mood": 0.2,
- "params": {"from": 45, "to": 6, "suffix": "min", "showFrom": true, "label": "Per weekly report", "sub": "sample data, actual results vary", "icon": "clock", "tone": "good"}}
+ "params": {"from": 45, "to": 6, "suffix": "min", "showFrom": true, "label": "Per weekly report", "sub": "User survey, Aug 2026", "icon": "clock", "tone": "good"}}
 ```
 
 ```json
 {"type": "counter", "dur": 3, "caption": "Repeat orders\n{more than doubled}", "mood": 0.2,
- "params": {"to": 12800, "prefix": "$", "label": "Monthly repeat revenue", "sub": "sample data, actual results vary", "icon": "money"}}
+ "params": {"to": 12800, "prefix": "$", "label": "Monthly repeat revenue", "sub": "Admin stats, Aug 2026", "icon": "money"}}
 ```
 
 ## Bad examples

@@ -9,10 +9,10 @@
     "platform": "shipinhao",
     "action": "看中枫林大床房 → 价格和入住时间同屏说清",
     "facts": [
-      {"id": "f1", "text": "枫林大床房：可住2人，周日至周四328元/晚，周五周六398元/晚，法定节假日468元/晚，含双早（2026-09 现行价目表）"},
-      {"id": "f2", "text": "早餐由主人家手工准备，含在房价内（示例数据）"},
-      {"id": "f3", "text": "云溪高铁站驾车约35分钟；云溪县城驾车约20分钟（导航估算）"},
-      {"id": "f4", "text": "2024年开业，今年是第3年（示例数据，依据营业执照成立日期）"}
+      {"id": "f1", "text": "枫林大床房：可住2人，周日至周四328元/晚，周五周六398元/晚，法定节假日468元/晚，含双早", "source": "2026-09 现行价目表"},
+      {"id": "f2", "text": "早餐由主人家手工准备，含在房价内", "source": "店主提供（简报）"},
+      {"id": "f3", "text": "云溪高铁站驾车约35分钟；云溪县城驾车约20分钟", "source": "导航估算"},
+      {"id": "f4", "text": "共8间独栋客房，2024年开业", "source": "营业执照与店主提供（简报）"}
     ],
     "notices": ["周末及节假日价格另计，以下单页为准"]
   },
@@ -22,27 +22,7 @@
       "dur": 2,
       "caption": "高铁站附近，\n藏着{一片枫树林}",
       "mood": 0.35,
-      "params": {"visual": "stat", "text": "328元", "sub": "住一晚含双早", "badge": "含双早"}
-    },
-    {
-      "type": "mockApp",
-      "dur": 3,
-      "caption": "问一句有没有房，\n{价格当场就说清}",
-      "mood": 0.25,
-      "params": {
-        "kind": "editor",
-        "title": "查日期",
-        "input": "11月周末有房吗",
-        "button": "查询",
-        "items": [
-          {"text": "枫林大床房", "value": "有房"},
-          {"text": "周五周六", "value": "398元"},
-          {"text": "含双早", "value": "已含"}
-        ],
-        "highlight": 1,
-        "done": "已查到"
-      },
-      "note": "核心动作演示：用户查日期 → 产品当场给出房型和价格（isDemo() 目前只认 chat/phone/mockApp，不认 photoShot，见返回里的发现）"
+      "params": {"visual": "illust", "illust": "travel/window-view", "text": "推开窗就是枫树林", "badge": "含双早 · 住2人"}
     },
     {
       "type": "photoShot",
@@ -123,12 +103,13 @@
     {
       "type": "compare",
       "dur": 4,
-      "caption": "平日周末，\n{价格差多少}",
+      "caption": "哪天来住，\n{价格差多少}",
       "mood": 0.15,
       "params": {
         "mode": "lr",
-        "left": {"title": "平日", "items": ["人少更清静", "好订房"], "tone": "neutral", "icon": "clock", "stat": "328元"},
-        "right": {"title": "周末", "items": ["气氛更热闹", "建议早订"], "tone": "neutral", "icon": "calendar", "stat": "398元"},
+        "left": {"title": "周日至周四", "items": ["人少更清静", "好订房"], "tone": "neutral", "icon": "clock", "stat": "328元"},
+        "right": {"title": "周五周六", "items": ["气氛更热闹", "建议早订"], "tone": "neutral", "icon": "calendar", "stat": "398元"},
+        "refs": ["f1"],
         "verdict": "错峰更划算"
       }
     },

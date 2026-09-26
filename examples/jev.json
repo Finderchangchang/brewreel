@@ -4,6 +4,7 @@
     "product": "Jev 聊天助手",
     "theme": "warm-emotion",
     "disclaimer": "演示场景，对话为模拟",
+    "demoData": true,
     "action": "分析对话 → 给出判断和推荐回复",
     "cta": "官网下载安卓版"
   },

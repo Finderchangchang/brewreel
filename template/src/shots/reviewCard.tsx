@@ -2,6 +2,8 @@ import React from 'react';
 import {bump, pop} from '../core/anim';
 import {emWidth} from '../core/fit';
 import {FONT, MONO} from '../core/font';
+import {pick} from '../core/kit';
+import type {Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
@@ -43,7 +45,8 @@ const fitQuote = (text: string, w: number, maxLines: number, big: boolean) => {
   return minSize;
 };
 
-const initial = (who?: string) => (who && who.trim() ? Array.from(who.trim())[0] : '评');
+// 头像里的首字：英文名取首字母大写；没写 who 时按 meta.lang 给占位字
+const initial = (who: string | undefined, lang: Lang | undefined) => (who && who.trim() ? Array.from(who.trim())[0].toUpperCase() : pick(lang, '评', '★'));
 
 // ---------- 一颗星（自绘：Icon 组件恒 fill=none，评分需要「实心」效果） ----------
 const Star: React.FC<{size: number; filled: boolean; color: string; empty: string; scale: number}> = ({size, filled, color, empty, scale}) => (
@@ -53,7 +56,7 @@ const Star: React.FC<{size: number; filled: boolean; color: string; empty: strin
 );
 
 // ---------- 一张评价卡 ----------
-const ReviewOne: React.FC<{q: Quote; t: number; at: number; w: number; h: number; big: boolean}> = ({q, t, at, w, h, big}) => {
+const ReviewOne: React.FC<{q: Quote; t: number; at: number; w: number; h: number; big: boolean; lang?: Lang}> = ({q, t, at, w, h, big, lang}) => {
   const th = useTheme();
   if (t < at) return null;
   const enter = pop(t, at, 14, 170);
@@ -116,11 +119,11 @@ const ReviewOne: React.FC<{q: Quote; t: number; at: number; w: number; h: number
               flex: 'none',
             }}
           >
-            {initial(q.who)}
+            {initial(q.who, lang)}
           </div>
           <div style={{display: 'flex', flexDirection: 'column', minWidth: 0}}>
             {q.who && <div style={{fontSize: big ? 32 : 28, fontWeight: 800, color: th.cardText, whiteSpace: 'nowrap'}}>{q.who}</div>}
-            {q.month && <div style={{fontSize: big ? 28 : 25, color: th.cardMuted, whiteSpace: 'nowrap'}}>{q.month}</div>}
+            {q.month && <div style={{fontSize: big ? 28 : 26, color: th.cardMuted, whiteSpace: 'nowrap'}}>{q.month}</div>}
           </div>
         </div>
         {stars > 0 && (
@@ -138,7 +141,7 @@ const ReviewOne: React.FC<{q: Quote; t: number; at: number; w: number; h: number
   );
 };
 
-const ReviewCard: React.FC<ShotProps<P>> = ({params: p, t, beat}) => {
+const ReviewCard: React.FC<ShotProps<P>> = ({params: p, t, beat, meta}) => {
   const quotes = (p.quotes ?? []).slice(0, 2);
   const n = Math.max(1, quotes.length);
   const g = geom(n);
@@ -147,7 +150,7 @@ const ReviewCard: React.FC<ShotProps<P>> = ({params: p, t, beat}) => {
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
       {quotes.map((q, i) => (
         <div key={i} style={{position: 'absolute', left: CARD.x0, top: g.y0 + i * (g.cardH + GAP), width: CARD.w, height: g.cardH}}>
-          <ReviewOne q={q} t={t} at={at[i]} w={CARD.w} h={g.cardH} big={n === 1} />
+          <ReviewOne q={q} t={t} at={at[i]} w={CARD.w} h={g.cardH} big={n === 1} lang={meta?.lang} />
         </div>
       ))}
     </div>

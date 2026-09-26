@@ -25,7 +25,7 @@ const Grid: React.FC<{industry?: string}> = ({industry}) => {
   return (
     <AbsoluteFill style={{background: th.bgBot[0], fontFamily: FONT, padding: 28, boxSizing: 'border-box'}}>
       <div style={{fontSize: 40, fontWeight: 900, color: th.onBg, marginBottom: 20}}>
-        IllustLab{industry ? ` · ${industry}` : ''}（{list.length} 个）
+        IllustLab{industry ? ` · ${industry}` : ''} ({list.length})
       </div>
       <div style={{display: 'grid', gridTemplateColumns: `repeat(${cols}, ${cell}px)`, gap: 14}}>
         {list.map((n) => (

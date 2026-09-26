@@ -1,5 +1,5 @@
 {
-  "name": "变身对比结构：已授权前后对比、起价列清加价项、生活美容声明齐全",
+  "name": "变身对比结构：已授权前后对比（素材清单登记为同一位顾客的前后两张）、起价列清加价项、生活美容声明齐全",
   "storyboard": {
     "meta": {
       "title": "t",
@@ -12,6 +12,22 @@
       ],
       "notices": [
         "生活美容 · 不提供医疗美容服务"
+      ],
+      "assets": [
+        {
+          "src": "_assets/photo-a.png",
+          "source": "merchant",
+          "kind": "customer-before",
+          "pair": "A",
+          "note": "顾客书面授权，未修图"
+        },
+        {
+          "src": "_assets/photo-b.png",
+          "source": "merchant",
+          "kind": "customer-after",
+          "pair": "A",
+          "note": "顾客书面授权，未修图"
+        }
       ]
     },
     "shots": [
@@ -51,11 +67,11 @@
         "mood": 0.3,
         "params": {
           "before": {
-            "src": "b1.jpg",
+            "src": "_assets/photo-a.png",
             "label": "之前"
           },
           "after": {
-            "src": "a1.jpg",
+            "src": "_assets/photo-b.png",
             "label": "之后"
           },
           "consent": true,

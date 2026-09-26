@@ -23,3 +23,12 @@ Adult vocational skills (office software, AI tools, certification prep). **K12 /
 "Results vary by individual"; for exam-prep: "Exam outcome depends on the candidate; this course does not guarantee passing"; "Demo data is fictional" on any mock screen; "AI-assisted content" if AI voice is used.
 
 See `test-brief.md` / `expected.md` for a worked example.
+
+<!-- round5 -->
+## Show the core action inside the software (enforced)
+- At least one `chat` / `phone` (real screenshot) / `mockApp` shot must act out meta.action; feature cards and step cards don't count.
+- `mockApp` with `kind: "form"` is only for products that really are forms (sign-up, registration, booking). Using a form to stand in for the core action is blocked (e.g. a reply assistant turning "message arrives → analysis → reply" into a form with "emotion tag / danger level" fields).
+- If meta.action is about messages / chat / replies, use `chat` (or a real `phone` screenshot) so the message itself appears on screen.
+- If meta.action is not conversational (e.g. "tap start → distracting apps are blocked"), don't stage it as a chat thread; use `mockApp` with `button` / `done`.
+- When both `compare` columns have a `level`, the `tone: "good"` column must score better on the `meterLabel` scale ("麻烦程度"/effort: good column lower; "效率"/efficiency: good column higher).
+- For a skills course (e.g. "type the first row, press Ctrl+E → the column splits"), act it out in `mockApp` with the key press and the sheet changing, never with a form.

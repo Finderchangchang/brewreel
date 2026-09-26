@@ -22,3 +22,12 @@ priceCard 需要同屏写「划线价为前7日最低成交价 79元」「需领
 ## 已知限制
 - `meta.platform` 目前 schema 只支持 `douyin`/`shipinhao`/`generic`，设计里更细的 `douyin_cart`/`channels_cart` 等取值本阶段统一按 `douyin` 处理，见 `rules.json` 里的说明。
 - `priceMatchesBrief` 只做 storyboard 内部一致性核对，不对照 `test-brief.md` 的价格表（无 brief 加载器）。
+
+<!-- round5 -->
+## round5 新增检查（对应 tests/rules/ecommerce/04–06）
+- **compare 刻度方向**（`compareDirection`）：评审连续两轮出现「保温时间」普通杯 8/10（红）、暖屿杯 2/10（绿）——观众会读成普通杯更保温。现在 `tone: good` 那栏在 `meterLabel` 这把尺子上不更优就拦（`04-compare-reversed.json`）；尺子方向优先看 `params.higherIs`，没写就按词判断（保温时长越高越好，降温速度越高越差），判断不出只提醒。
+- **券后条件**（`priceConditions`）：fact「领 20 元店铺券后 59 元/只」→ 价格卡要写领券条件和活动截止日（10月7日），片尾「现价59元」也拦，要写「领券后59元」（`05-coupon-dropped.json`）。
+- **截图不能当实拍**（`assetTruth`）：素材清单登记为 `screenshot` 的详情页截图放进 photoShot 还标「实拍」会被拦（`06-screenshot-as-photo.json`），截图用 `phone`。
+- **核心动作**：电商实物用 photoShot（实拍或插画）演示，`mockApp` 编界面直接拦。
+
+priceCard 需要同屏写「需领取20元店铺券」「9.26–10.7」，`00-compliant.json` 已按这个写法通过。

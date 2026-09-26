@@ -4,6 +4,7 @@
   "version": "2026-09-26",
   "note": "成人职业技能课（办公软件、AI 应用、考证）。K12/学龄前/少儿兴趣课一律不做，命中即整份拒绝。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
   "enabledShots": ["hook", "mockApp", "compare", "factSheet", "credCard", "steps", "chat", "priceCard", "features", "quickList", "endCard"],
+  "coreAction": {"surface": "ui", "note": "核心动作在产品自己的界面里演示（chat / phone 真截图 / mockApp）；mockApp kind=form 只给本来就是填表的产品，见 scripts/checks/core-action.mjs"},
   "disabledShots": ["reviewCard"],
   "mediaPolicy": {"shots": ["credCard"], "allowSources": ["merchant"]},
   "rejectBrief": [
