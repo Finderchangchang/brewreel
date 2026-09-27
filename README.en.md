@@ -80,7 +80,7 @@ These 9 storyboards are in `examples/` (all in the cards recipe); the quiz and j
 | Way to use it | Status | Notes |
 |---|---|---|
 | AI coding assistants that read `SKILL.md`: Claude Code, Codex, opencode and others | ✅ Ready | Install the repo as a skill; the assistant follows `SKILL.md` to write the storyboard, validate and render |
-| DeepSeek Harness plugin `dsh-brewreel` | ⚠️ Installable from the repo folder | 7 tools validate, render and verify; not yet tested against a real DeepSeek model, npm package coming soon |
+| DeepSeek Harness plugin `dsh-brewreel` | ⚠️ Published on npm | 7 tools validate, render and verify; not yet tested against a real DeepSeek model |
 | Agent-free script `scripts/llm_make.py` | ✅ Ready | Calls an OpenAI-compatible endpoint (DeepSeek by default): brief in, video out, validator errors fed back automatically |
 
 | Environment | Requirement |
@@ -141,16 +141,15 @@ On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of t
 
 This repository ships a DeepSeek Harness (dsh) plugin in [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.en.md), package name `dsh-brewreel` (formerly `dsh-distill-video`; to upgrade from it, see "Upgrading from dsh-distill-video" in the plugin README). With it installed, the model writes the storyboard by following the skill, and validates, renders and verifies through the plugin's tools instead of assembling `node scripts/…` commands. Rendering runs in the background with progress, and the plugin restricts output paths and the environment variables child processes receive.
 
-It needs **dsh 0.1.7-rc.2 or later** within 0.1.x. dsh's `latest` tag on npm still points to the older 0.1.5-rc.3, so pin the version when installing. You also need Node.js 22.x from 22.19, or 24 and later, plus pnpm (`dsh plugin` installs plugins through pnpm). Install from the GitHub repository folder:
+It needs **dsh 0.1.7-rc.2 or later** within 0.1.x. dsh's `latest` tag on npm still points to the older 0.1.5-rc.3, so pin the version when installing. You also need Node.js 22.x from 22.19, or 24 and later, plus pnpm (`dsh plugin` installs plugins through pnpm). Install from npm:
 
 ```bash
 npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm    # if dsh is not installed yet
-git clone https://github.com/Finderchangchang/brewreel.git
-dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
+dsh plugin --profile web add dsh-brewreel
 dsh web
 ```
 
-Run the third command from the folder that contains the clone. `web` can be any profile name; if the profile is already running, restart it for the change to apply. On first use, ask the model to "check the video plugin environment": it calls doctor, and after you agree, calls setup to install the render dependencies (a few hundred MB, plus about 110 MB for Chrome Headless Shell). The npm package `dsh-brewreel` is **coming soon**; once it's published, `dsh plugin --profile web add dsh-brewreel` will work directly. The plugin has not yet been tested against a real DeepSeek model; please open an issue if you hit problems.
+`web` can be any profile name; if the profile is already running, restart it for the change to apply. On first use, ask the model to "check the video plugin environment": it calls doctor, and after you agree, calls setup to install the render dependencies (a few hundred MB, plus about 110 MB for Chrome Headless Shell). To use unreleased code from the repository, clone it and run `dsh plugin --profile web add ./brewreel/integrations/deepseek-harness` from the folder that contains the clone. The plugin has not yet been tested against a real DeepSeek model; please open an issue if you hit problems.
 
 <details>
 <summary><b>The 7 tools, license note and security notes</b></summary>
@@ -426,7 +425,7 @@ brewreel/
 - **quiz / journey not re-tested after the fixes**: each recipe was tested with 3 videos and the problems the review listed were fixed, and the sample storyboards passed validation and delivery checks again; but the cheap model has not re-run a scored round, so the published scores are still from before the fixes. Nobody has listened to journey's music and sound effects yet.
 - **No voice-over**: there is no TTS yet, only captions, music and sound effects.
 - **Illustrations only without real photos**: with no merchant photos, the visuals come from components and illustrations, which hurts industry videos most.
-- **The DeepSeek Harness plugin has not been tested against a real DeepSeek model yet**; the npm package is coming soon.
+- **The DeepSeek Harness plugin has not been tested against a real DeepSeek model yet**.
 - **Not supported**: medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.
 
 **Main remaining problems** (issues with concrete counter-examples are welcome):

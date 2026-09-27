@@ -80,7 +80,7 @@
 | 用法 | 状态 | 说明 |
 |---|---|---|
 | Claude Code / Codex / opencode 等能读 `SKILL.md` 的 AI 编程助手 | ✅ 可用 | 把仓库装成 skill，助手照 `SKILL.md` 写分镜、跑校验、出片 |
-| DeepSeek Harness 插件 `dsh-brewreel` | ⚠️ 可从仓库目录安装 | 7 个工具负责校验、出片、核对；还没接真实 DeepSeek 模型实测，npm 包即将上线 |
+| DeepSeek Harness 插件 `dsh-brewreel` | ⚠️ 已发布到 npm | 7 个工具负责校验、出片、核对；还没接真实 DeepSeek 模型实测 |
 | 无 agent 脚本 `scripts/llm_make.py` | ✅ 可用 | 直接调 OpenAI 兼容接口（默认 DeepSeek），简报进、视频出，校验报错自动回喂重试 |
 
 | 运行环境 | 要求 |
@@ -141,16 +141,15 @@ Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上都是�
 
 仓库自带一个 DeepSeek Harness（dsh）插件，放在 [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.md)，包名 `dsh-brewreel`（原名 `dsh-distill-video`，从旧版升级见插件 README 的「从 dsh-distill-video 升级」）。装上后，模型照着 skill 写分镜，校验、出片、核对都调插件的工具完成，不用自己拼 `node scripts/…` 命令；出片在后台跑、报进度，输出路径和子进程拿到的环境变量都受插件限制。
 
-需要 **dsh 0.1.7-rc.2 或更高**的 0.1.x。npm 上 dsh 的 `latest` 标签目前还指向更早的 0.1.5-rc.3，所以安装时要写明版本号。另外要有 Node.js 22.19+ 的 22.x 或 24+，以及 pnpm（`dsh plugin` 靠 pnpm 装插件）。从 GitHub 仓库目录安装：
+需要 **dsh 0.1.7-rc.2 或更高**的 0.1.x。npm 上 dsh 的 `latest` 标签目前还指向更早的 0.1.5-rc.3，所以安装时要写明版本号。另外要有 Node.js 22.19+ 的 22.x 或 24+，以及 pnpm（`dsh plugin` 靠 pnpm 装插件）。从 npm 安装：
 
 ```bash
 npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm    # 还没装 dsh 时
-git clone https://github.com/Finderchangchang/brewreel.git
-dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
+dsh plugin --profile web add dsh-brewreel
 dsh web
 ```
 
-第三条命令在 clone 的上一级目录执行；`web` 可以换成你自己的 profile 名，profile 已经在运行的要重启才生效。第一次用时对模型说「检查一下视频插件环境」，它会调 doctor，经你同意后再调 setup 装渲染依赖（约几百 MB，外加约 110 MB 的 Chrome Headless Shell）。npm 包 `dsh-brewreel` **即将上线**，发布后可以直接 `dsh plugin --profile web add dsh-brewreel`。插件还没接真实 DeepSeek 模型实测，遇到问题请开 issue。
+`web` 可以换成你自己的 profile 名，profile 已经在运行的要重启才生效。第一次用时对模型说「检查一下视频插件环境」，它会调 doctor，经你同意后再调 setup 装渲染依赖（约几百 MB，外加约 110 MB 的 Chrome Headless Shell）。想用仓库里还没发版的代码，可以 clone 后在上一级目录执行 `dsh plugin --profile web add ./brewreel/integrations/deepseek-harness`。插件还没接真实 DeepSeek 模型实测，遇到问题请开 issue。
 
 <details>
 <summary><b>7 个工具、许可提醒与安全说明</b></summary>
@@ -426,7 +425,7 @@ brewreel/
 - **quiz / journey 修复后还没重测**：两个配方各测了 3 支，修了评审列出的问题，样例分镜都重新通过了校验和出片检查；但便宜模型还没重新写一轮打分，公开的分数仍是修复前的。journey 的配乐和音效还没有人工试听。
 - **没有配音**：目前没有 TTS，只有字幕、配乐和音效。
 - **没有实拍就只能插画**：全程没有商家实拍照片时，画面靠组件和插画兜底，行业片会明显吃亏。
-- **DeepSeek Harness 插件还没接真实 DeepSeek 模型实测**，npm 包即将上线。
+- **DeepSeek Harness 插件还没接真实 DeepSeek 模型实测**。
 - **不做的品类**：医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
 
 **仍存在的主要问题**（欢迎在 issue 里补充实测反例）：
