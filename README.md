@@ -8,7 +8,7 @@
 
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![Forks](https://img.shields.io/github/forks/Finderchangchang/brewreel?style=flat-square&logo=github&label=Forks)](https://github.com/Finderchangchang/brewreel/forks)
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.4.0-1f6feb?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.5.0-1f6feb?style=flat-square)](CHANGELOG.md)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-0B84F3?style=flat-square)](https://www.remotion.dev)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
@@ -190,6 +190,19 @@ dsh web
 
 </details>
 
+### 配音（MiniMax）
+
+分镜里写 `meta.voice`、每镜写一句 `vo`（旁白），出片时就带配音；不写就是无配音片，和以前一样。
+
+- **声音就是时间轴**：`make.mjs` 先用 MiniMax 语音合成念出每句旁白、拿到逐字时间，再把有旁白的镜头时长改成「0.15 秒 + 旁白 + 0.35 秒」并对齐到拍，便宜模型不用自己算时长。
+- **逐字字幕**：字幕跟着声音一个字一个字点亮，三种配方都支持；也可以选整句出现（`line`）或不出旁白字幕（`off`）。cards 里有 `vo`、没写 `caption` 的镜头，字幕由旁白自动生成。
+- **配乐自动让路**：人声处背景音乐压低约 10 dB，说完再回来。
+- **缓存省钱**：同一句（音色、语速、情绪、文字都一样）只合成一次，缓存在用户目录 `~/.cache/brewreel/tts`（环境变量 `BREWREEL_TTS_CACHE` 可改）；改画面、重渲染不再计费，`manifest.json` 记下这次计费的字符数。
+- **没有 key 也能预览**：出片加 `--voice-provider mock`，用不联网的占位音看节奏（不能当成片交付）；加 `--no-voice` 出无配音版。
+- **密钥**：只从环境变量 `MINIMAX_API_KEY` 读（需要时加 `MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`），不写进任何文件和日志。
+
+写法、推荐音色、字数上限见 `SKILL.md` 的「配音」一节；三种配方各有一份带配音的样例分镜（`styles/*/examples/*voice*.json`）。
+
 ### 六个行业包
 
 | `meta.industry` | 说明 |
@@ -285,7 +298,7 @@ industries/<id>/
 <details>
 <summary><b>有没有配音？</b></summary>
 
-目前没有，没有接 TTS。画面靠字幕、逐字点亮和音效把话说清楚；配音在计划中。现在需要配音的话，出片后在剪辑软件或平台里自己加；用了 AI 配音，记得按平台要求勾选 AI 生成内容声明。
+有，v0.5.0 起接了 MiniMax 语音合成。分镜里写 `meta.voice` 和每镜的 `vo`，设好环境变量 `MINIMAX_API_KEY` 后出片即可；镜头时长跟着旁白走，字幕逐字点亮，配乐在人声处自动压低。没有 key 时加 `--voice-provider mock` 用占位音预览节奏。不写 `meta.voice` 就和以前一样没有配音。用 AI 配音发布时，记得按平台要求勾选 AI 生成内容声明。
 
 </details>
 
@@ -423,7 +436,7 @@ brewreel/
 - **还是预览版**：测试和修复仍在进行中，**目前还不建议把成片不经人工修改直接对外发布**。
 - **便宜模型实测还没到「能直接发」**：最近一轮让小模型扮演便宜模型，只给简报和 `SKILL.md`，从零写分镜、跑校验、出片，共 9 支，没有一支到 7 分（我们定的「可以直接发」的线）。软件 / 工具类整体 5–6 分、合规 7–8 分；行业片整体 4–5 分、合规 4–5 分，失分主要在跨字段的事实问题上。
 - **quiz / journey 修复后还没重测**：两个配方各测了 3 支，修了评审列出的问题，样例分镜都重新通过了校验和出片检查；但便宜模型还没重新写一轮打分，公开的分数仍是修复前的。journey 的配乐和音效还没有人工试听。
-- **没有配音**：目前没有 TTS，只有字幕、配乐和音效。
+- **配音还没用真实 key 实测**：MiniMax 接口按官方文档实现，用录制的假响应做了单测，整条管线用占位音（mock）跑通；真人音色的实际效果和计费还没有人实测过。
 - **没有实拍就只能插画**：全程没有商家实拍照片时，画面靠组件和插画兜底，行业片会明显吃亏。
 - **DeepSeek Harness 插件还没接真实 DeepSeek 模型实测**。
 - **不做的品类**：医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。

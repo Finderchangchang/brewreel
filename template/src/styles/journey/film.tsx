@@ -13,6 +13,7 @@ import {buildPlan, exprAt} from './parts/plan';
 import {GagFx, Props, StartPad} from './parts/props';
 import {RIDER_TOP, Rider} from './parts/rider';
 import {Bubble, Burst, HookTitle, Postcard, RouteTicket, Sign, Sparkles, clamp01, springAt} from './parts/ui';
+import {JourneySub} from './parts/subtitle';
 
 // ============================================================
 // journey 整片渲染器：一镜到底。分镜里的镜头只当数据（opening = 钩子，district = 一个街区，finale = 片尾），
@@ -198,6 +199,8 @@ export const JourneyFilm: React.FC<FilmProps> = ({sb, slots, beat, geo}) => {
         <Postcard key={`c${x.k}`} w={w} d={x} textOn={textOn} />
       ))}
       {op ? <HookTitle w={w} kicker={str(opParams.kicker)} headline={str(opParams.headline) ?? ''} t0={op.start} dur={op.dur} /> : null}
+      {/* 配音字幕（有 props.voice 才画；音轨和配乐闪避在 Promo.tsx 统一接） */}
+      <JourneySub w={w} sb={sb} slots={slots} finTicketBottom={fin ? FT.y0 + FT.h : undefined} />
       <RouteTicket w={w} product={product} hide={hudHide} />
     </>
   );

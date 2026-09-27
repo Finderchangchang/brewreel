@@ -2,6 +2,40 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.5.0 · 2026-09-27 · Voice-over: MiniMax speech + word-synced subtitles
+
+Old storyboards: no changes needed. A storyboard without `meta.voice` gets no voice-over, and its shot lengths, subtitles and music are exactly as before (sampled frames from four sample storyboards match v0.4.0 pixel for pixel).
+
+### New: voice-over (optional)
+- Write `meta.voice` in the storyboard (`provider`: `minimax` / `mock`; optional `voiceId`, `speed` 0.5–2, `emotion`, `model`, `subtitles`: `karaoke` / `line` / `off`) and one `vo` line per shot (narration, `{}` for emphasis allowed), and the video comes out with a voice-over. How to write it, recommended voices and length limits are in the "Voice-over" section of `SKILL.en.md`.
+- **The voice is the timeline**: before rendering, `make.mjs` synthesizes each line and gets per-word timing, then sets every shot with narration to "0.15 s + narration + 0.35 s", rounded up to a whole beat (never shorter than that shot type's minimum), validates again with the new lengths and schedules from there. `dur` / `beats` only count for shots without `vo`. The result is written to `voice.json` in the output folder and passed to Remotion as `props.voice`.
+- **Word-by-word subtitles in all three recipes**: subtitles light up word by word with the voice and page automatically; each line starts on a whole frame, and the voice and subtitles share that start. In `cards`, a shot with `vo` and no `caption` gets its subtitle from the narration; `hook` still needs a `caption` (the cover title), and `endCard` is read out without subtitles. `quiz` and `journey` show the narration on their own subtitle bars.
+- **Music ducking**: the music drops about 10 dB under speech (0.12 s attack, 0.3 s release), baked into `bgm.wav`.
+- **Caching and billing notes**: audio and timing are cached by (provider, model, voice, speed, emotion, text), by default in the user folder `~/.cache/brewreel/tts`, or wherever `BREWREEL_TTS_CACHE` points. Changing visuals or re-rendering doesn't synthesize or bill again. The report lists how many lines were synthesized and how many came from the cache; `voice.billedCharacters` in `manifest.json` is the characters billed for the run.
+- **Mock preview**: the `mock` provider is offline and needs no key; it makes a soft syllable-pulse placeholder voice from the character count and punctuation, with matching timing, so the whole pipeline runs without a key. Add `--voice-provider mock` when rendering to switch to it for one run (the storyboard is untouched), or `--no-voice` for a version without narration. A mock render is for checking rhythm only and is not a deliverable.
+- **Needs `MINIMAX_API_KEY`**: the key is read only from the environment (plus `MINIMAX_GROUP_ID` and `MINIMAX_BASE_URL` when needed; global accounts set `MINIMAX_BASE_URL=https://api.minimax.io`). It is only sent to MiniMax in the request header, never written to the storyboard, `voice.json`, `manifest.json` or logs, and it is scrubbed from error messages. Without a key, validate only warns.
+- **Exit codes**: narration longer than the shot's maximum length → 1 (cut words or split the shot); no key, auth failure, rate-limit retries used up, or no network → 2.
+
+### Validation
+- `meta.voice` accepts only the six fields above, and a wrong value comes with a fix. `vo` is checked against 5 Chinese characters or 3 English words per second; at render time the real voice length is checked again, and if it is too long the run stops and says how many characters that shot can take.
+- `vo` goes through the same text checks as subtitles: advertising-law superlatives, absolute claims, typos, and numbers that must be found in `meta.facts`.
+- A warning when shots have `vo` but there is no `meta.voice`, or when voice-over is on but no shot has `vo`; a top-level `voice` is flagged with a hint to move it into `meta`.
+- Six new validation cases (`tests/validate/voice-*.json`) and voice unit tests in `scripts/test-tts.mjs` (MiniMax is tested against recorded fake responses, offline).
+
+### Samples and the headless script
+- A sample storyboard with voice-over for each recipe: `styles/cards/examples/voice-reminder.json`, `styles/quiz/examples/software-archive-voice.json`, `styles/journey/examples/software-notes-voice.json`.
+- `llm_make.py` gains `--voice minimax|mock`, which has the model write `meta.voice` and a `vo` per shot; without it there is no voice-over, as before.
+
+### DeepSeek Harness plugin 0.3.0
+- Whitelist change: the render process (`make.mjs`) also gets four fixed environment variables, `MINIMAX_API_KEY`, `MINIMAX_GROUP_ID`, `MINIMAX_BASE_URL` and `BREWREEL_TTS_CACHE`. The validate, doctor and setup processes never see them, no other key is passed, and `envPassthrough` cannot add one. The safety tests cover this.
+
+### Not there yet
+- Not tested with a real MiniMax key: the client follows the official docs and is unit-tested only against recorded fake responses. The real voices, billing and the actual fields of the timing data are unchecked (if per-word timing can't be parsed it falls back to sentence level, then to an estimate from the character count).
+- The finished audio runs about 42 ms (about 1.3 frames) behind the picture, from AAC encoder priming. The v0.4.0 music already had it, and it is generally not noticeable.
+
+### Other
+- Version bumped to 0.5.0; Apache-2.0, the compliance fine print, the privacy scan and author attribution are unchanged.
+
 ## v0.4.0 · 2026-09-27 · Renamed to BrewReel (精酿)
 
 Old storyboards: no changes needed. Styles, fields, shots and script commands are all the same; this release only changes the name. The only things to act on are the skill install folder (optional) and the DeepSeek Harness plugin, see "Migration" below.

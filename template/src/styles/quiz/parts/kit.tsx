@@ -114,6 +114,9 @@ type LitProps = {
   ghost?: number;
   /** 前 pre 个单位从第 0 帧起就是实色（语境句第 0 帧至少露出前 4 个字） */
   pre?: number;
+  /** 配音驱动：每个点亮单位（unitsOf 切出来的，汉字一个字、拉丁一个词）开始点亮的时刻，和 t 同一时间轴。
+   *  给了就按它点亮（旁白念到哪个字亮到哪个字），t0 / rate 不再参与；不给 = 原来的固定速度 */
+  clock?: number[];
 };
 
 /** 杏黄马克笔：斜切的粗笔触（两头略倾斜，不是圆角条），从左往右扫 */
@@ -122,7 +125,7 @@ const MarkerStroke: React.FC<{p: number; color: string}> = ({p, color}) => (
 );
 
 /** 逐字点亮的一段文字（行内内容，外层自己定字号、对齐） */
-export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', latinWord, color, hot, hotColor, marker, markerColor, markerAt, markerDur, caret, ghost: ghostOver, pre = 0}) => {
+export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', latinWord, color, hot, hotColor, marker, markerColor, markerAt, markerDur, caret, ghost: ghostOver, pre = 0, clock}) => {
   const tk = useTk();
   const pal = usePal();
   const ghost = ghostOver ?? tk.motion?.ghostOpacity ?? 0.16;
@@ -161,13 +164,14 @@ export const Lit: React.FC<LitProps> = ({text, t, t0, rate, mode = 'ghost', lati
     if (cur) segs.push({s: cur, i, hot: !!curHot});
     pos += u.length;
   });
+  const startOf = (i: number) => (clock ? clock[i] ?? clock[clock.length - 1] ?? t0 : t0 + at[i]);
   const opOf = (i: number) => {
     if (i < pre) return 1;
-    const a = t0 + at[i];
+    const a = startOf(i);
     return mode === 'ghost' ? interpolate(t, [a, a + fade], [ghost, 1], clamp) : interpolate(t, [a, a + fade], [0, 1], clamp);
   };
   const hotStartUnit = segs.find((s) => s.hot)?.i ?? 0;
-  const mAt = markerAt ?? t0 + at[hotStartUnit];
+  const mAt = markerAt ?? startOf(hotStartUnit);
   const mP = prog(t, mAt, markerDur ?? tk.motion?.marker ?? 1.5, Easing.inOut(Easing.quad));
   const render = (s: Seg, key: number) => (
     <span key={key} style={{opacity: opOf(s.i), color: s.hot ? hotColor ?? pal.primary : color, position: 'relative'}}>

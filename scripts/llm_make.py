@@ -2,7 +2,7 @@
 """
 无 agent 模式：简报 → 便宜模型写分镜 → 校验（报错原文回喂，最多重试 3 次）→ make.mjs 出片。
 
-  python scripts/llm_make.py <brief.md> [--out <输出目录>] [--example examples/ledger.json] [--retries 3] [--no-render] [--dry-run]
+  python scripts/llm_make.py <brief.md> [--out <输出目录>] [--example examples/ledger.json] [--retries 3] [--no-render] [--dry-run] [--voice minimax|mock]
 
 接口（OpenAI 兼容 /chat/completions），运行时从环境变量读：
   LLM_API_KEY（没有再读 DEEPSEEK_API_KEY）
@@ -12,6 +12,8 @@
   <简报目录>/<简报名>.storyboard.json   模型写的分镜（素材路径相对简报目录）
   <输出目录>（默认 <简报目录>/<简报名>_out/）  video.mp4、sheet.png、check/、llm_log.json
 --dry-run：不调接口、不读密钥，只把拼好的提示写到 <输出目录>/prompt.txt 并估算 token 数。
+--voice：可选开启配音。模型会写 meta.voice（provider 就是这里给的值）和每镜一句 vo；minimax 出片要环境变量 MINIMAX_API_KEY，
+  没有 key 先用 --voice mock（不联网的占位音，只看节奏，不能交付）。不给 --voice 就不配音，和以前一样。
 """
 import argparse
 import json
@@ -43,7 +45,7 @@ def est_tokens(text):
     return int(cjk * 0.7 + (len(text) - cjk) / 3.5)
 
 
-def build_messages(brief_text, example_text, example_name, lang='zh'):
+def build_messages(brief_text, example_text, example_name, lang='zh', voice=None):
     skill = read(os.path.join(ROOT, 'SKILL.md'))
     shots = read(os.path.join(ROOT, 'shots.md'))
     system = (
@@ -61,6 +63,18 @@ def build_messages(brief_text, example_text, example_name, lang='zh'):
             '英文字幕按拉丁字符数估宽：每行最多约 22 个字符，最多 2 行；不要用中文的“每行 12 个汉字”规则去卡英文。'
             '不要用 best / #1 / guaranteed / 100% / forever 这类绝对化用词。\n'
         )
+    if voice:
+        system += (
+            f'这次要配音（见 SKILL.md「配音」一节）：meta 里写 "voice": {{"provider": "{voice}", "subtitles": "karaoke"}}'
+            '（音色 voiceId 按 SKILL.md 的推荐选一个合适的，拿不准就不写；speed 不写或写 1–1.15；不要写 model）。'
+            '每镜写一个 vo 字段 = 这一镜要念的一句话：口语化、说给人听，一镜一句、只讲一件事，不换行；'
+            '字数按每秒 4–5 个汉字（英文每秒 2.5 个词）估，不超过「这种镜头的最长秒数 − 0.5」秒能念完的量，推荐一句 8–20 字；'
+            'vo 里带单位的数字必须能在 meta.facts 里找到，不用极限词和绝对化用语，{} 强调每句最多 1 处。'
+            'cards 里 hook 照样写 caption（封面标题），其他镜头有 vo 就可以不写 caption（字幕由 vo 自动生成）；endCard 的 vo 带上产品名。'
+            '有 vo 的镜头时长由配音决定，dur / beats 照常写个大概即可。\n'
+        )
+    else:
+        system += '这次不配音：不要写 meta.voice，也不要写 vo 字段。\n'
     system += '\n======== SKILL.md ========\n' + skill + '\n\n======== shots.md ========\n' + shots
     user = (
         f'参考样例（{example_name}，结构和写法可以学，内容不要照抄）：\n{example_text}\n\n'
@@ -201,6 +215,7 @@ def main():
     ap.add_argument('--no-render', action='store_true', help='只出分镜，不渲染')
     ap.add_argument('--dry-run', action='store_true', help='不调接口：只写 prompt.txt 并估算 token')
     ap.add_argument('--lang', choices=['zh', 'en'], default='zh', help='字幕/文案语言，默认 zh；en 会要求模型写 meta.lang="en" 和英文字幕')
+    ap.add_argument('--voice', choices=['minimax', 'mock'], help='可选开启配音：模型写 meta.voice 和每镜 vo。minimax 出片要 MINIMAX_API_KEY；没有 key 用 mock（占位音，只看节奏）')
     a = ap.parse_args()
 
     brief_path = os.path.abspath(a.brief)
@@ -209,7 +224,7 @@ def main():
     out_dir = os.path.abspath(a.out or os.path.join(brief_dir, stem + '_out'))
     sb_path = os.path.join(brief_dir, stem + '.storyboard.json')
 
-    messages = build_messages(read(brief_path), read(a.example), os.path.basename(a.example), a.lang)
+    messages = build_messages(read(brief_path), read(a.example), os.path.basename(a.example), a.lang, a.voice)
 
     if a.dry_run:
         prompt_file = os.path.join(out_dir, 'prompt.txt')
@@ -218,7 +233,7 @@ def main():
         n = est_tokens(text)
         print(f'[dry-run] 提示已写到 {prompt_file}')
         print(f'[dry-run] 共 {len(text)} 字符，估算约 {n} 输入 token（system {est_tokens(messages[0]["content"])} + user {est_tokens(messages[1]["content"])}）')
-        print(f'[dry-run] 每轮输出约 1500–3000 token；最多 1 + {a.retries} 轮，通过后再最多 2 轮通读检查。语言：{a.lang}。未调用任何接口。')
+        print(f'[dry-run] 每轮输出约 1500–3000 token；最多 1 + {a.retries} 轮，通过后再最多 2 轮通读检查。语言：{a.lang}。配音：{a.voice or "不配音"}。未调用任何接口。')
         return 0
 
     key = os.environ.get('LLM_API_KEY') or os.environ.get('DEEPSEEK_API_KEY')

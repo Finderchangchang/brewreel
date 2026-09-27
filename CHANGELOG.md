@@ -2,6 +2,40 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
+## v0.5.0 · 2026-09-27 · 配音：MiniMax 语音 + 逐字字幕
+
+老分镜怎么办：不用改。没写 `meta.voice` 的分镜不配音，镜头时长、字幕、配乐和以前完全一样（和 v0.4.0 对比了四份样例分镜的抽帧，逐像素一致）。
+
+### 新增：配音（可选）
+- 分镜里写 `meta.voice`（`provider`：`minimax` / `mock`，可选 `voiceId`、`speed` 0.5–2、`emotion`、`model`、`subtitles`：`karaoke` / `line` / `off`），每镜写一句 `vo`（旁白，可含 `{}` 强调），出片就带配音。写法、推荐音色和字数上限见 `SKILL.md` 的「配音」一节。
+- **以声音为时间轴**：`make.mjs` 在渲染前先合成每句旁白、拿到逐字时间，再把有旁白的镜头时长改成「0.15 秒 + 旁白 + 0.35 秒」向上取整拍（不短于这种镜头的最短时长），按新时长再校验一遍后排程；`dur` / `beats` 只对没写 `vo` 的镜头算数。配音结果写进输出目录的 `voice.json`，作为 `props.voice` 传给 Remotion。
+- **逐字字幕，三种配方都有**：字幕跟着声音逐字点亮，按声音自动分页；每句起点对齐到整帧，声音和字幕用同一个起点。cards 里写了 `vo`、没写 `caption` 的镜头，字幕由旁白自动生成；hook 仍要写 `caption`（封面标题），`endCard` 只念不出字幕。quiz、journey 在各自的字幕条上显示旁白。
+- **背景音乐闪避**：人声处配乐压低约 10 dB（起 0.12 秒、落 0.3 秒），直接做进 `bgm.wav`。
+- **缓存与计费提示**：按（提供者、模型、音色、语速、情绪、文字）缓存音频和时间戳，默认在用户目录 `~/.cache/brewreel/tts`，环境变量 `BREWREEL_TTS_CACHE` 可改；改画面、重渲染不再合成、不再计费。报告里写合成几句、缓存命中几句，`manifest.json` 的 `voice.billedCharacters` 是这次计费的字符数。
+- **mock 预览**：`mock` 提供者不联网、不要 key，按字数和标点生成柔和的音节脉冲占位音和对齐的时间戳，整条管线没有 key 也能跑通。出片加 `--voice-provider mock` 临时改用占位音（不改分镜），加 `--no-voice` 出无配音版。mock 出的片子只用来看节奏，不能交付。
+- **需要 `MINIMAX_API_KEY`**：密钥只从环境变量读（需要时加 `MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`；国际账号设 `MINIMAX_BASE_URL=https://api.minimax.io`），只放在请求头里发给 MiniMax，不写进分镜、`voice.json`、`manifest.json` 和日志，报错里也会抹掉。没有 key 时 validate 只提醒、不拦。
+- **退出码**：旁白比这一镜最长时长还长 → 1（删字或拆镜）；没 key、鉴权失败、限流重试用完、网络不通 → 2。
+
+### 校验
+- `meta.voice` 只认上面 6 个字段，值写错会给改法；`vo` 按中文 5 字/秒、英文 3 词/秒估算是否念得完，出片时再按真实配音时长核一遍，超了会停并告诉你第几镜能念多少字。
+- `vo` 和字幕走同一套文本检查：广告法极限词、绝对化用语、错别字、数字要能在 `meta.facts` 里找到。
+- 写了 `vo` 没写 `meta.voice`、或开了配音却没有一镜写 `vo`，都会提醒；顶层写了 `voice` 会提示挪进 `meta`。
+- 新增 6 份校验用例（`tests/validate/voice-*.json`）和配音单测 `scripts/test-tts.mjs`（MiniMax 用录制的假响应，不联网）。
+
+### 样例与无头脚本
+- 三种配方各加一份带配音的样例分镜：`styles/cards/examples/voice-reminder.json`、`styles/quiz/examples/software-archive-voice.json`、`styles/journey/examples/software-notes-voice.json`。
+- `llm_make.py` 加 `--voice minimax|mock`：让模型写 `meta.voice` 和每镜 `vo`；不给就和以前一样不配音。
+
+### DeepSeek Harness 插件 0.3.0
+- 白名单变化：渲染进程（`make.mjs`）额外放行固定的四个环境变量 `MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`、`BREWREEL_TTS_CACHE`；validate、doctor、setup 进程拿不到，别的 key 仍然一律不给，`envPassthrough` 也加不进来。safety 测试相应补上。
+
+### 还没做到的
+- 没有用 MiniMax 真实 key 实测：接口按官方文档实现，只用录制的假响应做了单测；真人音色、计费和字幕时间戳的实际字段还没核对过（解析不出逐字时间时退回句级，再退回按字数估算）。
+- 成片音轨整体比画面晚约 42 毫秒（约 1.3 帧），来自 AAC 编码的前置填充，v0.4.0 的配乐就有，一般察觉不到。
+
+### 其他
+- 版本号改为 0.5.0；Apache-2.0、合规小字、隐私扫描、作者署名不变。
+
 ## v0.4.0 · 2026-09-27 · 更名：精酿 · BrewReel
 
 老分镜怎么办：不用改。风格、字段、镜头和脚本命令都没变，这一版只改名字。要动手的只有 skill 安装目录（可选）和 DeepSeek Harness 插件，见下面「迁移」。

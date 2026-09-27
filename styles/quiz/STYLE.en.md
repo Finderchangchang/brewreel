@@ -16,7 +16,7 @@ The skin in one line: **a dot-grid answer sheet that a teacher marks up with a v
 | Aspect | 9:16, 1080×1920 only |
 | Length | 30–50 s, 5–8 shots (`rules.json`) |
 | Tempo | 128 BPM, one beat 0.469 s; durations are written in `beats` |
-| Voice-over | Without TTS, text lights up at fixed rates: narration 6 chars/s, question 9, meaning 8 |
+| Voice-over | Without TTS, text lights up at fixed rates: narration 6 chars/s, question 9, meaning 8. With `meta.voice`, each shot's `vo` is spoken by TTS, shots are retimed to the voice, and a subtitle strip at the bottom of the main area lights up word by word with it (see "有配音时" in `recipes.md`) |
 | Cuts | The page stays put; elements pop and four transitions do the rest |
 | Content area | y260–1340: media card 840×473 (x120–960), text within x150–930 |
 
@@ -131,6 +131,8 @@ Parts (`parts/`): `kit.tsx` ghost / type-on text, marker, grading pen (`PenCircl
 Media card content (`scene` / `media`): `office` / `cafe` / `street` / `home` / `classroom` mini theater (default `office`); `screen` product-UI mock with 2–4 real lines in `screenItems` (required for software); `phone` press-and-hold demo (result only shown in `replay`); `media` for user-owned images or video registered in `meta.assets`.
 
 ## 7. Sound
+
+- Optional voice-over: each line starts 0.15 s after its shot begins; the music ducks 10 dB under speech (120 ms down, 300 ms back) and is unchanged elsewhere; sound effects play as usual.
 
 - Light music around 128 BPM: sparse pad at first, drums enter on the reveal, a drop-out late in the meaning card, a closing chord.
 - Each shot's `sfx()` shares its timeline with the picture:

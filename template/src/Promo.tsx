@@ -9,6 +9,7 @@ import {ThemeProvider, resolveTheme} from './core/theme';
 import {Slot, beatOf, schedule, totalDur} from './core/timeline';
 import {LayoutProbe} from './core/probe';
 import {moduleOf, specOf} from './shots';
+import {VoiceCaptions, VoiceTrackAudio, duckGainOf, planVoice} from './core/voice';
 import {AspectProvider} from './core/aspect';
 import {geometryOf} from './core/safe';
 import {DEFAULT_STYLE, ShotLookup, aspectOf, lookupOf, styleDefOf, styleIdOf, withStyleDefaults} from './styles';
@@ -70,13 +71,16 @@ const ShotHost: React.FC<{slot: Slot; beat: number; sb: Storyboard; isLast: bool
 export const Promo: React.FC<Storyboard & {__probe?: number[]}> = (sb) =>
   styleIdOf(sb) === DEFAULT_STYLE ? <CardsPromo {...sb} /> : <StylePromo {...(withStyleDefaults(sb) as Storyboard & {__probe?: number[]})} def={styleDefOf(sb)} />;
 
-// ---------------- cards：原来的整片管线（一行没改） ----------------
+// ---------------- cards：原来的整片管线（没有配音时和改造前逐帧一致；有 props.voice 时加旁白音轨、配乐闪避、逐字字幕） ----------------
 const CardsPromo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
   const theme = resolveTheme(sb.meta?.theme, sb.meta?.brandColor);
   const slots = schedule(sb, specOf);
   const frames = Math.max(1, Math.round(totalDur(slots) * FPS));
   const beat = beatOf(sb);
   const cues = collectSfx(slots, moduleOf, specOf, beat);
+  // 配音（props.voice，make.mjs 产出）：没有时 vp = null，下面几层都和以前一样
+  const vp = planVoice(sb, slots);
+  const voiceSubs = voiceSubsFor(vp, slots, specOf);
   return (
     <ThemeProvider theme={theme}>
       <AbsoluteFill style={{fontFamily: FONT, overflow: 'hidden', background: theme.bgBot[0]}}>
@@ -93,16 +97,32 @@ const CardsPromo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
           );
         })}
         <MoodFlash slots={slots} />
-        <Captions slots={slots} beat={beat} lang={sb.meta?.lang} />
+        <Captions slots={slots} beat={beat} lang={sb.meta?.lang} skip={voiceSubs?.shots} />
+        {voiceSubs ? <VoiceCaptions plan={vp} slots={slots} sb={sb} lang={sb.meta?.lang} skip={voiceSubs.skip} /> : null}
         <Disclaimer text={sb.meta?.disclaimer} lang={sb.meta?.lang} />
         <Notices items={sb.meta?.notices} lang={sb.meta?.lang} disclaimer={sb.meta?.disclaimer} />
         <Watermark logo={sb.meta?.logo} slots={slots} />
         </LayoutProbe>
         <SfxTrack cues={cues} />
-        <Bgm sb={sb} frames={frames} />
+        <VoiceTrackAudio plan={vp} />
+        <Bgm sb={sb} frames={frames} duck={duckGainOf(vp)} />
       </AbsoluteFill>
     </ThemeProvider>
   );
+};
+
+/**
+ * cards 字幕带上哪些镜头改由旁白字幕画：有旁白、字幕方式不是 off、这一镜没写 caption（写了就照旧显示 caption，旁白只念，
+ * 和 schema.ts 的约定一致）、且镜头允许字幕带（spec.caption 不是 none——endCard 这类自己在上半屏画大字的镜头，声音照播，
+ * 字幕带不画）。管线在 voice.lines[].subtitle 里给了同样的判断，VoiceCaptions 也会跳过 subtitle === false 的句子。
+ * shots = 交给旁白字幕的镜头（Captions 跳过它们）
+ */
+const hasCaption = (c: unknown) => (Array.isArray(c) ? c.some((x) => typeof x === 'string' && x.length > 0) : typeof c === 'string' && c.length > 0);
+const voiceSubsFor = (vp: ReturnType<typeof planVoice>, slots: Slot[], spec: ShotLookup['specOf']) => {
+  if (!vp || vp.mode === 'off') return null;
+  const skip = (i: number) => !slots[i] || spec(slots[i].shot.type)?.caption === 'none' || hasCaption(slots[i].shot.caption);
+  const shots = new Set([...vp.voiced].filter((i) => !skip(i)));
+  return shots.size ? {shots, skip} : null;
 };
 
 // ---------------- 其他风格的整片管线 ----------------
@@ -123,6 +143,9 @@ const StylePromo: React.FC<Storyboard & {__probe?: number[]; def: StyleDef}> = (
   const pal = (def.tokens?.themes?.[themeName ?? ''] ?? def.tokens?.themes?.[def.tokens?.defaultTheme ?? ''] ?? {}) as Record<string, string>;
   const fp = {sb, slots, beat, geo};
   const {Film, Background: StyleBg, Overlay} = def;
+  // 配音：音轨和配乐闪避在这里统一接；字幕 captionLayer=cards 的风格用全局字幕带，其他风格在自己的 Film/Overlay 里画（planVoice 同一份数据）
+  const vp = planVoice(sb, slots);
+  const voiceSubs = def.manifest.captionLayer === 'cards' ? voiceSubsFor(vp, slots, lookup.specOf) : null;
   return (
     <AspectProvider geo={geo}>
       <StyleTokensProvider tokens={def.tokens} themeName={themeName}>
@@ -142,12 +165,14 @@ const StylePromo: React.FC<Storyboard & {__probe?: number[]; def: StyleDef}> = (
                       </Sequence>
                     );
                   })}
-              {def.manifest.captionLayer === 'cards' ? <Captions slots={slots} beat={beat} lang={sb.meta?.lang} /> : null}
+              {def.manifest.captionLayer === 'cards' ? <Captions slots={slots} beat={beat} lang={sb.meta?.lang} skip={voiceSubs?.shots} /> : null}
+              {voiceSubs ? <VoiceCaptions plan={vp} slots={slots} sb={sb} lang={sb.meta?.lang} skip={voiceSubs.skip} /> : null}
               {Overlay ? <Overlay {...fp} /> : null}
               <StyleChrome meta={sb.meta} />
             </LayoutProbe>
             <SfxTrack cues={cues} />
-            <Bgm sb={sb} frames={frames} />
+            <VoiceTrackAudio plan={vp} />
+            <Bgm sb={sb} frames={frames} duck={duckGainOf(vp)} />
           </AbsoluteFill>
         </ThemeProvider>
       </StyleTokensProvider>

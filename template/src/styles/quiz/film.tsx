@@ -6,6 +6,7 @@ import {useStyleTokens} from '../context';
 import type {FilmProps} from '../types';
 import {SHOTS} from './shots/index.gen';
 import {StoryCtx} from './parts/story';
+import {QuizVoiceSub} from './parts/voiceSub';
 
 // ============================================================
 // quiz 整片渲染器：固定机位的「App 界面」，镜头之间只有四种换场（tokens.transitions）：
@@ -64,6 +65,8 @@ export const QuizFilm: React.FC<FilmProps> = (p) => {
           </Sequence>
         );
       })}
+      {/* 配音字幕（有 props.voice 才画；音轨和配乐闪避在 Promo.tsx 统一接） */}
+      <QuizVoiceSub {...p} />
     </>
   );
 };

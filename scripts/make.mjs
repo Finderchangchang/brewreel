@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ============================================================
-// 一条命令出片：校验 → 机器自查 → 复制素材 → 配乐 → 渲染（带布局 / 汉字探针）→ 拼图 + 检查帧 → manifest.json
-//   node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5,6] [--no-bgm] [--keep] [--queue-timeout 20]
+// 一条命令出片：校验 → 机器自查 → 复制素材 → 配音 → 配乐 → 渲染（带布局 / 汉字探针）→ 拼图 + 检查帧 → manifest.json
+//   node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5,6] [--no-bgm] [--no-voice] [--voice-provider mock] [--keep] [--queue-timeout 20]
 //   node scripts/make.mjs <storyboard.json> (--out <目录> | --round ...) --verify     核对目录里的成片是否还对应这份分镜
 //     --out      输出目录（一个目录放一份分镜，否则输出会互相覆盖）。不许落在仓库里（promo/ 除外），否则退出码 2；
 //                人工确认过可加 --allow-in-repo
@@ -11,7 +11,18 @@
 //                --out 和 --round 必须给一个；不要自己按秒生成时间戳目录
 //     --stills   只渲染这些时间点（秒）的单帧到 <out>/check/，不出整片（镜头自测用，快；不是交付）
 //     --no-bgm   不生成配乐（静音）
+//     --no-voice 分镜写了 meta.voice 也不配音（镜头时长按分镜、没有旁白和旁白字幕），临时出无配音版用
+//     --voice-provider <minimax|mock>  这一次出片临时换配音提供者，不改分镜文件。没有 MINIMAX_API_KEY 时用 --voice-provider mock
+//                预览节奏（不联网的占位音，时间轴和字幕照常；分镜没写 meta.voice 时忽略）
 //     --keep     保留 template/public/_run/<id>/（调试用）
+//
+// 配音（分镜写了 meta.voice 且有镜头写了 vo 时才有这一步；老分镜行为不变）：
+//   每句旁白先合成（scripts/lib/tts/，按 provider+model+voiceId+speed+emotion+text 缓存在仓库和输出目录之外，
+//   默认 ~/.cache/brewreel/tts，BREWREEL_TTS_CACHE 可改）→ 有旁白的镜头时长改成「0.15 秒 + 旁白 + 0.35 秒」向上取整拍
+//   → 按新时长再校验一遍 → voice.json 作为 props.voice 传给 Remotion，配乐在人声处自动压低（闪避做进 bgm.wav）。
+//   MiniMax 的 key 只从环境变量 MINIMAX_API_KEY 读（MINIMAX_BASE_URL / MINIMAX_GROUP_ID 可选），不写进任何文件和日志。
+//   配音失败：旁白比镜头最长时长还长 → 退出码 1；没 key / 鉴权失败 / 限流重试用完 / 网络不通 → 退出码 2（改配置或稍后再跑，
+//   想先看效果加 --voice-provider mock，或加 --no-voice）
 //     --queue-timeout <分钟>  渲染排队最多等多久（默认 20），超时写「未出片：渲染排队超时」，退出码 5
 //     --accept-layout         仅供人工复核后放行版式 ✗（manifest 里记 acceptedByHuman），模型 / 自动测试不许用
 //
@@ -31,7 +42,9 @@ import {spawn, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {TEMPLATE, formatReport, loadSpecs, parseFile, validate} from './validate.mjs';
+import {TEMPLATE, formatReport, loadSpecs, parseFile, schedule, validate} from './validate.mjs';
+import {PROVIDER_IDS, voiceConfigOf} from './lib/tts/index.mjs';
+import {runVoiceStep, voiceIntervals, voOf} from './lib/tts/pipeline.mjs';
 import {clearStaleOutputs, mp4Duration, sha256Of, verifyDelivery, writeManifest} from './lib/delivery.mjs';
 import {blankRuns} from './lib/blank-check.mjs';
 import {layoutCheck, parseProbeLog} from './lib/layout-check.mjs';
@@ -57,8 +70,8 @@ const opt = (name) => {
   const i = argv.indexOf(name);
   return i >= 0 ? argv[i + 1] : undefined;
 };
-const VALUED = ['--out', '--stills', '--round', '--slug', '--queue-timeout', '--brief'];
-const USAGE = '用法：node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5] [--no-bgm] [--keep] [--queue-timeout 20] [--verify]';
+const VALUED = ['--out', '--stills', '--round', '--slug', '--queue-timeout', '--brief', '--voice-provider'];
+const USAGE = '用法：node scripts/make.mjs <storyboard.json> (--out <目录> | --round <轮次> [--slug <片名>]) [--stills 0,1.5] [--no-bgm] [--no-voice] [--voice-provider mock] [--keep] [--queue-timeout 20] [--verify]';
 const sbFile = argv.find((a, i) => !a.startsWith('--') && !VALUED.includes(argv[i - 1]));
 if (!sbFile) {
   console.log(USAGE);
@@ -112,6 +125,12 @@ if (opt('--stills') !== undefined && !stills?.length) {
   process.exit(EXIT.USAGE);
 }
 const noBgm = argv.includes('--no-bgm');
+const noVoice = argv.includes('--no-voice');
+const voiceProvider = opt('--voice-provider');
+if (voiceProvider !== undefined && !PROVIDER_IDS.includes(voiceProvider)) {
+  console.log(`--voice-provider 只能是 ${PROVIDER_IDS.join(' / ')}（没有 key 时用 mock 预览）\n${USAGE}`);
+  process.exit(EXIT.USAGE);
+}
 const keep = argv.includes('--keep');
 const acceptLayout = argv.includes('--accept-layout');
 const queueMin = Number(opt('--queue-timeout') ?? 20);
@@ -137,6 +156,11 @@ try {
   sbSha = sha256Of(fs.readFileSync(sbPath));
   fs.mkdirSync(checkDir, {recursive: true});
   const removed = clearStaleOutputs(outDir, [sbPath]);
+  // 上一次配音留下的 voice.json（只删 make 自己写的那种）
+  try {
+    const vj = path.join(outDir, 'voice.json');
+    if (fs.existsSync(vj) && /"lines"/.test(fs.readFileSync(vj, 'utf8')) && /"provider"/.test(fs.readFileSync(vj, 'utf8'))) fs.rmSync(vj, {force: true});
+  } catch {}
   log(`输出目录：${outDir}${removed.length ? `（已清掉上一次的产物 ${removed.length} 个）` : ''}`);
 } catch (e) {
   console.error(`未出片：输出目录准备失败——${e.message}\nNot delivered: could not prepare the output folder (${e.message})`);
@@ -154,7 +178,7 @@ try {
 } catch {}
 
 // ---------------- 收尾：所有出口都走这里（报告最后一行 + manifest + 退出码） ----------------
-const state = {runDir: null, lock: null, child: null, finishing: false, video: null, sheet: null, checkFrames: [], checks: {}};
+const state = {runDir: null, lock: null, child: null, finishing: false, video: null, sheet: null, checkFrames: [], checks: {}, voice: null};
 const cleanupRun = () => {
   if (state.runDir && !keep) {
     try {
@@ -187,6 +211,8 @@ const finish = (status, code, reason = null, reasonEn = null) => {
     sheet: state.sheet,
     checkFrames: state.checkFrames,
     checks: state.checks,
+    // 配音记录：provider / voiceId / 各句时长 / 缓存命中 / 计费字符数（不含任何密钥）；没配音时为 null
+    voice: state.voice,
     outDir,
     startedAt,
     finishedAt: new Date().toISOString(),
@@ -225,6 +251,15 @@ process.on('exit', () => state.lock?.release());
 
 // ---------------- 1. 校验 ----------------
 const parsed = parseFile(sbPath);
+// --voice-provider：只换这一次出片的配音提供者（分镜文件不动；缓存键含 provider，mock 和真接口的音频不会串）
+if (voiceProvider && !parsed.error) {
+  const mv = parsed.sb?.meta?.voice;
+  if (mv && typeof mv === 'object' && !Array.isArray(mv)) {
+    if (mv.provider !== voiceProvider) log(`按 --voice-provider 临时改用 ${voiceProvider} 配音（分镜里写的是 ${mv.provider ?? '（没写）'}）`);
+    if (voiceProvider === 'mock' && mv.provider !== 'mock') delete mv.model; // 真接口的模型名对 mock 没意义
+    mv.provider = voiceProvider;
+  } else log('--voice-provider 被忽略：分镜没写 meta.voice（不配音）');
+}
 const r = parsed.error ? {errors: [parsed.error], warnings: [], slots: [], total: 0, beat: 0.5, assets: []} : validate(parsed.sb, {baseDir: path.dirname(sbPath), brief: briefText});
 r.sb = parsed.sb;
 const report = formatReport(r, sbFile);
@@ -276,6 +311,64 @@ sb.shots = rewrite(sb.shots);
 if (sb.meta.logo) sb.meta.logo = map.get(sb.meta.logo) ?? sb.meta.logo;
 log(`素材 ${map.size} 个 → template/public/_run/${id}/`);
 
+// ---------------- 2b. 配音：先合成旁白、拿时间戳，再按声音定镜头时长（没写 meta.voice 的分镜跳过，行为不变） ----------------
+let voice = null;
+{
+  const vcfg = voiceConfigOf(parsed.sb.meta);
+  const voShots = parsed.sb.shots.filter((s) => voOf(s)).length;
+  if (vcfg && voShots && noVoice) {
+    log('按 --no-voice 不配音：镜头时长按分镜，没有旁白');
+    state.checks.voice = {skipped: true, reason: '--no-voice'};
+  } else if (vcfg && voShots) {
+    log(`配音（${vcfg.provider}，音色 ${vcfg.voiceId}，${voShots} 句）…`);
+    // 真接口给的 mp3 解码成 wav 再统一响度：用 Remotion 自带的 ffmpeg（设了 FFMPEG 就用它）
+    const decode = (inFile, outWav) => {
+      const a = ['-y', '-hide_banner', '-loglevel', 'error', '-i', inFile, '-ac', '1', '-ar', '48000', '-c:a', 'pcm_s16le', outWav];
+      const p = process.env.FFMPEG ? spawnSync(process.env.FFMPEG, a, {encoding: 'utf8'}) : spawnSync(process.execPath, [REMOTION, 'ffmpeg', ...a], {cwd: TEMPLATE, encoding: 'utf8'});
+      return p.status === 0;
+    };
+    const vr = await runVoiceStep({sb, specs, beat: r.beat, schedule, runDir, runRel: `_run/${id}`, log, decode, captionLayer: styleId === DEFAULT_STYLE ? 'cards' : loadStyle(styleId)?.manifest?.captionLayer});
+    if (!vr.ok) {
+      const lines = (vr.errors ?? []).map((e, k) => `${k + 1}. ${e.where}：${e.problem}\n   → 怎么改：${e.fix}`);
+      if (lines.length) console.log(`配音后镜头时长不合规：\n${lines.join('\n')}`);
+      fs.appendFileSync(reportFile, `配音：未通过\n${lines.length ? lines.join('\n') : `  ✗ ${vr.message}`}\n`, 'utf8');
+      state.checks.voice = {ok: false, issues: lines.length ? (vr.errors ?? []).map((e) => `${e.where}：${e.problem}`) : [vr.message]};
+      finish('failed', vr.kind === 'invalid' ? EXIT.INVALID : EXIT.USAGE, vr.message, vr.messageEn);
+    }
+    // 按配音后的时长再校验一遍（总时长范围、字幕停留、单镜占比…），只看这一步新冒出来的问题
+    const sbCheck = JSON.parse(JSON.stringify(parsed.sb));
+    for (const c of vr.changes) {
+      sbCheck.shots[c.i].dur = sb.shots[c.i].dur;
+      delete sbCheck.shots[c.i].beats;
+    }
+    const r2 = validate(sbCheck, {baseDir: path.dirname(sbPath), brief: briefText});
+    const seen = new Set(r.warnings.map((w) => `${w.where}|${w.problem}`));
+    const ESTIMATE = /按常见语速估算/;
+    const newWarn = r2.warnings.filter((w) => !seen.has(`${w.where}|${w.problem}`) && !ESTIMATE.test(w.problem));
+    const changed = vr.changes.map((c) => `第 ${c.i + 1} 镜 ${c.from.toFixed(2)}→${c.to.toFixed(2)} 秒`);
+    const hits = vr.manifest.cacheHits;
+    const vLines = [
+      `  ✓ ${vr.voice.lines.length} 句旁白（${vcfg.provider} / ${vcfg.voiceId} / 语速 ${vcfg.speed}），合成 ${vr.manifest.synthesized} 句、缓存命中 ${hits} 句${vr.manifest.billedCharacters ? `，本次计费 ${vr.manifest.billedCharacters} 字符` : ''}`,
+      `  ✓ 镜头时长按旁白改写：${changed.join('；')}；全片 ${r.total.toFixed(2)} → ${r2.total.toFixed(2)} 秒`,
+      ...vr.voice.lines.map((l) => `    第 ${l.shot + 1} 镜：旁白 ${(l.durMs / 1000).toFixed(2)} 秒（${l.granularity === 'sentence-interp' ? '字级时间按字数估算' : l.granularity === 'char' ? '逐字时间戳' : '逐词时间戳'}${l.subtitle ? `；${vcfg.subtitles === 'karaoke' ? '逐字字幕' : '整句字幕'}` : vcfg.subtitles === 'off' ? '；subtitles: off，不出旁白字幕' : '；不出旁白字幕：这一镜写了 caption 或是片尾，旁白只念'}）`),
+      ...r2.errors.map((e) => `  ✗ ${e.where}：${e.problem}（${e.fix}）`),
+      ...newWarn.map((w) => `  ! ${w.where}：${w.problem}（${w.fix}）`),
+    ];
+    console.log(`配音：\n${vLines.join('\n')}`);
+    fs.appendFileSync(reportFile, `配音（镜头时长由旁白决定）：\n${vLines.join('\n')}\n`, 'utf8');
+    state.voice = vr.manifest;
+    if (r2.errors.length) {
+      state.checks.voice = {ok: false, issues: r2.errors.map((e) => `${e.where}：${e.problem}`)};
+      finish('failed', EXIT.INVALID, `配音后镜头时长变了，按新时长校验没过（${r2.errors.length} 个错误）：${r2.errors[0].where}：${r2.errors[0].problem}`, `storyboard fails validation after voice-over timing (${r2.errors.length} errors)`);
+    }
+    state.checks.voice = {ok: true, lines: vr.voice.lines.length, synthesized: vr.manifest.synthesized, cacheHits: hits};
+    r.slots = r2.slots;
+    r.total = r2.total;
+    voice = vr.voice;
+    sb.voice = voice;
+  }
+}
+
 // ---------------- 3. 配乐 ----------------
 const bgmScript = path.join(ROOT, 'scripts', 'make_bgm.py');
 if (!noBgm && !stills && fs.existsSync(bgmScript)) {
@@ -290,14 +383,22 @@ if (!noBgm && !stills && fs.existsSync(bgmScript)) {
     '--types', JSON.stringify(r.slots.map((s) => s.type)),
     '--out', bgmOut,
   ];
+  // 配乐闪避：人声区间交给 make_bgm.py，在母带之后把人声段整体压低（做进 bgm.wav，Remotion 不再另压）
+  if (voice?.lines?.length)
+    args.push('--voice', JSON.stringify(voiceIntervals(voice)), '--duck-db', String(voice.duck.db), '--duck-attack', String(voice.duck.attackMs / 1000), '--duck-release', String(voice.duck.releaseMs / 1000));
   log('生成配乐…');
   const p = spawnSync(PY, args, {cwd: ROOT, encoding: 'utf8', env: {...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1'}});
   if (p.status === 0 && fs.existsSync(bgmOut)) {
     sb.bgm = `_run/${id}/bgm.wav`;
     fs.copyFileSync(bgmOut, path.join(outDir, 'bgm.wav'));
-    log('配乐 OK');
+    if (voice) {
+      voice.duck.baked = /闪避/.test(p.stdout || '');
+      if (state.voice) state.voice.bgmDucked = voice.duck.baked;
+    }
+    log(`配乐 OK${voice ? (voice.duck.baked ? `（人声处压低 ${-voice.duck.db} dB）` : '（⚠ 配乐脚本没做闪避）') : ''}`);
   } else log(`配乐失败，改为静音：${(p.stderr || p.error?.message || '').trim().split('\n').slice(-3).join(' | ')}`);
 } else if (!stills) log(noBgm ? '按 --no-bgm 静音' : '没有 scripts/make_bgm.py，静音');
+if (voice) fs.writeFileSync(path.join(outDir, 'voice.json'), JSON.stringify(voice, null, 1), 'utf8');
 
 // ---------------- 探针帧 ----------------
 // 检查帧：第 0 帧 + 每镜「结束前 0.45 秒」（此时本镜动画已演完、还没开始退场）——版式在这些帧上判。

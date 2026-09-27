@@ -115,6 +115,25 @@ const CASES = [
   {file: 'qualifier-ok.json', rule: '限定语齐全时不报（全天）', level: 'errors', expect: false, match: '比 facts 说的长'},
   {file: 'nearword-bad.json', rule: '近似词「相懂」提醒', level: 'warnings', expect: true, match: '不是常用词'},
   {file: 'facts-ok.json', rule: '近似词不误伤', level: 'warnings', expect: false, match: '不是常用词'},
+  // ---- 配音（meta.voice + 每镜 vo）----
+  {file: 'voice-ok.json', rule: '配音：mock + 三镜旁白（一镜不写 caption）整份通过', level: 'errors', expect: false, match: '｜'},
+  {file: 'voice-ok.json', rule: '配音：正例不误报 vo / meta.voice 的提醒', level: 'warnings', expect: false, match: 'vo'},
+  {file: 'facts-ok.json', rule: '配音：老分镜（没有 meta.voice / vo）不出任何配音相关提示', level: 'warnings', expect: false, match: '旁白'},
+  {file: 'voice-meta-bad.json', rule: 'meta.voice：provider 只能是 minimax / mock', level: 'errors', expect: true, match: '「azure」不是可选值'},
+  {file: 'voice-meta-bad.json', rule: 'meta.voice：speed 超出 0.5–2', level: 'errors', expect: true, match: '语速 3 不在 0.5–2 之间'},
+  {file: 'voice-meta-bad.json', rule: 'meta.voice：emotion 不在可选情绪里', level: 'errors', expect: true, match: '「excited」不是可选情绪'},
+  {file: 'voice-meta-bad.json', rule: 'meta.voice：subtitles 只能是 karaoke / line / off', level: 'errors', expect: true, match: '「big」不是可选值'},
+  {file: 'voice-meta-bad.json', rule: 'meta.voice：多写的字段要拦', level: 'errors', expect: true, match: 'meta.voice.pitch｜多了一个不认识的字段'},
+  {file: 'voice-rate-bad.json', rule: 'vo 语速：这一镜最长时长里念不完就拦，并给出能念的字数', level: 'errors', expect: true, match: '才念得完'},
+  {file: 'voice-rate-bad.json', rule: 'vo 的 {} 要成对', level: 'errors', expect: true, match: 'vo｜{} 没有成对'},
+  {file: 'voice-text-bad.json', rule: 'vo 也查《广告法》极限词', level: 'errors', expect: true, match: '（mockApp）vo｜「全网第一的排版工具，登陆就能用。」含《广告法》极限词'},
+  {file: 'voice-text-bad.json', rule: 'vo 也查错别字', level: 'errors', expect: true, match: '「登陆」是错别字'},
+  {file: 'voice-text-bad.json', rule: 'vo 里的数字也要在 meta.facts 里有来源', level: 'errors', expect: true, match: '（steps）vo｜「80%」在 meta.facts 里找不到来源'},
+  {file: 'voice-nokey-warn.json', env: {}, rule: 'provider=minimax 但环境里没有 MINIMAX_API_KEY：只警告，不拦', level: 'warnings', expect: true, match: '当前环境没有 MINIMAX_API_KEY'},
+  {file: 'voice-nokey-warn.json', env: {}, rule: '没有 key 时校验本身仍然通过', level: 'errors', expect: false, match: '｜'},
+  {file: 'voice-nokey-warn.json', env: {MINIMAX_API_KEY: 'placeholder-for-test'}, rule: '有 key 时不再提醒', level: 'warnings', expect: false, match: 'MINIMAX_API_KEY'},
+  {file: 'voice-orphan-bad.json', rule: '写了 vo 但没开 meta.voice 要提醒', level: 'warnings', expect: true, match: '写了 vo（旁白），但没写 meta.voice'},
+  {file: 'voice-orphan-bad.json', rule: '配音设置写在顶层 voice 要拦（顶层 voice 是 make 生成的配音轨）', level: 'errors', expect: true, match: '配音设置要写在 meta.voice 里'},
 ];
 
 const flatten = (list) => list.map((e) => `${e.where}｜${e.problem}｜${e.fix}`).join('\n');
@@ -140,7 +159,8 @@ for (const c of CASES) {
       parsed.sb.meta.style = draftId;
     }
     const brief = c.brief ? fs.readFileSync(path.join(DIR, c.brief), 'utf8') : null;
-    r = validate(parsed.sb, {baseDir: DIR, brief});
+    // env：配音用例用它模拟「有 / 没有 MINIMAX_API_KEY」，不读真实环境里的 key
+    r = validate(parsed.sb, {baseDir: DIR, brief, ...(c.env ? {env: c.env} : {})});
   } catch (e) {
     fail++;
     fails.push(`[ERR] ${c.rule}（${c.file}）：跑校验本身抛异常：${e.message}`);

@@ -1,9 +1,9 @@
 ---
 name: brewreel
-description: BrewReel (精酿) — make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects.
+description: BrewReel (精酿) — make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects (optional MiniMax voice-over).
 license: Apache-2.0
 metadata:
-  version: 0.4.0
+  version: 0.5.0
 ---
 
 # BrewReel (精酿): Product Promo Video
@@ -121,10 +121,40 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
     - **Don't stop before make does**: queueing plus rendering can outlast your per-command time limit. If it would, run make in the background and check `manifest.json` in the output folder about every 30 seconds until `status` appears (only `delivered` counts). Until you have seen the `交付：` line, do not write a delivery report and do not end the task.
     - Output: `video.mp4`, `sheet.png` (one frame per second, tiled), `check/` (frame 0 + a full-size frame near the end of every shot), `report.txt`, `layout.json`, `manifest.json` (sha256 of storyboard and video, duration, every check result). The previous run's copies of these files are cleared first.
     - To preview a few frames without a full render: add `--stills 0,3.5,8` (seconds). This is not a delivery.
+    - With `meta.voice` (voice-over), make synthesizes the narration first and retimes shots to the voice — see "Voice-over" below. Without `MINIMAX_API_KEY` add `--voice-provider mock` to check rhythm (placeholder voice, not a deliverable), or `--no-voice` for a version without narration.
     - **Only the last line counts**: on success the last line is `交付：<mp4 path>` ("delivered"). The path you give the user **must be copied from that line**. No such line means the run failed; never hand over some other mp4.
     - Exit codes: 0 deliverable / 1 validation failed / 2 bad arguments / 3 a ✗ in the layout or Han-character check (the video is renamed `video.rejected.mp4`, only for seeing what broke) / 4 render failed or wrong duration / 5 queue timeout / 6 internal error / 130 interrupted.
 11. **Read `report.txt`**: **any single ✗** in "machine self-check," "text-layout report," or "layout self-check" means the video can't be delivered (make exits with 3). The layout check measures every text block after rendering: clipped by a card, two text blocks overlapping, key text outside x180–900, and for English videos any Chinese character on screen (one probe frame every half beat). A ✗ usually means a field has too much text: trim items or shorten the copy, then go back to step 9. Once everything is ✓, check `sheet.png` and `check/` against the checklist below.
 12. **Deliver**: before delivering you can run `node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name> --verify` to confirm the video still matches the current storyboard (after an edit it reports that they differ and you must re-run make). Hand the user the mp4 path from make's last line and the `sheet.png` path, plus a "pre-publish checklist" (below) — copy step 9's "human review" items into it verbatim, one by one, and let the user confirm each — don't decide for them.
+
+## Voice-over (optional)
+
+Turn it on only when the user wants narration / voice-over. Without `meta.voice` the film has no voice, exactly as before. With it, **the voice is the timeline**: make synthesizes each line first, gets per-word timing, then sets every shot that has a `vo` to "0.15 s + narration + 0.35 s", rounded up to a whole beat (never shorter than that shot type's minimum). The `dur` / `beats` you write only count for shots without `vo`. Subtitles light up word by word with the voice, and the music ducks by about 10 dB under speech.
+
+1. **`meta.voice`** (only these 6 fields; anything else is an error):
+   | Field | How |
+   |---|---|
+   | `provider` | Required. `minimax` = natural voice (rendering needs the `MINIMAX_API_KEY` environment variable); `mock` = offline placeholder tone for checking rhythm only |
+   | `voiceId` | Voice; the English default is `English_expressive_narrator`. Write it explicitly for English films. See the picks below |
+   | `speed` | 0.5–2, default 1. Ads usually 1–1.15; if a line doesn't fit, cut words or split the shot instead of speeding up |
+   | `emotion` | Optional: `calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`. Leave it out for the voice's default; `calm` or `fluent` suit ads |
+   | `model` | Usually leave out (default `speech-2.8-hd`) |
+   | `subtitles` | `karaoke` (default, word-by-word highlight) / `line` (whole line) / `off` (voice only, no voice subtitles) |
+2. **`vo` on each shot** (the one line spoken over that shot):
+   - **Conversational**: short spoken sentences with a clear subject, as if telling a friend. Don't read out on-screen lists; no "as you can see".
+   - **One line per shot**, one idea, no line breaks (subtitles are paged by the voice). Not every shot needs one: shots without `vo` play for their `dur` with music as usual.
+   - **Length follows time**: plan about 2.5 words per second (Chinese: 4–5 characters per second), so at most ≈ (the shot type's max seconds − 0.5) × 2.5 words. cards limits: hook (max 4 s) ≈ 8 words, compare / steps / features (7 s) ≈ 16 words, mockApp / phone (8 s) ≈ 18 words, endCard (6 s) ≈ 13 words; quiz / journey: see their `recipes.md`. Validation blocks above 3 words/s (5 characters/s in Chinese); make checks again against the real audio and stops with "shot N fits about M words" if it's too long.
+   - **Numbers need a source**: `vo` goes through the same checks as captions — numbers with units must appear in `meta.facts`; superlatives, absolute claims, typos and speed claims are blocked. Keep spoken numbers identical to the ones on screen.
+   - `{}` highlight: as in captions, at most 1 per line (per 24 characters); shown in the accent color in the subtitle.
+   - **Who shows subtitles**: in cards, a shot with `vo` and no `caption` gets subtitles generated from `vo`; a shot with a `caption` keeps showing the caption and the voice just reads — **the hook must keep its `caption`** (it's the cover title); `endCard` is voiced without subtitles. quiz / journey show the narration in their own subtitle strip.
+   - The last line should say the product name (exactly `meta.product`).
+3. **Suggested voices** (MiniMax system voices; the MiniMax console list is authoritative — preview before first use):
+   - English films: `English_expressive_narrator` (default)
+   - Chinese films: `Chinese (Mandarin)_News_Anchor` (default, steady newsreader: B2B, office, tools), `female-shaonv` (young female: consumer, lifestyle), `male-qn-qingse` (young male, casual: quizzes, recommendations), `presenter_female` (presenter: explainers, education)
+4. **Preview without a key**: add `--voice-provider mock` to make (offline placeholder voice; timeline, word-by-word subtitles and ducking all work, the storyboard stays unchanged), or `--no-voice` for a version without narration. **A mock render is for checking rhythm only and is not a deliverable** — say so explicitly at delivery ("placeholder voice; set the key and re-run for the real voice"). Without a key, validate only warns.
+5. **Cost**: MiniMax bills per character of narration (see MiniMax's pricing page). Each line (same provider, model, voice, speed, emotion and text) is synthesized once and cached in the user folder `~/.cache/brewreel/tts` (override with `BREWREEL_TTS_CACHE`), so changing visuals or captions and re-rendering costs nothing; only a changed `vo` or voice is synthesized again. `manifest.json` → `voice.billedCharacters` shows what this run billed.
+6. **Keys**: read only from the environment variable `MINIMAX_API_KEY` (plus `MINIMAX_GROUP_ID`, `MINIMAX_BASE_URL` if needed). Never put the key in the storyboard, the brief, command-line arguments or any file, and never print it.
+7. **Voice exit codes**: narration longer than the shot allows → 1 (cut words or split the shot); no key, auth failure, rate-limit retries exhausted, network down → 2 (have the user set the key or retry later; preview with `--voice-provider mock`).
 
 ## Self-check list (look at the frame sheet, write a conclusion for each line against the actual image — don't just tick boxes)
 
@@ -173,7 +203,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
 - Don't use the same image as before and after, and don't call an illustration or a screenshot a real photo
 - Don't show a third-party app's name, logo, or brand color (like a specific chat app's green bubble); refer to people as "them," "a coworker," "a customer"
 - Don't use real names, phone numbers, or account handles
-- Don't set the `bgm` field yourself (make.mjs fills it in automatically)
+- Don't set the `bgm` field yourself (make.mjs fills it in automatically); don't write a top-level `voice` either (voice settings go in `meta.voice`, spoken lines in each shot's `vo`)
 - Don't personally adjudicate a gray-area compliance question (like "does this phrase count as medical language") — if validation blocks it, fix it; if validation lets it through but you're not sure, add it to "human review" for the user rather than deciding it's "probably fine" yourself
 
 ## Common errors and fixes
@@ -196,6 +226,10 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
 | End card's product name doesn't match meta.product | Make `brand` match `meta.product` exactly |
 | `cta` is set but meta.cta is empty | If the brief has a "how to get it," put it in meta.cta and copy it; otherwise remove `cta` |
 | Literal \n found in text | JSON line breaks should be a single backslash |
+| vo: narration has N words, this shot is at most M s, needs X words/s | Cut words, or split the line across two shots (one line each); don't raise `speed` |
+| Voice-over failed: narration takes N s, longer than this shot's max M s | Shorten to the suggested length, or split the shot |
+| No MINIMAX_API_KEY in this environment (warning) | Have the user set the environment variable before rendering; preview with `--voice-provider mock` |
+| Voice settings belong in meta.voice | Move the top-level `voice` into `meta`; spoken lines go in `vo` |
 | Contains a platform name (warning) | Your own product's category term: add it to `meta.allowWords`; if it's traffic-diversion, remove it |
 | Missing required field meta.action | Write one sentence: "what the user does → what the product gives back" |
 | Number not found in meta.facts | If the brief gave this number, copy it verbatim into `meta.facts` (as `{"id":"f1","text":"…","source":"…"}`); if not, replace the specific number with a qualitative statement |
@@ -233,6 +267,7 @@ All 9 examples pass validation and render as-is; the products and numbers are fi
 - `<SKILL>/examples/meeting.json`: B2B office tool, software (screenshot with callouts → to-do list → before/after compare → steps → end card)
 - `<SKILL>/examples/en-focus.json`: a `meta.lang: "en"` example — the full example below
 - `<SKILL>/examples/food.json`, `ecommerce.json`, `education.json`, `beauty.json`, `travel.json`: one per industry (Chinese captions). beauty shows the no-photo fallback; travel shows date ranges copied from facts; ecommerce shows a coupon price with its condition
+- Voice-over examples (one `vo` per shot, `provider` set to `minimax`; without a key render with `--voice-provider mock`, or change the provider to `mock` to preview; Chinese narration): `<SKILL>/styles/cards/examples/voice-reminder.json` (cards), `<SKILL>/styles/quiz/examples/software-archive-voice.json` (quiz), `<SKILL>/styles/journey/examples/software-notes-voice.json` (journey)
 - For the other industries (food/ecommerce/education/beauty/travel), see `industries/<industry>/test-brief.md` + `expected.md`: test-brief is a sample client brief, and expected.md spells out exactly what a storyboard written from that brief would get blocked for, and why. Read both before your first video in a new industry.
 
 ## Full example (examples/en-focus.json, passes validation as-is)

@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "title": "记得住 配音样例（cards：旁白定时长，逐字字幕由 vo 生成）",
+    "product": "记得住",
+    "theme": "fresh-light",
+    "action": "说一句「周五下午复诊」→ 自动建好日程和提醒",
+    "disclaimer": "演示画面，内容为示例",
+    "voice": {
+      "provider": "minimax",
+      "voiceId": "female-shaonv",
+      "speed": 1.05,
+      "emotion": "calm",
+      "subtitles": "karaoke"
+    }
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "说好的复诊，\n{又忘了}",
+      "vo": "说好的复诊，怎么{又忘了}？",
+      "mood": 0.85,
+      "params": {"visual": "icon", "icon": "calendar"}
+    },
+    {
+      "type": "compare",
+      "dur": 5,
+      "vo": "便签贴满了屏幕，还是会漏；现在说一句，{它替你记着}。",
+      "mood": 0.5,
+      "params": {
+        "mode": "lr",
+        "left": {"title": "靠便签", "items": ["贴满屏幕", "到点没人喊", "事后才想起"], "tone": "bad", "icon": "doc"},
+        "right": {"title": "记得住", "items": ["说一句就记下", "到点准时提醒", "改期也方便"], "tone": "good", "icon": "bell"},
+        "verdict": "约好的事交给它记"
+      }
+    },
+    {
+      "type": "mockApp",
+      "dur": 5,
+      "vo": "说一句周五下午复诊，日程和提醒{自动建好}。",
+      "mood": 0.25,
+      "params": {
+        "kind": "editor",
+        "title": "新建日程",
+        "input": "周五下午复诊，记得提醒我",
+        "button": "建好",
+        "items": [
+          {"text": "事项：复诊"},
+          {"text": "时间：周五下午"},
+          {"text": "提醒：前一晚"}
+        ],
+        "highlight": 2,
+        "done": "已加入日程"
+      },
+      "note": "核心动作演示：用户说一句话 → 产品建好日程和提醒"
+    },
+    {
+      "type": "steps",
+      "dur": 4,
+      "vo": "按住说话，看一眼确认，{到点它会叫你}。",
+      "mood": 0.2,
+      "params": {
+        "items": [
+          {"title": "按住说一句"},
+          {"title": "看一眼确认"},
+          {"title": "到点就提醒"}
+        ]
+      }
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "vo": "记得住，约好的事{到点提醒你}。",
+      "mood": 0,
+      "params": {
+        "brand": "记得住",
+        "slogan": "约好的事，\n{到点就提醒}",
+        "points": ["说一句就建好日程", "提醒时间你来定"],
+        "icon": "calendar"
+      }
+    }
+  ]
+}

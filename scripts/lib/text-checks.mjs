@@ -72,7 +72,8 @@ function checkShotDirections(texts, specs, err) {
       ? '以「讲/展示/演示/介绍」开头，像是写给剪辑师看的说明，不是说给观众听的话'
       : `和「${type}」这个镜头 spec.json 里的说明文字连续重复了 4 个字以上（「${hitCopy}」），像是直接抄了说明文字`;
     const fillin = FILLIN_BY_TYPE[type] ?? FILLIN_DEFAULT;
-    err(t.where, `字幕${why}`, `字幕是说给观众的话，讲用户的处境或产品带来的变化，不要描述画面怎么动。可以按这个句型改写：「${fillin}」`);
+    const what = /vo$/.test(t.where) ? '旁白' : '字幕';
+    err(t.where, `${what}${why}`, `${what}是说给观众的话，讲用户的处境或产品带来的变化，不要描述画面怎么动。可以按这个句型改写：「${fillin}」`);
   }
 }
 
@@ -486,7 +487,9 @@ function checkQualifiers(sb, meta, texts, lang, err) {
   const reported = new Set();
   shots.forEach((sh, i) => {
     if (!sh || typeof sh !== 'object') return;
-    const shotAll = [...[sh.caption].flat().filter((x) => typeof x === 'string'), ...strLeaves(sh.params ?? {})].join(' ').replace(/[{}]/g, '');
+    // 旁白（vo）念出来的数字同样要带上限定语；限定语写在字幕、画面或旁白里都算
+    const vo = typeof sh.vo === 'string' ? sh.vo : null;
+    const shotAll = [...[sh.caption].flat().filter((x) => typeof x === 'string'), ...(vo ? [vo] : []), ...strLeaves(sh.params ?? {})].join(' ').replace(/[{}]/g, '');
     const pool = `${shotAll} ${notices}`;
     // 屏幕上的数字：{v, local（紧挨着它的那几个字）, obj（同一个对象里的其他字）, where, text}
     const hits = [];
@@ -515,6 +518,7 @@ function checkQualifiers(sb, meta, texts, lang, err) {
       const cw = Array.isArray(sh.caption) ? `caption[${k}]` : 'caption';
       for (const n of plainNums(c)) hits.push({v: n.v, raw: n.raw, local: c.replace(/[{}]/g, ''), obj: c.replace(/[{}]/g, ''), where: whereOf(i, sh.type, cw), text: c});
     });
+    if (vo) for (const n of plainNums(vo)) hits.push({v: n.v, raw: n.raw, local: vo.replace(/[{}]/g, ''), obj: vo.replace(/[{}]/g, ''), where: whereOf(i, sh.type, 'vo'), text: vo});
     for (const h of hits) {
       const cl = clauses.filter((c) => plainNums(c.text).some((n) => n.v === h.v));
       if (!cl.length) continue;

@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "title": "归档不是删除（配音版：每镜一句旁白，replay 不配音）",
+    "product": "轻邮",
+    "style": "quiz",
+    "industry": "software",
+    "action": "在邮件列表里点归档，邮件收进归档夹，随时能搜到",
+    "disclaimer": "演示场景，界面为示意",
+    "cta": "应用商店搜轻邮",
+    "voice": {
+      "provider": "minimax",
+      "voiceId": "male-qn-qingse",
+      "speed": 1,
+      "subtitles": "karaoke"
+    }
+  },
+  "shots": [
+    {
+      "type": "phraseTitle",
+      "beats": 12,
+      "vo": "归档这个按钮，好多人不敢点。点下去，邮件是不是就{删掉了}？",
+      "params": {
+        "voice": "show",
+        "eyebrow": "功能冷知识",
+        "phrase": "归档",
+        "guess": "删掉了",
+        "context": "很多人不敢点这个按钮，怕邮件就这么没了",
+        "scene": "screen",
+        "screenItems": [
+          "合同终版确认",
+          "本周周报",
+          "报销单已审批"
+        ]
+      }
+    },
+    {
+      "type": "clip",
+      "beats": 10,
+      "vo": "办公室里，同事急着找一封合同邮件，小林却一脸懵。",
+      "params": {
+        "lines": [
+          {
+            "speaker": "同事",
+            "text": "合同那封邮件呢？"
+          },
+          {
+            "speaker": "小林",
+            "text": "我点了归档，就不见了",
+            "zh": "（其实它一直都在）"
+          }
+        ],
+        "key": "归档",
+        "scene": "office"
+      }
+    },
+    {
+      "type": "quiz",
+      "beats": 19,
+      "vo": "考考你：点了归档，邮件去哪了？删掉了，收起来了，还是发给对方了？",
+      "params": {
+        "question": "点了归档，邮件去哪了？",
+        "options": [
+          "删掉了",
+          "收起来了",
+          "发给对方了"
+        ],
+        "answer": 1
+      }
+    },
+    {
+      "type": "meaningCard",
+      "beats": 12,
+      "vo": "答案是收起来了。归档不是删除，邮件还在，{随时能搜到}。",
+      "params": {
+        "eyebrow": "今天这个词",
+        "rows": [
+          {
+            "kind": "word",
+            "text": "归档"
+          },
+          {
+            "kind": "neq",
+            "text": "删掉了"
+          },
+          {
+            "kind": "eq",
+            "text": "收起来"
+          },
+          {
+            "kind": "word",
+            "text": "Archive"
+          },
+          {
+            "kind": "eq",
+            "text": "随时能搜到"
+          }
+        ]
+      }
+    },
+    {
+      "type": "replay",
+      "beats": 8,
+      "params": {
+        "sticker": "找到了"
+      }
+    },
+    {
+      "type": "duoScene",
+      "beats": 14,
+      "vo": "下次同事急着找合同，你就告诉他：别急，{在归档里呢}。",
+      "params": {
+        "context": "同事急着找合同：",
+        "ask": "我的合同邮件没了！",
+        "reply": "在归档里呢",
+        "key": "归档"
+      }
+    },
+    {
+      "type": "commentCta",
+      "beats": 7,
+      "vo": "你刚才押的是哪个？评论区说说。",
+      "params": {
+        "question": "你押的是哪个？",
+        "footnote": "押 A 的不丢人"
+      }
+    },
+    {
+      "type": "brandEnd",
+      "beats": 10,
+      "vo": "想把邮箱理清楚，来试试{轻邮}。",
+      "params": {
+        "badge": "这个按钮你会用了",
+        "slogan": "想把邮箱理清楚\n来试试轻邮"
+      }
+    }
+  ]
+}

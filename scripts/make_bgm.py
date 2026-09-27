@@ -8,6 +8,8 @@
   --cues   各镜起点秒（JSON 数组，也接受 0,2.5,8.5 这种逗号写法）；make.mjs 会自动传
   --moods  各镜情绪 0..1（可省，默认 0.5）；--types 各镜类型（可省）
   --theme  决定调性（整体移调）和音色配比
+  --voice  人声区间（配音时 make.mjs 自动传），配乐在这些区间里整体压低 --duck-db（默认 -10 dB），
+           起 --duck-attack（默认 0.12 秒，人声开口前压完）、落 --duck-release（默认 0.3 秒）
 每一镜是一个段落，按「位置 + 情绪」选风格：
   intro   第 1 镜（钩子）：拨弦动机 + 薄 pad（情绪高时加心跳）
   tension 情绪 ≥ 0.7：Am–Em、低音脉冲渐强、心跳
@@ -55,6 +57,12 @@ ap.add_argument('--types', default=None)
 ap.add_argument('--out', required=True)
 ap.add_argument('--seed', type=int, default=20260925)
 ap.add_argument('--lufs', type=float, default=-16.0)
+# 配乐闪避（配音时 make.mjs 传）：人声区间内把整条配乐压低 duck-db，起落用升余弦平滑。
+# 响度仍按「没压低」的整条配乐校到 --lufs，闪避在母带之后做：没人声的段落音量和不配音时一样，人声段只低 duck-db
+ap.add_argument('--voice', default=None, help='人声区间（秒）：JSON [[start,end],...]，或存着这个 JSON 的文件路径')
+ap.add_argument('--duck-db', type=float, default=-10.0, help='人声段压低多少 dB（负数）')
+ap.add_argument('--duck-attack', type=float, default=0.12, help='压下去用多久（秒），在人声开口前完成')
+ap.add_argument('--duck-release', type=float, default=0.30, help='恢复用多久（秒），人声结束后开始')
 args = ap.parse_args()
 
 SR = 44100
@@ -781,6 +789,56 @@ try:
     os.rmdir(tmpdir)
 except OSError:
     pass
+
+
+
+# ---------------------------------------------------------------- 配乐闪避（人声处压低）
+def load_voice(s):
+    if not s:
+        return []
+    s = s.strip()
+    if not s.startswith('['):
+        with open(s, 'r', encoding='utf-8') as f:
+            s = f.read()
+    out = []
+    for x in json.loads(s):
+        a, b = (x.get('start'), x.get('end')) if isinstance(x, dict) else (x[0], x[1])
+        a, b = max(0.0, float(a)), min(DUR, float(b))
+        if b > a:
+            out.append((a, b))
+    return sorted(out)
+
+
+def duck_gain(intervals, db, attack, release):
+    """每个采样点的增益（线性）。两段人声间隔短于「起 + 落」就连成一段，避免配乐在两句之间忽高忽低。"""
+    merged = []
+    for a, b in intervals:
+        if merged and a - merged[-1][1] < attack + release:
+            merged[-1][1] = max(merged[-1][1], b)
+        else:
+            merged.append([a, b])
+    depth = np.zeros(N)
+    for a, b in merged:
+        i_a0 = max(0, int(round((a - attack) * SR)))
+        i_a1 = max(0, int(round(a * SR)))
+        i_b0 = min(N, int(round(b * SR)))
+        i_b1 = min(N, int(round((b + release) * SR)))
+        if i_a1 > i_a0:
+            x = np.linspace(0, 1, i_a1 - i_a0, endpoint=False)
+            depth[i_a0:i_a1] = np.maximum(depth[i_a0:i_a1], 0.5 - 0.5 * np.cos(np.pi * x))
+        depth[min(i_a1, N):i_b0] = 1.0
+        if i_b1 > i_b0:
+            x = np.linspace(0, 1, i_b1 - i_b0, endpoint=False)
+            depth[i_b0:i_b1] = np.maximum(depth[i_b0:i_b1], 0.5 + 0.5 * np.cos(np.pi * x))
+    return 10 ** (db * depth / 20), merged
+
+
+voice_iv = load_voice(args.voice)
+if voice_iv:
+    dg, merged = duck_gain(voice_iv, min(0.0, args.duck_db), max(0.0, args.duck_attack), max(0.0, args.duck_release))
+    y = y * dg[None, :]
+    print(f'闪避：{len(voice_iv)} 段人声（合并成 {len(merged)} 段），压低 {-min(0.0, args.duck_db):.1f} dB，'
+          f'起 {args.duck_attack * 1000:.0f} ms / 落 {args.duck_release * 1000:.0f} ms')
 
 d = rng.random(y.shape) - rng.random(y.shape)  # TPDF dither -> int16
 pcm = np.clip(np.round(y * 32767 + d), -32768, 32767).astype(np.int16)

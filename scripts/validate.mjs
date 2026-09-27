@@ -13,6 +13,7 @@ import {fileURLToPath} from 'node:url';
 import {runIndustryChecks} from './lib/industry.mjs';
 import {runTextChecks, FILLIN_BY_TYPE, FILLIN_DEFAULT, typeOfWhere, splitFacts} from './lib/text-checks.mjs';
 import {ASPECTS, DEFAULT_STYLE, bpmOf, devStylesAllowed, listStyles, loadStyle, runStyleRules, specsForStyle, styleIdOf, styleIds} from './lib/styles.mjs';
+import {checkVo, checkVoiceMeta} from './lib/tts/checks.mjs';
 
 // ---------------- 可调清单（改这里） ----------------
 /** 《广告法》极限词。命中即报错；meta.allowWords 里的词豁免 */
@@ -334,7 +335,7 @@ export function crossCheck(type, p, W, err, warn) {
 // ---------------- 校验主体 ----------------
 /** 「没有简报依据」类错误的统一标记（checkSpecs 单镜自检时按它过滤，单镜示例本来就没有 meta.facts） */
 const NO_BASIS = '没有简报依据';
-export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null, allowDraftStyles = false} = {}) {
+export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null, allowDraftStyles = false, env = process.env} = {}) {
   const errors = [];
   const warnings = [];
   const texts = []; // [{where, text}] 画面上会出现的字，统一扫网址/极限词
@@ -503,6 +504,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   }
   for (const k of Object.keys(sb)) {
     if (k === 'bgm') warn('bgm', '这个字段由 make.mjs 自动填写', '删掉它');
+    else if (k === 'voice') err('voice', '配音设置要写在 meta.voice 里（顶层的 voice 是 make.mjs 生成的配音轨）', '把它挪进 meta：{"meta": {…, "voice": {"provider": "minimax"}}}，每镜要念的话写在镜头的 vo 里');
     else if (!['meta', 'shots'].includes(k)) err(k, '多了一个不认识的顶层字段', '最外层只能有 meta 和 shots');
   }
 
@@ -537,7 +539,10 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       'assets',
       // style / aspect：风格包（styles/<id>/）与画幅（9:16 / 4:5），不写 = cards + 风格默认画幅
       'style', 'aspect',
+      // voice：配音（{provider, voiceId?, speed?, emotion?, model?, subtitles?}），不写 = 不配音；各镜 vo 是旁白
+      'voice',
     ];
+    if (meta.voice !== undefined) checkVoiceMeta(meta.voice, {lang: meta.lang === 'en' ? 'en' : 'zh', err, warn, env});
     // demoData：整片用的是演示数据（简报没给真数据，界面里的数字是示例）。只放行「演示界面里的内容」，不放行效果说法；
     // 画面上必须有「演示/示例」提示（写在 meta.disclaimer，顶部胶囊会显示）
     if (meta.demoData !== undefined) {
@@ -666,6 +671,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   }
   const beat = 60 / bpmOf(meta);
   const slots = schedule(sb, specs);
+  const voEst = {}; // 写了 vo 的镜头：按常见语速估算的配音后时长（秒）
   shots.forEach((shot, i) => {
     const type = shot?.type;
     const W = (f) => where(i, type, f);
@@ -677,11 +683,11 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     if (!isCards && SM.captionLayer === 'none' && shot.caption !== undefined && spec.caption !== 'none')
       err(W('caption'), `「${styleId}」风格不用全局字幕，caption 不能写`, '删掉 caption，要上屏的字写进这一镜的 params');
     // 把 params 里的字段写到了镜头顶层（便宜模型常见：{"type":"district","headline":…}）：合并成一条错，不按字段一条条报
-    const SHOT_KEYS = ['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note'];
+    const SHOT_KEYS = ['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note', 'vo'];
     const paramKeys = Object.keys(spec.params?.properties ?? {});
     const misplaced = Object.keys(shot).filter((k) => !SHOT_KEYS.includes(k) && paramKeys.includes(k));
     for (const k of Object.keys(shot)) if (!SHOT_KEYS.includes(k) && !misplaced.includes(k))
-      err(W(k), '多了一个不认识的字段', '每一镜只能有 type、dur 或 beats、caption、mood、params、note（时长字段叫 dur，单位秒）');
+      err(W(k), '多了一个不认识的字段', '每一镜只能有 type、dur 或 beats、caption、mood、params、note、vo（时长字段叫 dur，单位秒；vo 是旁白）');
     if (misplaced.length)
       err(W('params'), `${misplaced.join('、')} 写在了镜头顶层，这些是 params 里的字段`, `整镜写成 {"type": "${type}", "dur": ${spec.dur?.default ?? 3}, "params": {${misplaced.map((k) => `"${k}": …`).join(', ')}}}：${isCards ? '' : '风格镜头的字段一律写在 params 里；'}改完再校验一次，剩下的字段问题会逐条报出来`);
     // 时长
@@ -708,7 +714,13 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
           texts.push({where: w, text: c, caption: true});
         });
       }
-    } else if (spec.caption === 'required') err(W('caption'), '缺少字幕（这一镜必填）', type === 'hook' ? 'hook 的 caption 就是封面大标题，写用户痛点，{} 里放最扎心的几个字' : '补上 caption');
+    } else if (spec.caption === 'required') err(W('caption'), '缺少字幕（这一镜必填）', type === 'hook' ? `hook 的 caption 就是封面大标题，写用户痛点，{} 里放最扎心的几个字${shot.vo !== undefined ? '（写了 vo 也要写：封面第 0 帧就要有标题，旁白字幕要等开口才出）' : ''}` : '补上 caption');
+    // 旁白（配音）：格式 / 语速在 lib/tts/checks.mjs；文字本身和字幕一样进 texts，走广告法、极限词、数字来源、错别字等全部文本检查
+    if (shot.vo !== undefined) {
+      const est = checkVo({vo: shot.vo, W, spec, lang: meta?.lang === 'en' ? 'en' : 'zh', speed: typeof meta?.voice?.speed === 'number' ? meta.voice.speed : 1, beat, err, warn});
+      if (est !== null) voEst[i] = est;
+      if (typeof shot.vo === 'string' && shot.vo.trim()) texts.push({where: W('vo'), text: shot.vo, caption: true});
+    }
     // 参数
     if (shot.params === undefined) {
       if (!misplaced.length) err(W('params'), '缺少 params', '补上 "params": {...}，字段见 shots.md');
@@ -865,7 +877,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     if (w.startsWith('meta.')) return false;
     const type = typeOfWhere(w);
     if (EFFECT_TYPES.includes(type) || fast) return true;
-    if (kind === '百分比' || kind === '倍数') return !DEMO_UI_TYPES.includes(type) || /caption(\[\d+\])?$/.test(w);
+    if (kind === '百分比' || kind === '倍数') return !DEMO_UI_TYPES.includes(type) || /(caption(\[\d+\])?|vo)$/.test(w);
     if (kind === '时长' && type === 'hook') return true;
     return EFFECT_WORDS.test(plainOf(text));
   };
@@ -886,6 +898,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     const out = [];
     for (const c of [sh.caption].flat()) if (typeof c === 'string') out.push({text: c, caption: true, field: 'caption'});
     for (const x of collectStrings(sh.params ?? {}, [])) out.push({text: x, caption: false, field: 'params'});
+    // 旁白参与全片数字口径核对；不按字幕做「」引用检查（念出来的引号观众看不到）
+    if (typeof sh.vo === 'string') out.push({text: sh.vo, caption: false, field: 'vo'});
     return out;
   });
   // (1) 全片数字口径：counter 的时间单位 vs 其他镜头的「N 秒 / 秒出」；counter.from vs hook 的痛点时长
@@ -1058,7 +1072,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     else if (sh?.type === 'endCard') [arr, what] = [P.points, 'points'];
     else if (sh?.type === 'chat') [arr, what] = [P.panel?.replies, '候选回复'];
     if (!Array.isArray(arr)) return;
-    const caps = sh.type === 'endCard' ? [P.slogan] : [sh.caption].flat();
+    const caps = [...(sh.type === 'endCard' ? [P.slogan] : [sh.caption].flat()), sh.vo];
     for (const c of caps) {
       if (typeof c !== 'string') continue;
       const t = plainOf(c);
@@ -1066,7 +1080,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       for (const m of t.matchAll(QTY)) {
         const n = cnNum(m[1]);
         if (!Number.isFinite(n) || n < 2 || n === arr.length) continue;
-        err(where(i, sh.type, sh.type === 'endCard' ? 'params.slogan' : 'caption'), `字幕说「${m[0]}」，这一镜的${what}只有 ${arr.length} 条，数量对不上`, `把数字改成 ${arr.length}，或者别写数量`);
+        const isVo = c === sh.vo;
+        err(where(i, sh.type, isVo ? 'vo' : sh.type === 'endCard' ? 'params.slogan' : 'caption'), `${isVo ? '旁白' : '字幕'}说「${m[0]}」，这一镜的${what}只有 ${arr.length} 条，数量对不上`, `把数字改成 ${arr.length}，或者别写数量`);
       }
     }
   });
@@ -1156,6 +1171,19 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   const total = slots.length ? slots[slots.length - 1].end : 0;
   if (total < durRange[0] || total > durRange[1])
     err('总时长', `${fmtN(total)} 秒，要在 ${durRange[0]}–${durRange[1]} 秒之间`, total < durRange[0] ? `加镜头或加长时长，还差 ${fmtN(durRange[0] - total)} 秒` : `删镜头或缩短时长，多了 ${fmtN(total - durRange[1])} 秒`);
+
+  // ---- 配音：vo 和 meta.voice 要配套；按常见语速估算配音后（有旁白的镜头时长由配音决定）的总时长 ----
+  const hasVo = shots.some((s) => typeof s?.vo === 'string' && s.vo.trim());
+  if (hasVo && meta?.voice === undefined)
+    warn('shots', '写了 vo（旁白），但没写 meta.voice：不会配音，也不会出旁白字幕', '要配音就在 meta 里加 "voice": {"provider": "minimax"}（没有 key 先用 "mock" 听节奏）；不要配音就删掉各镜的 vo');
+  else if (!hasVo && meta?.voice !== undefined)
+    warn('meta.voice', '开了配音，但没有一镜写 vo（旁白）', '在要念的镜头里写 "vo": "这一镜要念的话"；不配音就删掉 meta.voice');
+  else if (hasVo && meta?.voice && typeof meta.voice === 'object') {
+    const est = slots.reduce((a, s) => a + (voEst[s.i] ?? s.dur), 0);
+    if (est < durRange[0] - 1e-6 || est > durRange[1] + 1e-6)
+      warn('总时长', `有旁白的镜头时长由配音决定：按常见语速估算，配音后全片约 ${fmtN(Math.round(est * 10) / 10)} 秒，不在 ${durRange[0]}–${durRange[1]} 秒之间（出片时按实际配音时长再核一次，超了会停）`,
+        est > durRange[1] ? '删减旁白字数或删一镜' : '加一镜，或把旁白写得完整一点');
+  }
 
   // ---- 全文扫描：网址/二维码/账号、极限词 ----
   const allow = Array.isArray(meta?.allowWords) ? meta.allowWords.filter((x) => typeof x === 'string') : [];

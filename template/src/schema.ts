@@ -116,6 +116,80 @@ export type Meta = {
   demoData?: boolean;
   /** 素材清单：照片/截图/插画文件各自的来源，见 AssetEntry */
   assets?: AssetEntry[];
+  /** 配音。不写 = 不配音（和以前完全一样）；写了之后各镜的 vo（旁白）会被合成、按声音定镜头时长，见 VoiceSetting */
+  voice?: VoiceSetting;
+};
+
+/** 配音提供者：minimax = MiniMax 语音合成（要环境变量 MINIMAX_API_KEY）；mock = 不联网的占位音（按字数生成音节脉冲，先听节奏用） */
+export type VoiceProvider = 'minimax' | 'mock';
+/** 旁白字幕：karaoke = 逐字高亮；line = 整句（分页）出现；off = 不出旁白字幕（只念） */
+export type SubtitleMode = 'karaoke' | 'line' | 'off';
+export type VoiceEmotion = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised' | 'calm' | 'fluent' | 'whisper';
+
+/** meta.voice：模型只写这几项，其余由 make.mjs 算 */
+export type VoiceSetting = {
+  provider: VoiceProvider;
+  /** 音色 id；不写用默认（中文「Chinese (Mandarin)_News_Anchor」） */
+  voiceId?: string;
+  /** 语速 0.5–2，默认 1；广告旁白一般 1–1.15 */
+  speed?: number;
+  /** 情绪；不写用音色默认。广告旁白建议 calm / fluent */
+  emotion?: VoiceEmotion;
+  /** 模型，默认 speech-2.8-hd（turbo 便宜约四成） */
+  model?: string;
+  /** 旁白字幕，默认 karaoke。镜头自己写了 caption 时照旧显示 caption，旁白只念 */
+  subtitles?: SubtitleMode;
+};
+
+// ---------------- 以下由 make.mjs 生成（voice.json，作为 props.voice 传进来），模型不要写 ----------------
+/** 一个念读单位：中文一个汉字、拉丁一个词。text 是旁白（去掉 {}）的连续切片，含后面粘着的标点和空格，顺序拼起来就是整句 */
+export type VoiceWord = {
+  text: string;
+  /** 相对这句音频开头的毫秒（镜头内时间 = line.startMs + startMs） */
+  startMs: number;
+  endMs: number;
+  /** 在 vo 的 {} 里（强调） */
+  hot?: boolean;
+};
+/** 字幕的一页（最多 2 行，每行 ≤12 个汉字 / 英文 ≤22 字符），text 带 {} 和 \n，可以直接交给字幕组件；时间同 VoiceWord */
+export type VoicePage = {text: string; from: number; to: number; startMs: number; endMs: number};
+export type VoiceLine = {
+  /** 镜头下标（从 0 数） */
+  shot: number;
+  /** 旁白原文（含 {} 强调） */
+  text: string;
+  /** public 下的音频路径，staticFile(src) */
+  src: string;
+  /** 相对镜头起点的开口时间（毫秒，固定前留白 150） */
+  startMs: number;
+  /** 音频时长（毫秒） */
+  durMs: number;
+  words: VoiceWord[];
+  /** 时间戳来源：char / word = 接口（或 mock）给的逐字 / 逐词时间；sentence-interp = 只有句级，字级按字数与标点估算 */
+  granularity: 'char' | 'word' | 'sentence-interp';
+  /** 以下为便利字段：镜头起点、开口时刻（相对整片，毫秒） */
+  shotStartMs?: number;
+  absStartMs?: number;
+  /** 这一句要不要出旁白字幕：meta.voice.subtitles 为 off 时一律 false；cards 字幕带（及 captionLayer=cards 的风格）
+   *  另外在这一镜写了 caption、或镜头本身 caption:none（endCard）时为 false；quiz / journey 自己画字幕条，其余都是 true */
+  subtitle?: boolean;
+  pages?: VoicePage[];
+};
+export type VoiceTrack = {
+  provider: VoiceProvider;
+  voiceId: string;
+  model?: string;
+  speed?: number;
+  emotion?: VoiceEmotion | null;
+  lang?: Lang;
+  subtitles?: SubtitleMode;
+  /** 配音改写镜头时长之后的整片时长（毫秒） */
+  totalMs: number;
+  /** 所有旁白加起来的时长（毫秒） */
+  voiceMs?: number;
+  /** 配乐闪避参数。baked = true：make_bgm.py 已经把闪避做进 bgm.wav，组件不要再压 bgm 音量；false 时组件可以按这组参数自己压 */
+  duck: {db: number; attackMs: number; releaseMs: number; baked?: boolean};
+  lines: VoiceLine[];
 };
 
 export type Shot = {
@@ -137,6 +211,11 @@ export type Shot = {
   params: Record<string, unknown>;
   /** 给人看的备注，不上画面 */
   note?: string;
+  /**
+   * 旁白（配音时念的话，meta.voice 开了才生效）。可含 {} 强调；不写 caption 时旁白字幕由它自动生成。
+   * 写了 vo 的镜头时长由配音决定（前后留白后取整拍），dur / beats 会被 make.mjs 改写。
+   */
+  vo?: string;
 };
 
 export type Storyboard = {
@@ -144,4 +223,5 @@ export type Storyboard = {
   shots: Shot[];
   /** 以下由 make.mjs 自动填写，模型不要写 */
   bgm?: string; // public 下的配乐路径，如 _run/<id>/bgm.wav
+  voice?: VoiceTrack; // 配音轨（voice.json）；没配音时没有这个字段
 };

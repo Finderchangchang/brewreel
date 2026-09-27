@@ -1,0 +1,30 @@
+{
+  "meta": {
+    "title": "journey 配音样例：软件功能巡游（9:16，6 站，每站一句旁白）",
+    "product": "拾光笔记",
+    "style": "journey",
+    "aspect": "9:16",
+    "action": "用户把网页、截图、语音存进来 → 自动分好类，随时搜到",
+    "disclaimer": "演示画面，数据为示例",
+    "demoData": true,
+    "facts": [
+      {"id": "f1", "text": "内置 120 个模板", "source": "2026-09 产品说明"},
+      {"id": "f2", "text": "支持 6 种内容格式", "source": "2026-09 产品说明"}
+    ],
+    "voice": {
+      "provider": "minimax",
+      "speed": 1,
+      "subtitles": "karaoke"
+    }
+  },
+  "shots": [
+    {"type": "opening", "vo": "这趟车，停六站。", "params": {"headline": "6 个功能", "kicker": "这趟车停 6 站", "go": "出发！", "skyline": "modern"}},
+    {"type": "district", "vo": "看到好文章，一键存进来。", "params": {"category": "网页剪藏", "title": "看到好文章，一键存进来不怕丢", "scene": "postbox", "tag": "编辑推荐"}},
+    {"type": "district", "vo": "走路时说一句，回家就是文字。", "params": {"category": "语音速记", "title": "走路时说一句，回家就是整理好的文字", "scene": "phone"}},
+    {"type": "district", "vo": "存进来的东西，{自己找到文件夹}。", "params": {"category": "自动分类", "title": "存进来的东西，自己找到该去的文件夹", "scene": "punch", "source": "按内容自动归档"}},
+    {"type": "district", "vo": "截图里的字，也能搜到。", "params": {"category": "截图识字", "title": "截图里的字，也能搜到", "scene": "booth"}},
+    {"type": "district", "vo": "零散的想法，拖到一块板上。", "params": {"category": "灵感白板", "title": "零散的想法，拖到一块板上连成线", "scene": "hitch"}},
+    {"type": "district", "vo": "半年前存的一句话，一搜就在。", "params": {"category": "全文搜索", "title": "半年前存的一句话，一搜就在", "scene": "platform"}},
+    {"type": "finale", "vo": "拾光笔记，存得进，{也找得回}。", "params": {"brand": "拾光笔记", "slogan": "存得进，也找得回", "stats": [{"value": "120", "unit": "个模板"}], "sub": "2026-09 产品说明", "refs": ["f1"]}}
+  ]
+}

@@ -15,19 +15,30 @@ const ENV_WHITELIST = [
   'HOMEDRIVE', 'HOMEPATH', 'SYSTEMDRIVE', 'XDG_CACHE_HOME', 'XDG_RUNTIME_DIR', 'FONTCONFIG_PATH',
 ];
 const PROXY_VARS = ['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy'];
+/**
+ * Voice-over (MiniMax TTS) variables. Only the render process (make.mjs) gets them, and only these fixed
+ * names: the MiniMax key plus its optional group id / host, and the TTS cache folder. Every other
+ * credential-looking variable is still dropped, and envPassthrough cannot add more.
+ */
+export const VOICE_ENV = Object.freeze(['MINIMAX_API_KEY', 'MINIMAX_GROUP_ID', 'MINIMAX_BASE_URL', 'BREWREEL_TTS_CACHE']);
 
 /**
  * Build the environment for a child process from a whitelist. Credentials never pass: anything whose
- * name looks like a key / token / secret is dropped even if a whitelist or passthrough names it.
- * @param {{extra?: Record<string, string | undefined>, passthrough?: string[], proxy?: boolean, source?: NodeJS.ProcessEnv}} [o]
+ * name looks like a key / token / secret is dropped even if a whitelist or passthrough names it —
+ * except the fixed VOICE_ENV names when `voice` is true (render process only).
+ * @param {{extra?: Record<string, string | undefined>, passthrough?: string[], proxy?: boolean, voice?: boolean, source?: NodeJS.ProcessEnv}} [o]
  */
-export function cleanEnv({extra = {}, passthrough = [], proxy = false, source = process.env} = {}) {
+export function cleanEnv({extra = {}, passthrough = [], proxy = false, voice = false, source = process.env} = {}) {
   /** @type {Record<string, string>} */
   const env = {};
   const want = new Set([...ENV_WHITELIST, ...passthrough.map((x) => x.toUpperCase()), ...(proxy ? PROXY_VARS.map((x) => x.toUpperCase()) : [])]);
   for (const [k, v] of Object.entries(source)) {
     if (v === undefined) continue;
     const K = k.toUpperCase();
+    if (voice && VOICE_ENV.includes(K)) {
+      env[K] = v;
+      continue;
+    }
     const ok = want.has(K) || K.startsWith('LC_');
     if (ok && !SECRET_ENV_RE.test(K)) env[k] = v;
   }

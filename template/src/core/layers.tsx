@@ -307,13 +307,15 @@ export const captionSegments = (start: number, dur: number, n: number, beat: num
 
 type CapSeg = {key: string; text: string; start: number; end: number; instant: boolean};
 
-export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang}> = ({slots, beat = 0.5, lang = 'zh'}) => {
+/** skip：这些镜头的字幕带交给配音字幕（core/voice.tsx 的 VoiceCaptions）画，这里不画；不传 = 和以前一样 */
+export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip?: Set<number>}> = ({slots, beat = 0.5, lang = 'zh', skip}) => {
   const th = useTheme();
   const t = useSec();
   const lineHeight = lang === 'en' ? 1.32 : 1.18;
   const total = slots.length ? slots[slots.length - 1].end : 0;
   const segs: CapSeg[] = [];
   for (const s of slots) {
+    if (skip?.has(s.i)) continue;
     const c = s.shot.caption as unknown;
     const caps = (Array.isArray(c) ? c : [c]).filter((x): x is string => typeof x === 'string' && x.length > 0);
     if (!caps.length) continue;
@@ -504,10 +506,11 @@ export const SfxTrack: React.FC<{cues: SfxCue[]}> = ({cues}) => (
 );
 
 // ---------------- 配乐：make.mjs 生成 bgm.wav 后写进 storyboard.bgm；没有就静音 ----------------
-export const Bgm: React.FC<{sb: Storyboard; frames: number}> = ({sb, frames}) =>
+// duck：配音时的闪避增益（core/voice.tsx 的 duckGainOf，按帧返回 0..1 乘在音量上）；不传 = 和以前一样
+export const Bgm: React.FC<{sb: Storyboard; frames: number; duck?: (frame: number) => number}> = ({sb, frames, duck}) =>
   sb.bgm ? (
     <Audio
       src={staticFile(sb.bgm)}
-      volume={(fr) => interpolate(fr, [0, 6, frames - 30, frames], [0, 0.3, 0.3, 0], clamp)}
+      volume={(fr) => interpolate(fr, [0, 6, frames - 30, frames], [0, 0.3, 0.3, 0], clamp) * (duck ? duck(fr) : 1)}
     />
   ) : null;

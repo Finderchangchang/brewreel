@@ -1,9 +1,9 @@
 ---
 name: brewreel
-description: 精酿 · BrewReel：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写一份分镜 JSON（storyboard.json），画面由现成镜头组件画，校验脚本拦规则和行业合规，一条命令出片（带原创配乐和音效）。
+description: 精酿 · BrewReel：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写一份分镜 JSON（storyboard.json），画面由现成镜头组件画，校验脚本拦规则和行业合规，一条命令出片（带原创配乐和音效，可选 MiniMax 配音）。
 license: Apache-2.0
 metadata:
-  version: 0.4.0
+  version: 0.5.0
 ---
 
 # 精酿 · BrewReel：产品宣传短片
@@ -121,10 +121,43 @@ metadata:
    - **make 没结束不许收工**：排队加渲染可能超过你的单条命令时限。超时就把 make 放后台跑，每 30 秒左右看一次输出目录里的 `manifest.json`，直到 `status` 出现（`delivered` 才算成）。没看到 `交付：` 那一行之前，不许写交付报告、不许结束。
    - 产物：`video.mp4`、`sheet.png`（每秒一帧拼图）、`check/`（第 0 帧 + 每镜结束前的全尺寸帧）、`report.txt`、`layout.json`、`manifest.json`（分镜和成片的 sha256、时长、各项检查结论）。开跑时会先清掉目录里上一次的这些产物。
    - 只想快速看几帧：加 `--stills 0,3.5,8`（秒），只出单帧，不出整片（不是交付）。
+   - 写了 `meta.voice`（配音）：make 会先合成旁白、按声音改写镜头时长，见下文「配音」。没有 `MINIMAX_API_KEY` 时加 `--voice-provider mock` 先看节奏（占位音，不能交付），或加 `--no-voice` 出无配音版。
    - **只认最后一行**：成功时 make 最后一行是 `交付：<mp4 路径>`，交给用户的路径**只能抄这一行**。没有这一行就是失败，不许把别的 mp4 当成片。
    - 退出码：0 可交付 / 1 校验没过 / 2 参数错 / 3 版式或汉字自查有 ✗（成片改名 `video.rejected.mp4`，只给人看哪里坏了）/ 4 渲染失败或时长不对 / 5 排队超时 / 6 内部错误 / 130 被中断。
 11. **看 `report.txt`**：「机器自查」「文字排版报告」「布局自查」里**有一个 ✗ 就不能交付**（make 会返回 3）。布局自查在渲染后量每个文字块：被卡片裁切、两块字互相压住、关键文字出了 x180–900、英文片画面上出现汉字（每半拍抽一帧查）。✗ 通常是某个字段写太多：删条目或缩短文字，改完回到第 9 步。全是 ✓ 之后再看 `sheet.png` 和 `check/`，按下面清单自查。
 12. **交付**：交付前可以跑一次 `node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名> --verify`，确认成片还对应当前分镜（改过分镜会报「成片和分镜不一致，请重跑 make」）。把 make 最后一行的 mp4 路径、`sheet.png` 路径交给用户，附上「发布前自查清单」（见下）——第 9 步的「需人工复核」条目原样列进去，逐条让用户确认，不要替用户下判断。
+
+## 配音（可选）
+
+用户要旁白 / 配音 / 口播时才开；不写 `meta.voice` 就是无配音片，和以前完全一样。开了之后**声音就是时间轴**：make 先合成每句旁白、拿到逐字时间，再把写了 `vo` 的镜头时长改成「0.15 秒 + 旁白 + 0.35 秒」向上取整拍（不短于这种镜头的最短时长），你写的 `dur` / `beats` 只对没写 `vo` 的镜头算数；字幕跟着声音逐字点亮，配乐在人声处自动压低约 10 dB。
+
+1. **`meta.voice`**（只能写这 6 个字段，多写报错）：
+   | 字段 | 写法 |
+   |---|---|
+   | `provider` | 必填。`minimax` = 真人感配音（出片要环境变量 `MINIMAX_API_KEY`）；`mock` = 不联网的占位音，只用来听节奏 |
+   | `voiceId` | 音色，不写用默认（中文 `Chinese (Mandarin)_News_Anchor`）。推荐见下 |
+   | `speed` | 0.5–2，默认 1。广告旁白 1–1.15；念不完就删字或拆镜，别靠调快硬塞 |
+   | `emotion` | 可选：`calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`。不写用音色默认；广告旁白建议 `calm` 或 `fluent` |
+   | `model` | 一般不写（默认 `speech-2.8-hd`） |
+   | `subtitles` | `karaoke`（默认，逐字点亮）/ `line`（整句出现）/ `off`（只念不出旁白字幕） |
+2. **每镜的 `vo`**（这一镜要念的一句话）：
+   - **口语化**：说给人听的短句，主语清楚，像跟朋友介绍；不念画面上的清单，不说「如图所示」「下面我们来看」。
+   - **每镜一句**，讲一件事，不换行（字幕会按声音自动分页）。不是每镜都要写：没写 `vo` 的镜头按 `dur` 播，配乐照常。
+   - **字数跟着时长走**：中文按每秒 4–5 字算，一句最多 ≈（这种镜头的最长秒数 − 0.5）× 4.5 字。cards 常用上限：hook（最长 4 秒）≈ 15 字、compare / steps / features（7 秒）≈ 29 字、mockApp / phone（8 秒）≈ 33 字、endCard（6 秒）≈ 24 字；quiz / journey 见各自的 `recipes.md`。推荐一句 8–20 字。英文按每秒 2.5 词算。校验按中文 5 字/秒、英文 3 词/秒拦，出片时按真实配音时长再核一遍，超了会停并告诉你第几镜能念多少字。
+   - **数字要有依据**：`vo` 和字幕走同一套检查——带单位的数字要能在 `meta.facts` 里找到，广告法极限词、绝对化用语、错别字、速度说法照样拦。念出来的数字和画面上的保持一致。
+   - `{}` 强调：和字幕一样，每句最多 1 处（24 字以内），字幕上变强调色。
+   - **字幕谁来出**：cards 里写了 `vo`、没写 `caption` 的镜头，字幕由 `vo` 自动生成（逐字点亮）；写了 `caption` 的镜头照旧显示 `caption`、旁白只念——**hook 必须写 `caption`**（它是封面标题）；`endCard` 只念不出字幕。quiz / journey 在自己的字幕条上显示旁白。
+   - 片尾那句带上产品名（和 `meta.product` 一字不差）。
+3. **推荐音色**（MiniMax 系统音色；以 MiniMax 控制台的音色列表为准，第一次用先试听）：
+   - `Chinese (Mandarin)_News_Anchor`（默认）：稳重播报，适合 B 端、办公、工具
+   - `female-shaonv`：年轻女声，适合 C 端生活、情感、轻工具
+   - `male-qn-qingse`：年轻男声，口语感强，适合答题互动、种草
+   - `presenter_female`：女主持，适合讲解、教培
+   - 英文片（`meta.lang: "en"`）：`English_expressive_narrator`（默认）；英文片最好写明 `voiceId`
+4. **没有 key 怎么预览**：出片加 `--voice-provider mock`（不联网的占位音，时间轴、逐字字幕、配乐压低都照常，不用改分镜）；或加 `--no-voice` 出无配音版。**mock 出的片子只是看节奏，不能当成片交付**——交付时要明说「这是占位音，设好 key 重跑才是真人配音」。没有 key 时 validate 只提醒、不拦。
+5. **费用**：MiniMax 按字符计费（旁白全文，价格看 MiniMax 官网）。同一句（提供者、模型、音色、语速、情绪、文字都一样）合成过一次就缓存在用户目录 `~/.cache/brewreel/tts`（环境变量 `BREWREEL_TTS_CACHE` 可改），改画面、改字幕、重渲染都不再计费；改了 `vo` 或音色才会重新合成。`manifest.json` 的 `voice.billedCharacters` 是这一次计费的字符数。
+6. **密钥**：只从环境变量 `MINIMAX_API_KEY`（需要时加 `MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`）读。不要把 key 写进分镜、简报、命令行参数或任何文件，也不要打印出来。
+7. **配音相关退出码**：旁白比这一镜最长时长还长 → 1（删字或拆镜）；没 key、鉴权失败、限流重试用完、网络不通 → 2（让用户设 key 或稍后重跑；先看效果用 `--voice-provider mock`）。
 
 ## 自查清单（看拼图，逐条对照画面写结论，不要直接打勾）
 
@@ -173,7 +206,7 @@ metadata:
 - 不把同一张图当前后对比，不把插画、截图说成实拍
 - 不出现第三方 App 的名字、logo 或标志色（如某聊天软件的绿色气泡）；称呼用「对方」「同事」「客户」
 - 不写真实人名、手机号、账号
-- 不用 `bgm` 字段（make.mjs 自动填）
+- 不用 `bgm` 字段（make.mjs 自动填）；顶层也不写 `voice`（配音设置写 `meta.voice`，每镜念的话写 `vo`）
 - 不自己判断行业合规的灰区问题（如「这句算不算医疗用语」）：校验拦了就改，校验放行但你拿不准，写进「需人工复核」交给用户，不要自己下结论说「应该没事」
 
 ## 常见错误与改法
@@ -196,6 +229,10 @@ metadata:
 | 片尾产品名和 meta.product 不一致 | brand 改成和 meta.product 一字不差 |
 | 写了 cta，但 meta.cta 是空的 | 简报有获取方式就写进 meta.cta 再照抄；没有就删掉 cta |
 | 里有字面的 \n | JSON 里换行只写一个反斜杠 |
+| vo：旁白 N 字，这一镜最长 M 秒，要每秒念 X 字才念得完 | 删字，或把这句拆到两镜（每镜一句）；别靠调快 speed |
+| 配音失败：旁白念完要 N 秒，超过这一镜最长 M 秒 | 按提示的字数缩短，或拆镜 |
+| 当前环境没有 MINIMAX_API_KEY（提醒） | 让用户设好环境变量再出片；先看节奏加 `--voice-provider mock` |
+| 配音设置要写在 meta.voice 里 | 顶层的 `voice` 挪进 `meta`，每镜要念的话写 `vo` |
 | 含平台名「公众号」（提醒） | 产品本身的品类词：加进 `meta.allowWords`；引流：删掉 |
 | 缺少必填字段 meta.action | 写一句「用户做什么 → 产品给出什么」 |
 | 数字在 meta.facts 里找不到来源 | 简报给了这个数字就原话抄进 `meta.facts`（`{"id":"f1","text":"…","source":"…"}` 格式）；没给就把具体数字换成定性说法 |
@@ -237,6 +274,7 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
 - `<SKILL>/examples/education.json`：教培（服务条款 → 课程大纲 → AI 演示 → 讲师 → 价格）
 - `<SKILL>/examples/beauty.json`：美业，没有实拍照片时怎么拍（插画 + 步骤 + 答疑 + 价目表）
 - `<SKILL>/examples/travel.json`：文旅住宿（插画钩子 → 看房 → 地图 → 价格按 facts 原样写日期范围）
+- 配音样例（每镜一句 `vo`，`provider` 写的是 `minimax`；没有 key 时出片加 `--voice-provider mock`，或把 provider 改成 `mock` 预览）：`<SKILL>/styles/cards/examples/voice-reminder.json`（cards）、`<SKILL>/styles/quiz/examples/software-archive-voice.json`（quiz）、`<SKILL>/styles/journey/examples/software-notes-voice.json`（journey）
 - 每个行业的合规反例在 `industries/<industry>/test-brief.md` + `expected.md`：test-brief 是一份示例简报，expected 写清楚照这份简报写的分镜哪些地方会被拦、为什么。开新行业的第一支片子建议先看这两份。
 
 ## 完整示例（examples/ledger.json，可直接通过校验）

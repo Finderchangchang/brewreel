@@ -55,7 +55,7 @@ Run the second command from the folder that contains the clone (relative paths r
 Download `dsh-brewreel-<version>.tgz` from the Releases page, then:
 
 ```sh
-dsh plugin --profile web add ./dsh-brewreel-0.2.0.tgz
+dsh plugin --profile web add ./dsh-brewreel-0.3.0.tgz
 ```
 
 **C. npm (once the author publishes it)**
@@ -163,7 +163,7 @@ To confirm every render yourself, set `brewreel_render` to "ask" with dsh's tool
 - **Writes**: only the output folder in the session workspace (default `promo/<name>/`), `extraWriteRoots`, and the plugin's runtime folder. The output folder cannot be the workspace root, `outputRoot` itself, your home folder or a drive root; `make.mjs` clears fixed product file names when it starts (`video.mp4`, `report.txt`, `layout.json`, `manifest.json`, `check/*.png` and so on), so a folder holding someone else's `storyboard.json`, or any of those names without a `manifest.json` from `make.mjs` or the plugin's marker file `.brewreel-out.json` (or `.distill-video-out.json` written by 0.1.x), is refused. Paths are compared after resolving real paths, so symlinks and junctions cannot escape.
 - **Reads**: storyboards and briefs must be in the workspace; assets referenced by a storyboard cannot leave its folder or the workspace.
 - **No arbitrary commands**: the plugin only starts the current Node on fixed scripts inside the skill (validate.mjs, make.mjs, the Remotion CLI, npm), Python for a fixed detection command, and on Windows `taskkill` for its own process trees. make.mjs itself additionally runs Python to generate the music and, when configured, ffmpeg. Always `shell: false` with fixed argument arrays; model input reaches argv only as a verified absolute path or a verified number.
-- **Environment whitelist**: child processes get basic variables such as PATH, TEMP, HOME, LANG; the DeepSeek key and other credentials never reach the render process.
+- **Environment whitelist**: child processes get basic variables such as PATH, TEMP, HOME, LANG; the DeepSeek key and other credentials never reach the render process. The one exception is voice-over: the render process (`make.mjs`) also gets four fixed variables, `MINIMAX_API_KEY`, `MINIMAX_GROUP_ID`, `MINIMAX_BASE_URL` (MiniMax text-to-speech) and `BREWREEL_TTS_CACHE` (the voice cache folder); validate, doctor and setup processes never see them, no other key is passed, and `envPassthrough` cannot add one. `make.mjs` only sends the key to MiniMax in the request header; it never writes it to a file, log or `manifest.json`, and error messages leave it out. Storyboards without `meta.voice` never use it.
 - **Plainly**: render processes **do not run inside dsh's shell sandbox**; they run with your user's permissions and the plugin restrains itself with the rules above. Setup downloads Remotion and Chrome Headless Shell from npm and Google.
 
 ## Troubleshooting
@@ -184,7 +184,7 @@ To confirm every render yourself, set `brewreel_render` to "ask" with dsh's tool
 ## Relation to the main repository, versions
 
 - The repository root is the only source. The `skill/` folder inside npm / tgz packages is a snapshot generated at pack time by `scripts/sync-skill.mjs`; `skill/.distill-source.json` records the skill version, repository commit and file hash, and `brewreel_doctor` shows them.
-- The plugin has its own version. 0.1.0 (package `dsh-distill-video`) shipped with v0.3.0; from 0.2.0 the package is `dsh-brewreel`, shipped with v0.4.0. The exact skill version and commit inside a package's snapshot are whatever `skill/.distill-source.json` records (doctor shows them too).
+- The plugin has its own version. 0.1.0 (package `dsh-distill-video`) shipped with v0.3.0; from 0.2.0 the package is `dsh-brewreel`, shipped with v0.4.0; 0.3.0 ships with v0.5.0 and passes four more environment variables, for voice-over, to the render process (see "Security"). The exact skill version and commit inside a package's snapshot are whatever `skill/.distill-source.json` records (doctor shows them too).
 - Upgrading: reinstall and restart the profile; the new snapshot is staged in a new runtime subfolder, downloaded dependencies are reused when the dependencies in `package-lock.json` are unchanged (a new name or version of the template package does not count), and only the two latest copies are kept.
 
 ## Upgrading from dsh-distill-video

@@ -6,8 +6,8 @@ import path from 'node:path';
 import {test} from 'node:test';
 import {normalizeConfig} from '../lib/config.js';
 import {allowedRoots, assetEscapes, assertOutDir, assertOutDirSafe, LEGACY_OUT_MARKERS, markOutDir, OUT_MARKER} from '../lib/paths.js';
-import {planRender} from '../lib/render.js';
-import {cleanEnv, runProcess} from '../lib/run.js';
+import {makeEnv, planRender} from '../lib/render.js';
+import {cleanEnv, runProcess, VOICE_ENV} from '../lib/run.js';
 import {tmpDir, writeStoryboard} from './helpers.mjs';
 
 const cfg = normalizeConfig({});
@@ -139,6 +139,50 @@ test('U9 child environment is a whitelist; credentials never pass', async () => 
     assert.ok(!keys.some((k) => /DEEPSEEK|API_KEY/i.test(k)));
     assert.ok(keys.includes('PYTHONUTF8'));
   } finally {
+    delete process.env.DEEPSEEK_API_KEY;
+  }
+});
+
+test('U9b only the render process gets the fixed voice-over variables; every other key is still dropped', async () => {
+  const source = {
+    PATH: '/bin',
+    MINIMAX_API_KEY: 'dummy-minimax',
+    MINIMAX_GROUP_ID: 'g1',
+    MINIMAX_BASE_URL: 'https://example.invalid',
+    BREWREEL_TTS_CACHE: '/tmp/tts',
+    DEEPSEEK_API_KEY: 'dummy',
+    OPENAI_API_KEY: 'dummy',
+    MINIMAX_SECRET: 'dummy',
+    ELEVENLABS_API_KEY: 'dummy',
+  };
+  assert.deepEqual([...VOICE_ENV].sort(), ['BREWREEL_TTS_CACHE', 'MINIMAX_API_KEY', 'MINIMAX_BASE_URL', 'MINIMAX_GROUP_ID']);
+  // default (validate / doctor / setup): no voice variables at all
+  const plain = cleanEnv({source});
+  for (const k of VOICE_ENV) assert.equal(plain[k], undefined, `${k} must not reach non-render processes`);
+  // render: exactly the four fixed names, nothing else that looks like a credential
+  const voiced = cleanEnv({source, voice: true});
+  assert.equal(voiced.MINIMAX_API_KEY, 'dummy-minimax');
+  assert.equal(voiced.MINIMAX_GROUP_ID, 'g1');
+  assert.equal(voiced.MINIMAX_BASE_URL, 'https://example.invalid');
+  assert.equal(voiced.BREWREEL_TTS_CACHE, '/tmp/tts');
+  for (const k of ['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'MINIMAX_SECRET', 'ELEVENLABS_API_KEY']) assert.equal(voiced[k], undefined, `${k} must be dropped`);
+  // envPassthrough still cannot add a credential, even next to voice: true
+  assert.equal(cleanEnv({source, voice: true, passthrough: ['OPENAI_API_KEY']}).OPENAI_API_KEY, undefined);
+  // makeEnv (what brewreel_render uses) is the voiced variant; end to end through a real child
+  process.env.MINIMAX_API_KEY = 'dummy-for-test';
+  process.env.DEEPSEEK_API_KEY = 'dummy-for-test';
+  try {
+    const renderEnv = makeEnv(cfg);
+    assert.equal(renderEnv.MINIMAX_API_KEY, 'dummy-for-test');
+    assert.equal(renderEnv.DEEPSEEK_API_KEY, undefined);
+    const r = await runProcess({cmd: process.execPath, args: ['-e', 'console.log(JSON.stringify(Object.keys(process.env)))'], cwd: os.tmpdir(), env: renderEnv, timeoutMs: 20_000});
+    const keys = JSON.parse(r.stdout);
+    assert.ok(keys.includes('MINIMAX_API_KEY'));
+    assert.ok(!keys.some((k) => /DEEPSEEK/i.test(k)));
+    const other = await runProcess({cmd: process.execPath, args: ['-e', 'console.log(JSON.stringify(Object.keys(process.env)))'], cwd: os.tmpdir(), env: cleanEnv(), timeoutMs: 20_000});
+    assert.ok(!JSON.parse(other.stdout).some((k) => /MINIMAX|DEEPSEEK/i.test(k)));
+  } finally {
+    delete process.env.MINIMAX_API_KEY;
     delete process.env.DEEPSEEK_API_KEY;
   }
 });
