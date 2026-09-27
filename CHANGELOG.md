@@ -2,6 +2,30 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
+## v0.4.0 · 2026-09-27 · 更名：精酿 · BrewReel
+
+老分镜怎么办：不用改。风格、字段、镜头和脚本命令都没变，这一版只改名字。要动手的只有 skill 安装目录（可选）和 DeepSeek Harness 插件，见下面「迁移」。
+
+### 新名字
+- 项目从 蒸馏视频（Distill Video）/ promo-video-skill 改名为 **精酿 · BrewReel**。口号：「便宜模型，也能酿出好片」（英文 "Brew great promo reels with low-cost models"）。
+- 为什么叫精酿：好酒靠配方，原料普通也能酿好。强模型先把一种风格做成「配方」（现成组件 + 校验规则），DeepSeek 这类便宜模型照配方填分镜，出同一水准的片子。文档里的说法随之统一：风格包 = 配方，从参考视频提炼风格 = 调配方，出片 = 开酿。`styles/`、`meta.style`、`distill/` 这些路径和字段不变。
+- 官网 brewreel.com 筹备中，上线前暂时打不开。
+- GitHub 仓库从 `Finderchangchang/promo-video-skill` 改名为 `Finderchangchang/brewreel`，旧地址自动跳转。已有的 clone 不改也能拉取；想改可以执行 `git remote set-url origin https://github.com/Finderchangchang/brewreel.git`。
+
+### 迁移
+- skill 名：SKILL.md 的 `name` 从 `promo-video-skill` 改为 `brewreel`。以 skill 方式安装的，建议把目录改成 `~/.claude/skills/brewreel/` 或 `~/.agents/skills/brewreel/`。
+- DeepSeek Harness 插件升到 0.2.0，**有不兼容改动**：
+  - 包名 `dsh-distill-video` 改为 `dsh-brewreel`；7 个工具 `distill_video_*` 改为 `brewreel_*`，后缀不变（doctor / setup / catalog / guide / validate / render / verify），**旧工具名不再注册**；注册的 skill 名是 `brewreel`；`cordis.patch.yml` 里插件行的 `id` 从 `distill-video` 改为 `brewreel`。
+  - 要你自己改的：审批策略（`tools/pre-execute`）、提示词、脚本里写的旧工具名；profile 里写过插件覆盖的，把 `id` 改成 `brewreel`。
+  - 升级步骤：`dsh plugin --profile web remove dsh-distill-video` → 重新安装 `dsh-brewreel` → 重启 profile。
+  - 自动兼容的：旧输出目录的标记文件 `.distill-video-out.json` 照样认，原来的输出目录可以接着出片；只有旧运行目录 `~/.dsh/distill-video/` 时直接沿用，已下载的依赖和 Chrome 不用重下（模板包改名不算依赖变化）；旧环境变量 `DISTILL_SYNC_ALLOW_DIRTY` 仍有效，新名是 `BREWREEL_SYNC_ALLOW_DIRTY`。
+  - 对照表见插件 README 的「从 dsh-distill-video 升级」。
+- 模板包名 `promo-video-template` 改为 `brewreel-template`，依赖没变。
+
+### 其他
+- README、SKILL、CONTRIBUTING、`distill/` 文档和插件 README 同步新名字和说法。
+- 版本号改为 0.4.0；Apache-2.0、合规小字、隐私扫描、作者署名不变。下面的历史条目保留当时的名字。
+
 ## v0.3.0 · 2026-09-27 · DeepSeek Harness 插件，journey 换新结尾
 
 老分镜怎么办：只有 `journey` 要看一眼。`finale` 的 `stats` 上限从 2 改成 1，写了两个数字的分镜会被校验拦下（提示「删到 1 项以内」），删掉一个就行；`bye` 字段保留，写了不报错，但片尾不再有告别气泡。其它风格和字段不变。

@@ -97,7 +97,7 @@ test('background render: job id at once, progress streamed, result JSON on compl
   const {tool, ws} = setup({jobs, config: {renderInBackground: true}});
   const h = await tool(TOOL_NAMES.render).execute({storyboard: writeStoryboard(ws, 'bg', {code: 0, sleepMs: 800})}, execIn(ws));
   assert.equal(h.kind, 'background');
-  assert.equal(h.jobId, 'distill-video-1');
+  assert.equal(h.jobId, 'brewreel-1');
   assert.equal(jobs.started[0].spec.owner, 'session-1');
   const rec = jobs.started[0];
   await rec.done;
@@ -132,7 +132,7 @@ test('foreground fallback when no jobs service; missing deps are reported, not i
   assert.equal(r.status, 'delivered');
   assert.match(r.note, /jobs/);
   fs.rmSync(path.join(skill, 'template', 'node_modules'), {recursive: true});
-  await assert.rejects(tool(TOOL_NAMES.render).execute({storyboard: writeStoryboard(ws, 'nodeps', {code: 0})}, execIn(ws)), /distill_video_setup/);
+  await assert.rejects(tool(TOOL_NAMES.render).execute({storyboard: writeStoryboard(ws, 'nodeps', {code: 0})}, execIn(ws)), /brewreel_setup/);
 });
 
 test('background admission refused → foreground with a note', async () => {

@@ -9,7 +9,7 @@ import {buildSkillRegistration, parseFrontmatter} from './skill.js';
 import {createToolSpecs} from './tools.js';
 import {StuckTracker} from './validate.js';
 
-export const PLUGIN_NAME = 'distill-video';
+export const PLUGIN_NAME = 'brewreel';
 
 export function pluginVersion() {
   try {
@@ -48,6 +48,8 @@ export function createRuntime(rawConfig, {pluginDir = PLUGIN_DIR, getJobs = () =
     getJobs,
     logger,
     skillRegistered: false,
+    /** @type {string | null} name the skill was registered under (the SKILL.md frontmatter name) */
+    skillName: null,
   };
 }
 
@@ -69,7 +71,7 @@ export function applyPlugin(ctx, rawConfig, {defineTool, pluginDir}) {
       }
     },
   });
-  if (rt.source.mode === 'missing') logger.warn?.(`distill-video: ${rt.source.error}; tools will report how to fix it`);
+  if (rt.source.mode === 'missing') logger.warn?.(`brewreel: ${rt.source.error}; tools will report how to fix it`);
 
   // Stage a bundled / stageCheckout copy in the background (a local file copy, no download).
   // Scheduled through ctx.effect when available, so an unload / HMR reload before it fires cancels it.
@@ -78,9 +80,9 @@ export function applyPlugin(ctx, rawConfig, {defineTool, pluginDir}) {
       const timer = setTimeout(() => {
         try {
           const r = stageSkill(rt.source, rt.plan);
-          logger.info?.(`distill-video: ${r.detail}`);
+          logger.info?.(`brewreel: ${r.detail}`);
         } catch (e) {
-          logger.warn?.(`distill-video: staging failed (${/** @type {any} */ (e)?.message ?? e}); distill_video_setup can retry`);
+          logger.warn?.(`brewreel: staging failed (${/** @type {any} */ (e)?.message ?? e}); brewreel_setup can retry`);
         }
       }, 0);
       return () => clearTimeout(timer);
@@ -114,6 +116,7 @@ export function applyPlugin(ctx, rawConfig, {defineTool, pluginDir}) {
     const register = (c) => {
       const dispose = c.skills.register(registration);
       rt.skillRegistered = true;
+      rt.skillName = registration.name;
       if (typeof c.effect === 'function') {
         c.effect(() => () => {
           rt.skillRegistered = false;
@@ -124,6 +127,6 @@ export function applyPlugin(ctx, rawConfig, {defineTool, pluginDir}) {
     if (typeof ctx.inject === 'function') ctx.inject(['skills'], register);
     else if (ctx.skills) register(ctx);
   }
-  logger.info?.(`distill-video ${rt.pluginVersion}: skill ${rt.source.mode} at ${rt.source.root}; runtime ${rt.plan.runtimeRoot}`);
+  logger.info?.(`brewreel ${rt.pluginVersion}: skill ${rt.source.mode} at ${rt.source.root}; runtime ${rt.plan.runtimeRoot}`);
   return rt;
 }

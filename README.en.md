@@ -1,12 +1,16 @@
-# Distill Video · 蒸馏视频
+# 精酿 · BrewReel
 
-**Current version v0.3.0** ([changelog](CHANGELOG.en.md)) | repo `promo-video-skill` | [中文版 → README.md](README.md)
+**Brew great promo reels with low-cost models.**
+
+**Current version v0.4.0** ([changelog](CHANGELOG.en.md)) | website [brewreel.com](https://brewreel.com) (coming soon) | [中文版 → README.md](README.md)
+
+Formerly promo-video-skill / Distill Video (蒸馏视频). The repository is now [Finderchangchang/brewreel](https://github.com/Finderchangchang/brewreel); the old address redirects automatically.
 
 Author: **Liu Weijie (柳伟杰)** — GitHub [@Finderchangchang](https://github.com/Finderchangchang). If you redistribute, fork or use this commercially, please keep `LICENSE` and `NOTICE` and credit the source.
 
 > **Preview**: testing and bug-fixing are still ongoing. Issues about false-positive rules, rendering problems and general feedback are very welcome.
 
-**Why "Distill Video"**: a strong model first gets a video style right; its layout, motion, pacing and rules are then "distilled" into ready-made components and a validator, so a low-cost model like DeepSeek only has to fill in a storyboard to get a video at the same level. Three styles are distilled so far, and the distillation method itself is open-sourced in `distill/`, so anyone can distill a new style from a reference video.
+**Why "BrewReel" (精酿, "craft brew")**: good beer comes from a good recipe, even with ordinary ingredients. A strong model first gets a video style right; its layout, motion, pacing and rules are then written down as a "recipe" — ready-made components plus a validator. A low-cost model like DeepSeek is the ordinary ingredient: it follows the recipe, fills in a storyboard, and brews a video at the same level. There are three recipes so far (`cards`, `quiz`, `journey`). How to craft a recipe is open-sourced in `distill/` as well, so anyone can craft a new one from a reference video. Just as homebrewers share recipes, you can brew with an existing recipe (use), tweak one into your own flavor (remix), or craft a new one from scratch (create) — which is why this project is open source.
 
 One line: a skill for AI coding assistants (Claude Code / Codex / opencode…) that standardizes "write a storyboard → get a vertical promo video." A cheap model only writes one `storyboard.json`; fixed Remotion components draw the frames; a validator blocks hard rules and industry-compliance red lines; one command renders the final video (1080×1920, with original music and sound effects).
 
@@ -64,14 +68,14 @@ Each image shows frame 0 (the cover) on the left and one frame from the middle o
 ### Three commands
 
 ```bash
-git clone https://github.com/Finderchangchang/promo-video-skill.git
-cd promo-video-skill/template && npm install && npx remotion browser ensure
+git clone https://github.com/Finderchangchang/brewreel.git
+cd brewreel/template && npm install && npx remotion browser ensure
 cd .. && node scripts/validate.mjs examples/en-focus.json
 ```
 
 The first command installs the rendering-engine dependencies (including Remotion compositor packages for 7 platforms — optional, but kept in the lockfile so switching platforms just works); the second additionally downloads a Chrome Headless Shell (~110MB, used for headless rendering); the third validates one of the bundled example storyboards — if it passes, your setup is good.
 
-You can also install it as a skill for your AI coding assistant (if it has a skill manager): manually clone the whole repo into `~/.claude/skills/promo-video-skill/` (Claude Code) or `~/.agents/skills/promo-video-skill/` (a common convention), or point your tool's own skill-install command at this repository's URL.
+You can also install it as a skill for your AI coding assistant (if it has a skill manager): manually clone the whole repo into `~/.claude/skills/brewreel/` (Claude Code) or `~/.agents/skills/brewreel/` (a common convention), or point your tool's own skill-install command at this repository's URL.
 
 ## Workflow
 
@@ -105,20 +109,20 @@ On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of t
 
 ## Use it in DeepSeek Harness
 
-This repository ships a DeepSeek Harness (dsh) plugin in [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.en.md), package name `dsh-distill-video`. With it installed, the model writes the storyboard by following the skill, and validates, renders and verifies through the plugin's tools instead of assembling `node scripts/…` commands. Rendering runs in the background with progress, and the plugin restricts output paths and the environment variables child processes receive.
+This repository ships a DeepSeek Harness (dsh) plugin in [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.en.md), package name `dsh-brewreel` (formerly `dsh-distill-video`; to upgrade from it, see "Upgrading from dsh-distill-video" in the plugin README). With it installed, the model writes the storyboard by following the skill, and validates, renders and verifies through the plugin's tools instead of assembling `node scripts/…` commands. Rendering runs in the background with progress, and the plugin restricts output paths and the environment variables child processes receive.
 
 It needs **dsh 0.1.7-rc.2 or later** within 0.1.x. dsh's `latest` tag on npm still points to the older 0.1.5-rc.3, so pin the version when installing. You also need Node.js 22.x from 22.19, or 24 and later, plus pnpm (`dsh plugin` installs plugins through pnpm). Install from the GitHub repository folder:
 
 ```bash
 npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm    # if dsh is not installed yet
-git clone https://github.com/Finderchangchang/promo-video-skill.git
-dsh plugin --profile web add ./promo-video-skill/integrations/deepseek-harness
+git clone https://github.com/Finderchangchang/brewreel.git
+dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 dsh web
 ```
 
-Run the third command from the folder that contains the clone. `web` can be any profile name; if the profile is already running, restart it for the change to apply. On first use, ask the model to "check the video plugin environment": it calls doctor, and after you agree, calls setup to install the render dependencies (a few hundred MB, plus about 110 MB for Chrome Headless Shell). The npm package `dsh-distill-video` is **not published yet**; once it is, `dsh plugin --profile web add dsh-distill-video` will work directly.
+Run the third command from the folder that contains the clone. `web` can be any profile name; if the profile is already running, restart it for the change to apply. On first use, ask the model to "check the video plugin environment": it calls doctor, and after you agree, calls setup to install the render dependencies (a few hundred MB, plus about 110 MB for Chrome Headless Shell). The npm package `dsh-brewreel` is **not published yet**; once it is, `dsh plugin --profile web add dsh-brewreel` will work directly.
 
-The plugin provides 7 tools: `distill_video_doctor` checks the environment, `distill_video_setup` installs dependencies and the browser, `distill_video_catalog` lists styles, industries and color themes, `distill_video_guide` reads the skill and the style, industry and shot docs, `distill_video_validate` validates a storyboard and says how to fix each problem, `distill_video_render` renders in the background, and `distill_video_verify` checks that a video still matches the current storyboard.
+The plugin provides 7 tools: `brewreel_doctor` checks the environment, `brewreel_setup` installs dependencies and the browser, `brewreel_catalog` lists styles, industries and color themes, `brewreel_guide` reads the skill and the style, industry and shot docs, `brewreel_validate` validates a storyboard and says how to fix each problem, `brewreel_render` renders in the background, and `brewreel_verify` checks that a video still matches the current storyboard.
 
 License note: the plugin and the skill are Apache-2.0, but the rendering engine Remotion is not open source: **for-profit organizations with 4 or more people must purchase Remotion's Company License** (see "License" below and `THIRD_PARTY_LICENSES.md`). The plugin does not change that. Also, render child processes do not go through dsh's shell sandbox; they run with the current user's permissions.
 
@@ -126,7 +130,7 @@ Configuration, security notes and troubleshooting are in the plugin's [README](i
 
 ## Styles
 
-A storyboard picks its look with `meta.style`; without it you get the default `cards` style. Each style is a "style pack" with its own design tokens, shot components, validation rules and narrative templates: docs, rules and examples live in `styles/<id>/`, code in `template/src/styles/<id>/`.
+A storyboard picks its look with `meta.style`; without it you get the default `cards` style. Each style is a "style pack" — a "recipe" — with its own design tokens, shot components, validation rules and narrative templates: docs, rules and examples live in `styles/<id>/`, code in `template/src/styles/<id>/`.
 
 **`cards`** (default, ready, 9:16): gradient background, a centered white card and bold outlined captions, one point per shot. Fits a single selling point, a how-it-works flow, UI demos, physical products and stores. Its 18 shots and samples for all six industries are in `examples/`.
 
@@ -154,7 +158,7 @@ A storyboard picks its look with `meta.style`; without it you get the default `c
 
 - **Use**: make films with an existing style.
 - **Remix (reskin)**: `node scripts/gen-styles.mjs --new <id>` scaffolds a new style; copy over the shots and `tokens.json` you want to keep from the source style, then change palette, fonts and characters. For a color-only variant, editing `themes` in `tokens.json` is enough.
-- **Create (distill)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown (plus a numbered list of the reference's signature elements) → replicate (local only, never committed) → **redesign** → componentize → cheap-model test → review (including a confusability score), ending in a new style. `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` and `journey` were made this way, with a quiz-style short video and a character-journey short video as their references.
+- **Create (craft a recipe)**: follow the shared process in [`distill/`](distill/README.en.md) to break down a reference video: `scripts/extract-frames.mjs` extracts frames and finds cuts → nine-layer breakdown (plus a numbered list of the reference's signature elements) → replicate (local only, never committed) → **redesign** → componentize → cheap-model test → review (including a confusability score), ending in a new recipe (a new style). `distill/prompts/` has a ready-to-use prompt for each step, and `styles/_template/` is the blank template for a new style. `quiz` and `journey` were made this way, with a quiz-style short video and a character-journey short video as their references.
 
 **Redesign + originality check is a required step**, for remixes and new styles alike. We want a style of the same genre, not a one-to-one copy:
 - **The skeleton may stay**: narrative structure, rhythm, motion techniques, camera language and layout principles belong to the genre and anyone can use them.
@@ -255,7 +259,7 @@ After the fixes, the 3 sample storyboards in `styles/journey/examples/` (a podca
 ## Directory structure
 
 ```
-promo-video-skill/
+brewreel/
   SKILL.md / SKILL.en.md      The instructions an AI assistant reads (how to pick shots, fill fields, follow the flow)
   README.md / README.en.md    This file
   LICENSE / NOTICE / THIRD_PARTY_LICENSES.md
@@ -282,10 +286,10 @@ promo-video-skill/
     public/                    Fonts, sound effects, sample assets
   examples/                   9 ready-to-render storyboard samples (six industries + English + two generic samples, all cards style)
   styles/                     style packs: nine-layer spec, narrative templates, rules, examples; _template/ scaffolds a new style
-  distill/                    style distillation process and reusable prompts (breakdown → replicate → redesign → componentize → test → review)
+  distill/                    recipe crafting (a new style from a reference video) and reusable prompts (breakdown → replicate → redesign → componentize → test → review)
   CONTRIBUTING.en.md          how to contribute (use / remix / create, PR checklist)
   integrations/
-    deepseek-harness/          DeepSeek Harness plugin dsh-distill-video (7 tools, see "Use it in DeepSeek Harness")
+    deepseek-harness/          DeepSeek Harness plugin dsh-brewreel (7 tools, see "Use it in DeepSeek Harness")
   tests/
     validate/                  Positive/negative regression tests for the validator
     rules/                     Regression tests for each industry's rules (4 cases each)
@@ -311,7 +315,7 @@ No. The contact sheet `sheet.png` is rendered by Remotion's `Sheet` composition 
 
 ## License
 
-This repository's code is released under the **Apache-2.0** license — see `LICENSE`. Copyright holder: Liu Weijie (柳伟杰, Finderchangchang). **Commercial use is free.** Under Section 4 of Apache-2.0, if you redistribute this code, a modified version, or a product that includes it, you must keep `LICENSE` and carry the attribution in `NOTICE` (i.e. credit "promo-video-skill by Liu Weijie") in your own NOTICE file, documentation or product UI. Videos rendered with this tool do not require attribution.
+This repository's code is released under the **Apache-2.0** license — see `LICENSE`. Copyright holder: Liu Weijie (柳伟杰, Finderchangchang). **Commercial use is free.** Under Section 4 of Apache-2.0, if you redistribute this code, a modified version, or a product that includes it, you must keep `LICENSE` and carry the attribution in `NOTICE` (i.e. credit "BrewReel (精酿) by Liu Weijie (Finderchangchang)") in your own NOTICE file, documentation or product UI. Videos rendered with this tool do not require attribution.
 
 This repo depends on [Remotion](https://www.remotion.dev) as its rendering engine. Remotion is **source-available, not open source**: free for individuals, for-profit companies with 3 or fewer people, and non-profits (including commercial use); **for-profit organizations with 4 or more people must purchase Remotion's Company License** — see <https://www.remotion.dev/license>. This repo's Apache-2.0 license does not change Remotion's own license terms; details in `THIRD_PARTY_LICENSES.md`.
 

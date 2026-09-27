@@ -45,7 +45,7 @@ export function findSkillSource({skillRoot = '', pluginDir = PLUGIN_DIR} = {}) {
   if (!inNodeModules && isSkillRoot(checkout)) return {mode: 'checkout', root: checkout};
   const bundled = path.join(realPlugin, 'skill');
   if (isSkillRoot(bundled)) return {mode: 'bundled', root: bundled};
-  return {mode: 'missing', root: bundled, error: 'no skill found: neither a Distill Video checkout around the plugin nor a bundled skill/ snapshot'};
+  return {mode: 'missing', root: bundled, error: 'no skill found: neither a BrewReel checkout around the plugin nor a bundled skill/ snapshot'};
 }
 
 /**
@@ -121,10 +121,20 @@ export function copyWhitelist(src, dest, files = listWhitelistFiles(src)) {
   return files.length;
 }
 
-/** Default runtime directory: $DSH_HOME/distill-video, or ~/.dsh/distill-video. */
+/** Runtime directory name used by plugin 0.1.x (published as dsh-distill-video); reused when present. */
+export const LEGACY_RUNTIME_DIR_NAME = 'distill-video';
+
+/**
+ * Default runtime directory: $DSH_HOME/brewreel, or ~/.dsh/brewreel. When only the directory of plugin
+ * 0.1.x ($DSH_HOME/distill-video) exists, that one is reused so its node_modules and Chrome Headless
+ * Shell are not downloaded again.
+ */
 export function defaultRuntimeDir() {
   const home = process.env.DSH_HOME ? path.resolve(process.env.DSH_HOME) : path.join(os.homedir(), '.dsh');
-  return path.join(home, 'distill-video');
+  const current = path.join(home, 'brewreel');
+  const legacy = path.join(home, LEGACY_RUNTIME_DIR_NAME);
+  if (!fs.existsSync(current) && fs.existsSync(legacy)) return legacy;
+  return current;
 }
 
 /** @param {string} root */
@@ -161,13 +171,31 @@ export function planRuntime(source, cfg) {
   return {runtimeRoot: path.join(runtimeDir, `skill-${fingerprint.slice(0, 8)}`), staged: true, runtimeDir, fingerprint};
 }
 
-/** @param {string} dir */
-const lockHash = (dir) => {
+/**
+ * Hash of template/package-lock.json that ignores the root package's own name and version, so a rename
+ * of the template package (promo-video-template → brewreel-template) or a version bump still reuses
+ * installed node_modules; any dependency change gives a new hash.
+ * @param {string} dir
+ */
+export const lockHash = (dir) => {
+  let raw;
   try {
-    return crypto.createHash('sha256').update(fs.readFileSync(path.join(dir, 'template', 'package-lock.json'))).digest('hex');
+    raw = fs.readFileSync(path.join(dir, 'template', 'package-lock.json'));
   } catch {
     return null;
   }
+  let data = raw;
+  try {
+    const lock = JSON.parse(raw.toString('utf8').replace(/^﻿/, ''));
+    delete lock.name;
+    delete lock.version;
+    if (lock.packages?.['']) {
+      delete lock.packages[''].name;
+      delete lock.packages[''].version;
+    }
+    data = Buffer.from(JSON.stringify(lock));
+  } catch {}
+  return crypto.createHash('sha256').update(data).digest('hex');
 };
 
 /** @param {string} root */
@@ -175,7 +203,7 @@ export const isStaged = (root) => fs.existsSync(path.join(root, '.distill-staged
 
 /**
  * Copy the source into plan.runtimeRoot if it is not there yet. Reuses template/node_modules (with the
- * downloaded Chrome) from an older staged copy when package-lock.json is unchanged, and keeps only the
+ * downloaded Chrome) from an older staged copy when package-lock.json's dependencies are unchanged, and keeps only the
  * two most recent staged copies.
  * @param {SkillSource} source
  * @param {RuntimePlan} plan

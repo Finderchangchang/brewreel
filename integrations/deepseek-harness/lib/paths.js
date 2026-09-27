@@ -105,7 +105,13 @@ export function assertOutDir(abs, roots) {
 }
 
 /** Marker the render tool writes into every outDir before make.mjs runs (make.mjs leaves other files alone). */
-export const OUT_MARKER = '.distill-video-out.json';
+export const OUT_MARKER = '.brewreel-out.json';
+
+/** Marker names written by earlier versions of this plugin (dsh-distill-video 0.1.x); still recognised. */
+export const LEGACY_OUT_MARKERS = Object.freeze(['.distill-video-out.json']);
+
+/** Whether this plugin (under its current or an earlier name) has marked outDir. @param {string} outDir */
+const hasOutMarker = (outDir) => [OUT_MARKER, ...LEGACY_OUT_MARKERS].some((m) => fs.existsSync(path.join(outDir, m)));
 
 /**
  * File names make.mjs deletes in outDir before it starts (mirror of PRODUCT_FILES in the skill's
@@ -135,11 +141,11 @@ export function assertOutDirSafe(outDir, storyboard) {
   try {
     manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8').replace(/^﻿/, ''));
   } catch {}
-  const ours = fs.existsSync(path.join(outDir, OUT_MARKER)) || isMakeManifest(manifest);
+  const ours = hasOutMarker(outDir) || isMakeManifest(manifest);
   const sbCopy = path.join(outDir, 'storyboard.json');
   if (fs.existsSync(sbCopy) && !samePath(realpathLoose(sbCopy), storyboard)) {
     const madeByMake = manifest?.storyboard?.copy && samePath(String(manifest.storyboard.copy), sbCopy);
-    if (!madeByMake && !fs.existsSync(path.join(outDir, OUT_MARKER))) {
+    if (!madeByMake && !hasOutMarker(outDir)) {
       throw new PathRuleError(`outDir ${outDir} already holds a different storyboard.json that this tool did not write; rendering there would overwrite it. Use another outDir (one folder per video)`);
     }
   }
@@ -162,7 +168,7 @@ export function assertOutDirSafe(outDir, storyboard) {
 export function markOutDir(outDir, storyboard) {
   try {
     fs.mkdirSync(outDir, {recursive: true});
-    fs.writeFileSync(path.join(outDir, OUT_MARKER), `${JSON.stringify({by: 'dsh-distill-video', storyboard, at: new Date().toISOString()}, null, 1)}\n`);
+    fs.writeFileSync(path.join(outDir, OUT_MARKER), `${JSON.stringify({by: 'dsh-brewreel', storyboard, at: new Date().toISOString()}, null, 1)}\n`);
   } catch {}
 }
 

@@ -2,13 +2,13 @@
 
 中文：[CONTRIBUTING.md](CONTRIBUTING.md)
 
-The core of this project is the **style pack**: one visual style = design tokens + a set of shot components + validation rules + narrative templates. A cheap model only writes the storyboard JSON; the style pack makes it look good and keeps it safe. Three levels of contribution:
+The core of 精酿 · BrewReel is the **style pack**, which we call a "recipe": one visual style = design tokens + a set of shot components + validation rules + narrative templates. A cheap model only writes the storyboard JSON; the style pack makes it look good and keeps it safe. Three levels of contribution:
 
 | Level | What you do | What you change |
 |---|---|---|
 | **Use** | Make films for your product with an existing style | Nothing; follow `SKILL.en.md` |
 | **Remix** | Copy a style pack and change palette, fonts, characters, rhythm | `tokens.json`, character components and `STYLE.md` in your new style folder |
-| **Create** | Break down a reference video with the shared template and distill a new style | Two new folders plus one command to register; see `distill/` |
+| **Create** | Break down a reference video with the shared template and craft a new recipe (a new style) | Two new folders plus one command to register; see `distill/` |
 
 ## Anatomy of a style pack
 
@@ -38,7 +38,7 @@ A storyboard opts in with `"meta": {"style": "<id>", "aspect": "9:16" | "4:5"}`;
 5. Prove it moved away from the source: `node scripts/check-originality.mjs --style <new id> --ref template/src/styles/<source>/tokens.json` (use `template/src/core/themes.json` when the source is cards), and fill in `styles/<new id>/originality.md`.
 6. Go through the PR checklist below.
 
-## Create a new style from a reference video
+## Create: craft a new recipe from a reference video
 
 Full process and reusable prompts: [`distill/`](distill/README.en.md) (breakdown → replica, to learn the skeleton and never published → **redesign (reskin)** → componentize → cheap-model test → review and fix). The rule: the skeleton (structure, rhythm, motion techniques, camera language, layout principles) may be learned; the skin (palette, type treatment, characters, signature details, stock phrases, branded ending) must be our own — same genre, but anyone who knows the reference can tell it is not the same brand.
 

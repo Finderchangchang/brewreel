@@ -1,5 +1,5 @@
 // @ts-check
-// distill_video_doctor (read-only environment check) and distill_video_setup (stage + npm ci +
+// brewreel_doctor (read-only environment check) and brewreel_setup (stage + npm ci +
 // Chrome Headless Shell). Setup only ever runs fixed commands.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -68,7 +68,7 @@ export async function runDoctor(rt, {deep = false, workspace, signal}) {
   const [maj, min] = nodeVer.split('.').map(Number);
   checks.push({id: 'node', ok: maj > 22 || (maj === 22 && min >= 19), detail: `v${nodeVer} (${en ? 'needs' : '需要'} >=22.19)`});
   const srcOk = rt.source.mode !== 'missing';
-  checks.push({id: 'skill-files', ok: srcOk, detail: srcOk ? `${rt.source.mode}: ${rt.source.root}` : rt.source.error, ...(srcOk ? {} : {fix: en ? 'set skillRoot to a Distill Video clone, or reinstall the plugin' : '把 skillRoot 配成一份 Distill Video clone，或重装插件'})});
+  checks.push({id: 'skill-files', ok: srcOk, detail: srcOk ? `${rt.source.mode}: ${rt.source.root}` : rt.source.error, ...(srcOk ? {} : {fix: en ? 'set skillRoot to a BrewReel clone, or reinstall the plugin' : '把 skillRoot 配成一份 BrewReel clone，或重装插件'})});
   const staged = !rt.plan.staged || isStaged(root);
   checks.push({id: 'runtime-staged', ok: staged, detail: rt.plan.staged ? root : en ? 'runs in place' : '原地运行', ...(staged ? {} : {fix: `${TOOL_NAMES.setup}`})});
   const cli = fs.existsSync(remotionCli(root));
@@ -98,7 +98,7 @@ export async function runDoctor(rt, {deep = false, workspace, signal}) {
     }
   }
   checks.push({id: 'render-lock', ok: true, detail: lock});
-  checks.push({id: 'skill-registered', ok: !!rt.skillRegistered, optional: true, detail: rt.skillRegistered ? 'promo-video-skill' : en ? 'skills service not loaded or registerSkill: false; the tools still work' : 'skills 服务没加载或 registerSkill 关了；工具照常可用'});
+  checks.push({id: 'skill-registered', ok: !!rt.skillRegistered, optional: true, detail: rt.skillRegistered ? rt.skillName || 'brewreel' : en ? 'skills service not loaded or registerSkill: false; the tools still work' : 'skills 服务没加载或 registerSkill 关了；工具照常可用'});
   if (deep && srcOk && staged) {
     const r = await runProcess({cmd: process.execPath, args: [path.join(root, 'scripts', 'validate.mjs'), '--specs'], cwd: root, env: cleanEnv(), timeoutMs: 30_000, signal});
     checks.push({id: 'specs', ok: r.code === 0, detail: (r.stdout || r.stderr).trim().split(/\r?\n/).slice(-3).join(' | ')});
@@ -115,7 +115,7 @@ export async function runDoctor(rt, {deep = false, workspace, signal}) {
     repoCommit: info.repoCommit ?? null,
     checks,
     nextStep: ready
-      ? en ? 'Ready: pick a style with distill_video_catalog and write the storyboard' : '环境就绪：用 distill_video_catalog 选风格，然后写分镜'
+      ? en ? 'Ready: pick a style with brewreel_catalog and write the storyboard' : '环境就绪：用 brewreel_catalog 选风格，然后写分镜'
       : !srcOk
         ? en ? 'Skill files are missing: fix skillRoot or reinstall the plugin' : 'skill 文件缺失：检查 skillRoot 或重装插件'
         : en ? `Call ${TOOL_NAMES.setup} to install render dependencies (several hundred MB — ask the user first)` : `调 ${TOOL_NAMES.setup} 安装渲染依赖（约几百 MB，先问用户）`,

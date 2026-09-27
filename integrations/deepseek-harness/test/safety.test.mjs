@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {test} from 'node:test';
 import {normalizeConfig} from '../lib/config.js';
-import {allowedRoots, assetEscapes, assertOutDir, assertOutDirSafe, markOutDir} from '../lib/paths.js';
+import {allowedRoots, assetEscapes, assertOutDir, assertOutDirSafe, LEGACY_OUT_MARKERS, markOutDir, OUT_MARKER} from '../lib/paths.js';
 import {planRender} from '../lib/render.js';
 import {cleanEnv, runProcess} from '../lib/run.js';
 import {tmpDir, writeStoryboard} from './helpers.mjs';
@@ -76,6 +76,16 @@ test('U8 refuses folders where make.mjs would delete user files', () => {
   markOutDir(partial, sb);
   fs.writeFileSync(path.join(partial, 'props.json'), '{}');
   assert.doesNotThrow(() => assertOutDirSafe(partial, sb));
+  assert.ok(fs.existsSync(path.join(partial, OUT_MARKER)) && OUT_MARKER === '.brewreel-out.json');
+  // a folder marked by plugin 0.1.x (dsh-distill-video) is still recognised
+  const legacy = path.join(ws, 'promo', 'legacy');
+  fs.mkdirSync(legacy, {recursive: true});
+  fs.writeFileSync(path.join(legacy, 'storyboard.json'), '{"old": true}');
+  fs.writeFileSync(path.join(legacy, 'props.json'), '{}');
+  assert.throws(() => assertOutDirSafe(legacy, sb), /different storyboard\.json/);
+  fs.writeFileSync(path.join(legacy, LEGACY_OUT_MARKERS[0]), '{"by":"dsh-distill-video"}');
+  assert.equal(LEGACY_OUT_MARKERS[0], '.distill-video-out.json');
+  assert.doesNotThrow(() => assertOutDirSafe(legacy, sb));
 });
 
 test('U8 hostile file names become exactly one absolute argv element', () => {

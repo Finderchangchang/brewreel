@@ -1,5 +1,5 @@
 // @ts-check
-// distill_video_render / distill_video_verify: run make.mjs with a fixed argv, stream progress, and
+// brewreel_render / brewreel_verify: run make.mjs with a fixed argv, stream progress, and
 // assemble a result where `video` is present only when every delivery condition holds.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -74,7 +74,7 @@ const readJsonSafe = (file) => {
  * Validate the model's arguments and build make.mjs argv. Only verified absolute paths and numbers
  * reach argv; --round / --allow-in-repo / --accept-layout / --keep are never passed.
  * @param {{storyboard: string, brief?: string, outDir?: string, stills?: number[], bgm?: boolean, queueTimeoutMin?: number}} args
- * @param {{runtimeRoot: string, roots: ReturnType<typeof allowedRoots>, cfg: import('./config.js').DistillConfig, verify?: boolean}} o
+ * @param {{runtimeRoot: string, roots: ReturnType<typeof allowedRoots>, cfg: import('./config.js').BrewreelConfig, verify?: boolean}} o
  * @returns {RenderPlan}
  */
 export function planRender(args, {runtimeRoot, roots, cfg, verify = false}) {
@@ -104,7 +104,7 @@ export function planRender(args, {runtimeRoot, roots, cfg, verify = false}) {
 }
 
 /**
- * @param {import('./config.js').DistillConfig} cfg
+ * @param {import('./config.js').BrewreelConfig} cfg
  */
 export function makeEnv(cfg) {
   return cleanEnv({
@@ -270,6 +270,6 @@ export async function executeVerify(rt, plan) {
     outDir: plan.outDir,
     nextStep: ok
       ? en ? 'Deliver the path in video to the user' : '把 video 里的路径交给用户'
-      : en ? 'The storyboard changed or there is no deliverable video: call distill_video_render again' : '分镜改过了或没有可交付的成片：重新调 distill_video_render',
+      : en ? 'The storyboard changed or there is no deliverable video: call brewreel_render again' : '分镜改过了或没有可交付的成片：重新调 brewreel_render',
   };
 }

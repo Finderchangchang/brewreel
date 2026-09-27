@@ -1,6 +1,8 @@
-# Style distillation: turning a reference video into a reusable style pack
+# Crafting a recipe: turning a reference video into a reusable style pack
 
 中文：[README.md](README.md)
+
+In 精酿 · BrewReel a style pack is a "recipe", and this process of drawing a new style out of a reference video is "crafting a recipe" (earlier versions called it style distillation, hence the folder name `distill/`).
 
 Goal: learn a good short video's **method** (structure, rhythm, motion, camera, layout) without taking its **look** (palette, characters, signature details, stock phrases, branded ending), then turn the method into components so a cheap model can produce films of similar quality by filling in fields.
 

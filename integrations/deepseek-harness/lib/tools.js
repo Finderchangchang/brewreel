@@ -30,7 +30,7 @@ export function createToolSpecs(rt) {
   /** @param {any} value */
   const jsonText = (value) => [{type: 'text', text: clip(JSON.stringify(value, null, 1), rt.cfg.maxResultChars)}];
   const requireSource = () => {
-    if (rt.source.mode === 'missing') throw new Error(`${rt.source.error}. ${L('调 distill_video_doctor 看怎么修', 'Call distill_video_doctor for the fix')}`);
+    if (rt.source.mode === 'missing') throw new Error(`${rt.source.error}. ${L('调 brewreel_doctor 看怎么修', 'Call brewreel_doctor for the fix')}`);
   };
   /** @param {any} exec */
   const rootsOf = (exec) => allowedRoots({workspace: workspaceOf(exec), outputRoot: rt.cfg.outputRoot, extraWriteRoots: rt.cfg.extraWriteRoots});
@@ -55,7 +55,7 @@ export function createToolSpecs(rt) {
       let jobId;
       try {
         jobId = jobs.start({
-        kind: 'distill-video',
+        kind: 'brewreel',
         label,
         ...(exec.agent?.id !== undefined ? {owner: exec.agent.id} : {}),
         outputLimitBytes: 64 * 1024,
@@ -80,7 +80,7 @@ export function createToolSpecs(rt) {
       } catch (e) {
         // admission refused (no job controller for this caller, job limit …): run in the foreground instead
         refused = String(/** @type {any} */ (e)?.message ?? e);
-        rt.logger?.warn?.(`distill-video: background job refused, running in the foreground: ${refused}`);
+        rt.logger?.warn?.(`brewreel: background job refused, running in the foreground: ${refused}`);
       }
       if (jobId !== undefined) return {kind: 'background', jobId: String(jobId), ...extra};
     }
@@ -92,7 +92,7 @@ export function createToolSpecs(rt) {
   return [
     {
       name: TOOL_NAMES.doctor,
-      description: 'Check whether Distill Video (vertical promo videos from a storyboard JSON) is ready to render: skill files, Node, Remotion dependencies, Chrome Headless Shell, optional Python/numpy/scipy for music. Read-only; downloads nothing. Call it first, and whenever another distill_video tool says the environment is not ready.',
+      description: 'Check whether BrewReel (vertical promo videos from a storyboard JSON) is ready to render: skill files, Node, Remotion dependencies, Chrome Headless Shell, optional Python/numpy/scipy for music. Read-only; downloads nothing. Call it first, and whenever another brewreel tool says the environment is not ready.',
       parameters: {deep: {type: 'boolean', description: 'Also run the shot-spec self-test (a few seconds).'}},
       readOnly: true,
       /** @param {{deep?: boolean}} args @param {any} exec */
@@ -104,7 +104,7 @@ export function createToolSpecs(rt) {
     },
     {
       name: TOOL_NAMES.setup,
-      description: 'One-time setup for Distill Video: copy the skill into the runtime folder (stage), install the Remotion template dependencies with npm ci (deps) and download Chrome Headless Shell (browser). Downloads several hundred MB from npm and Google — ask the user before calling. Runs fixed commands only; Python packages are never installed (doctor prints the command for the user).',
+      description: 'One-time setup for BrewReel: copy the skill into the runtime folder (stage), install the Remotion template dependencies with npm ci (deps) and download Chrome Headless Shell (browser). Downloads several hundred MB from npm and Google — ask the user before calling. Runs fixed commands only; Python packages are never installed (doctor prints the command for the user).',
       parameters: {
         steps: {type: 'array', items: {type: 'string', enum: ['stage', 'deps', 'browser']}, description: 'Subset of steps; default all three. Finished steps are skipped.'},
         run_in_background: {type: 'boolean', description: 'Run as a background job (default true); follow with job_output.'},
@@ -117,7 +117,7 @@ export function createToolSpecs(rt) {
         const r = await maybeBackground(
           exec,
           bg,
-          'distill-video setup',
+          'brewreel setup',
           async (o) => {
             const s = await runSetup(rt, {steps: args.steps, ...o});
             return {...s, doctor: await runDoctor(rt, {workspace: workspaceOf(exec), signal: o.signal})};
@@ -131,7 +131,7 @@ export function createToolSpecs(rt) {
     },
     {
       name: TOOL_NAMES.catalog,
-      description: 'List Distill Video styles (cards / quiz / journey …: what each fits, aspects, themes, shots, docs, examples), industries (enabled shots, how the core action is shown) and cards color themes. Read-only.',
+      description: 'List BrewReel styles (cards / quiz / journey …: what each fits, aspects, themes, shots, docs, examples), industries (enabled shots, how the core action is shown) and cards color themes. Read-only.',
       parameters: {
         lang: {type: 'string', enum: ['zh', 'en'], description: 'Language of names and summaries.'},
         includeDev: {type: 'boolean', description: 'Also list styles still in development (the validator blocks them).'},
@@ -146,7 +146,7 @@ export function createToolSpecs(rt) {
     },
     {
       name: TOOL_NAMES.guide,
-      description: 'Read Distill Video documentation: the SKILL instructions, a style\'s STYLE.md / recipes.md, an industry\'s recipe / brief template, one shot\'s notes, or an example storyboard. Without id it lists the valid ids. Examples show format only — copying their captions or numbers triggers validator warnings.',
+      description: 'Read BrewReel documentation: the SKILL instructions, a style\'s STYLE.md / recipes.md, an industry\'s recipe / brief template, one shot\'s notes, or an example storyboard. Without id it lists the valid ids. Examples show format only — copying their captions or numbers triggers validator warnings.',
       parameters: {
         topic: {type: 'string', required: true, enum: GUIDE_TOPICS, description: 'What to read.'},
         id: {type: 'string', description: 'Style / industry / shot id; for an example "<style>/<name>" or a root example name such as "ledger".'},
@@ -177,7 +177,7 @@ export function createToolSpecs(rt) {
     },
     {
       name: TOOL_NAMES.validate,
-      description: 'Validate a Distill Video storyboard.json (and, with brief, check that facts and quotes come from the brief). Returns errors (must fix), warnings (fix if possible) and human items (list for the user; do not edit for them), each with where / problem / fix. Replaces "node scripts/validate.mjs". Read-only.',
+      description: 'Validate a BrewReel storyboard.json (and, with brief, check that facts and quotes come from the brief). Returns errors (must fix), warnings (fix if possible) and human items (list for the user; do not edit for them), each with where / problem / fix. Replaces "node scripts/validate.mjs". Read-only.',
       parameters: {
         storyboard: {type: 'string', required: true, description: 'Path to storyboard.json, relative to the workspace (e.g. promo/my-app/storyboard.json) or absolute.'},
         brief: {type: 'string', description: 'Path to the brief file (e.g. promo/my-app/brief.md). Must exist when given.'},
@@ -193,7 +193,7 @@ export function createToolSpecs(rt) {
     },
     {
       name: TOOL_NAMES.render,
-      description: 'Render a Distill Video storyboard into video.mp4 (validate → machine checks → music → Remotion render → layout / blank-frame checks → manifest). Takes about 3–10 minutes; runs as a background job by default (follow with job_output). Deliver only result.video.path — it is present only when every check passed. stills renders single frames for a quick look and is never a deliverable. Replaces "node scripts/make.mjs".',
+      description: 'Render a BrewReel storyboard into video.mp4 (validate → machine checks → music → Remotion render → layout / blank-frame checks → manifest). Takes about 3–10 minutes; runs as a background job by default (follow with job_output). Deliver only result.video.path — it is present only when every check passed. stills renders single frames for a quick look and is never a deliverable. Replaces "node scripts/make.mjs".',
       parameters: {
         storyboard: {type: 'string', required: true, description: 'Path to storyboard.json (workspace-relative or absolute).'},
         brief: {type: 'string', description: 'Brief file; facts and quotes are checked against it.'},
@@ -219,7 +219,7 @@ export function createToolSpecs(rt) {
         const r = await maybeBackground(
           exec,
           bg,
-          `distill-video render ${plan.outDir}`,
+          `brewreel render ${plan.outDir}`,
           async ({signal, onLine, onProgress}) => {
             const release = await rt.semaphore.acquire(signal);
             try {

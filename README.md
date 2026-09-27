@@ -1,12 +1,16 @@
-# 蒸馏视频 · Distill Video
+# 精酿 · BrewReel
 
-**当前版本 v0.3.0**（[更新日志](CHANGELOG.md)）｜仓库名 `promo-video-skill`｜[English version → README.en.md](README.en.md)
+**便宜模型，也能酿出好片。**
+
+**当前版本 v0.4.0**（[更新日志](CHANGELOG.md)）｜官网 [brewreel.com](https://brewreel.com)（即将上线）｜[English version → README.en.md](README.en.md)
+
+原名 promo-video-skill / 蒸馏视频。仓库已改名为 [Finderchangchang/brewreel](https://github.com/Finderchangchang/brewreel)，旧地址会自动跳转。
 
 作者：**柳伟杰**（GitHub [@Finderchangchang](https://github.com/Finderchangchang)）。转载、二次开发或商用请保留 `LICENSE` 与 `NOTICE` 并注明出处。
 
 > **预览版**：测试和修复仍在进行中，欢迎提 issue 反馈误伤规则、渲染问题和体验建议。
 
-**为什么叫"蒸馏视频"**：先让强模型把一种视频风格做到位，再把它的版式、动效、节奏和规则"蒸馏"成现成组件和校验脚本；之后 DeepSeek 这类便宜模型只要填分镜，就能出同一水准的片子。现在已蒸出 3 种风格，蒸馏方法本身也开源在 `distill/`，任何人都能拿一支参考视频蒸出新风格。
+**为什么叫「精酿」**：好酒靠的是配方，原料普通也能酿好。先让强模型把一种视频风格做到位，再把它的版式、动效、节奏和规则写成一份「配方」——现成组件加校验脚本；之后 DeepSeek 这类便宜模型就是普通原料，照着配方填分镜，就能酿出同一水准的片子。现在有 3 份配方（`cards`、`quiz`、`journey`）。调配方的方法也开源在 `distill/`，任何人都能拿一支参考视频调出一份新配方。像自酿爱好者之间分享配方一样：直接拿现成配方开酿是一创，改一份配方酿出自己的口味是二创，从头调一份新配方是三创——这也是本项目开源的用意。
 
 一句话：给 AI 编程助手（Claude Code / Codex / opencode…）用的 skill，把「写分镜 → 出竖版宣传短片」这件事标准化——便宜模型只写一份 `storyboard.json`，固定的 Remotion 组件负责画面，校验脚本拦硬性规则和行业合规红线，一条命令出片（1080×1920，带原创配乐和音效）。
 
@@ -64,14 +68,14 @@
 ### 三条命令
 
 ```bash
-git clone https://github.com/Finderchangchang/promo-video-skill.git
-cd promo-video-skill/template && npm install && npx remotion browser ensure
+git clone https://github.com/Finderchangchang/brewreel.git
+cd brewreel/template && npm install && npx remotion browser ensure
 cd .. && node scripts/validate.mjs examples/ledger.json
 ```
 
 第一条命令下载渲染引擎依赖（含 7 个平台的 Remotion compositor，选装但保留在 lock 文件里方便切平台）；第二条会额外下载一次 Chrome Headless Shell（约 110MB，供无头渲染用）；第三条跑一遍自带的示例分镜，校验通过就说明装好了。
 
-也可以作为 skill 装进你的 AI 编程助手（如果它支持 skill 管理器）：手动把整个仓库 clone 到 `~/.claude/skills/promo-video-skill/`（Claude Code）或 `~/.agents/skills/promo-video-skill/`（通用约定），或用你工具自带的 skill 安装命令指向本仓库地址。
+也可以作为 skill 装进你的 AI 编程助手（如果它支持 skill 管理器）：手动把整个仓库 clone 到 `~/.claude/skills/brewreel/`（Claude Code）或 `~/.agents/skills/brewreel/`（通用约定），或用你工具自带的 skill 安装命令指向本仓库地址。
 
 ## 工作流
 
@@ -105,20 +109,20 @@ Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上环境�
 
 ## 在 DeepSeek Harness 里用
 
-仓库自带一个 DeepSeek Harness（dsh）插件，放在 [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.md)，包名 `dsh-distill-video`。装上后，模型照着 skill 写分镜，校验、出片、核对都调插件的工具完成，不用自己拼 `node scripts/…` 命令；出片在后台跑、报进度，输出路径和子进程拿到的环境变量都受插件限制。
+仓库自带一个 DeepSeek Harness（dsh）插件，放在 [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.md)，包名 `dsh-brewreel`（原名 `dsh-distill-video`，从旧版升级见插件 README 的「从 dsh-distill-video 升级」）。装上后，模型照着 skill 写分镜，校验、出片、核对都调插件的工具完成，不用自己拼 `node scripts/…` 命令；出片在后台跑、报进度，输出路径和子进程拿到的环境变量都受插件限制。
 
 需要 **dsh 0.1.7-rc.2 或更高**的 0.1.x。npm 上 dsh 的 `latest` 标签目前还指向更早的 0.1.5-rc.3，所以安装时要写明版本号。另外要有 Node.js 22.19+ 的 22.x 或 24+，以及 pnpm（`dsh plugin` 靠 pnpm 装插件）。从 GitHub 仓库目录安装：
 
 ```bash
 npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm    # 还没装 dsh 时
-git clone https://github.com/Finderchangchang/promo-video-skill.git
-dsh plugin --profile web add ./promo-video-skill/integrations/deepseek-harness
+git clone https://github.com/Finderchangchang/brewreel.git
+dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 dsh web
 ```
 
-第三条命令在 clone 的上一级目录执行；`web` 可以换成你自己的 profile 名，profile 已经在运行的要重启才生效。第一次用时对模型说「检查一下视频插件环境」，它会调 doctor，经你同意后再调 setup 装渲染依赖（约几百 MB，外加约 110 MB 的 Chrome Headless Shell）。npm 包 `dsh-distill-video` **还没发布**，发布后可以直接 `dsh plugin --profile web add dsh-distill-video`。
+第三条命令在 clone 的上一级目录执行；`web` 可以换成你自己的 profile 名，profile 已经在运行的要重启才生效。第一次用时对模型说「检查一下视频插件环境」，它会调 doctor，经你同意后再调 setup 装渲染依赖（约几百 MB，外加约 110 MB 的 Chrome Headless Shell）。npm 包 `dsh-brewreel` **还没发布**，发布后可以直接 `dsh plugin --profile web add dsh-brewreel`。
 
-插件提供 7 个工具：`distill_video_doctor` 查环境，`distill_video_setup` 装依赖和浏览器，`distill_video_catalog` 列风格、行业和配色，`distill_video_guide` 读 skill 与各风格、行业、镜头文档，`distill_video_validate` 校验分镜并给改法，`distill_video_render` 后台出片，`distill_video_verify` 核对成片是否还对应当前分镜。
+插件提供 7 个工具：`brewreel_doctor` 查环境，`brewreel_setup` 装依赖和浏览器，`brewreel_catalog` 列风格、行业和配色，`brewreel_guide` 读 skill 与各风格、行业、镜头文档，`brewreel_validate` 校验分镜并给改法，`brewreel_render` 后台出片，`brewreel_verify` 核对成片是否还对应当前分镜。
 
 许可提醒：插件和 skill 是 Apache-2.0，但渲染引擎 Remotion 不是开源软件，**4 人及以上的营利组织需要购买 Remotion 的 Company License**（见下文「许可证」一节和 `THIRD_PARTY_LICENSES.md`）；插件不改变这一点。另外，渲染子进程不经过 dsh 的 shell 沙箱，以当前用户权限运行。
 
@@ -126,7 +130,7 @@ dsh web
 
 ## 风格
 
-分镜里写 `meta.style` 选视觉风格，不写就是默认的 `cards`。每个风格是一个「风格包」：自带设计令牌、镜头组件、校验规则和叙事模板，文档、规则、样例放在 `styles/<id>/`，代码放在 `template/src/styles/<id>/`。
+分镜里写 `meta.style` 选视觉风格，不写就是默认的 `cards`。每个风格是一个「风格包」，也就是一份「配方」：自带设计令牌、镜头组件、校验规则和叙事模板，文档、规则、样例放在 `styles/<id>/`，代码放在 `template/src/styles/<id>/`。
 
 **`cards` 卡片信息流**（默认，可用，9:16）：渐变底 + 居中白卡片 + 描边大字幕，一镜讲一件事。适合单一卖点、讲使用流程、演示界面、实物和门店。18 个镜头、六个行业的样例都在 `examples/`。
 
@@ -154,7 +158,7 @@ dsh web
 
 - **一创**：直接用现有风格出片。
 - **二创（换皮）**：`node scripts/gen-styles.mjs --new <id>` 从脚手架生成一个新风格，把源风格要沿用的镜头和 `tokens.json` 复制过来，换配色、字体、角色，做成自己的变体。只换配色的话，改 `tokens.json` 的 `themes` 就行。
-- **三创（蒸馏）**：按 [`distill/`](distill/README.md) 的统一流程拆一支参考视频：`scripts/extract-frames.mjs` 抽帧、找切点 → 九层拆解（同时列出带编号的招牌清单）→ 复刻（只在本地、不提交）→ **再设计** → 组件化 → 便宜模型测试 → 评审（含混淆度打分），蒸馏成一个新风格。`distill/prompts/` 里有每一步可直接用的提示词，`styles/_template/` 是新风格的空白模板。`quiz` 和 `journey` 就是这样做出来的，分别参考了一支答题互动类短视频和一支角色漫游类短视频。
+- **三创（调配方）**：按 [`distill/`](distill/README.md) 的统一流程拆一支参考视频：`scripts/extract-frames.mjs` 抽帧、找切点 → 九层拆解（同时列出带编号的招牌清单）→ 复刻（只在本地、不提交）→ **再设计** → 组件化 → 便宜模型测试 → 评审（含混淆度打分），调出一份新配方（新风格）。`distill/prompts/` 里有每一步可直接用的提示词，`styles/_template/` 是新风格的空白模板。`quiz` 和 `journey` 就是这样做出来的，分别参考了一支答题互动类短视频和一支角色漫游类短视频。
 
 **「再设计 + 原创性检查」是必经步骤**，二创、三创都一样。我们要的是「同一类型的风格」，不是一比一复制：
 - **骨架可以保留**：叙事结构、节奏、动效手法、镜头语言、版式原则，这些是类型，谁都能用。
@@ -255,7 +259,7 @@ industries/<id>/
 ## 目录结构
 
 ```
-promo-video-skill/
+brewreel/
   SKILL.md / SKILL.en.md      AI 助手看的说明书（怎么挑镜头、写字段、走流程）
   README.md / README.en.md    人看的项目说明（本文件）
   LICENSE / NOTICE / THIRD_PARTY_LICENSES.md
@@ -282,10 +286,10 @@ promo-video-skill/
     public/                    字体、音效、示例素材
   examples/                   9 份可直接渲染的分镜样例（六行业 + 英文 + 两份通用示例，都是 cards 风格）
   styles/                     风格包：每个风格的九层规格、叙事模板、规则、样例；_template/ 是新风格脚手架
-  distill/                    风格蒸馏流程和可复用提示词（拆解 → 复刻 → 再设计 → 组件化 → 测试 → 评审）
+  distill/                    调配方流程（从参考视频提炼新风格）和可复用提示词（拆解 → 复刻 → 再设计 → 组件化 → 测试 → 评审）
   CONTRIBUTING.md             贡献说明（一创 / 二创 / 三创、PR 自查清单）
   integrations/
-    deepseek-harness/          DeepSeek Harness 插件 dsh-distill-video（7 个工具，见「在 DeepSeek Harness 里用」）
+    deepseek-harness/          DeepSeek Harness 插件 dsh-brewreel（7 个工具，见「在 DeepSeek Harness 里用」）
   tests/
     validate/                  校验规则的正负例回归测试
     rules/                     六个行业的规则回归测试（各 4 例）
@@ -311,7 +315,7 @@ Windows shell 会吃掉 JSON 字符串里的引号，所以分镜一律用文件
 
 ## 许可证
 
-本仓库代码以 **Apache-2.0** 许可证发布，见 `LICENSE`，版权人：柳伟杰（Finderchangchang）。**可以免费商用**；按 Apache-2.0 第 4 条，转载、修改后再发布或集成进你的产品时，必须保留 `LICENSE`，并在你的 NOTICE 文件、文档或产品界面里保留 `NOTICE` 中的署名（即注明出处：基于柳伟杰的 promo-video-skill）。用本工具渲染出的视频不要求署名。
+本仓库代码以 **Apache-2.0** 许可证发布，见 `LICENSE`，版权人：柳伟杰（Finderchangchang）。**可以免费商用**；按 Apache-2.0 第 4 条，转载、修改后再发布或集成进你的产品时，必须保留 `LICENSE`，并在你的 NOTICE 文件、文档或产品界面里保留 `NOTICE` 中的署名（即注明出处：基于柳伟杰（Finderchangchang）的 精酿 BrewReel）。用本工具渲染出的视频不要求署名。
 
 本仓库依赖 [Remotion](https://www.remotion.dev) 作为渲染引擎——Remotion 是**源码可见、非开源**的软件：个人、3 人及以下的营利公司、非营利组织可免费使用（含商用）；**4 人及以上的营利组织需要购买 Remotion 的 Company License**，详见 <https://www.remotion.dev/license>。本仓库的 Apache-2.0 许可证不改变 Remotion 自己的许可条件，具体见 `THIRD_PARTY_LICENSES.md`。
 

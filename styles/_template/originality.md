@@ -1,6 +1,6 @@
 # __ID__ 风格（__NAME__）· 原创性记录
 
-> 蒸馏流程第 3 步「再设计」的交付物，PR 前必须填完（方法见 `distill/README.md`、提示词 `distill/prompts/redesign.md`）。
+> 调配方流程第 3 步「再设计」的交付物，PR 前必须填完（方法见 `distill/README.md`、提示词 `distill/prompts/redesign.md`）。
 > 本文件公开：**不写参考片的品牌名、角色名、网址、口号原文、影视片名**，用抽象描述（如「标题旁的强调色方块」「角落探头的小人」）。
 > 招牌清单原件（`signatures.md`）和参考 `tokens.json` 放仓库外，只在命令行里引用。
 > English contributors may write this file in English; in the signature table use `Replaced with: …` or `Removed (why)`.

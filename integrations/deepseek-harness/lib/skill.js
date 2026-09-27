@@ -5,13 +5,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const TOOL_NAMES = Object.freeze({
-  doctor: 'distill_video_doctor',
-  setup: 'distill_video_setup',
-  catalog: 'distill_video_catalog',
-  guide: 'distill_video_guide',
-  validate: 'distill_video_validate',
-  render: 'distill_video_render',
-  verify: 'distill_video_verify',
+  doctor: 'brewreel_doctor',
+  setup: 'brewreel_setup',
+  catalog: 'brewreel_catalog',
+  guide: 'brewreel_guide',
+  validate: 'brewreel_validate',
+  render: 'brewreel_render',
+  verify: 'brewreel_verify',
 });
 
 /**
@@ -87,8 +87,8 @@ export function buildPreamble(lang, runtimeRoot) {
 export function buildSkillRegistration({sourceRoot, runtimeRoot, lang, pluginVersion, sourceInfo}) {
   const file = lang === 'en' && fs.existsSync(path.join(sourceRoot, 'SKILL.en.md')) ? 'SKILL.en.md' : 'SKILL.md';
   const {data, body} = parseFrontmatter(fs.readFileSync(path.join(sourceRoot, file), 'utf8'));
-  const name = String(data.name || 'promo-video-skill');
-  const description = String(data.description || 'Distill Video: vertical promo videos from a storyboard JSON.');
+  const name = String(data.name || 'brewreel');
+  const description = String(data.description || 'BrewReel: vertical promo videos from a storyboard JSON.');
   const skillVersion = String(data.metadata?.version ?? sourceInfo?.skillVersion ?? '');
   return {
     name,
@@ -98,7 +98,7 @@ export function buildSkillRegistration({sourceRoot, runtimeRoot, lang, pluginVer
     source: 'runtime',
     resourceBase: {kind: /** @type {const} */ ('directory'), path: runtimeRoot},
     metadata: {
-      plugin: 'dsh-distill-video',
+      plugin: 'dsh-brewreel',
       pluginVersion,
       skillVersion,
       ...(sourceInfo?.repoCommit ? {repoCommit: sourceInfo.repoCommit} : {}),

@@ -1,7 +1,7 @@
 {
-  "name": "dsh-distill-video",
-  "version": "0.1.0",
-  "description": "Distill Video for DeepSeek Harness: write a storyboard JSON, get a vertical promo video.",
+  "name": "dsh-brewreel",
+  "version": "0.2.0",
+  "description": "BrewReel (精酿) for DeepSeek Harness: write a storyboard JSON, get a vertical promo video.",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -28,6 +28,7 @@
   },
   "keywords": [
     "dsh-plugin",
+    "brewreel",
     "deepseek-harness",
     "remotion",
     "video",
@@ -35,14 +36,14 @@
   ],
   "license": "Apache-2.0",
   "author": "Liu Weijie (Finderchangchang)",
-  "homepage": "https://github.com/Finderchangchang/promo-video-skill/tree/main/integrations/deepseek-harness",
+  "homepage": "https://brewreel.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Finderchangchang/promo-video-skill",
+    "url": "https://github.com/Finderchangchang/brewreel",
     "directory": "integrations/deepseek-harness"
   },
   "bugs": {
-    "url": "https://github.com/Finderchangchang/promo-video-skill/issues"
+    "url": "https://github.com/Finderchangchang/brewreel/issues"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-tools": ">=0.1.7-rc.2 <0.2.0",

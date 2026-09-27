@@ -5,7 +5,7 @@
 //     --work         workspace; storyboards are copied to <work>/promo/<name>/ and rendered there
 //     --chrome-from  copy an existing .remotion/chrome-headless-shell instead of downloading it
 //     --full         render full videos (2–4 min each); default renders stills only
-//     --setup        run distill_video_setup (npm ci; downloads when the npm cache is cold)
+//     --setup        run brewreel_setup (npm ci; downloads when the npm cache is cold)
 // Prints one JSON line per step; exits 1 when a step fails.
 import fs from 'node:fs';
 import path from 'node:path';

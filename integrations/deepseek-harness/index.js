@@ -1,5 +1,5 @@
 // @ts-check
-// Distill Video for DeepSeek Harness — Cordis entry point.
+// BrewReel for DeepSeek Harness — Cordis entry point.
 // Author: Liu Weijie (Finderchangchang). License: Apache-2.0.
 import Schema from '@deepseek-ai/schemastery';
 import {defineTool} from '@deepseek-ai/dsh-tools';

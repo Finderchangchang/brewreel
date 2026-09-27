@@ -1,5 +1,5 @@
 // @ts-check
-// distill_video_validate: run the skill's validate.mjs --json, add the plugin's asset-path rule, and
+// brewreel_validate: run the skill's validate.mjs --json, add the plugin's asset-path rule, and
 // track errors that survive several rounds so a cheap model stops looping.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -98,7 +98,7 @@ export async function runValidate(rt, args) {
   let nextStep;
   if (stuck.length) nextStep = en ? 'The same error survived 3 rounds of edits: stop, show the user the exact error text and ask how to proceed' : '同一条改了 3 次还在：停下来，把报错原文给用户看、问用户怎么定';
   else if (!ok) nextStep = en ? 'Fix storyboard.json item by item following each fix, then call this tool again' : '按 errors 的 fix 逐条改 storyboard.json，改完再调本工具';
-  else nextStep = en ? 'call distill_video_render; keep the human items for the delivery checklist' : '调 distill_video_render 出片；human 条目留着交付时原样列给用户';
+  else nextStep = en ? 'call brewreel_render; keep the human items for the delivery checklist' : '调 brewreel_render 出片；human 条目留着交付时原样列给用户';
   return {
     ok,
     storyboard,

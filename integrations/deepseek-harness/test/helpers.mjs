@@ -84,7 +84,7 @@ export function fakeSkillRoot() {
     fs.mkdirSync(path.dirname(path.join(root, rel)), {recursive: true});
     fs.writeFileSync(path.join(root, rel), text);
   };
-  w('SKILL.md', '---\nname: promo-video-skill\ndescription: fake skill for tests\nmetadata:\n  version: 9.9.9\n---\n\n# Body\n');
+  w('SKILL.md', '---\nname: brewreel\ndescription: fake skill for tests\nmetadata:\n  version: 9.9.9\n---\n\n# Body\n');
   w('scripts/make.mjs', FAKE_MAKE);
   w('scripts/validate.mjs', FAKE_VALIDATE);
   w('template/node_modules/@remotion/cli/remotion-cli.js', '');

@@ -1,10 +1,12 @@
-# 蒸馏视频 · Distill Video — DeepSeek Harness 插件
+# 精酿 · BrewReel — DeepSeek Harness 插件
 
 中文 | [English](README.en.md)
 
 用 DeepSeek 模型写一份分镜 JSON，一次工具调用出一支竖版宣传片（1080x1920，15–45 秒）。
 
-作者：柳伟杰 / Liu Weijie（Finderchangchang）　·　许可证：Apache-2.0　·　主仓库：<https://github.com/Finderchangchang/promo-video-skill>
+作者：柳伟杰 / Liu Weijie（Finderchangchang）　·　许可证：Apache-2.0　·　主仓库：<https://github.com/Finderchangchang/brewreel>
+
+插件包名 `dsh-brewreel`，0.2.0 起随项目改名（原名 `dsh-distill-video`，项目原名 promo-video-skill / 蒸馏视频）；从旧版升级见[「从 dsh-distill-video 升级」](#从-dsh-distill-video-升级)。
 
 ## 它做什么，不做什么
 
@@ -42,35 +44,35 @@ npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm
 **A. 本地 clone 链接安装（最稳，国内网络友好）**
 
 ```sh
-git clone https://github.com/Finderchangchang/promo-video-skill.git
-dsh plugin --profile web add ./promo-video-skill/integrations/deepseek-harness
+git clone https://github.com/Finderchangchang/brewreel.git
+dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 ```
 
 在 clone 的上一级目录执行第二条命令（相对路径按当前目录解析）。插件会直接使用这份 clone 里的 skill（`checkout` 模式）：渲染依赖装在 clone 的 `template/node_modules/`，出片时 `make.mjs` 会在 clone 的 `template/` 里写临时素材和渲染锁（都已被仓库 `.gitignore` 忽略）；不想碰 clone，就在配置里开 `stageCheckout: true`，改为复制到运行目录再跑。
 
 **B. GitHub Release 附件（npm 发布前）**
 
-从 Release 页面下载 `dsh-distill-video-<版本>.tgz`，然后：
+从 Release 页面下载 `dsh-brewreel-<版本>.tgz`，然后：
 
 ```sh
-dsh plugin --profile web add ./dsh-distill-video-0.1.0.tgz
+dsh plugin --profile web add ./dsh-brewreel-0.2.0.tgz
 ```
 
 **C. npm（作者发布后）**
 
 ```sh
-dsh plugin --profile web add dsh-distill-video
+dsh plugin --profile web add dsh-brewreel
 ```
 
 **D. 只装 skill、不装插件**
 
-把仓库 clone 到 `~/.agents/skills/promo-video-skill/`（或项目的 `.agents/skills/`），dsh 会自动发现这份 skill，模型用 shell 工具跑 `node scripts/…`。没有进度、路径保护和结构化报错，只适合临时试用。
+把仓库 clone 到 `~/.agents/skills/brewreel/`（或项目的 `.agents/skills/`），dsh 会自动发现这份 skill，模型用 shell 工具跑 `node scripts/…`。没有进度、路径保护和结构化报错，只适合临时试用。
 
-卸载：`dsh plugin --profile web remove dsh-distill-video`，再删掉运行目录（默认 `~/.dsh/distill-video/`；A 方式不开 `stageCheckout` 时依赖在 clone 的 `template/node_modules/`）。
+卸载：`dsh plugin --profile web remove dsh-brewreel`，再删掉运行目录（默认 `~/.dsh/brewreel/`，从 0.1.x 升级上来的可能是 `~/.dsh/distill-video/`；A 方式不开 `stageCheckout` 时依赖在 clone 的 `template/node_modules/`）。
 
 ## 首次初始化
 
-对模型说「检查一下视频插件环境」，它会调 `distill_video_doctor`。环境没就绪时，模型会先问你，再调 `distill_video_setup`：
+对模型说「检查一下视频插件环境」，它会调 `brewreel_doctor`。环境没就绪时，模型会先问你，再调 `brewreel_setup`：
 
 1. `stage`：把 skill 复制到运行目录（npm / tgz 安装时必做；不联网）；
 2. `deps`：在 `template/` 里 `npm ci`（Remotion 等，约几百 MB）；
@@ -86,11 +88,11 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 
 > **你**：给我的记账 App 做一支 20 秒左右的抖音宣传片。卖点：拍小票自动记账、月底超支提醒。简报在 promo/ledger/brief.md。
 >
-> **模型**：（调 `distill_video_catalog`）这个产品单一卖点、要演示界面，用默认的 cards 风格、software 行业。（调 `distill_video_guide` 读 cards 的 recipes 和 hook 镜头说明，写 `promo/ledger/storyboard.json`）
+> **模型**：（调 `brewreel_catalog`）这个产品单一卖点、要演示界面，用默认的 cards 风格、software 行业。（调 `brewreel_guide` 读 cards 的 recipes 和 hook 镜头说明，写 `promo/ledger/storyboard.json`）
 >
-> **模型**：（调 `distill_video_validate`）第 3 镜字幕太长，按提示改成两行……再校验，通过。
+> **模型**：（调 `brewreel_validate`）第 3 镜字幕太长，按提示改成两行……再校验，通过。
 >
-> **模型**：（调 `distill_video_render`，后台任务 `distill-video-1`；用 `job_output` 看到「渲染 420/735 帧」）
+> **模型**：（调 `brewreel_render`，后台任务 `brewreel-1`；用 `job_output` 看到「渲染 420/735 帧」）
 >
 > **模型**：出片完成。成片：`…/promo/ledger/video.mp4`（24.5 秒），拼图 `sheet.png`。发布前请你确认这 2 条「需人工复核」：……
 
@@ -110,13 +112,13 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 
 | 工具 | 用途 | 写文件 | 后台 |
 |---|---|---|---|
-| `distill_video_doctor` | 检查环境（Node、skill 文件、依赖、Chrome、Python、输出目录、渲染锁） | 否 | 否 |
-| `distill_video_setup` | 一键初始化：stage / deps / browser | 运行目录 | 默认是 |
-| `distill_video_catalog` | 列出风格、行业、配色主题 | 否 | 否 |
-| `distill_video_guide` | 读 skill 说明、风格 recipes、行业 recipe、镜头说明、样例 | 否 | 否 |
-| `distill_video_validate` | 校验分镜，给出 errors / warnings / human 三档，每条带「怎么改」 | 否 | 否 |
-| `distill_video_render` | 出片（约 3–10 分钟，看机器），报进度；`stills` 只出单帧 | 输出目录 | 默认是 |
-| `distill_video_verify` | 核对成片是否还对应当前分镜 | 否 | 否 |
+| `brewreel_doctor` | 检查环境（Node、skill 文件、依赖、Chrome、Python、输出目录、渲染锁） | 否 | 否 |
+| `brewreel_setup` | 一键初始化：stage / deps / browser | 运行目录 | 默认是 |
+| `brewreel_catalog` | 列出风格、行业、配色主题 | 否 | 否 |
+| `brewreel_guide` | 读 skill 说明、风格 recipes、行业 recipe、镜头说明、样例 | 否 | 否 |
+| `brewreel_validate` | 校验分镜，给出 errors / warnings / human 三档，每条带「怎么改」 | 否 | 否 |
+| `brewreel_render` | 出片（约 3–10 分钟，看机器），报进度；`stills` 只出单帧 | 输出目录 | 默认是 |
+| `brewreel_verify` | 核对成片是否还对应当前分镜 | 否 | 否 |
 
 同一条校验错误连续 3 轮都没改掉，`validate` 会在 `stuck` 里提示模型停下来问你，避免便宜模型死循环。
 
@@ -125,7 +127,7 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 在 Web UI 的插件设置里改（表单由配置 schema 自动生成），或写进 profile 的 `cordis.patch.yml`：
 
 ```yaml
-- id: distill-video
+- id: brewreel
   config:
     outputRoot: promo
     npmRegistry: https://registry.npmmirror.com
@@ -136,9 +138,9 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 
 | 键 | 默认 | 说明 |
 |---|---|---|
-| `skillRoot` | `''` | 指定一份 Distill Video clone；空 = 自动查找（插件外两级的 clone → 包内快照） |
+| `skillRoot` | `''` | 指定一份精酿 BrewReel 的 clone；空 = 自动查找（插件外两级的 clone → 包内快照） |
 | `stageCheckout` | `false` | clone 模式下也先复制到运行目录再跑，不碰 clone |
-| `runtimeDir` | `''` | 空 = `$DSH_HOME/distill-video`（`~/.dsh/distill-video`） |
+| `runtimeDir` | `''` | 空 = `$DSH_HOME/brewreel`（`~/.dsh/brewreel`）；只有 0.1.x 留下的 `~/.dsh/distill-video` 时直接沿用它 |
 | `outputRoot` | `promo` | 输出根目录，相对会话工作区 |
 | `extraWriteRoots` | `[]` | 额外允许读写的目录（绝对路径） |
 | `renderInBackground` | `true` | 出片默认走后台任务 |
@@ -154,11 +156,11 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 | `maxResultChars` | `16000` | 单次工具结果给模型的文字上限 |
 | `envPassthrough` | `[]` | 额外透传给子进程的环境变量名；名字像密钥的（KEY/TOKEN/SECRET/PASSWORD/AUTH/COOKIE）一律拒绝 |
 
-想每次出片前都让你点确认：用 dsh 的工具审批策略（`tools/pre-execute`）把 `distill_video_render` 配成「询问」。
+想每次出片前都让你点确认：用 dsh 的工具审批策略（`tools/pre-execute`）把 `brewreel_render` 配成「询问」。
 
 ## 安全说明
 
-- **写入范围**：只写会话工作区里的输出目录（默认 `promo/<片名>/`）、`extraWriteRoots`，以及插件运行目录。输出目录不能是工作区根目录、`outputRoot` 本身、用户主目录或盘符根目录；`make.mjs` 开跑会按固定文件名清旧产物（`video.mp4`、`report.txt`、`layout.json`、`manifest.json`、`check/*.png` 等），所以目录里已有别人的 `storyboard.json`，或者有这些文件名、却不是本工具或 `make.mjs` 产出的（没有它写的 `manifest.json`，也没有插件的标记文件 `.distill-video-out.json`），一律拒绝。所有路径先解析真实路径再比较，符号链接 / 目录联接跑不出去。
+- **写入范围**：只写会话工作区里的输出目录（默认 `promo/<片名>/`）、`extraWriteRoots`，以及插件运行目录。输出目录不能是工作区根目录、`outputRoot` 本身、用户主目录或盘符根目录；`make.mjs` 开跑会按固定文件名清旧产物（`video.mp4`、`report.txt`、`layout.json`、`manifest.json`、`check/*.png` 等），所以目录里已有别人的 `storyboard.json`，或者有这些文件名、却不是本工具或 `make.mjs` 产出的（没有它写的 `manifest.json`，也没有插件的标记文件 `.brewreel-out.json`，0.1.x 写的 `.distill-video-out.json` 也认），一律拒绝。所有路径先解析真实路径再比较，符号链接 / 目录联接跑不出去。
 - **可读范围**：分镜、简报必须在工作区里；分镜引用的素材不能跑出分镜目录和工作区。
 - **不执行任意命令**：插件只启动当前 Node 跑 skill 里固定的脚本（validate.mjs、make.mjs、Remotion CLI、npm），Python 只跑固定的检测命令，Windows 上用 `taskkill` 终止自己启动的进程树；`make.mjs` 自己还会调 Python 生成配乐、调 ffmpeg（配置了的话）。全部 `shell: false`，参数是固定数组；模型给的字符串只以「校验过的绝对路径」或「校验过的数字」进入参数。
 - **环境变量白名单**：子进程只拿到 PATH、TEMP、HOME、LANG 等基础变量；DeepSeek key 等凭据不会传给渲染进程。
@@ -168,7 +170,7 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 
 | 现象 | 处理 |
 |---|---|
-| 工具报「渲染依赖还没装好」 | 调 `distill_video_doctor`，同意后调 `distill_video_setup` |
+| 工具报「渲染依赖还没装好」 | 调 `brewreel_doctor`，同意后调 `brewreel_setup` |
 | 退出码 1（`invalid`） | 分镜校验没过，结果里的 `validation.errors` 逐条改 |
 | 退出码 3（`rejected`） | 版式 / 空帧自查有 ✗：删条目或缩短文字，再校验、再出片 |
 | 退出码 4（`render-failed`） | 多半是 Chrome Headless Shell 缺失或内存不足；先跑 doctor |
@@ -181,9 +183,29 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 
 ## 与主仓库的关系、版本对应
 
-- 仓库根目录是唯一源头。npm / tgz 包里的 `skill/` 是打包时由 `scripts/sync-skill.mjs` 生成的快照，`skill/.distill-source.json` 记录 skill 版本、仓库 commit 和文件哈希；`distill_video_doctor` 会显示这几项。
-- 插件版本独立编号（从 0.1.0 起）。0.1.0 随 Distill Video v0.3.0 一起发布；包里的 skill 快照具体是哪个版本、哪个 commit，以 `skill/.distill-source.json`（doctor 结果里也有）为准。
-- 升级：重装插件后重启 profile；新快照会暂存到新的运行子目录，`package-lock.json` 没变时沿用已下载的依赖，只保留最近两份。
+- 仓库根目录是唯一源头。npm / tgz 包里的 `skill/` 是打包时由 `scripts/sync-skill.mjs` 生成的快照，`skill/.distill-source.json` 记录 skill 版本、仓库 commit 和文件哈希；`brewreel_doctor` 会显示这几项。
+- 插件版本独立编号。0.1.0（包名 `dsh-distill-video`）随 v0.3.0 发布；0.2.0 起包名改为 `dsh-brewreel`，随 v0.4.0 发布。包里的 skill 快照具体是哪个版本、哪个 commit，以 `skill/.distill-source.json`（doctor 结果里也有）为准。
+- 升级：重装插件后重启 profile；新快照会暂存到新的运行子目录，`package-lock.json` 的依赖没变时沿用已下载的依赖（只改模板包名或版本号不算变），只保留最近两份。
+
+## 从 dsh-distill-video 升级
+
+0.2.0 起插件随项目改名为精酿 · BrewReel，包名、工具名、skill 名都换了：
+
+| 项 | 0.1.x（旧） | 0.2.0 起 |
+|---|---|---|
+| npm 包名 | `dsh-distill-video` | `dsh-brewreel` |
+| 7 个工具 | `distill_video_doctor` 等 | `brewreel_doctor` 等，后缀不变（doctor / setup / catalog / guide / validate / render / verify） |
+| 注册的 skill 名 | `promo-video-skill` | `brewreel`（跟随 SKILL.md 的 `name`） |
+| `cordis.patch.yml` 里的插件行 | `id: distill-video` | `id: brewreel` |
+| 默认运行目录 | `~/.dsh/distill-video/` | `~/.dsh/brewreel/` |
+| 输出目录标记文件 | `.distill-video-out.json` | `.brewreel-out.json` |
+| 打包时跳过脏检查的环境变量 | `DISTILL_SYNC_ALLOW_DIRTY` | `BREWREEL_SYNC_ALLOW_DIRTY` |
+
+升级步骤：`dsh plugin --profile web remove dsh-distill-video`，按上面「安装」重新装 `dsh-brewreel`，重启 profile。
+
+- **要你改的**：旧工具名不再注册。工具审批策略（`tools/pre-execute`）、自己的提示词或脚本里写了 `distill_video_*` 的，换成 `brewreel_*`；profile 的 `cordis.patch.yml` 里写过覆盖的，把 `id` 改成 `brewreel`（否则旧 id 的那行不再对应本插件）。
+- **自动兼容的**：旧输出目录里的 `.distill-video-out.json` 照样认，原来的输出目录可以接着出片；只有旧运行目录 `~/.dsh/distill-video/` 时会直接沿用，已下载的依赖和 Chrome Headless Shell 不用重下；`DISTILL_SYNC_ALLOW_DIRTY` 仍然有效。
+- GitHub 仓库地址改为 <https://github.com/Finderchangchang/brewreel>，旧地址会自动跳转；已有的 clone 可以用 `git remote set-url origin https://github.com/Finderchangchang/brewreel.git` 改过来，不改也能拉取。
 
 ## 开发者
 
@@ -191,7 +213,7 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 cd integrations/deepseek-harness
 npm test                  # 单测，零依赖，不启动 dsh
 npm run smoke -- --runtime-dir <目录> --work <目录> --setup [--full]   # 直接调工具函数的冒烟测试
-npm run sync              # 生成 skill/ 快照（打包前 prepack 自动跑，工作区有未提交改动会拒绝）
+npm run sync              # 生成 skill/ 快照（打包前 prepack 自动跑，工作区有未提交改动会拒绝；确需打包设 BREWREEL_SYNC_ALLOW_DIRTY=1）
 dsh plugin --profile dev add .   # 本地链接调试
 ```
 

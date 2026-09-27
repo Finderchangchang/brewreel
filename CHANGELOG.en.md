@@ -2,6 +2,30 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.4.0 · 2026-09-27 · Renamed to BrewReel (精酿)
+
+Old storyboards: no changes needed. Styles, fields, shots and script commands are all the same; this release only changes the name. The only things to act on are the skill install folder (optional) and the DeepSeek Harness plugin, see "Migration" below.
+
+### The new name
+- The project is renamed from Distill Video (蒸馏视频) / promo-video-skill to **精酿 · BrewReel**. Tagline: "Brew great promo reels with low-cost models" (Chinese: 「便宜模型，也能酿出好片」).
+- Why "BrewReel" (精酿, "craft brew"): good beer comes from a good recipe, even with ordinary ingredients. A strong model first turns a style into a "recipe" (ready-made components + validation rules); a low-cost model like DeepSeek follows the recipe to fill in a storyboard and gets a video at the same level. The docs now use matching terms: a style pack = a recipe, extracting a style from a reference video = crafting a recipe, rendering a video = brewing. Paths and fields such as `styles/`, `meta.style` and `distill/` are unchanged.
+- The website brewreel.com is being prepared and won't open until it launches.
+- The GitHub repository is renamed from `Finderchangchang/promo-video-skill` to `Finderchangchang/brewreel`; the old address redirects automatically. Existing clones keep pulling without changes; to update, run `git remote set-url origin https://github.com/Finderchangchang/brewreel.git`.
+
+### Migration
+- Skill name: the `name` in SKILL.md changes from `promo-video-skill` to `brewreel`. If you installed it as a skill, consider renaming the folder to `~/.claude/skills/brewreel/` or `~/.agents/skills/brewreel/`.
+- The DeepSeek Harness plugin moves to 0.2.0 **with breaking changes**:
+  - Package `dsh-distill-video` becomes `dsh-brewreel`; the 7 tools `distill_video_*` become `brewreel_*` with the same suffixes (doctor / setup / catalog / guide / validate / render / verify), and **the old tool names are no longer registered**; the registered skill name is `brewreel`; the plugin line's `id` in `cordis.patch.yml` changes from `distill-video` to `brewreel`.
+  - What you need to change: old tool names in approval policies (`tools/pre-execute`), prompts and scripts; if your profile overrides the plugin, change its `id` to `brewreel`.
+  - Upgrade steps: `dsh plugin --profile web remove dsh-distill-video` → install `dsh-brewreel` → restart the profile.
+  - Kept compatible automatically: the old output-folder marker `.distill-video-out.json` is still recognized, so existing output folders keep working; if only the old runtime folder `~/.dsh/distill-video/` exists it is reused, so downloaded dependencies and Chrome are not fetched again (renaming the template package does not count as a dependency change); the old environment variable `DISTILL_SYNC_ALLOW_DIRTY` still works, the new name is `BREWREEL_SYNC_ALLOW_DIRTY`.
+  - Full mapping table: "Upgrading from dsh-distill-video" in the plugin README.
+- The template package `promo-video-template` is renamed to `brewreel-template`; dependencies are unchanged.
+
+### Other
+- README, SKILL, CONTRIBUTING, the `distill/` docs and the plugin README use the new name and terms.
+- Version is now 0.4.0; Apache-2.0, the compliance fine print, the privacy scan and author attribution are unchanged. The older entries below keep the name used at the time.
+
 ## v0.3.0 · 2026-09-27 · A DeepSeek Harness plugin and a new journey ending
 
 Old storyboards: only `journey` needs a look. `finale`'s `stats` now allows at most 1 item instead of 2; a storyboard with two numbers is blocked by validation ("cut it to 1 item"), so delete one. The `bye` field is kept and still accepted, but the ending no longer has a goodbye bubble. Other styles and fields are unchanged.
