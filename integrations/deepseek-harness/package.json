@@ -1,0 +1,61 @@
+{
+  "name": "dsh-distill-video",
+  "version": "0.1.0",
+  "description": "Distill Video for DeepSeek Harness: write a storyboard JSON, get a vertical promo video.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "cordis.patch.yml",
+    "skill/",
+    "README.md",
+    "README.en.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "remotion",
+    "video",
+    "skill"
+  ],
+  "license": "Apache-2.0",
+  "author": "Liu Weijie (Finderchangchang)",
+  "homepage": "https://github.com/Finderchangchang/promo-video-skill/tree/main/integrations/deepseek-harness",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Finderchangchang/promo-video-skill",
+    "directory": "integrations/deepseek-harness"
+  },
+  "bugs": {
+    "url": "https://github.com/Finderchangchang/promo-video-skill/issues"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.1.7-rc.2 <0.2.0",
+    "@deepseek-ai/schemastery": "^3.18.4"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-tools": "0.1.7-rc.2",
+    "@deepseek-ai/schemastery": "~3.18.4"
+  },
+  "scripts": {
+    "sync": "node scripts/sync-skill.mjs",
+    "prepack": "node scripts/sync-skill.mjs --check-clean",
+    "test": "node --test \"test/*.test.mjs\"",
+    "smoke": "node scripts/smoke.mjs"
+  }
+}

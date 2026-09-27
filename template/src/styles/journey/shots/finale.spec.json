@@ -1,12 +1,13 @@
 {
   "type": "finale",
-  "purpose": "片尾（必须是最后一镜）：相机减速停在终点，城市压暗；一张集章卡从下方升起（卡头是产品名），每一站按顺序盖一个类别色站章，数据滚动计数，最后盖一枚主色「到站」圆章，口号和获取方式出现，打孔纸屑落下，角色跳到卡片左下角挥手告别",
+  "purpose": "片尾（必须是最后一镜）：相机减速停在终点，城市转成夜景暖光（四周压暗、保留颜色）；顶部那张车票滑到画面中间、展开成一张大车票（整条路线已走完），角色跳上票的上沿；有数字时，正面终点旗旁由出票机打出一行累计（如「1200 期节目」）；检票钳在票根上打一个孔，车票翻面——背面只写「终点站」+ 产品名、口号和获取方式；角色随后踩着滑板冲出画面，最后只剩这张车票",
   "tips": [
     "brand 可以不写（自动用 meta.product）；写了就必须和 meta.product 一字不差",
-    "stats 写 1–2 个数字（value 是数字本身，如「120」；unit 是单位，如「个模板」），数字必须在 meta.facts 里原样出现；简报没给数字就不写 stats（集章卡上的数据行整段跳过）",
+    "stats 最多写 1 个数字（value 是数字本身，如「120」；unit 是单位，如「个模板」），数字必须在 meta.facts 里原样出现；它印在车票正面终点旗旁（这一程的累计），背面不放数字；简报没给数字就不写 stats",
     "slogan ≤12 字，一句话说清产品给人什么；cta 照抄 meta.cta（获取方式），简报没写就不写",
-    "sub 是数据下面一行小字（口径或来源），照抄对应 fact 的 source",
-    "不许出现网址、二维码、账号：集章卡卡头只写产品名"
+    "sub 是数字下面一行小字（口径或来源），照抄对应 fact 的 source；没写 stats 时 sub 不上屏",
+    "不许出现网址、二维码、账号：车票背面只写产品名、口号和获取方式",
+    "片尾没有告别气泡：bye 是旧字段，写了也不上屏"
   ],
   "dur": {"default": 5, "min": 4, "max": 6},
   "mood": 0,
@@ -17,30 +18,30 @@
     "required": ["slogan"],
     "properties": {
       "brand": {"type": "string", "maxLen": 10, "minLen": 1, "description": "产品名：不写就用 meta.product；写了必须和它一字不差"},
-      "slogan": {"type": "string", "maxLen": 12, "minLen": 2, "description": "口号"},
+      "slogan": {"type": "string", "maxLen": 12, "minLen": 2, "description": "口号（印在车票背面产品名下面）"},
       "cta": {"type": "string", "maxLen": 12, "minLen": 2, "description": "获取方式，= meta.cta；简报没写就不写"},
       "stats": {
         "type": "array",
         "minItems": 1,
-        "maxItems": 2,
+        "maxItems": 1,
         "items": {
           "type": "object",
           "required": ["value"],
           "properties": {
-            "value": {"type": "string", "maxLen": 6, "minLen": 1, "description": "数字，如「120」「3.5」（会滚动计数）"},
+            "value": {"type": "string", "maxLen": 6, "minLen": 1, "description": "数字，如「120」「3.5」（印在车票正面终点旗旁）"},
             "unit": {"type": "string", "maxLen": 5, "minLen": 1, "description": "单位，如「个模板」"}
           }
         },
-        "description": "1–2 个数据（必须来自 meta.facts）"
+        "description": "最多 1 个数据（必须来自 meta.facts），印在车票正面终点旗旁，背面不放数字"
       },
-      "sub": {"type": "string", "maxLen": 14, "minLen": 2, "description": "数据下面的一行小字：口径 / 来源"},
-      "bye": {"type": "string", "maxLen": 8, "minLen": 1, "description": "角色告别气泡，默认「下次再飞！」"},
+      "sub": {"type": "string", "maxLen": 14, "minLen": 2, "description": "数字下面的一行小字：口径 / 来源"},
+      "bye": {"type": "string", "maxLen": 8, "minLen": 1, "description": "旧字段（v0.2.1 的告别气泡），v0.3.0 起片尾没有告别气泡，写了不报错也不上屏"},
       "refs": {"type": "array", "items": {"type": "string", "maxLen": 20, "minLen": 1}, "maxItems": 4, "description": "stats 用到的 meta.facts 的 id"}
     }
   },
-  "sfx": [{"at": 0.45, "kind": "swish", "vol": 0.3}, {"at": 0.8, "kind": "tap", "vol": 0.32}, {"at": 1.07, "kind": "tap", "vol": 0.32}, {"at": 1.33, "kind": "tap", "vol": 0.32}, {"at": 1.6, "kind": "tap", "vol": 0.32}, {"at": 2.35, "kind": "pop", "vol": 0.34}],
+  "sfx": [{"at": 0.05, "kind": "swish", "vol": 0.3}, {"at": 1.25, "kind": "tap", "vol": 0.36}, {"at": 1.65, "kind": "swish", "vol": 0.26}, {"at": 2.2, "kind": "ding", "vol": 0.3}, {"at": 2.45, "kind": "whoosh", "vol": 0.34}],
   "example": {
     "dur": 5,
-    "params": {"slogan": "一个入口，逛完全部", "bye": "下次再飞！"}
+    "params": {"slogan": "一个入口，逛完全部"}
   }
 }

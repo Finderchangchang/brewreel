@@ -2,6 +2,29 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.3.0 · 2026-09-27 · A DeepSeek Harness plugin and a new journey ending
+
+Old storyboards: only `journey` needs a look. `finale`'s `stats` now allows at most 1 item instead of 2; a storyboard with two numbers is blocked by validation ("cut it to 1 item"), so delete one. The `bye` field is kept and still accepted, but the ending no longer has a goodbye bubble. Other styles and fields are unchanged.
+
+### New: DeepSeek Harness plugin `dsh-distill-video`
+- Lives in `integrations/deepseek-harness/`, plugin version 0.1.0. Needs dsh 0.1.7-rc.2 or later within 0.1.x, Node.js 22.19+ or 24+, and pnpm.
+- Native integration: the plugin registers this skill with dsh, so the model writes storyboards by the skill, plus 7 tools: `distill_video_catalog` lists styles, industries and palettes; `distill_video_guide` reads the skill and the style / industry / shot docs; `distill_video_validate` validates a storyboard and suggests fixes; `distill_video_render` renders in the background with progress; `distill_video_verify` checks that a finished video still matches the current storyboard; `distill_video_doctor` checks the environment; `distill_video_setup` installs the render dependencies and browser in one step (only called after the user agrees).
+- Safety boundaries: it only writes to the output folder inside the session workspace (default `promo/<name>/`), resolving real paths before comparing so symlinks cannot escape; it runs no arbitrary commands, only the fixed scripts in the skill, all with `shell: false`; child processes get an allowlisted environment, so the DeepSeek key and other credentials never reach them. The render subprocess does not go through dsh's shell sandbox, and the README says so.
+- Install from the GitHub repository folder (`dsh plugin --profile web add ./promo-video-skill/integrations/deepseek-harness`); see the new "Use it in DeepSeek Harness" section in the README. The npm package is not published yet.
+- At pack time the `skill/` snapshot takes only committed repository files, and `skill/.distill-source.json` records the skill version, commit and file hashes. `scripts/privacy-scan.mjs` exempts its own copy inside the snapshot and skips `.tgz` / `.gz` as binary.
+- Both READMEs gain a "Three ways to use it" paragraph (skill / the headless `llm_make.py` script / the dsh plugin).
+
+### `journey` gets a new ending, "ticket check at the terminus"
+- Replaces v0.2.1's stamp card (a brand-card end slate): the ticket that sits at the top for the whole film slides to the centre and unfolds into a full ticket (the whole route travelled) → a punch clips a hole in its stub → the ticket flips over, and the back carries only "Terminus", the product name, the slogan and how to get it, vertically centred. No category colour chips, confetti or goodbye bubble.
+- At most one number: printed on the front of the ticket above the finish flag as the running total for the trip (e.g. "1200 episodes"), typed out left to right by the ticket printer before the flip, with no count-up; the source note sits under it, and a dashed line connects it to the finish flag.
+- After the flip lands, the mascot crouches and shoots off the right edge on the board (nose up, speed lines) and does not come back; in the 5-second ending the last ~1.9 s show only the ticket.
+- Light: the grey-teal haze is gone. The edges are darkened (buildings and window lights keep their colour) and a warm glow sits behind the ticket, using the window-light yellow already in the art palette (no new colour); the ticket is the brightest thing in frame.
+- Timeline: 0 s the ticket slides down and the city turns to night → 0.6 s the total is typed out → 1.25 s punch → 1.65 s flip → 2.2 s slogan → 2.35 s the mascot exits. Sound follows: swish for the ticket slide, tick ×2 for the total, tap for the punch, swish for the flip, ding when the back lands, whoosh for the exit.
+- Fixes: the empty stretch after the dimming before the ending (dimming and the ticket's slide now start together); the edge-on frames of the flip now show an outlined paper edge instead of nothing; the crowded top third of the 4:5 opening: only the 4:5 sky layout changed (`layout["4:5"].sky`), moving the sun and clouds below the split-flap title so the top third holds just the disclaimer, the kicker and the title.
+- Examples `content-podcast` and `software-notes` now use one number; the preview image `docs/images/style-journey.png` is redone; `originality.md` records this version's originality check (minimum colour difference from the reference palette 21.6, signature items 8/8) and the review (confusability 2).
+
+### Other
+- Version bumped to 0.3.0; compliance labels, privacy scan and author attribution unchanged.
 ## v0.2.1 · 2026-09-26 · Same genre, not the same maker
 
 Why: in v0.2.0, `quiz` and `journey` were too close to their reference videos in color and layout. The palettes were nearly the reference swatches, and the info-layer layout, signature details and stock lines were largely copied. They are now the same genre with a design of our own: only the genre skeleton is kept (narrative structure, rhythm, motion techniques, camera language, layout principles), and the whole skin (palette, characters, signature details, stock lines, ending) is redone. "Redesign + originality check" is now a required step of distillation for any contributed style.

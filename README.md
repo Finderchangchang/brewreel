@@ -1,6 +1,6 @@
 # 蒸馏视频 · Distill Video
 
-**当前版本 v0.2.1**（[更新日志](CHANGELOG.md)）｜仓库名 `promo-video-skill`｜[English version → README.en.md](README.en.md)
+**当前版本 v0.3.0**（[更新日志](CHANGELOG.md)）｜仓库名 `promo-video-skill`｜[English version → README.en.md](README.en.md)
 
 作者：**柳伟杰**（GitHub [@Finderchangchang](https://github.com/Finderchangchang)）。转载、二次开发或商用请保留 `LICENSE` 与 `NOTICE` 并注明出处。
 
@@ -9,6 +9,8 @@
 **为什么叫"蒸馏视频"**：先让强模型把一种视频风格做到位，再把它的版式、动效、节奏和规则"蒸馏"成现成组件和校验脚本；之后 DeepSeek 这类便宜模型只要填分镜，就能出同一水准的片子。现在已蒸出 3 种风格，蒸馏方法本身也开源在 `distill/`，任何人都能拿一支参考视频蒸出新风格。
 
 一句话：给 AI 编程助手（Claude Code / Codex / opencode…）用的 skill，把「写分镜 → 出竖版宣传短片」这件事标准化——便宜模型只写一份 `storyboard.json`，固定的 Remotion 组件负责画面，校验脚本拦硬性规则和行业合规红线，一条命令出片（1080×1920，带原创配乐和音效）。
+
+三种用法：装进 AI 编程助手当 skill（见「安装」）；用 `scripts/llm_make.py` 无头脚本直接调 DeepSeek 这类便宜模型（见「用便宜模型跑」）；在 DeepSeek Harness 里装仓库自带的插件，让模型用工具校验和出片（见[「在 DeepSeek Harness 里用」](#在-deepseek-harness-里用)）。
 
 ## 30 秒看懂
 
@@ -101,6 +103,27 @@ python scripts/llm_make.py path/to/brief.md
 
 Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上环境变量只是占位符示例，请替换成你自己的 key；不要把 key 提交进仓库或写进 issue。也可以把这些变量写进 AI 编程助手自己的全局配置（如 `~/.claude/settings.json`），但这是可选做法，本仓库不会替你改任何全局配置。
 
+## 在 DeepSeek Harness 里用
+
+仓库自带一个 DeepSeek Harness（dsh）插件，放在 [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.md)，包名 `dsh-distill-video`。装上后，模型照着 skill 写分镜，校验、出片、核对都调插件的工具完成，不用自己拼 `node scripts/…` 命令；出片在后台跑、报进度，输出路径和子进程拿到的环境变量都受插件限制。
+
+需要 **dsh 0.1.7-rc.2 或更高**的 0.1.x。npm 上 dsh 的 `latest` 标签目前还指向更早的 0.1.5-rc.3，所以安装时要写明版本号。另外要有 Node.js 22.19+ 的 22.x 或 24+，以及 pnpm（`dsh plugin` 靠 pnpm 装插件）。从 GitHub 仓库目录安装：
+
+```bash
+npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm    # 还没装 dsh 时
+git clone https://github.com/Finderchangchang/promo-video-skill.git
+dsh plugin --profile web add ./promo-video-skill/integrations/deepseek-harness
+dsh web
+```
+
+第三条命令在 clone 的上一级目录执行；`web` 可以换成你自己的 profile 名，profile 已经在运行的要重启才生效。第一次用时对模型说「检查一下视频插件环境」，它会调 doctor，经你同意后再调 setup 装渲染依赖（约几百 MB，外加约 110 MB 的 Chrome Headless Shell）。npm 包 `dsh-distill-video` **还没发布**，发布后可以直接 `dsh plugin --profile web add dsh-distill-video`。
+
+插件提供 7 个工具：`distill_video_doctor` 查环境，`distill_video_setup` 装依赖和浏览器，`distill_video_catalog` 列风格、行业和配色，`distill_video_guide` 读 skill 与各风格、行业、镜头文档，`distill_video_validate` 校验分镜并给改法，`distill_video_render` 后台出片，`distill_video_verify` 核对成片是否还对应当前分镜。
+
+许可提醒：插件和 skill 是 Apache-2.0，但渲染引擎 Remotion 不是开源软件，**4 人及以上的营利组织需要购买 Remotion 的 Company License**（见下文「许可证」一节和 `THIRD_PARTY_LICENSES.md`）；插件不改变这一点。另外，渲染子进程不经过 dsh 的 shell 沙箱，以当前用户权限运行。
+
+配置项、安全说明和故障排查见插件的 [README](integrations/deepseek-harness/README.md)。
+
 ## 风格
 
 分镜里写 `meta.style` 选视觉风格，不写就是默认的 `cards`。每个风格是一个「风格包」：自带设计令牌、镜头组件、校验规则和叙事模板，文档、规则、样例放在 `styles/<id>/`，代码放在 `template/src/styles/<id>/`。
@@ -113,7 +136,7 @@ Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上环境�
 
 ![quiz 风格预览](docs/images/style-quiz.png)
 
-**`journey` 角色漫游**（可用，默认 4:5，也支持 9:16）：皮肤是「旅行文具」+「剪纸分层」——原创吉祥物「橘团」踩悬浮滑板，一镜到底横穿一座剪纸风城市（远、中、近景和角色各是一张纸，身后投硬边纸影）；开场是车站翻牌大字，顶部一整条车票标着路线、站点和当前站名，每站甩进来一张航空信封边的明信片写代表内容、看完「寄出」到车票上这一站；配色是邮政绿 + 荧光青柠 + 石墨描边（`post-green`，另有 `plum-ticket` 酒红车票）。背景三选一（现代城市 / 低层街巷 / 古城的白墙黛瓦和石桥河道），14 种街区按内容挑（道口、邮筒、检票口、大头贴、搭车站、夜站台、手机、住家、咖啡、集市、城门、石桥、茶馆、灯会），每站一个车站 / 邮路题材的小笑点，天色从白天走到夜晚，终点城市压暗、升起一张集章卡，逐站盖章、数据滚动计数，最后盖一枚「到站」圆章。适合内容多、类别清楚的产品：内容平台的栏目、软件的功能、一条游线的景点。说明见 [`styles/journey/`](styles/journey/README.md)，写法和字数见 `styles/journey/recipes.md`，3 份样例分镜在 `styles/journey/examples/`。
+**`journey` 角色漫游**（可用，默认 4:5，也支持 9:16）：皮肤是「旅行文具」+「剪纸分层」——原创吉祥物「橘团」踩悬浮滑板，一镜到底横穿一座剪纸风城市（远、中、近景和角色各是一张纸，身后投硬边纸影）；开场是车站翻牌大字，顶部一整条车票标着路线、站点和当前站名，每站甩进来一张航空信封边的明信片写代表内容、看完「寄出」到车票上这一站；配色是邮政绿 + 荧光青柠 + 石墨描边（`post-green`，另有 `plum-ticket` 酒红车票）。背景三选一（现代城市 / 低层街巷 / 古城的白墙黛瓦和石桥河道），14 种街区按内容挑（道口、邮筒、检票口、大头贴、搭车站、夜站台、手机、住家、咖啡、集市、城门、石桥、茶馆、灯会），每站一个车站 / 邮路题材的小笑点，天色从白天走到夜晚；到终点，顶部那张车票滑到画面中间展开，检票钳在票根上打个孔，车票翻面露出产品名和口号；最多一个数字，印在正面终点旗旁。适合内容多、类别清楚的产品：内容平台的栏目、软件的功能、一条游线的景点。说明见 [`styles/journey/`](styles/journey/README.md)，写法和字数见 `styles/journey/recipes.md`，3 份样例分镜在 `styles/journey/examples/`。
 
 ![journey 风格预览](docs/images/style-journey.png)
 
@@ -261,6 +284,8 @@ promo-video-skill/
   styles/                     风格包：每个风格的九层规格、叙事模板、规则、样例；_template/ 是新风格脚手架
   distill/                    风格蒸馏流程和可复用提示词（拆解 → 复刻 → 再设计 → 组件化 → 测试 → 评审）
   CONTRIBUTING.md             贡献说明（一创 / 二创 / 三创、PR 自查清单）
+  integrations/
+    deepseek-harness/          DeepSeek Harness 插件 dsh-distill-video（7 个工具，见「在 DeepSeek Harness 里用」）
   tests/
     validate/                  校验规则的正负例回归测试
     rules/                     六个行业的规则回归测试（各 4 例）

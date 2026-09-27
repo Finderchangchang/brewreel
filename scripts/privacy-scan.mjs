@@ -35,12 +35,18 @@ const ALLOW = [
 ];
 
 const EXCLUDE_DIRS = new Set(['.git', 'node_modules', 'out', '.render.lock']);
-// 本工具自身的规则源码天然会包含这些关键词/示例文本，不算真实泄露
-const SELF_EXCLUDE = new Set([path.join('scripts', 'privacy-scan.mjs'), '.privacy-denylist.local']);
+// 本工具自身的规则源码天然会包含这些关键词/示例文本，不算真实泄露。
+// DeepSeek Harness 插件打包时（npm run sync / npm pack）会把本文件复制进 skill/ 快照，那份副本同理豁免；
+// 快照里的其它文件照常扫（它们就是 npm 包的内容）。
+const SELF_EXCLUDE = new Set([
+  path.join('scripts', 'privacy-scan.mjs'),
+  '.privacy-denylist.local',
+  path.join('integrations', 'deepseek-harness', 'skill', 'scripts', 'privacy-scan.mjs'),
+]);
 const EXCLUDE_PATH_PARTS = ['public/_run', 'public\\_run', 'public/_dev', 'public\\_dev'];
 const BINARY_EXT = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.wav', '.mp3', '.ttf', '.otf', '.woff', '.woff2',
-  '.ico', '.zip', '.lock',
+  '.ico', '.zip', '.lock', '.tgz', '.gz',
 ]);
 
 function loadDenylist() {

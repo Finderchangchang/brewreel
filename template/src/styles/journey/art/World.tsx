@@ -1,6 +1,7 @@
 import React from 'react';
 import {DistrictKind, PAPER_SHADOW, Skyline, nightOf, skyForDistrict, useArtColors} from './palette';
 import {FarSkyline, Sky, Street} from './city';
+import type {SkyLayout} from './city';
 import {DISTRICT_NEAR, DISTRICT_W, DistrictMid, FillerNear} from './districts';
 import {OldFar, OldFiller, OldMid, OldStreet} from './oldtown';
 
@@ -56,9 +57,11 @@ export type CityWorldProps = {
   layer?: 'all' | 'back' | 'front';
   /** 背景天际线：modern 现代城市（默认）/ street 低层街巷 / oldtown 古城（远山宝塔、白墙黛瓦、石板路和河） */
   skyline?: Skyline;
+  /** 天空构图（太阳高度、云的行）：按画幅从 tokens.layout.*.sky 传进来；不传用默认 */
+  skyLayout?: SkyLayout;
 };
 
-export const CityWorld: React.FC<CityWorldProps> = ({w, h, horizonY, camX, t, layout, sky, scale = 1, parallax, gags, layer = 'all', skyline = 'modern'}) => {
+export const CityWorld: React.FC<CityWorldProps> = ({w, h, horizonY, camX, t, layout, sky, scale = 1, parallax, gags, layer = 'all', skyline = 'modern', skyLayout}) => {
   const old = skyline === 'oldtown';
   const art = useArtColors();
   const kFar = parallax?.far ?? 0.12;
@@ -137,7 +140,7 @@ export const CityWorld: React.FC<CityWorldProps> = ({w, h, horizonY, camX, t, la
         {paper('mid', 10, 8, 0.26 * shadeA)}
         {paper('near', 14, 10, 0.36 * shadeA)}
       </defs>
-      {layer !== 'front' && <Sky w={w} h={h} horizonY={horizonY} p={p} t={t} drift={camX * kFar * 1.5} />}
+      {layer !== 'front' && <Sky w={w} h={h} horizonY={horizonY} p={p} t={t} drift={camX * kFar * 1.5} layout={skyLayout} />}
       {layer !== 'front' && <g filter={`url(#${fid}-far)`}>{old ? <OldFar w={w} horizonY={horizonY} p={p} offset={camX * kFar} scale={scale} /> : <FarSkyline w={w} horizonY={horizonY} p={p} offset={camX * kFar} scale={skyline === 'street' ? scale * 0.55 : scale} />}</g>}
       {layer !== 'front' && <g filter={`url(#${fid}-mid)`}>{mid}</g>}
       {layer !== 'back' && (

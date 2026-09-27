@@ -2,10 +2,10 @@
 // journey（角色漫游）的跨字段规则。validate.mjs 通过 scripts/lib/styles.mjs 的 runStyleRules 调用 run(sb, ctx)。
 //   J1 街区 4–6 个（3 个只提醒，少于 3 或多于 6 拦截）
 //   J2 相邻街区的 scene 不能一样（笑点要轮换，拆解里「不重复是它耐看的关键」）
-//   J3 类别名 category 全片不重复（路牌、胶囊、片尾 chips 都用它）
+//   J3 类别名 category 全片不重复（路牌、车票站名、明信片都用它）
 //   J4 钩子 headline 要带数字（「5 个新功能」），不带只提醒
 //   J5 片尾 brand = meta.product；cta 照抄 meta.cta
-//   J6 片尾 stats 的数字必须在 meta.facts 里原样出现
+//   J6 片尾 stats 的数字必须在 meta.facts 里原样出现（stats 最多 1 个，spec 里限死；印在车票正面终点旁，背面不放数字）
 //   J7 district 必须连续地夹在 opening 和 finale 之间
 //   J8 价格和时间（N 元 / ¥N / HH:MM / N 小时 / N 分钟 / N 晚）必须在 meta.facts 里原样出现
 //   J9 钩子大字里的数字要么等于街区数，要么在 meta.facts 里出现
@@ -158,7 +158,7 @@ export function run(sb, ctx) {
     const pool = `${s(p.title)} ${s(p.tag)} ${s(p.source)} ${ctxText}`;
     const m = new RegExp(`${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\u4e00-\\u9fff])`).exec(pool);
     if (m && Array.from(c).length + 1 <= 6 && Array.from(c).length % 2 === 1)
-      warnings.push({where: W(i, 'params.category'), problem: `类别名「${c}」像被截断的词（文案里写的是「${c}${m[1]}」）；它会出现在路牌、车票站名、明信片和集章卡 4 个地方`, fix: `写完整：「${c}${m[1]}」。类别名 4 字最好，6 字以内组件都放得下，不要为了凑字数截断`});
+      warnings.push({where: W(i, 'params.category'), problem: `类别名「${c}」像被截断的词（文案里写的是「${c}${m[1]}」）；它会出现在路牌、车票站名和明信片 3 个地方`, fix: `写完整：「${c}${m[1]}」。类别名 4 字最好，6 字以内组件都放得下，不要为了凑字数截断`});
   });
 
   // J14 钩子大字照搬句式：「N 个账本街」读不通；带产品名也不行
@@ -167,7 +167,7 @@ export function run(sb, ctx) {
     const h = s(x.params?.headline);
     const prod = s(meta.product);
     if (/街$/.test(h) || (prod && prod.length >= 2 && h.includes(prod)))
-      warnings.push({where: W(i, 'params.headline'), problem: `钩子大字「${h}」读不通：观众看不出这趟逛的是什么`, fix: '按题材套句式：内容站「N 篇精选」「N 个栏目」，软件「N 个功能」，文旅「N 站慢游」，门店「N 家店」；产品名不用写进大字（顶部车票票根和片尾集章卡都有）'});
+      warnings.push({where: W(i, 'params.headline'), problem: `钩子大字「${h}」读不通：观众看不出这趟逛的是什么`, fix: '按题材套句式：内容站「N 篇精选」「N 个栏目」，软件「N 个功能」，文旅「N 站慢游」，门店「N 家店」；产品名不用写进大字（顶部车票票根和片尾车票背面都有）'});
   });
 
   // J15 明信片标题太长又没停顿，读不下来
@@ -182,7 +182,7 @@ export function run(sb, ctx) {
     if (x?.type !== 'finale') return;
     const p = x.params ?? {};
     if (!(Array.isArray(p.stats) && p.stats.length) && !s(p.cta))
-      warnings.push({where: W(i, 'params.stats'), problem: '片尾既没有数字卡（stats）也没有获取方式（cta），落版只剩一句口号', fix: '简报有获取方式就写 meta.cta 并照抄到 cta；没有真实数据时可以用 facts 里的计数，如「6 个功能」（先把「共 6 个功能」写进 meta.facts）'});
+      warnings.push({where: W(i, 'params.stats'), problem: '片尾既没有数字（stats，印在车票正面终点旁）也没有获取方式（cta），落版只剩一句口号', fix: '简报有获取方式就写 meta.cta 并照抄到 cta；没有真实数据时可以用 facts 里的一个计数，如「6 个功能」（先把「共 6 个功能」写进 meta.facts）；stats 最多写 1 个'});
   });
 
   // J17 提示条 / 免责里的日期必须有简报依据：为了过「促销要写期限」编一条活动日期是捏造

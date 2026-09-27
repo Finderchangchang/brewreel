@@ -20,6 +20,6 @@
     {"type": "district", "params": {"category": "截图识字", "title": "截图里的字，也能搜到", "scene": "booth"}},
     {"type": "district", "params": {"category": "灵感白板", "title": "零散的想法，拖到一块板上连成线", "scene": "hitch"}},
     {"type": "district", "params": {"category": "全文搜索", "title": "半年前存的一句话，一搜就在", "scene": "platform"}},
-    {"type": "finale", "params": {"brand": "拾光笔记", "slogan": "存得进，也找得回", "stats": [{"value": "120", "unit": "个模板"}, {"value": "6", "unit": "种格式"}], "sub": "2026-09 产品说明", "refs": ["f1", "f2"]}}
+    {"type": "finale", "params": {"brand": "拾光笔记", "slogan": "存得进，也找得回", "stats": [{"value": "120", "unit": "个模板"}], "sub": "2026-09 产品说明", "refs": ["f1"]}}
   ]
 }

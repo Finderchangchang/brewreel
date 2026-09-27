@@ -19,6 +19,6 @@
     {"type": "district", "params": {"category": "职场技能", "title": "三十集，讲透表格常用函数", "scene": "crossing", "source": "配套练习文件"}},
     {"type": "district", "params": {"category": "设计聊天", "title": "和插画师聊聊，怎么接到商单", "scene": "booth"}},
     {"type": "district", "params": {"category": "深夜电台", "title": "睡前半小时，只放轻音乐", "scene": "platform", "bubble": "晚安，明天见"}},
-    {"type": "finale", "params": {"slogan": "路上的时间，听点好的", "stats": [{"value": "1200", "unit": "期节目"}, {"value": "5", "unit": "个频道"}], "sub": "示例数据", "refs": ["f1", "f2"]}}
+    {"type": "finale", "params": {"slogan": "路上的时间，听点好的", "stats": [{"value": "1200", "unit": "期节目"}], "sub": "示例数据", "refs": ["f1"]}}
   ]
 }

@@ -16,7 +16,7 @@
     "type": "object",
     "required": ["category", "title", "scene"],
     "properties": {
-      "category": {"type": "string", "maxLen": 6, "minLen": 2, "description": "类别名（完整的词，4 字最好）：写在路牌、顶部车票、明信片和片尾集章卡的站章上，如「数据报表」"},
+      "category": {"type": "string", "maxLen": 6, "minLen": 2, "description": "类别名（完整的词，4 字最好）：写在路牌、顶部车票和明信片上，如「数据报表」"},
       "title": {"type": "string", "maxLen": 20, "minLen": 4, "description": "明信片标题：这个类别里的一条代表内容，如「周一早上不用再手拼周报」"},
       "scene": {"type": "string", "enum": ["crossing", "postbox", "punch", "booth", "hitch", "platform", "phone", "home", "cafe", "market", "gate", "bridge", "teahouse", "lantern"], "description": "街区类型（楼群 + 道具 + 笑点），要和这一站的内容对得上"},
       "tag": {"type": "string", "maxLen": 6, "minLen": 1, "description": "可选：明信片上类别名旁边的小标签，如「本周上新」"},

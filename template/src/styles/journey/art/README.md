@@ -136,7 +136,8 @@ const layout = layoutCity(['docs', 'post', 'tools', 'creative', 'data', 'global'
   sky={p}                               // 不传就按 skyForDistrict 自动
   parallax={{far: 0.12, mid: 0.55}}     // 可用 tokens.camera.parallax
   gags={{1: t - rocketAt, 4: t - chartAt}}   // 第 i 个街区的笑点秒数
-  skyline="modern" />                       // modern / street / oldtown
+  skyline="modern"                          // modern / street / oldtown
+  skyLayout={lay.sky} />                    // 可选：{sun: [x 占画宽, y 占地平线高], clouds: [[起始 x 比例, y 占地平线高, 宽, 高], …]}；4:5 用它把太阳和云挪到翻牌大字下面
 
 // 前景件（招牌、角色）画在它上面，位置换算：
 const sx = toScreen(worldX, camX, geo.w, 1);      // 近景层

@@ -3,7 +3,7 @@ name: promo-video-skill
 description: Make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects.
 license: Apache-2.0
 metadata:
-  version: 0.2.1
+  version: 0.3.0
 ---
 
 # Product Promo Video (promo-video)

@@ -42,23 +42,28 @@ const PaperCloud: React.FC<{x: number; y: number; w: number; h: number; fill: st
   );
 };
 
-export const Sky: React.FC<{w: number; h: number; horizonY: number; p: number; t: number; drift?: number; id?: string}> = ({w, h, horizonY, p, t, drift = 0, id = 'jsky'}) => {
+/** 天空的构图（按画幅可换）：sun = 白天太阳的 [x 占画宽, y 占地平线高]；clouds = 每朵云 [起始 x 比例, y 占地平线高, 宽, 高] */
+export type SkyLayout = {sun?: [number, number]; clouds?: number[][]};
+const DEFAULT_CLOUDS = [
+  [0.08, 0.2, 250, 84],
+  [0.52, 0.12, 190, 66],
+  [0.8, 0.34, 290, 96],
+  [0.3, 0.42, 170, 60],
+  [1.1, 0.24, 230, 78],
+];
+
+export const Sky: React.FC<{w: number; h: number; horizonY: number; p: number; t: number; drift?: number; id?: string; layout?: SkyLayout}> = ({w, h, horizonY, p, t, drift = 0, id = 'jsky', layout}) => {
   const s = skyAt(p);
   const night = nightOf(p);
   // 太阳：白天高挂右上，黄昏落到地平线附近；夜里换成月亮
+  const [sx0, sy0] = layout?.sun ?? [0.78, 0.16];
   const sunP = clamp01(p / 0.8);
-  const sunX = w * (0.78 - sunP * 0.1);
-  const sunY = horizonY * (0.16 + sunP * 0.62);
+  const sunX = w * (sx0 - sunP * 0.1);
+  const sunY = horizonY * (sy0 + sunP * (0.78 - sy0));
   const sunR = 58 + sunP * 34;
   const moonX = w * 0.8;
   const moonY = horizonY * 0.2;
-  const clouds = [
-    [0.08, 0.2, 250, 84],
-    [0.52, 0.12, 190, 66],
-    [0.8, 0.34, 290, 96],
-    [0.3, 0.42, 170, 60],
-    [1.1, 0.24, 230, 78],
-  ];
+  const clouds = layout?.clouds?.length ? layout.clouds : DEFAULT_CLOUDS;
   const span = w + 700;
   // 天空不做平滑渐变：五张色纸从上往下叠（上沿各一道缓波浪 + 一条亮纸边），像剪纸分层
   const bands = [0.3, 0.52, 0.7, 0.86].map((f, i) => ({y: horizonY * f, c: mixHex(s.top, s.bot, [0.28, 0.52, 0.76, 1][i]), ph: i * 2.1 + drift * 0.0012}));

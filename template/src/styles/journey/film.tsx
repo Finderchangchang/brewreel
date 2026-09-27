@@ -6,8 +6,9 @@ import {useStylePalette, useStyleTokens} from '../context';
 import type {FilmProps} from '../types';
 import {CityWorld, nightOf} from './art';
 import type {CityLayout} from './art/World';
+import type {SkyLayout} from './art/city';
 import type {World} from './parts/city';
-import {Finale, FinaleData, Stat, sealWordOf, stampCardRect} from './parts/outro';
+import {Finale, FinaleData, Stat, finTicketRect, finaleExpr, finaleTimes} from './parts/outro';
 import {buildPlan, exprAt} from './parts/plan';
 import {GagFx, Props, StartPad} from './parts/props';
 import {RIDER_TOP, Rider} from './parts/rider';
@@ -17,7 +18,7 @@ import {Bubble, Burst, HookTitle, Postcard, RouteTicket, Sign, Sparkles, clamp01
 // journey 整片渲染器：一镜到底。分镜里的镜头只当数据（opening = 钩子，district = 一个街区，finale = 片尾），
 // 世界剧本（相机曲线、各元件的世界坐标、笑点时刻）由 parts/plan.ts 先算好，这里逐帧按层画出来：
 //   天空 → 远景 → 云 → 中景楼 → 街面 → 前景楼 → 道具 → 路牌   （以上是「世界」，片尾停在终点、压暗，不缩框）
-//   → 片尾集章卡 → 角色（屏幕锁定，片尾跳到集章卡右下角）→ 笑点特效（贴纸、车票、相片条、搭车的刺猬…）→ 气泡 / 拟声字 → 明信片 → 开场翻牌大字 → 顶部车票
+//   → 片尾大车票（顶部车票滑下来展开、检票、翻面）→ 角色（屏幕锁定，片尾跳上车票上沿，翻面后踩滑板冲出画面）→ 笑点特效（贴纸、车票、相片条、搭车的刺猬…）→ 气泡 / 拟声字 → 明信片 → 开场翻牌大字 → 顶部车票
 // 角色在画面左侧 35% 处，视线 = 运动方向；道具都从右边来。
 // ============================================================
 const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : undefined);
@@ -39,11 +40,14 @@ export const JourneyFilm: React.FC<FilmProps> = ({sb, slots, beat, geo}) => {
   const cam = tk.camera ?? {};
   const fl = tk.float ?? {};
 
-  // ---- 片尾：停在终点，城市压暗，集章卡升起（世界本身不缩、不换画面） ----
+  // ---- 片尾：停在终点，城市转成夜景暖光，顶部车票滑到中间展开成大票（世界本身不缩、不换画面） ----
   const fin = plan.finale;
   const ft = fin ? t - fin.start : -1;
   const textOn = fin ? 1 - clamp01((ft - 0.3) / 0.2) : 1;
-  const hudHide = fin ? clamp01((ft - 0.2) / 0.3) : 0;
+  // 顶部车票：开场翻牌大字在的时候不出（给上三分之一减负），大字退场时从上沿滑进来；片尾交给 Finale 画（同一张票，一帧不断）
+  const op0 = plan.opening;
+  const hudIn = op0 ? clamp01((t - (op0.start + op0.dur * (tk.motion?.ticketInAt ?? 0.9))) / 0.3) : 1;
+  const hudHide = fin && ft >= 0 ? 1 : 1 - hudIn;
 
   // ---- 角色位置 ----
   const op = plan.opening;
@@ -77,35 +81,52 @@ export const JourneyFilm: React.FC<FilmProps> = ({sb, slots, beat, geo}) => {
   let mx = mascotX + dx + sway;
   let my = (lay.mascotY as number) + dy + bob;
   let mScale = S;
-  const expr = exprAt(plan, t);
+  let squashFin = 0;
 
   // ---- 文案 ----
   const opParams = (op?.shot.params ?? {}) as Record<string, unknown>;
   const fp = (fin?.shot.params ?? {}) as Record<string, unknown>;
-  const stats: Stat[] = Array.isArray(fp.stats)
-    ? (fp.stats as unknown[]).filter((s): s is Stat => !!s && typeof (s as Stat).value === 'string').slice(0, 2)
-    : [];
+  // 片尾最多一个数字：印在车票正面终点旗旁（累计），背面只放产品名、口号、获取方式
+  const stat: Stat | undefined = Array.isArray(fp.stats)
+    ? (fp.stats as unknown[]).find((s): s is Stat => !!s && typeof (s as Stat).value === 'string')
+    : undefined;
   const fdata: FinaleData = {
-    stats,
+    stat,
     sub: str(fp.sub),
     brand: str(fp.brand) ?? str(sb.meta?.product) ?? '',
     slogan: str(fp.slogan) ?? '',
     cta: str(fp.cta),
-    bye: str(fp.bye) ?? pick(lang, '下一班见', 'Next ride soon!'),
-    seal: sealWordOf(lang),
   };
   const product = str(sb.meta?.product) ?? '';
-  // 片尾：角色一跳落到集章卡右下角（卡外），转身朝左看着卡片欢呼
-  const SC = stampCardRect(w, fdata);
-  const fx = SC.x1 - 110 * S;
-  const fy = SC.y1 + 250 * S;
-  if (fin && ft > 0.25) {
-    const e = springAt(ft - 0.25, 12, 140);
-    const hop = Math.sin(Math.min(1, (ft - 0.25) / 0.5) * Math.PI) * 120 * S;
-    mx = mx + (fx - mx) * Math.min(1, e);
-    my = my + (fy - my) * Math.min(1.05, e) - hop;
-    mScale = S * (1 - 0.08 * Math.min(1, e));
+  // 片尾：角色一跳落到大车票上沿（站在票上，朝右），翻面时再跳一下躲开翻动的票边；
+  // 翻面落定后蹲一下，踩着滑板从票上冲出画面右侧（这一程结束），最后画面上只剩车票。不挥手、不说告别
+  const FT = finTicketRect(w, fdata);
+  const FTm = finaleTimes(w);
+  const fx = FT.x0 + (aspectKey === '9:16' ? 190 : 200) * S;
+  const fy = FT.y0 - 40 * S;
+  let dashSpeed = -1;
+  let riderGone = false;
+  if (fin && ft > FTm.hop) {
+    const e = Math.min(1, springAt(ft - FTm.hop, 13, 150));
+    const hop = Math.sin(Math.min(1, (ft - FTm.hop) / 0.5) * Math.PI) * 150 * S;
+    const fu = (ft - FTm.flipAt + 0.08) / (FTm.flip + 0.1);
+    const hop2 = fu > 0 && fu < 1 ? Math.sin(fu * Math.PI) * 120 * S : 0;
+    mx = mx + (fx - mx) * e;
+    my = my + (fy - my) * e - hop - hop2;
+    mScale = S * (1 - 0.08 * e);
+    const dd = ft - FTm.dashAt;
+    if (dd > 0) {
+      const crouch = 0.14;
+      if (dd < crouch) squashFin = 0.5 * Math.sin((dd / crouch) * Math.PI);
+      const u = clamp01((dd - crouch * 0.6) / FTm.dash);
+      mx += (geo.w + 260 * S - fx) * Math.pow(u, 2.1);
+      my -= 120 * S * (1 - Math.pow(1 - u, 2));
+      mRot = -9 * clamp01(u * 4);
+      dashSpeed = 0.35 + 0.65 * clamp01(u * 2.5);
+      riderGone = u >= 1;
+    }
   }
+  const expr = fin && ft >= 0 ? finaleExpr(w, ft, !!stat) : exprAt(plan, t);
 
   // ---- 气泡 / 拟声字 ----
   const bubbleX = mascotX + 92 * S;
@@ -132,7 +153,7 @@ export const JourneyFilm: React.FC<FilmProps> = ({sb, slots, beat, geo}) => {
   });
   const skyP = plan.skyP(t);
   const city = (layer: 'back' | 'front') => (
-    <CityWorld w={geo.w} h={geo.h} horizonY={lay.groundY as number} camX={camX} t={t} layout={layout} scale={C.scale} sky={skyP} parallax={{far: cam.parallax?.artFar ?? 0.12, mid: cam.parallax?.artMid ?? 0.55}} gags={gags} layer={layer} skyline={plan.skyline} />
+    <CityWorld w={geo.w} h={geo.h} horizonY={lay.groundY as number} camX={camX} t={t} layout={layout} scale={C.scale} sky={skyP} parallax={{far: cam.parallax?.artFar ?? 0.12, mid: cam.parallax?.artMid ?? 0.55}} gags={gags} layer={layer} skyline={plan.skyline} skyLayout={lay.sky as SkyLayout | undefined} />
   );
 
   return (
@@ -150,10 +171,12 @@ export const JourneyFilm: React.FC<FilmProps> = ({sb, slots, beat, geo}) => {
           ))}
         </div>
       </div>
-      {fin ? <Finale w={w} data={fdata} t0={fin.start} dur={fin.dur} /> : null}
-      <div style={{position: 'absolute', left: mx, top: my, width: 0, height: 0, transform: `scale(${mScale}) rotate(${mRot}deg)`}}>
-        <Rider expr={expr} t={t} size={300} ink={pal.ink} brand={pal.brand} squash={squash} speed={Math.min(1, plan.speedAt(t) / (cam.cruisePxPerSec ?? 553))} night={nightOf(skyP)} facing={fin && ft > 0.25 ? 'left' : 'right'} />
-      </div>
+      {fin ? <Finale w={w} data={fdata} t0={fin.start} dur={fin.dur} product={product} /> : null}
+      {riderGone ? null : (
+        <div style={{position: 'absolute', left: mx, top: my, width: 0, height: 0, transform: `scale(${mScale}) rotate(${mRot}deg)`}}>
+          <Rider expr={expr} t={t} size={300} ink={pal.ink} brand={pal.brand} squash={Math.max(squash, squashFin)} speed={dashSpeed >= 0 ? dashSpeed : Math.min(1, plan.speedAt(t) / (cam.cruisePxPerSec ?? 553))} night={nightOf(skyP)} facing="right" />
+        </div>
+      )}
       {near.map((x) => (Math.abs(x.k - k) <= 1 ? <GagFx key={`g${x.k}`} w={w} d={x} mx={mx} my={my} /> : null))}
       {d && (d.def.gag === 'sticker' || d.def.gag === 'punch' || d.def.gag === 'seal') ? <Sparkles w={w} t0={d.start + (d.def.gagAt + 0.5) * beat} t1={d.start + 6.2 * beat} cx={mx} cy={my - 90 * S} r={150 * S} /> : null}
       {d && (d.def.gag === 'glow' || d.def.gag === 'lamps') ? <Sparkles w={w} t0={d.start + d.def.gagAt * beat} t1={d.start + 6.2 * beat} cx={mx} cy={my - 110 * S} r={170 * S} /> : null}
@@ -171,7 +194,6 @@ export const JourneyFilm: React.FC<FilmProps> = ({sb, slots, beat, geo}) => {
           </React.Fragment>
         );
       })}
-      {fin && ft > (tk.motion?.sealAt ?? 2) ? <Bubble w={w} text={fdata.bye} t0={fin.start + (tk.motion?.sealAt ?? 2) + 0.3} hold={fin.dur} x={fx - 130 * S} y={fy - 200 * S} anchor="right" /> : null}
       {near.map((x) => (
         <Postcard key={`c${x.k}`} w={w} d={x} textOn={textOn} />
       ))}

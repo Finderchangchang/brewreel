@@ -1,6 +1,6 @@
 # Distill Video · 蒸馏视频
 
-**Current version v0.2.1** ([changelog](CHANGELOG.en.md)) | repo `promo-video-skill` | [中文版 → README.md](README.md)
+**Current version v0.3.0** ([changelog](CHANGELOG.en.md)) | repo `promo-video-skill` | [中文版 → README.md](README.md)
 
 Author: **Liu Weijie (柳伟杰)** — GitHub [@Finderchangchang](https://github.com/Finderchangchang). If you redistribute, fork or use this commercially, please keep `LICENSE` and `NOTICE` and credit the source.
 
@@ -9,6 +9,8 @@ Author: **Liu Weijie (柳伟杰)** — GitHub [@Finderchangchang](https://github
 **Why "Distill Video"**: a strong model first gets a video style right; its layout, motion, pacing and rules are then "distilled" into ready-made components and a validator, so a low-cost model like DeepSeek only has to fill in a storyboard to get a video at the same level. Three styles are distilled so far, and the distillation method itself is open-sourced in `distill/`, so anyone can distill a new style from a reference video.
 
 One line: a skill for AI coding assistants (Claude Code / Codex / opencode…) that standardizes "write a storyboard → get a vertical promo video." A cheap model only writes one `storyboard.json`; fixed Remotion components draw the frames; a validator blocks hard rules and industry-compliance red lines; one command renders the final video (1080×1920, with original music and sound effects).
+
+Three ways to use it: install it as a skill in your AI coding assistant (see "Installation"); run the headless `scripts/llm_make.py` against a cheap model such as DeepSeek (see "Running it with a cheap model"); or install the bundled plugin in DeepSeek Harness and let the model validate and render through its tools (see ["Use it in DeepSeek Harness"](#use-it-in-deepseek-harness)).
 
 ## 30-second overview
 
@@ -101,6 +103,27 @@ python scripts/llm_make.py path/to/brief.md
 
 On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of the values above are placeholders — swap in your own key, and never commit a key or paste one into an issue. You may also put these variables into your AI assistant's own global config (e.g. `~/.claude/settings.json`) — that's an optional convenience this repo mentions but never does for you.
 
+## Use it in DeepSeek Harness
+
+This repository ships a DeepSeek Harness (dsh) plugin in [`integrations/deepseek-harness/`](integrations/deepseek-harness/README.en.md), package name `dsh-distill-video`. With it installed, the model writes the storyboard by following the skill, and validates, renders and verifies through the plugin's tools instead of assembling `node scripts/…` commands. Rendering runs in the background with progress, and the plugin restricts output paths and the environment variables child processes receive.
+
+It needs **dsh 0.1.7-rc.2 or later** within 0.1.x. dsh's `latest` tag on npm still points to the older 0.1.5-rc.3, so pin the version when installing. You also need Node.js 22.x from 22.19, or 24 and later, plus pnpm (`dsh plugin` installs plugins through pnpm). Install from the GitHub repository folder:
+
+```bash
+npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm    # if dsh is not installed yet
+git clone https://github.com/Finderchangchang/promo-video-skill.git
+dsh plugin --profile web add ./promo-video-skill/integrations/deepseek-harness
+dsh web
+```
+
+Run the third command from the folder that contains the clone. `web` can be any profile name; if the profile is already running, restart it for the change to apply. On first use, ask the model to "check the video plugin environment": it calls doctor, and after you agree, calls setup to install the render dependencies (a few hundred MB, plus about 110 MB for Chrome Headless Shell). The npm package `dsh-distill-video` is **not published yet**; once it is, `dsh plugin --profile web add dsh-distill-video` will work directly.
+
+The plugin provides 7 tools: `distill_video_doctor` checks the environment, `distill_video_setup` installs dependencies and the browser, `distill_video_catalog` lists styles, industries and color themes, `distill_video_guide` reads the skill and the style, industry and shot docs, `distill_video_validate` validates a storyboard and says how to fix each problem, `distill_video_render` renders in the background, and `distill_video_verify` checks that a video still matches the current storyboard.
+
+License note: the plugin and the skill are Apache-2.0, but the rendering engine Remotion is not open source: **for-profit organizations with 4 or more people must purchase Remotion's Company License** (see "License" below and `THIRD_PARTY_LICENSES.md`). The plugin does not change that. Also, render child processes do not go through dsh's shell sandbox; they run with the current user's permissions.
+
+Configuration, security notes and troubleshooting are in the plugin's [README](integrations/deepseek-harness/README.en.md).
+
 ## Styles
 
 A storyboard picks its look with `meta.style`; without it you get the default `cards` style. Each style is a "style pack" with its own design tokens, shot components, validation rules and narrative templates: docs, rules and examples live in `styles/<id>/`, code in `template/src/styles/<id>/`.
@@ -113,7 +136,7 @@ A storyboard picks its look with `meta.style`; without it you get the default `c
 
 ![quiz style preview](docs/images/style-quiz.png)
 
-**`journey`** (ready, 4:5 by default, 9:16 supported): the skin is "travel stationery" on a "layered paper-cut" city. Our own mascot, a red-panda cub on a hover board, crosses the city in one continuous take (far, middle and near layers and the character are each a sheet of paper with a hard offset paper shadow). It opens on split-flap station letters; a full-width ticket across the top shows the route, the stops and the current stop; each stop throws in an airmail-bordered postcard with a representative title, which is then "posted" into that stop on the ticket. Palette: postal green + neon lime + graphite outlines (`post-green`; `plum-ticket` is a wine-red alternative). One district per content category, three backdrops (modern city, low-rise street, or an old town with white walls, tile roofs and a stone bridge) and 14 district types picked by content (crossing, postbox, ticket check, photo booth, bus stop, night platform, phone, home, cafe, market, city gate, stone bridge, teahouse, lanterns), each with its own station- or mail-themed gag; the sky goes from day to night, and at the last stop the city dims while a stamp card rises: one stamp per stop, stats counting up, and a round "ARRIVED" seal to finish. Fits products with many clear categories: channels of a content platform, features of an app, stops on a sightseeing route. See [`styles/journey/`](styles/journey/README.md); per-beat fields and length limits are in `styles/journey/recipes.md` (Chinese); three sample storyboards are in `styles/journey/examples/`.
+**`journey`** (ready, 4:5 by default, 9:16 supported): the skin is "travel stationery" on a "layered paper-cut" city. Our own mascot, a red-panda cub on a hover board, crosses the city in one continuous take (far, middle and near layers and the character are each a sheet of paper with a hard offset paper shadow). It opens on split-flap station letters; a full-width ticket across the top shows the route, the stops and the current stop; each stop throws in an airmail-bordered postcard with a representative title, which is then "posted" into that stop on the ticket. Palette: postal green + neon lime + graphite outlines (`post-green`; `plum-ticket` is a wine-red alternative). One district per content category, three backdrops (modern city, low-rise street, or an old town with white walls, tile roofs and a stone bridge) and 14 district types picked by content (crossing, postbox, ticket check, photo booth, bus stop, night platform, phone, home, cafe, market, city gate, stone bridge, teahouse, lanterns), each with its own station- or mail-themed gag; the sky goes from day to night, and at the last stop the ticket from the top slides to the centre and unfolds, gets a hole punched in its stub and flips over to show the product name and slogan; at most one number, printed on the front beside the finish flag. Fits products with many clear categories: channels of a content platform, features of an app, stops on a sightseeing route. See [`styles/journey/`](styles/journey/README.md); per-beat fields and length limits are in `styles/journey/recipes.md` (Chinese); three sample storyboards are in `styles/journey/examples/`.
 
 ![journey style preview](docs/images/style-journey.png)
 
@@ -261,6 +284,8 @@ promo-video-skill/
   styles/                     style packs: nine-layer spec, narrative templates, rules, examples; _template/ scaffolds a new style
   distill/                    style distillation process and reusable prompts (breakdown → replicate → redesign → componentize → test → review)
   CONTRIBUTING.en.md          how to contribute (use / remix / create, PR checklist)
+  integrations/
+    deepseek-harness/          DeepSeek Harness plugin dsh-distill-video (7 tools, see "Use it in DeepSeek Harness")
   tests/
     validate/                  Positive/negative regression tests for the validator
     rules/                     Regression tests for each industry's rules (4 cases each)

@@ -1,0 +1,5 @@
+# Distill Video for DeepSeek Harness: one plugin row, configured through its Config schema.
+# Override in your profile's cordis.patch.yml with the same id (a patch replaces the whole `config`).
+- insert:
+    - id: distill-video
+      name: dsh-distill-video
