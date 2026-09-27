@@ -13,7 +13,7 @@
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-0B84F3?style=flat-square)](https://www.remotion.dev)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 
-[官网（即将上线）](https://brewreel.com) · [演示视频](https://github.com/Finderchangchang/brewreel/releases/download/v0.3.0/demo-5MB.mp4) · [历史版本](https://github.com/Finderchangchang/brewreel/releases) · [更新日志](CHANGELOG.md) · [在 DeepSeek Harness 里用](#在-deepseek-harness-里用) · [姊妹项目 Jev 聊天助手](https://github.com/jev-chat/jev-chat-jarvis) · [English](README.en.md)
+[官网](https://brewreel.com) · [演示视频](https://github.com/Finderchangchang/brewreel/releases/download/v0.3.0/demo-5MB.mp4) · [历史版本](https://github.com/Finderchangchang/brewreel/releases) · [更新日志](CHANGELOG.md) · [在 DeepSeek Harness 里用](#在-deepseek-harness-里用) · [姊妹项目 Jev 聊天助手](https://github.com/jev-chat/jev-chat-jarvis) · [English](README.en.md)
 
 <sub>原名 promo-video-skill / 蒸馏视频，旧地址自动跳转。</sub>
 
