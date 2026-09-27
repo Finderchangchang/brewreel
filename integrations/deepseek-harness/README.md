@@ -78,7 +78,7 @@ dsh plugin --profile web add dsh-brewreel
 2. `deps`：在 `template/` 里 `npm ci`（Remotion 等，约几百 MB）；
 3. `browser`：下载 Chrome Headless Shell（约 110 MB）。
 
-国内网络：在配置里设 `npmRegistry`（如 `https://registry.npmmirror.com`）。Chrome Headless Shell 下载失败时，按主仓库 README「FAQ」一节（Chrome Headless Shell 下载失败怎么办）的手动办法处理，放到 doctor 结果里 `runtimeRoot` 下的 `template/node_modules/.remotion/chrome-headless-shell/`，再调一次 setup（已存在会跳过）。
+国内网络：在配置里设 `npmRegistry`（如 `https://registry.npmmirror.com`）。Chrome Headless Shell 下载失败时，按主仓库 README「常见问题」一节（Chrome Headless Shell 下载失败？）的手动办法处理，放到 doctor 结果里 `runtimeRoot` 下的 `template/node_modules/.remotion/chrome-headless-shell/`，再调一次 setup（已存在会跳过）。
 
 Python 依赖插件**只检测、不安装**；需要配乐就自己执行 doctor 给出的 `python -m pip install numpy scipy`。
 

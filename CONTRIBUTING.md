@@ -75,7 +75,7 @@ template/src/styles/<id>/          代码
 
 ## 其他贡献
 
-- **新行业**：见 README 的「行业包：怎么新增一个行业」。
+- **新行业**：见 README「功能 › 六个行业包」里的「怎么新增一个行业」。
 - **公共镜头**：见 `template/SHOT_API.md`；公共镜头只按 9:16 设计，cards 风格和声明了 `commonShots` 的风格会用到它。
 - **bug / 建议**：开 issue，附上分镜 JSON 和 `report.txt`。
 

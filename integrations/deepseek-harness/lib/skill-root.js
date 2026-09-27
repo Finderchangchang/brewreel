@@ -14,7 +14,7 @@ export const PLUGIN_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.ur
 export const WHITELIST = Object.freeze({
   files: ['SKILL.md', 'SKILL.en.md', 'shots.md', 'shots.en.md', 'brief-template.md', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.md'],
   dirs: ['scripts', 'styles', 'industries', 'examples', 'docs/shots', 'docs/images', 'template'],
-  exclude: ['template/node_modules', 'template/public/_run', 'template/public/_dev', 'template/out', 'template/.render.lock', 'scripts/__pycache__'],
+  exclude: ['template/node_modules', 'template/public/_run', 'template/public/_dev', 'template/out', 'template/.render.lock', 'scripts/__pycache__', 'docs/images/contact'],
 });
 
 /** @param {string} dir */
