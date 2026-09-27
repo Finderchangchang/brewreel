@@ -18,8 +18,8 @@ export const DEFAULT_BASE = 'https://api.minimaxi.com';
 export const DEFAULT_MODEL = 'speech-2.8-hd';
 export const MODELS = ['speech-2.8-hd', 'speech-2.8-turbo', 'speech-2.6-hd', 'speech-2.6-turbo', 'speech-02-hd', 'speech-02-turbo', 'speech-01-hd', 'speech-01-turbo'];
 export const EMOTIONS = ['happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised', 'calm', 'fluent', 'whisper'];
-/** 默认音色：中文用系统音色「新闻女声」；英文的默认音色未在真实接口上核对过，英文片建议显式写 voiceId */
-export const DEFAULT_VOICE = {zh: 'Chinese (Mandarin)_News_Anchor', en: 'English_expressive_narrator'};
+/** 默认音色：中文用系统音色「播报男声」（2026-09-27 在真实接口上核对过）；英文的默认音色未在真实接口上核对过，英文片建议显式写 voiceId */
+export const DEFAULT_VOICE = {zh: 'Chinese (Mandarin)_Male_Announcer', en: 'English_expressive_narrator'};
 /** 同步接口单次文本上限（字符，不含） */
 export const MAX_CHARS = 10000;
 
@@ -43,10 +43,12 @@ export class TtsError extends Error {
   }
 }
 
-/** 规范化接口地址：给 host、host/v1、完整 /v1/t2a_v2 都行 */
+/** 规范化接口地址：给 host、host/v1、完整 /v1/t2a_v2 都行；只接受 https（http 会把 key 明文发出去） */
 export const endpointOf = (env = process.env) => {
   let base = String(env.MINIMAX_BASE_URL || DEFAULT_BASE).trim().replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(base)) base = `https://${base}`;
+  if (/^http:\/\//i.test(base))
+    throw new TtsError('INSECURE_URL', 'MINIMAX_BASE_URL 必须是 https 地址（http 会把密钥明文发出去）', 'MINIMAX_BASE_URL must be an https URL (http would send the key in clear text)', {hint: '改成 https://api.minimaxi.com 或 https://api.minimax.io', hintEn: 'use https://api.minimaxi.com or https://api.minimax.io'});
+  if (!/^https:\/\//i.test(base)) base = `https://${base}`;
   const url = /\/t2a_v2$/.test(base) ? base : /\/v1$/.test(base) ? `${base}/t2a_v2` : `${base}/v1/t2a_v2`;
   const gid = String(env.MINIMAX_GROUP_ID ?? '').trim();
   return gid ? `${url}${url.includes('?') ? '&' : '?'}GroupId=${encodeURIComponent(gid)}` : url;

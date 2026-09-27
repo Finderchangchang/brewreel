@@ -327,6 +327,11 @@ test('MiniMax 接口地址：host / host/v1 / 完整路径都行，GroupId 可�
   assert.equal(minimax.endpointOf({MINIMAX_BASE_URL: 'https://api.minimax.io/v1'}), 'https://api.minimax.io/v1/t2a_v2');
   assert.equal(minimax.endpointOf({MINIMAX_BASE_URL: 'api-uw.minimax.io/v1/t2a_v2'}), 'https://api-uw.minimax.io/v1/t2a_v2');
   assert.equal(minimax.endpointOf({MINIMAX_GROUP_ID: 'g 1'}), 'https://api.minimaxi.com/v1/t2a_v2?GroupId=g%201');
+  assert.throws(() => minimax.endpointOf({MINIMAX_BASE_URL: 'http://api.minimax.io'}), (e) => e.code === 'INSECURE_URL');
+});
+
+test('默认音色：中文是播报男声', () => {
+  assert.equal(minimax.DEFAULT_VOICE.zh, 'Chinese (Mandarin)_Male_Announcer');
 });
 
 // ---------------- make 的配音步骤 ----------------

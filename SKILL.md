@@ -135,7 +135,7 @@ metadata:
    | 字段 | 写法 |
    |---|---|
    | `provider` | 必填。`minimax` = 真人感配音（出片要环境变量 `MINIMAX_API_KEY`）；`mock` = 不联网的占位音，只用来听节奏 |
-   | `voiceId` | 音色，不写用默认（中文 `Chinese (Mandarin)_News_Anchor`）。推荐见下 |
+   | `voiceId` | 音色，不写用默认（中文 `Chinese (Mandarin)_Male_Announcer`）。推荐见下 |
    | `speed` | 0.5–2，默认 1。广告旁白 1–1.15；念不完就删字或拆镜，别靠调快硬塞 |
    | `emotion` | 可选：`calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`。不写用音色默认；广告旁白建议 `calm` 或 `fluent` |
    | `model` | 一般不写（默认 `speech-2.8-hd`） |
@@ -149,7 +149,8 @@ metadata:
    - **字幕谁来出**：cards 里写了 `vo`、没写 `caption` 的镜头，字幕由 `vo` 自动生成（逐字点亮）；写了 `caption` 的镜头照旧显示 `caption`、旁白只念——**hook 必须写 `caption`**（它是封面标题）；`endCard` 只念不出字幕。quiz / journey 在自己的字幕条上显示旁白。
    - 片尾那句带上产品名（和 `meta.product` 一字不差）。
 3. **推荐音色**（MiniMax 系统音色；以 MiniMax 控制台的音色列表为准，第一次用先试听）：
-   - `Chinese (Mandarin)_News_Anchor`（默认）：稳重播报，适合 B 端、办公、工具
+   - `Chinese (Mandarin)_Male_Announcer`（默认）：播报男声，稳重清楚，适合大多数产品片
+   - `Chinese (Mandarin)_News_Anchor`：新闻女声，稳重播报，适合 B 端、办公、工具
    - `female-shaonv`：年轻女声，适合 C 端生活、情感、轻工具
    - `male-qn-qingse`：年轻男声，口语感强，适合答题互动、种草
    - `presenter_female`：女主持，适合讲解、教培

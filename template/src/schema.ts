@@ -129,7 +129,7 @@ export type VoiceEmotion = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' |
 /** meta.voice：模型只写这几项，其余由 make.mjs 算 */
 export type VoiceSetting = {
   provider: VoiceProvider;
-  /** 音色 id；不写用默认（中文「Chinese (Mandarin)_News_Anchor」） */
+  /** 音色 id；不写用默认（中文「Chinese (Mandarin)_Male_Announcer」） */
   voiceId?: string;
   /** 语速 0.5–2，默认 1；广告旁白一般 1–1.15 */
   speed?: number;

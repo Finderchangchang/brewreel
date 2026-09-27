@@ -36,7 +36,7 @@ export function checkVoiceMeta(v, {lang, err, warn, env = process.env}) {
   if (!PROVIDER_IDS.includes(v.provider))
     err(W('provider'), v.provider === undefined ? '缺少 provider（用哪家配音）' : `「${v.provider}」不是可选值`, `只能写 ${PROVIDER_IDS.join(' / ')}：minimax = 真人感配音（要 MINIMAX_API_KEY）；mock = 不联网的占位音，先看节奏用`);
   if (v.voiceId !== undefined && (typeof v.voiceId !== 'string' || !v.voiceId.trim() || v.voiceId.length > 100))
-    err(W('voiceId'), '应该是音色 id（文字）', '如 "Chinese (Mandarin)_News_Anchor"；不确定就删掉，用默认音色');
+    err(W('voiceId'), '应该是音色 id（文字）', '如 "Chinese (Mandarin)_Male_Announcer"；不确定就删掉，用默认音色');
   if (v.speed !== undefined && (typeof v.speed !== 'number' || !Number.isFinite(v.speed) || v.speed < SPEED_RANGE[0] || v.speed > SPEED_RANGE[1]))
     err(W('speed'), `语速 ${JSON.stringify(v.speed)} 不在 ${SPEED_RANGE[0]}–${SPEED_RANGE[1]} 之间`, '不确定就删掉（默认 1）；广告旁白一般 1–1.15');
   else if (typeof v.speed === 'number' && (v.speed > 1.3 || v.speed < 0.8))

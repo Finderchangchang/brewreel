@@ -7,7 +7,6 @@
     "disclaimer": "演示画面，内容为示例",
     "voice": {
       "provider": "minimax",
-      "voiceId": "female-shaonv",
       "speed": 1.05,
       "emotion": "calm",
       "subtitles": "karaoke"
