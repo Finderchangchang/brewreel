@@ -21,7 +21,7 @@
 
 ## ❤️ Sponsors
 
-> Want to appear here? Add me on WeChat: **jskjkf007**.
+> Want to appear here? Add me on WeChat: **jskjkf007**, and include the note "BrewReel 商务合作" (BrewReel business) in your request.
 
 ## Screenshots
 
