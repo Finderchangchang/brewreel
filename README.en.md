@@ -8,7 +8,7 @@
 
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![Forks](https://img.shields.io/github/forks/Finderchangchang/brewreel?style=flat-square&logo=github&label=Forks)](https://github.com/Finderchangchang/brewreel/forks)
-[![Version](https://img.shields.io/badge/version-v0.5.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.5.1-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-0B84F3?style=flat-square)](https://www.remotion.dev)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
@@ -190,18 +190,19 @@ How to choose: one multiple-choice question → `quiz`; 4–6 categories to tour
 
 </details>
 
-### Voice-over (MiniMax)
+### Voice-over (MiniMax / Alibaba Cloud / Volcengine)
 
 Write `meta.voice` in the storyboard and one `vo` line (narration) per shot, and the video comes out with a voice-over. Without them you get a video with no voice, exactly as before.
 
-- **The voice is the timeline**: `make.mjs` first has MiniMax text-to-speech read each line and gets per-word timing, then sets each shot with narration to "0.15 s + narration + 0.35 s", aligned to the beat. The cheap model doesn't have to work out durations.
+- **Three providers**: set `meta.voice.provider` to `minimax` (MiniMax), `aliyun` (Alibaba Cloud Model Studio CosyVoice) or `volcengine` (Volcengine Doubao speech); each defaults to a male announcer voice, and voices can be changed. MiniMax has been rendered with a real key; Alibaba Cloud and Volcengine follow the official docs and are tested with fake responses, **not yet with a real key**.
+- **The voice is the timeline**: `make.mjs` first has text-to-speech read each line and gets per-word timing, then sets each shot with narration to "0.15 s + narration + 0.35 s", aligned to the beat. The cheap model doesn't have to work out durations.
 - **Word-by-word subtitles**: subtitles light up word by word with the voice, in all three recipes. You can also show the whole line at once (`line`) or skip narration subtitles (`off`). In `cards`, a shot with `vo` and no `caption` gets its subtitle from the narration.
 - **Music makes room**: the background music ducks by about 10 dB under speech and comes back after.
 - **Cached to save money**: the same line (same voice, speed, emotion and text) is synthesized only once and cached in the user folder `~/.cache/brewreel/tts` (change it with the `BREWREEL_TTS_CACHE` environment variable). Changing visuals or re-rendering costs nothing more; `manifest.json` records the characters billed for the run.
 - **Preview without a key**: add `--voice-provider mock` when rendering to check rhythm with an offline placeholder voice (not a deliverable); add `--no-voice` for a version without narration.
-- **Keys**: read only from the `MINIMAX_API_KEY` environment variable (plus `MINIMAX_GROUP_ID` and `MINIMAX_BASE_URL` when needed), never written to any file or log.
+- **Keys**: read only from environment variables, never written to any file or log: `MINIMAX_API_KEY` for MiniMax, `DASHSCOPE_API_KEY` for Alibaba Cloud, `VOLCENGINE_TTS_API_KEY` (or the legacy `VOLCENGINE_TTS_APP_ID` + `VOLCENGINE_TTS_ACCESS_TOKEN`) for Volcengine; optional hosts and workspace IDs are in `SKILL.en.md`. Custom endpoints must be https.
 
-How to write it, recommended voices and length limits are in the "Voice-over" section of `SKILL.en.md`; each recipe has a sample storyboard with voice-over (`styles/*/examples/*voice*.json`).
+Which provider to pick, how to write it, recommended voices and length limits are in the "Voice-over" section of `SKILL.en.md`; each recipe has a sample storyboard with voice-over (`styles/*/examples/*voice*.json`).
 
 ### Six industry packs
 
@@ -298,7 +299,7 @@ Because it is synthesized on the spot, there are no copyright issues. When you p
 <details>
 <summary><b>Is there a voice-over?</b></summary>
 
-Yes, since v0.5.0, through MiniMax text-to-speech. Write `meta.voice` and a `vo` per shot, set the `MINIMAX_API_KEY` environment variable, and render. Shot lengths follow the narration, subtitles light up word by word, and the music ducks under speech. Without a key, add `--voice-provider mock` to preview the rhythm with a placeholder voice. Without `meta.voice` there is no voice-over, as before. When you publish with an AI voice, tick the platform's AI-generated content declaration as it requires.
+Yes. v0.5.0 added MiniMax text-to-speech, and from v0.5.1 you can also use Alibaba Cloud (Model Studio CosyVoice) or Volcengine (Doubao speech). Write `meta.voice` and a `vo` per shot, set the matching environment variable (`MINIMAX_API_KEY` / `DASHSCOPE_API_KEY` / `VOLCENGINE_TTS_API_KEY`), and render. Shot lengths follow the narration, subtitles light up word by word, and the music ducks under speech. Without a key, add `--voice-provider mock` to preview the rhythm with a placeholder voice. Without `meta.voice` there is no voice-over, as before. When you publish with an AI voice, tick the platform's AI-generated content declaration as it requires.
 
 </details>
 
@@ -436,7 +437,8 @@ brewreel/
 - **Still a preview**: testing and bug-fixing are ongoing. **We don't yet recommend publishing a video as rendered, without human edits.**
 - **Cheap-model results are not yet "fine to publish as is"**: in the latest round a small model played the cheap model, got only the brief and `SKILL.md`, and wrote the storyboard from scratch, validated and rendered, 9 videos in all. None reached 7, the score we set as "fine to publish as is". Software/tool videos scored 5–6 overall and 7–8 on compliance; industry videos 4–5 on both, losing most points on cross-field factual problems.
 - **quiz / journey not re-tested after the fixes**: each recipe was tested with 3 videos and the problems the review listed were fixed, and the sample storyboards passed validation and delivery checks again; but the cheap model has not re-run a scored round, so the published scores are still from before the fixes. Nobody has listened to journey's music and sound effects yet.
-- **Voice-over not yet tested with a real key**: the MiniMax client follows the official docs and is unit-tested against recorded fake responses, and the whole pipeline runs end to end with the placeholder (mock) voice; nobody has yet checked the real voices or billing.
+- **Alibaba Cloud and Volcengine voice-over not yet tested with a real key**: both follow the official docs and are unit-tested against fake responses built from them; where the timestamps sit in the stream and whether the default voices work will be confirmed on the first real call. MiniMax has been rendered with a real key for all three recipes.
+- **Real voices read slower than the estimate**: validation assumes 5 Chinese characters per second, while MiniMax's real voices measured about 4 per second, so a long line that passes validation can still be blocked at render time (it tells you how many characters to cut in which shot). Plan narration at about 4 characters per second.
 - **Illustrations only without real photos**: with no merchant photos, the visuals come from components and illustrations, which hurts industry videos most.
 - **The DeepSeek Harness plugin has not been tested against a real DeepSeek model yet**.
 - **Not supported**: medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.

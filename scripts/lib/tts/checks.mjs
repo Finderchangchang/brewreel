@@ -2,8 +2,8 @@
 // 配音相关的分镜校验（validate.mjs 调用）：meta.voice 字段、每镜 vo 的格式与语速、配音后总时长估算。
 // vo 的广告法 / 极限词 / 事实依据 / 错别字等文本检查不在这里：validate.mjs 把 vo 放进统一的 texts 里一起扫。
 // ============================================================
-import {PROVIDER_IDS, SPEED_RANGE, SUBTITLE_MODES} from './index.mjs';
-import {EMOTIONS, MODELS} from './minimax.mjs';
+import {PROVIDERS, PROVIDER_IDS, SPEED_RANGE, SUBTITLE_MODES} from './index.mjs';
+import {EMOTIONS} from './minimax.mjs';
 import {UNIT_SEC} from './mock.mjs';
 import {LEAD_SEC, TAIL_SEC} from './pipeline.mjs';
 import {plainOf, spokenUnits, tokenize} from './timing.mjs';
@@ -11,6 +11,14 @@ import {plainOf, spokenUnits, tokenize} from './timing.mjs';
 export const VOICE_KEYS = ['provider', 'voiceId', 'speed', 'emotion', 'model', 'subtitles'];
 /** 听得清的语速上限（speed = 1 时）：中文约 5 字/秒，英文约 3 词/秒；speed 越快上限按比例放宽 */
 export const RATE_LIMIT = {zh: 5, en: 3};
+/** 各家要设的环境变量（缺了只提醒，不拦校验） */
+export const KEY_HINT = {
+  minimax: 'MINIMAX_API_KEY',
+  aliyun: 'DASHSCOPE_API_KEY',
+  volcengine: 'VOLCENGINE_TTS_API_KEY（或 VOLCENGINE_TTS_APP_ID + VOLCENGINE_TTS_ACCESS_TOKEN）',
+};
+const hasKeyFor = (provider, env) =>
+  provider === 'minimax' ? !!String(env?.MINIMAX_API_KEY ?? '').trim() : typeof PROVIDERS[provider]?.hasKey === 'function' ? PROVIDERS[provider].hasKey(env) : true;
 
 const f1 = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
@@ -34,25 +42,29 @@ export function checkVoiceMeta(v, {lang, err, warn, env = process.env}) {
   }
   for (const k of Object.keys(v)) if (!VOICE_KEYS.includes(k)) err(W(k), '多了一个不认识的字段', `删掉，或检查拼写。可用字段：${VOICE_KEYS.join('、')}`);
   if (!PROVIDER_IDS.includes(v.provider))
-    err(W('provider'), v.provider === undefined ? '缺少 provider（用哪家配音）' : `「${v.provider}」不是可选值`, `只能写 ${PROVIDER_IDS.join(' / ')}：minimax = 真人感配音（要 MINIMAX_API_KEY）；mock = 不联网的占位音，先看节奏用`);
+    err(W('provider'), v.provider === undefined ? '缺少 provider（用哪家配音）' : `「${v.provider}」不是可选值`, `只能写 ${PROVIDER_IDS.join(' / ')}：minimax = MiniMax（要 MINIMAX_API_KEY）；aliyun = 阿里云百炼（要 DASHSCOPE_API_KEY）；volcengine = 火山引擎豆包语音（要 VOLCENGINE_TTS_API_KEY）；mock = 不联网的占位音，先看节奏用`);
   if (v.voiceId !== undefined && (typeof v.voiceId !== 'string' || !v.voiceId.trim() || v.voiceId.length > 100))
     err(W('voiceId'), '应该是音色 id（文字）', '如 "Chinese (Mandarin)_Male_Announcer"；不确定就删掉，用默认音色');
   if (v.speed !== undefined && (typeof v.speed !== 'number' || !Number.isFinite(v.speed) || v.speed < SPEED_RANGE[0] || v.speed > SPEED_RANGE[1]))
     err(W('speed'), `语速 ${JSON.stringify(v.speed)} 不在 ${SPEED_RANGE[0]}–${SPEED_RANGE[1]} 之间`, '不确定就删掉（默认 1）；广告旁白一般 1–1.15');
   else if (typeof v.speed === 'number' && (v.speed > 1.3 || v.speed < 0.8))
     warn(W('speed'), `语速 ${v.speed} ${v.speed > 1.3 ? '偏快，中文会超过每秒 5 字，听不清' : '偏慢，片子会拖'}`, '广告旁白一般 1–1.15；念不完就删字或拆镜，不要靠调快语速硬塞');
-  if (v.emotion !== undefined && !EMOTIONS.includes(v.emotion))
+  if (v.emotion !== undefined && ['aliyun', 'volcengine'].includes(v.provider))
+    warn(W('emotion'), `${v.provider} 不认 emotion，会被忽略`, '删掉 emotion；情绪靠选音色和写旁白的语气');
+  else if (v.emotion !== undefined && !EMOTIONS.includes(v.emotion))
     err(W('emotion'), `「${v.emotion}」不是可选情绪`, `只能从这些里选：${EMOTIONS.join(' / ')}；广告旁白建议 calm 或 fluent，不写用音色默认`);
+  const models = PROVIDERS[v.provider]?.MODELS;
   if (v.model !== undefined) {
-    if (typeof v.model !== 'string' || !v.model.trim()) err(W('model'), '应该是模型名（文字）', `如 ${MODELS[0]}；不确定就删掉`);
-    else if (v.provider === 'minimax' && !MODELS.includes(v.model)) warn(W('model'), `「${v.model}」不在已知模型列表里`, `常用：${MODELS.slice(0, 4).join(' / ')}（hd 音质好、turbo 便宜）；新模型可以保留`);
+    if (typeof v.model !== 'string' || !v.model.trim()) err(W('model'), '应该是模型名（文字）', `如 ${(models ?? PROVIDERS.minimax.MODELS)[0]}；不确定就删掉`);
+    else if (models && !models.includes(v.model))
+      warn(W('model'), `「${v.model}」不在 ${v.provider} 的已知模型列表里`, `常用：${models.slice(0, 4).join(' / ')}${v.provider === 'volcengine' ? '（火山引擎这里填资源 ID，音色要和它对上）' : ''}；新模型可以保留`);
   }
   if (v.subtitles !== undefined && !SUBTITLE_MODES.includes(v.subtitles))
     err(W('subtitles'), `「${v.subtitles}」不是可选值`, `只能写 ${SUBTITLE_MODES.join(' / ')}：karaoke = 逐字高亮，line = 整句字幕，off = 不出旁白字幕；不写默认 karaoke`);
-  if (v.provider === 'minimax' && lang === 'en' && v.voiceId === undefined)
-    warn(W('voiceId'), '英文片没写 voiceId，会用默认英文音色（没有在真实接口上核对过）', '在 MiniMax 音色列表里选一个英文音色写进 voiceId');
-  if (v.provider === 'minimax' && !String(env?.MINIMAX_API_KEY ?? '').trim())
-    warn(W('provider'), '当前环境没有 MINIMAX_API_KEY：校验可以过，但出片（make.mjs）会停在配音这一步', '出片前设好环境变量 MINIMAX_API_KEY；想先看节奏，出片加 --voice-provider mock（不联网的占位音，不用改分镜）预览，或加 --no-voice 出无配音版');
+  if (KEY_HINT[v.provider] && lang === 'en' && v.voiceId === undefined)
+    warn(W('voiceId'), '英文片没写 voiceId，会用默认英文音色（没有在真实接口上核对过）', `在 ${v.provider} 的音色列表里选一个英文音色写进 voiceId`);
+  if (KEY_HINT[v.provider] && !hasKeyFor(v.provider, env))
+    warn(W('provider'), `当前环境没有 ${KEY_HINT[v.provider]}：校验可以过，但出片（make.mjs）会停在配音这一步`, `出片前设好环境变量 ${KEY_HINT[v.provider]}；想先看节奏，出片加 --voice-provider mock（不联网的占位音，不用改分镜）预览，或加 --no-voice 出无配音版`);
 }
 
 /**

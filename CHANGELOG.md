@@ -2,6 +2,34 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
+## v0.5.1 · 2026-09-27 · 配音多两家：阿里云、火山引擎；MiniMax 真人实测
+
+老分镜不用改；v0.5.0 写好的配音分镜也不用改（没写 `voiceId` 的中文片默认音色从新闻女声换成播报男声，想要原来的声音就写上 `"voiceId": "Chinese (Mandarin)_News_Anchor"`）。
+
+### 新增：阿里云、火山引擎配音
+- `meta.voice.provider` 多了 `aliyun`（阿里云百炼 CosyVoice）和 `volcengine`（火山引擎豆包语音），和 `minimax` 用法一样：设好环境变量、每镜写 `vo`，出片就带配音、逐字字幕和配乐闪避。
+- **阿里云**：`DASHSCOPE_API_KEY`；可选 `DASHSCOPE_WORKSPACE_ID`（百炼业务空间域名）、`DASHSCOPE_REGION`（默认 cn-beijing）、`DASHSCOPE_TTS_URL`（完整接口地址）。走 SSE 流式拿字级时间戳（`word_timestamp_enabled`）。默认模型 `cosyvoice-v3-flash`，默认音色 `longsanshu_v3`（沉稳质感男）/ 英文 `loongabby_v3`。
+- **火山引擎**：`VOLCENGINE_TTS_API_KEY`（新版控制台），或旧版 `VOLCENGINE_TTS_APP_ID` + `VOLCENGINE_TTS_ACCESS_TOKEN`；可选 `VOLCENGINE_TTS_BASE_URL`。走 V3 单向流式 SSE，字级时间戳（2.0 用 `enable_subtitle`、1.0 用 `enable_timestamp`，秒换成毫秒）。`meta.voice.model` 填资源 ID，默认 `seed-tts-2.0`；默认音色 `zh_male_guanggaojieshuo_uranus_bigtts`（广告解说）/ 英文 `en_male_alex_uranus_bigtts`。
+- `emotion` 只有 MiniMax 认，另外两家写了会提醒并忽略；`--voice-provider` 换到别家时，分镜里的 `voiceId` / `model` / `emotion` 不带过去，用那家的默认值。
+- 两家都没加新依赖（Node 自带的 fetch 读 SSE），限流、超时、5xx 按指数退避重试，鉴权和参数错不重试；报错按中英文写清是鉴权、限流、额度还是参数，并且会抹掉密钥。
+- DeepSeek Harness 插件：渲染进程额外放行这两家的环境变量（`DASHSCOPE_*` 四个、`VOLCENGINE_TTS_*` 四个），validate、doctor、setup 仍然拿不到。
+
+### 改动
+- 中文默认音色改成 MiniMax 播报男声 `Chinese (Mandarin)_Male_Announcer`（在真实接口上核对过）。
+- 自定义接口地址（`MINIMAX_BASE_URL` 等）只接受 https，填 http 直接报错，免得 key 明文发出去。
+- quiz 配音样例第 4 镜旁白缩短：真人念要 7.08 秒，超过 meaningCard 的上限，第一次实测时被拦下。
+
+### MiniMax 真实 key 实测（v0.5.0 发布后）
+- 三种配方的配音样例都用真实接口出了片，逐字时间戳由接口直接返回（精确到每个字），字幕点亮、镜头时长、配乐闪避都正常；三条旁白共计费约 390 字符。
+- 真人语速约每秒 4 字，比校验用的每秒 5 字慢；写旁白按每秒 4 字留余量。
+
+### 还没做到的
+- 阿里云、火山引擎没用真实 key 实测：按官方文档实现，用照文档造的 SSE 假响应做了单测；时间戳在事件里的嵌套位置、默认音色能不能用，要等第一次真实调用确认（原始时间戳会存成缓存目录里的 `<hash>.subtitle.json`，方便核对）。
+
+### 其他
+- 新增 11 条配音单测（两家的请求形状、音频分片拼接、时间戳、报错分类、没 key、http 地址），共 36 条。
+- 版本号改为 0.5.1；插件 0.3.0。
+
 ## v0.5.0 · 2026-09-27 · 配音：MiniMax 语音 + 逐字字幕
 
 老分镜怎么办：不用改。没写 `meta.voice` 的分镜不配音，镜头时长、字幕、配乐和以前完全一样（和 v0.4.0 对比了四份样例分镜的抽帧，逐像素一致）。

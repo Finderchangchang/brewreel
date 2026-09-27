@@ -1,6 +1,7 @@
 // ============================================================
 // 配音提供者注册 + 缓存。
 //   provider 接口：synthesize(text, opts) → {audioPath, durMs, words[], granularity, ...}
+//   提供者：minimax（MiniMax）/ aliyun（阿里云百炼 CosyVoice）/ volcengine（火山引擎豆包语音）/ mock（占位音）
 //   缓存键 = sha256(provider + model + voiceId + speed + emotion + lang + text)，音频和时间戳一起存；
 //   改画面、改别的镜头都不会重复合成、不会重复计费。
 //   缓存目录：BREWREEL_TTS_CACHE → $XDG_CACHE_HOME/brewreel/tts → ~/.cache/brewreel/tts（都在输出目录和仓库之外）
@@ -9,10 +10,13 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import * as aliyun from './aliyun.mjs';
 import * as minimax from './minimax.mjs';
 import * as mock from './mock.mjs';
+import * as volcengine from './volcengine.mjs';
 
-export const PROVIDERS = {minimax, mock};
+/** 真接口三家 + 不联网的 mock。每家导出 synthesize / DEFAULT_VOICE / DEFAULT_MODEL / MODELS（mock 除外） */
+export const PROVIDERS = {minimax, aliyun, volcengine, mock};
 export const PROVIDER_IDS = Object.keys(PROVIDERS);
 export const SUBTITLE_MODES = ['karaoke', 'line', 'off'];
 export const SPEED_RANGE = [0.5, 2];
@@ -34,10 +38,11 @@ export const voiceConfigOf = (meta) => {
   return {
     provider,
     lang,
-    voiceId: typeof v.voiceId === 'string' && v.voiceId.trim() ? v.voiceId.trim() : provider === 'minimax' ? minimax.DEFAULT_VOICE[lang] : `mock-${lang}`,
+    voiceId: typeof v.voiceId === 'string' && v.voiceId.trim() ? v.voiceId.trim() : PROVIDERS[provider].DEFAULT_VOICE?.[lang] ?? `mock-${lang}`,
     speed: typeof v.speed === 'number' && v.speed >= SPEED_RANGE[0] && v.speed <= SPEED_RANGE[1] ? v.speed : 1,
-    emotion: typeof v.emotion === 'string' && v.emotion ? v.emotion : null,
-    model: provider === 'minimax' ? (typeof v.model === 'string' && v.model ? v.model : minimax.DEFAULT_MODEL) : 'mock',
+    // 情绪只有 MiniMax 认（另外两家的情绪参数取值不同，先不接）
+    emotion: provider === 'minimax' && typeof v.emotion === 'string' && v.emotion ? v.emotion : null,
+    model: provider === 'mock' ? 'mock' : typeof v.model === 'string' && v.model ? v.model : PROVIDERS[provider].DEFAULT_MODEL,
     subtitles: SUBTITLE_MODES.includes(v.subtitles) ? v.subtitles : 'karaoke',
   };
 };

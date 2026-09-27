@@ -149,23 +149,39 @@ test('U9b only the render process gets the fixed voice-over variables; every oth
     MINIMAX_API_KEY: 'dummy-minimax',
     MINIMAX_GROUP_ID: 'g1',
     MINIMAX_BASE_URL: 'https://example.invalid',
+    DASHSCOPE_API_KEY: 'dummy-dashscope',
+    DASHSCOPE_WORKSPACE_ID: 'ws1',
+    VOLCENGINE_TTS_API_KEY: 'dummy-volc',
+    VOLCENGINE_TTS_APP_ID: 'app1',
+    VOLCENGINE_TTS_ACCESS_TOKEN: 'dummy-volc-token',
     BREWREEL_TTS_CACHE: '/tmp/tts',
+    DASHSCOPE_SECRET: 'dummy',
+    VOLCENGINE_SECRET_KEY: 'dummy',
     DEEPSEEK_API_KEY: 'dummy',
     OPENAI_API_KEY: 'dummy',
     MINIMAX_SECRET: 'dummy',
     ELEVENLABS_API_KEY: 'dummy',
   };
-  assert.deepEqual([...VOICE_ENV].sort(), ['BREWREEL_TTS_CACHE', 'MINIMAX_API_KEY', 'MINIMAX_BASE_URL', 'MINIMAX_GROUP_ID']);
+  assert.deepEqual([...VOICE_ENV].sort(), [
+    'BREWREEL_TTS_CACHE', 'DASHSCOPE_API_KEY', 'DASHSCOPE_REGION', 'DASHSCOPE_TTS_URL', 'DASHSCOPE_WORKSPACE_ID',
+    'MINIMAX_API_KEY', 'MINIMAX_BASE_URL', 'MINIMAX_GROUP_ID',
+    'VOLCENGINE_TTS_ACCESS_TOKEN', 'VOLCENGINE_TTS_API_KEY', 'VOLCENGINE_TTS_APP_ID', 'VOLCENGINE_TTS_BASE_URL',
+  ]);
   // default (validate / doctor / setup): no voice variables at all
   const plain = cleanEnv({source});
   for (const k of VOICE_ENV) assert.equal(plain[k], undefined, `${k} must not reach non-render processes`);
-  // render: exactly the four fixed names, nothing else that looks like a credential
+  // render: exactly the fixed names, nothing else that looks like a credential
   const voiced = cleanEnv({source, voice: true});
   assert.equal(voiced.MINIMAX_API_KEY, 'dummy-minimax');
   assert.equal(voiced.MINIMAX_GROUP_ID, 'g1');
   assert.equal(voiced.MINIMAX_BASE_URL, 'https://example.invalid');
   assert.equal(voiced.BREWREEL_TTS_CACHE, '/tmp/tts');
-  for (const k of ['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'MINIMAX_SECRET', 'ELEVENLABS_API_KEY']) assert.equal(voiced[k], undefined, `${k} must be dropped`);
+  assert.equal(voiced.DASHSCOPE_API_KEY, 'dummy-dashscope');
+  assert.equal(voiced.DASHSCOPE_WORKSPACE_ID, 'ws1');
+  assert.equal(voiced.VOLCENGINE_TTS_API_KEY, 'dummy-volc');
+  assert.equal(voiced.VOLCENGINE_TTS_APP_ID, 'app1');
+  assert.equal(voiced.VOLCENGINE_TTS_ACCESS_TOKEN, 'dummy-volc-token');
+  for (const k of ['DEEPSEEK_API_KEY', 'OPENAI_API_KEY', 'MINIMAX_SECRET', 'ELEVENLABS_API_KEY', 'DASHSCOPE_SECRET', 'VOLCENGINE_SECRET_KEY']) assert.equal(voiced[k], undefined, `${k} must be dropped`);
   // envPassthrough still cannot add a credential, even next to voice: true
   assert.equal(cleanEnv({source, voice: true, passthrough: ['OPENAI_API_KEY']}).OPENAI_API_KEY, undefined);
   // makeEnv (what brewreel_render uses) is the voiced variant; end to end through a real child

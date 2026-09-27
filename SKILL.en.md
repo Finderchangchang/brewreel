@@ -1,9 +1,9 @@
 ---
 name: brewreel
-description: BrewReel (精酿) — make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects (optional MiniMax voice-over).
+description: BrewReel (精酿) — make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects (optional MiniMax / Alibaba Cloud / Volcengine voice-over).
 license: Apache-2.0
 metadata:
-  version: 0.5.0
+  version: 0.5.1
 ---
 
 # BrewReel (精酿): Product Promo Video
@@ -121,7 +121,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
     - **Don't stop before make does**: queueing plus rendering can outlast your per-command time limit. If it would, run make in the background and check `manifest.json` in the output folder about every 30 seconds until `status` appears (only `delivered` counts). Until you have seen the `交付：` line, do not write a delivery report and do not end the task.
     - Output: `video.mp4`, `sheet.png` (one frame per second, tiled), `check/` (frame 0 + a full-size frame near the end of every shot), `report.txt`, `layout.json`, `manifest.json` (sha256 of storyboard and video, duration, every check result). The previous run's copies of these files are cleared first.
     - To preview a few frames without a full render: add `--stills 0,3.5,8` (seconds). This is not a delivery.
-    - With `meta.voice` (voice-over), make synthesizes the narration first and retimes shots to the voice — see "Voice-over" below. Without `MINIMAX_API_KEY` add `--voice-provider mock` to check rhythm (placeholder voice, not a deliverable), or `--no-voice` for a version without narration.
+    - With `meta.voice` (voice-over), make synthesizes the narration first and retimes shots to the voice — see "Voice-over" below. Without the provider's key add `--voice-provider mock` to check rhythm (placeholder voice, not a deliverable), or `--no-voice` for a version without narration.
     - **Only the last line counts**: on success the last line is `交付：<mp4 path>` ("delivered"). The path you give the user **must be copied from that line**. No such line means the run failed; never hand over some other mp4.
     - Exit codes: 0 deliverable / 1 validation failed / 2 bad arguments / 3 a ✗ in the layout or Han-character check (the video is renamed `video.rejected.mp4`, only for seeing what broke) / 4 render failed or wrong duration / 5 queue timeout / 6 internal error / 130 interrupted.
 11. **Read `report.txt`**: **any single ✗** in "machine self-check," "text-layout report," or "layout self-check" means the video can't be delivered (make exits with 3). The layout check measures every text block after rendering: clipped by a card, two text blocks overlapping, key text outside x180–900, and for English videos any Chinese character on screen (one probe frame every half beat). A ✗ usually means a field has too much text: trim items or shorten the copy, then go back to step 9. Once everything is ✓, check `sheet.png` and `check/` against the checklist below.
@@ -134,11 +134,11 @@ Turn it on only when the user wants narration / voice-over. Without `meta.voice`
 1. **`meta.voice`** (only these 6 fields; anything else is an error):
    | Field | How |
    |---|---|
-   | `provider` | Required. `minimax` = natural voice (rendering needs the `MINIMAX_API_KEY` environment variable); `mock` = offline placeholder tone for checking rhythm only |
-   | `voiceId` | Voice; the English default is `English_expressive_narrator`. Write it explicitly for English films. See the picks below |
+   | `provider` | Required. `minimax` / `aliyun` / `volcengine` = natural voice (each needs its own environment variable, see the table below); `mock` = offline placeholder tone for checking rhythm only. Use `minimax` if the user didn't say |
+   | `voiceId` | Voice; leave it out for the provider's default (table below). Voice ids don't carry across providers — change them together. Write it explicitly for English films |
    | `speed` | 0.5–2, default 1. Ads usually 1–1.15; if a line doesn't fit, cut words or split the shot instead of speeding up |
-   | `emotion` | Optional: `calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`. Leave it out for the voice's default; `calm` or `fluent` suit ads |
-   | `model` | Usually leave out (default `speech-2.8-hd`) |
+   | `emotion` | **minimax only**: `calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`. Leave it out for the voice's default; `calm` or `fluent` suit ads. Ignored for aliyun / volcengine |
+   | `model` | Usually leave out (provider default, table below). For volcengine this is the resource ID, and the voice must match it |
    | `subtitles` | `karaoke` (default, word-by-word highlight) / `line` (whole line) / `off` (voice only, no voice subtitles) |
 2. **`vo` on each shot** (the one line spoken over that shot):
    - **Conversational**: short spoken sentences with a clear subject, as if telling a friend. Don't read out on-screen lists; no "as you can see".
@@ -148,12 +148,24 @@ Turn it on only when the user wants narration / voice-over. Without `meta.voice`
    - `{}` highlight: as in captions, at most 1 per line (per 24 characters); shown in the accent color in the subtitle.
    - **Who shows subtitles**: in cards, a shot with `vo` and no `caption` gets subtitles generated from `vo`; a shot with a `caption` keeps showing the caption and the voice just reads — **the hook must keep its `caption`** (it's the cover title); `endCard` is voiced without subtitles. quiz / journey show the narration in their own subtitle strip.
    - The last line should say the product name (exactly `meta.product`).
-3. **Suggested voices** (MiniMax system voices; the MiniMax console list is authoritative — preview before first use):
+   **Choosing a provider** (all bill per character and return per-character timestamps; each console is authoritative — preview before first use):
+
+   | provider | environment variables | default model | Chinese default voice | English default voice | tested |
+   |---|---|---|---|---|---|
+   | `minimax` | `MINIMAX_API_KEY` (optional `MINIMAX_GROUP_ID`, `MINIMAX_BASE_URL`) | `speech-2.8-hd` | `Chinese (Mandarin)_Male_Announcer` (male announcer) | `English_expressive_narrator` | rendered with a real key |
+   | `aliyun` (Alibaba Cloud Model Studio CosyVoice) | `DASHSCOPE_API_KEY` (optional `DASHSCOPE_WORKSPACE_ID`, `DASHSCOPE_REGION`, `DASHSCOPE_TTS_URL`) | `cosyvoice-v3-flash` | `longsanshu_v3` (steady male) | `loongabby_v3` | not yet |
+   | `volcengine` (Volcengine Doubao speech) | `VOLCENGINE_TTS_API_KEY`, or the legacy `VOLCENGINE_TTS_APP_ID` + `VOLCENGINE_TTS_ACCESS_TOKEN` (optional `VOLCENGINE_TTS_BASE_URL`) | `seed-tts-2.0` | `zh_male_guanggaojieshuo_uranus_bigtts` (ad narrator) | `en_male_alex_uranus_bigtts` | not yet |
+
+   "Not yet" = built from the official docs and tested with fake responses, but not yet rendered with a real key; if the first run fails, the error says whether it's auth, rate limit or parameters — fix it as suggested or switch to minimax.
+3. **Suggested voices**:
+   - **minimax** (MiniMax system voices):
    - English films: `English_expressive_narrator` (default)
    - Chinese films: `Chinese (Mandarin)_Male_Announcer` (default, male announcer: clear and steady, fits most product films), `Chinese (Mandarin)_News_Anchor` (female newsreader: B2B, office, tools), `female-shaonv` (young female: consumer, lifestyle), `male-qn-qingse` (young male, casual: quizzes, recommendations), `presenter_female` (presenter: explainers, education)
+   - **aliyun**: `longsanshu_v3` (default, steady male), `longshu_v3` (steady young male), `longxiaoxia_v3` (authoritative female), `longxiaochun_v3` (bright female); English `loongabby_v3`
+   - **volcengine** (2.0 voices, keep the default `model` `seed-tts-2.0`): `zh_male_guanggaojieshuo_uranus_bigtts` (default, ad narrator), `zh_male_cixingjieshuonan_uranus_bigtts` (warm male narrator), `zh_female_tianmeixiaoyuan_uranus_bigtts` (sweet female), `zh_female_zhixingnv_uranus_bigtts` (poised female); English `en_male_alex_uranus_bigtts`
 4. **Preview without a key**: add `--voice-provider mock` to make (offline placeholder voice; timeline, word-by-word subtitles and ducking all work, the storyboard stays unchanged), or `--no-voice` for a version without narration. **A mock render is for checking rhythm only and is not a deliverable** — say so explicitly at delivery ("placeholder voice; set the key and re-run for the real voice"). Without a key, validate only warns.
-5. **Cost**: MiniMax bills per character of narration (see MiniMax's pricing page). Each line (same provider, model, voice, speed, emotion and text) is synthesized once and cached in the user folder `~/.cache/brewreel/tts` (override with `BREWREEL_TTS_CACHE`), so changing visuals or captions and re-rendering costs nothing; only a changed `vo` or voice is synthesized again. `manifest.json` → `voice.billedCharacters` shows what this run billed.
-6. **Keys**: read only from the environment variable `MINIMAX_API_KEY` (plus `MINIMAX_GROUP_ID`, `MINIMAX_BASE_URL` if needed). Never put the key in the storyboard, the brief, command-line arguments or any file, and never print it.
+5. **Cost**: all three bill per character of narration (see each provider's pricing page). Each line (same provider, model, voice, speed, emotion and text) is synthesized once and cached in the user folder `~/.cache/brewreel/tts` (override with `BREWREEL_TTS_CACHE`), so changing visuals or captions and re-rendering costs nothing; only a changed `vo` or voice is synthesized again. `manifest.json` → `voice.billedCharacters` shows what this run billed.
+6. **Keys**: read only from environment variables (names per provider in the table above; custom endpoints must be https). Never put the key in the storyboard, the brief, command-line arguments or any file, and never print it.
 7. **Voice exit codes**: narration longer than the shot allows → 1 (cut words or split the shot); no key, auth failure, rate-limit retries exhausted, network down → 2 (have the user set the key or retry later; preview with `--voice-provider mock`).
 
 ## Self-check list (look at the frame sheet, write a conclusion for each line against the actual image — don't just tick boxes)

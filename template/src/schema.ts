@@ -120,8 +120,9 @@ export type Meta = {
   voice?: VoiceSetting;
 };
 
-/** 配音提供者：minimax = MiniMax 语音合成（要环境变量 MINIMAX_API_KEY）；mock = 不联网的占位音（按字数生成音节脉冲，先听节奏用） */
-export type VoiceProvider = 'minimax' | 'mock';
+/** 配音提供者：minimax = MiniMax（要环境变量 MINIMAX_API_KEY）；aliyun = 阿里云百炼 CosyVoice（要 DASHSCOPE_API_KEY）；
+ *  volcengine = 火山引擎豆包语音（要 VOLCENGINE_TTS_API_KEY）；mock = 不联网的占位音（按字数生成音节脉冲，先听节奏用） */
+export type VoiceProvider = 'minimax' | 'aliyun' | 'volcengine' | 'mock';
 /** 旁白字幕：karaoke = 逐字高亮；line = 整句（分页）出现；off = 不出旁白字幕（只念） */
 export type SubtitleMode = 'karaoke' | 'line' | 'off';
 export type VoiceEmotion = 'happy' | 'sad' | 'angry' | 'fearful' | 'disgusted' | 'surprised' | 'calm' | 'fluent' | 'whisper';

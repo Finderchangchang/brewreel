@@ -12,7 +12,8 @@
 //     --stills   只渲染这些时间点（秒）的单帧到 <out>/check/，不出整片（镜头自测用，快；不是交付）
 //     --no-bgm   不生成配乐（静音）
 //     --no-voice 分镜写了 meta.voice 也不配音（镜头时长按分镜、没有旁白和旁白字幕），临时出无配音版用
-//     --voice-provider <minimax|mock>  这一次出片临时换配音提供者，不改分镜文件。没有 MINIMAX_API_KEY 时用 --voice-provider mock
+//     --voice-provider <minimax|aliyun|volcengine|mock>  这一次出片临时换配音提供者，不改分镜文件（换到别家时分镜里的
+//                voiceId / model / emotion 不带过去，用那家的默认值）。没有 key 时用 --voice-provider mock
 //                预览节奏（不联网的占位音，时间轴和字幕照常；分镜没写 meta.voice 时忽略）
 //     --keep     保留 template/public/_run/<id>/（调试用）
 //
@@ -20,7 +21,9 @@
 //   每句旁白先合成（scripts/lib/tts/，按 provider+model+voiceId+speed+emotion+text 缓存在仓库和输出目录之外，
 //   默认 ~/.cache/brewreel/tts，BREWREEL_TTS_CACHE 可改）→ 有旁白的镜头时长改成「0.15 秒 + 旁白 + 0.35 秒」向上取整拍
 //   → 按新时长再校验一遍 → voice.json 作为 props.voice 传给 Remotion，配乐在人声处自动压低（闪避做进 bgm.wav）。
-//   MiniMax 的 key 只从环境变量 MINIMAX_API_KEY 读（MINIMAX_BASE_URL / MINIMAX_GROUP_ID 可选），不写进任何文件和日志。
+//   key 只从环境变量读，不写进任何文件和日志：MiniMax = MINIMAX_API_KEY（MINIMAX_BASE_URL / MINIMAX_GROUP_ID 可选）；
+//   阿里云 = DASHSCOPE_API_KEY（DASHSCOPE_WORKSPACE_ID / DASHSCOPE_REGION / DASHSCOPE_TTS_URL 可选）；
+//   火山引擎 = VOLCENGINE_TTS_API_KEY 或 VOLCENGINE_TTS_APP_ID + VOLCENGINE_TTS_ACCESS_TOKEN（VOLCENGINE_TTS_BASE_URL 可选）。
 //   配音失败：旁白比镜头最长时长还长 → 退出码 1；没 key / 鉴权失败 / 限流重试用完 / 网络不通 → 退出码 2（改配置或稍后再跑，
 //   想先看效果加 --voice-provider mock，或加 --no-voice）
 //     --queue-timeout <分钟>  渲染排队最多等多久（默认 20），超时写「未出片：渲染排队超时」，退出码 5
@@ -256,7 +259,12 @@ if (voiceProvider && !parsed.error) {
   const mv = parsed.sb?.meta?.voice;
   if (mv && typeof mv === 'object' && !Array.isArray(mv)) {
     if (mv.provider !== voiceProvider) log(`按 --voice-provider 临时改用 ${voiceProvider} 配音（分镜里写的是 ${mv.provider ?? '（没写）'}）`);
-    if (voiceProvider === 'mock' && mv.provider !== 'mock') delete mv.model; // 真接口的模型名对 mock 没意义
+    if (mv.provider !== voiceProvider) {
+      // 各家的模型名、音色 id 互不通用；情绪只有 MiniMax 认。换家就用那家的默认值
+      delete mv.model;
+      if (voiceProvider !== 'mock') delete mv.voiceId;
+      if (voiceProvider !== 'minimax') delete mv.emotion;
+    }
     mv.provider = voiceProvider;
   } else log('--voice-provider 被忽略：分镜没写 meta.voice（不配音）');
 }

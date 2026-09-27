@@ -16,11 +16,16 @@ const ENV_WHITELIST = [
 ];
 const PROXY_VARS = ['HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY', 'http_proxy', 'https_proxy', 'no_proxy'];
 /**
- * Voice-over (MiniMax TTS) variables. Only the render process (make.mjs) gets them, and only these fixed
- * names: the MiniMax key plus its optional group id / host, and the TTS cache folder. Every other
- * credential-looking variable is still dropped, and envPassthrough cannot add more.
+ * Voice-over (TTS) variables. Only the render process (make.mjs) gets them, and only these fixed names:
+ * the MiniMax, Alibaba Cloud (DashScope) and Volcengine keys plus their optional ids / hosts, and the TTS
+ * cache folder. Every other credential-looking variable is still dropped, and envPassthrough cannot add more.
  */
-export const VOICE_ENV = Object.freeze(['MINIMAX_API_KEY', 'MINIMAX_GROUP_ID', 'MINIMAX_BASE_URL', 'BREWREEL_TTS_CACHE']);
+export const VOICE_ENV = Object.freeze([
+  'MINIMAX_API_KEY', 'MINIMAX_GROUP_ID', 'MINIMAX_BASE_URL',
+  'DASHSCOPE_API_KEY', 'DASHSCOPE_WORKSPACE_ID', 'DASHSCOPE_REGION', 'DASHSCOPE_TTS_URL',
+  'VOLCENGINE_TTS_API_KEY', 'VOLCENGINE_TTS_APP_ID', 'VOLCENGINE_TTS_ACCESS_TOKEN', 'VOLCENGINE_TTS_BASE_URL',
+  'BREWREEL_TTS_CACHE',
+]);
 
 /**
  * Build the environment for a child process from a whitelist. Credentials never pass: anything whose

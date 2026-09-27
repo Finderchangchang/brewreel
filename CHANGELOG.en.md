@@ -2,6 +2,34 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.5.1 · 2026-09-27 · Two more voice providers: Alibaba Cloud and Volcengine; MiniMax tested for real
+
+Old storyboards need no changes, and neither do v0.5.0 voice-over storyboards (Chinese films without a `voiceId` now default to a male announcer instead of the female newsreader; to keep the old voice, write `"voiceId": "Chinese (Mandarin)_News_Anchor"`).
+
+### New: Alibaba Cloud and Volcengine voice-over
+- `meta.voice.provider` now also takes `aliyun` (Alibaba Cloud Model Studio CosyVoice) and `volcengine` (Volcengine Doubao speech). They work like `minimax`: set the environment variable, write a `vo` per shot, and the render gets voice-over, word-by-word subtitles and music ducking.
+- **Alibaba Cloud**: `DASHSCOPE_API_KEY`; optional `DASHSCOPE_WORKSPACE_ID` (Model Studio workspace host), `DASHSCOPE_REGION` (default cn-beijing), `DASHSCOPE_TTS_URL` (full endpoint). Uses SSE streaming for per-character timestamps (`word_timestamp_enabled`). Default model `cosyvoice-v3-flash`, default voice `longsanshu_v3` (steady male) / English `loongabby_v3`.
+- **Volcengine**: `VOLCENGINE_TTS_API_KEY` (new console), or the legacy `VOLCENGINE_TTS_APP_ID` + `VOLCENGINE_TTS_ACCESS_TOKEN`; optional `VOLCENGINE_TTS_BASE_URL`. Uses the V3 one-way SSE stream with per-character timestamps (`enable_subtitle` for 2.0, `enable_timestamp` for 1.0; seconds converted to milliseconds). `meta.voice.model` is the resource ID, default `seed-tts-2.0`; default voice `zh_male_guanggaojieshuo_uranus_bigtts` (ad narrator) / English `en_male_alex_uranus_bigtts`.
+- `emotion` is MiniMax-only; the other two warn and ignore it. When `--voice-provider` switches to a different provider, the storyboard's `voiceId` / `model` / `emotion` are dropped in favor of that provider's defaults.
+- No new dependencies (Node's built-in fetch reads the SSE). Rate limits, timeouts and 5xx are retried with exponential backoff; auth and parameter errors are not. Errors say in Chinese and English whether it's auth, rate limit, quota or parameters, with the key redacted.
+- DeepSeek Harness plugin: the render process also receives these two providers' variables (four `DASHSCOPE_*`, four `VOLCENGINE_TTS_*`); validate, doctor and setup still never see them.
+
+### Changes
+- The default Chinese voice is now MiniMax's male announcer `Chinese (Mandarin)_Male_Announcer` (checked against the real API).
+- Custom endpoints (`MINIMAX_BASE_URL` etc.) must be https; http is rejected so the key is never sent in clear text.
+- The quiz voice-over sample's 4th line is shorter: with the real voice it took 7.08 s, over meaningCard's limit, and was blocked on the first real run.
+
+### MiniMax tested with a real key (after v0.5.0)
+- All three recipes' voice-over samples were rendered through the real API; per-character timestamps come straight from the API, and subtitles, shot timing and ducking all work. About 390 characters billed for the three.
+- Real voices read about 4 Chinese characters per second, slower than the 5 per second validation assumes; plan narration at about 4 per second.
+
+### Not done yet
+- Alibaba Cloud and Volcengine have not been tested with a real key: built from the official docs and unit-tested against SSE fake responses modeled on them. Where the timestamps sit in the events and whether the default voices work will be confirmed on the first real call (the raw timestamps are saved as `<hash>.subtitle.json` in the cache folder for checking).
+
+### Other
+- 11 new voice-over unit tests (request shape, audio chunk joining, timestamps, error classes, missing key, http endpoints for both providers), 36 in total.
+- Version 0.5.1; plugin 0.3.0.
+
 ## v0.5.0 · 2026-09-27 · Voice-over: MiniMax speech + word-synced subtitles
 
 Old storyboards: no changes needed. A storyboard without `meta.voice` gets no voice-over, and its shot lengths, subtitles and music are exactly as before (sampled frames from four sample storyboards match v0.4.0 pixel for pixel).

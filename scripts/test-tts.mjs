@@ -3,7 +3,8 @@
 // 配音管线自测：不联网、不要 key。
 //   node scripts/test-tts.mjs
 // 覆盖：分词 / 时间戳估算 / 字幕时间戳解析；mock 合成与缓存；MiniMax 用「录制式假响应」（假 fetch）覆盖
-// 成功（hex / URL 两种音频）、限流重试、鉴权失败、超长文本、没 key、网络错误；make 的配音步骤（改镜头时长、voice.json）；
+// 成功（hex / URL 两种音频）、限流重试、鉴权失败、超长文本、没 key、网络错误；阿里云 / 火山引擎用照官方文档造的 SSE 假响应覆盖
+// 请求形状、分片音频拼接、字级时间戳、报错分类；make 的配音步骤（改镜头时长、voice.json）；
 // make_bgm.py 的配乐闪避（人声段压低约 10 dB）。临时文件都写系统临时目录，跑完删掉。
 // ============================================================
 import assert from 'node:assert/strict';
@@ -14,8 +15,12 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {loadSpecs, schedule, validate} from './validate.mjs';
 import {cacheDirOf, cacheKey, synthesizeCached, voiceConfigOf} from './lib/tts/index.mjs';
+import * as aliyun from './lib/tts/aliyun.mjs';
+import {checkVoiceMeta} from './lib/tts/checks.mjs';
+import {_resetThrottle, parseSSE} from './lib/tts/http.mjs';
 import * as minimax from './lib/tts/minimax.mjs';
 import * as mock from './lib/tts/mock.mjs';
+import * as volcengine from './lib/tts/volcengine.mjs';
 import {DUCK, LEAD_SEC, TAIL_SEC, VOICE_RMS_DB, normalizeWav, runVoiceStep, voiceIntervals} from './lib/tts/pipeline.mjs';
 import {estimateWords, flattenSubtitle, markHot, paginate, tokenize, wordsFromSubtitle} from './lib/tts/timing.mjs';
 import {decodeWav, encodeWav, mp3DurationMs, wavInfo} from './lib/tts/wav.mjs';
@@ -332,6 +337,196 @@ test('MiniMax 接口地址：host / host/v1 / 完整路径都行，GroupId 可�
 
 test('默认音色：中文是播报男声', () => {
   assert.equal(minimax.DEFAULT_VOICE.zh, 'Chinese (Mandarin)_Male_Announcer');
+});
+
+// ---------------- 阿里云 / 火山引擎（SSE 假响应，字段照官方文档） ----------------
+const FAKE_DS = 'fake-dashscope-key-0000';
+const FAKE_VOLC = 'fake-volc-key-0000';
+const b64 = (buf) => buf.toString('base64');
+const sse = (events) => events.map(([ev, data]) => `event:${ev}\ndata:${JSON.stringify(data)}\n`).join('\n');
+const MP3_A = fakeMp3(20);
+const MP3_B = fakeMp3(20);
+const WORDS_MS = [['欢', 60, 250], ['迎', 250, 440], ['使', 440, 630], ['用', 630, 820], ['精', 820, 1010], ['酿。', 1010, 1380]];
+const aly = (text, extra = {}) => {
+  _resetThrottle();
+  return aliyun.synthesize(text, {outBase: path.join(TMP, `aly-${Math.random().toString(36).slice(2)}`), env: {DASHSCOPE_API_KEY: FAKE_DS}, minIntervalMs: 0, ...extra});
+};
+const volc = (text, extra = {}) => {
+  _resetThrottle();
+  return volcengine.synthesize(text, {outBase: path.join(TMP, `volc-${Math.random().toString(36).slice(2)}`), env: {VOLCENGINE_TTS_API_KEY: FAKE_VOLC}, minIntervalMs: 0, ...extra});
+};
+const alyOk = () =>
+  sse([
+    ['result', {request_id: 'r1', output: {audio: {data: b64(MP3_A)}}}],
+    ['result', {request_id: 'r1', output: {type: 'sentence-end', sentence: {index: 0, words: WORDS_MS.map(([t, b, e], i) => ({text: t, begin_index: i, end_index: i + 1, begin_time: b, end_time: e}))}, audio: {data: b64(MP3_B)}}, usage: {characters: 7}}],
+  ]);
+const volcOk = () =>
+  sse([
+    ['352', {code: 0, message: '', data: b64(MP3_A)}],
+    ['351', {code: 0, message: '', data: null, sentence: {text: '欢迎使用精酿。', words: WORDS_MS.map(([t, b, e]) => ({word: t, startTime: b / 1000, endTime: e / 1000, confidence: 0.9}))}}],
+    ['352', {code: 0, message: '', data: b64(MP3_B)}],
+    ['152', {code: 20000000, message: 'OK', data: null, usage: {text_words: 7}}],
+  ]);
+
+test('SSE 解析：event/data 分块、JSON 自动解析；整段 JSON 当一个事件', () => {
+  const ev = parseSSE('event: 352\ndata: {"a":1}\n\n: 注释\nevent:x\ndata:plain\n\n');
+  assert.deepEqual(ev, [{event: '352', data: {a: 1}}, {event: 'x', data: 'plain'}]);
+  assert.deepEqual(parseSSE('{"code":"InvalidApiKey"}'), [{event: '', data: {code: 'InvalidApiKey'}}]);
+});
+
+test('阿里云成功：SSE 请求头、请求体照文档；base64 分片拼成整段 mp3，字级时间戳（毫秒）', async () => {
+  const f = fakeFetch([{text: alyOk()}]);
+  const r = await aly('欢迎使用精酿。', {fetch: f, speed: 1.1});
+  const [call] = f.calls;
+  assert.equal(call.url, 'https://dashscope.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer');
+  assert.equal(call.headers.Authorization, `Bearer ${FAKE_DS}`);
+  assert.equal(call.headers['X-DashScope-SSE'], 'enable');
+  assert.equal(call.body.model, 'cosyvoice-v3-flash');
+  assert.equal(call.body.input.voice, 'longsanshu_v3', '默认中文男声');
+  assert.equal(call.body.input.rate, 1.1);
+  assert.equal(call.body.input.word_timestamp_enabled, true);
+  assert.ok(fs.readFileSync(r.audioPath).equals(Buffer.concat([MP3_A, MP3_B])));
+  assert.equal(r.durMs, 1440);
+  assert.equal(r.granularity, 'char');
+  assert.equal(r.words[0].startMs, 60);
+  assert.equal(r.usageCharacters, 7);
+  assert.ok(fs.existsSync(r.audioPath.replace(/\.mp3$/, '.subtitle.json')));
+});
+
+test('阿里云地址：业务空间域名、完整地址覆盖；http 被拒', () => {
+  assert.equal(aliyun.endpointOf({DASHSCOPE_WORKSPACE_ID: 'ws-123'}), 'https://ws-123.cn-beijing.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer');
+  assert.equal(aliyun.endpointOf({DASHSCOPE_WORKSPACE_ID: 'ws-123', DASHSCOPE_REGION: 'ap-southeast-1'}), 'https://ws-123.ap-southeast-1.maas.aliyuncs.com/api/v1/services/audio/tts/SpeechSynthesizer');
+  assert.equal(aliyun.endpointOf({DASHSCOPE_TTS_URL: 'https://x.example/tts/'}), 'https://x.example/tts');
+  assert.throws(() => aliyun.endpointOf({DASHSCOPE_TTS_URL: 'http://x.example/tts'}), (e) => e.code === 'INSECURE_URL');
+  assert.throws(() => aliyun.endpointOf({DASHSCOPE_WORKSPACE_ID: 'a.evil.com/x'}), (e) => e.code === 'BAD_PARAMS');
+});
+
+test('阿里云只给音频 URL：下载不带鉴权头，没有时间戳就按字数估算', async () => {
+  const f = fakeFetch([{text: sse([['result', {output: {audio: {data: '', url: 'https://files.example.invalid/a.mp3'}}, usage: {characters: 5}}]])}, {bytes: fakeMp3(25)}]);
+  const r = await aly('写一句话。', {fetch: f});
+  assert.equal(f.calls[1].url, 'https://files.example.invalid/a.mp3');
+  assert.equal(f.calls[1].headers.Authorization, undefined);
+  assert.equal(r.granularity, 'sentence-interp');
+  assert.equal(Math.round(r.durMs), 900);
+});
+
+test('阿里云报错：鉴权失败不重试且不带 key；限流重试后成功；SSE 里的参数错不重试；额度用完', async () => {
+  const f401 = fakeFetch([{status: 401, json: {code: 'InvalidApiKey', message: `Invalid API-key provided: ${FAKE_DS}`}}]);
+  await rejects(aly('欢迎。', {fetch: f401, sleep: noSleep()}), (e) => {
+    assert.equal(e.code, 'AUTH');
+    assert.equal(f401.calls.length, 1);
+    assert.ok(!e.message.includes(FAKE_DS));
+    assert.match(e.message, /DASHSCOPE_API_KEY/);
+  });
+  const f429 = fakeFetch([{status: 429, json: {code: 'Throttling.RateQuota', message: 'Requests throttling triggered'}}, {text: alyOk()}]);
+  const r = await aly('欢迎使用精酿。', {fetch: f429, sleep: noSleep()});
+  assert.equal(f429.calls.length, 2);
+  assert.ok(r.durMs > 0);
+  const fbad = fakeFetch([{text: sse([['error', {code: 'InvalidParameter', message: 'voice not found', request_id: 'r2'}]])}]);
+  await rejects(aly('欢迎。', {fetch: fbad, sleep: noSleep()}), (e) => {
+    assert.equal(e.code, 'BAD_PARAMS');
+    assert.equal(fbad.calls.length, 1);
+  });
+  const fq = fakeFetch([{status: 429, json: {code: 'Throttling.AllocationQuota', message: 'Allocated quota exceeded'}}]);
+  await rejects(aly('欢迎。', {fetch: fq, sleep: noSleep()}), (e) => assert.equal(e.code, 'QUOTA'));
+});
+
+test('阿里云 / 火山引擎没 key：不发请求，提示先用 mock 预览', async () => {
+  const f = fakeFetch([]);
+  await rejects(aly('欢迎。', {fetch: f, env: {}}), (e) => {
+    assert.equal(e.code, 'NO_KEY');
+    assert.match(e.message, /DASHSCOPE_API_KEY/);
+    assert.match(e.message, /mock/);
+  });
+  await rejects(volc('欢迎。', {fetch: f, env: {VOLCENGINE_TTS_APP_ID: 'only-app-id'}}), (e) => {
+    assert.equal(e.code, 'NO_KEY');
+    assert.match(e.message, /VOLCENGINE_TTS_API_KEY/);
+  });
+  assert.equal(f.calls.length, 0);
+});
+
+test('火山引擎成功：V3 SSE 请求头、请求体照文档；352 音频分片拼接，351 时间戳秒换毫秒', async () => {
+  const f = fakeFetch([{text: volcOk()}]);
+  const r = await volc('欢迎使用精酿。', {fetch: f, speed: 1.1});
+  const [call] = f.calls;
+  assert.equal(call.url, 'https://openspeech.bytedance.com/api/v3/tts/unidirectional/sse');
+  assert.equal(call.headers['X-Api-Key'], FAKE_VOLC);
+  assert.equal(call.headers['X-Api-Resource-Id'], 'seed-tts-2.0');
+  assert.ok(call.headers['X-Api-Request-Id']);
+  assert.equal(call.body.req_params.text, '欢迎使用精酿。');
+  assert.equal(call.body.req_params.speaker, 'zh_male_guanggaojieshuo_uranus_bigtts', '默认中文男声');
+  assert.equal(call.body.req_params.audio_params.speech_rate, 10);
+  assert.equal(call.body.req_params.audio_params.enable_subtitle, true, '2.0 用 enable_subtitle');
+  assert.equal(call.body.req_params.audio_params.enable_timestamp, undefined);
+  assert.ok(fs.readFileSync(r.audioPath).equals(Buffer.concat([MP3_A, MP3_B])));
+  assert.equal(r.durMs, 1440);
+  assert.equal(r.granularity, 'char');
+  assert.equal(r.words[0].startMs, 60);
+  assert.equal(r.words.at(-1).endMs, 1380);
+  assert.equal(r.usageCharacters, 7);
+});
+
+test('火山引擎：1.0 资源用 enable_timestamp；旧版鉴权走 APP ID + Access Token；语速换算', async () => {
+  const f = fakeFetch([{text: volcOk()}]);
+  await volc('欢迎使用精酿。', {fetch: f, model: 'seed-tts-1.0', voiceId: 'zh_male_example_moon_bigtts', env: {VOLCENGINE_TTS_APP_ID: 'app1', VOLCENGINE_TTS_ACCESS_TOKEN: FAKE_VOLC}});
+  const [call] = f.calls;
+  assert.equal(call.headers['X-Api-Resource-Id'], 'seed-tts-1.0');
+  assert.equal(call.headers['X-Api-App-Id'], 'app1');
+  assert.equal(call.headers['X-Api-Access-Key'], FAKE_VOLC);
+  assert.equal(call.headers['X-Api-Key'], undefined);
+  assert.equal(call.body.req_params.audio_params.enable_timestamp, true);
+  assert.equal(call.body.req_params.audio_params.enable_subtitle, undefined);
+  assert.equal(volcengine.speechRateOf(0.5), -50);
+  assert.equal(volcengine.speechRateOf(2), 100);
+  assert.equal(volcengine.speechRateOf(1), 0);
+});
+
+test('火山引擎报错：音色没授权（45000000）不重试且不带 key；并发超限重试后成功；试用额度用完；http 地址被拒', async () => {
+  const fa = fakeFetch([{text: sse([['152', {code: 45000000, message: `speaker permission denied ${FAKE_VOLC}`, data: null}]])}]);
+  await rejects(volc('欢迎。', {fetch: fa, sleep: noSleep()}), (e) => {
+    assert.equal(e.code, 'AUTH');
+    assert.equal(fa.calls.length, 1);
+    assert.ok(!e.message.includes(FAKE_VOLC));
+  });
+  const fr = fakeFetch([{text: sse([['152', {code: 45000292, message: 'quota exceeded for types: concurrency', data: null}]])}, {text: volcOk()}]);
+  const r = await volc('欢迎使用精酿。', {fetch: fr, sleep: noSleep()});
+  assert.equal(fr.calls.length, 2);
+  assert.ok(r.durMs > 0);
+  const fl = fakeFetch([{text: sse([['152', {code: 45000292, message: 'quota exceeded for types: xxx_lifetime', data: null}]])}]);
+  await rejects(volc('欢迎。', {fetch: fl, sleep: noSleep()}), (e) => assert.equal(e.code, 'QUOTA'));
+  const f401 = fakeFetch([{status: 401, text: 'unauthorized'}]);
+  await rejects(volc('欢迎。', {fetch: f401, sleep: noSleep()}), (e) => assert.equal(e.code, 'AUTH'));
+  assert.throws(() => volcengine.endpointOf({VOLCENGINE_TTS_BASE_URL: 'http://openspeech.bytedance.com/x'}), (e) => e.code === 'INSECURE_URL');
+});
+
+test('三家的默认值：voiceConfigOf 按 provider 取默认音色和模型；情绪只给 MiniMax', () => {
+  const a = voiceConfigOf({voice: {provider: 'aliyun', emotion: 'calm'}});
+  assert.equal(a.voiceId, 'longsanshu_v3');
+  assert.equal(a.model, 'cosyvoice-v3-flash');
+  assert.equal(a.emotion, null);
+  const v = voiceConfigOf({lang: 'en', voice: {provider: 'volcengine'}});
+  assert.equal(v.voiceId, 'en_male_alex_uranus_bigtts');
+  assert.equal(v.model, 'seed-tts-2.0');
+  assert.equal(voiceConfigOf({voice: {provider: 'minimax', emotion: 'calm'}}).emotion, 'calm');
+  assert.notEqual(cacheKey(a, '你好'), cacheKey({...a, provider: 'volcengine'}, '你好'), '缓存键含 provider');
+});
+
+test('校验：缺 key 按 provider 提醒对应变量；阿里云 / 火山引擎写 emotion 只提醒', () => {
+  const run = (v, env = {}) => {
+    const errs = [];
+    const warns = [];
+    checkVoiceMeta(v, {lang: 'zh', env, err: (w, p) => errs.push(`${w}:${p}`), warn: (w, p) => warns.push(`${w}:${p}`)});
+    return {errs, warns};
+  };
+  const a = run({provider: 'aliyun', emotion: 'calm'});
+  assert.equal(a.errs.length, 0);
+  assert.ok(a.warns.some((w) => /DASHSCOPE_API_KEY/.test(w)));
+  assert.ok(a.warns.some((w) => /emotion/.test(w)));
+  assert.equal(run({provider: 'aliyun'}, {DASHSCOPE_API_KEY: 'x'}).warns.length, 0);
+  const v = run({provider: 'volcengine', model: 'seed-tts-9'}, {VOLCENGINE_TTS_APP_ID: 'a', VOLCENGINE_TTS_ACCESS_TOKEN: 't'});
+  assert.ok(!v.warns.some((w) => /VOLCENGINE_TTS_API_KEY/.test(w)), 'APP_ID + ACCESS_TOKEN 也算有 key');
+  assert.ok(v.warns.some((w) => /seed-tts-9/.test(w)));
+  assert.ok(run({provider: 'volcengine'}).warns.some((w) => /VOLCENGINE_TTS_API_KEY/.test(w)));
 });
 
 // ---------------- make 的配音步骤 ----------------

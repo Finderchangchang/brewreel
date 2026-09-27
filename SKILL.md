@@ -1,9 +1,9 @@
 ---
 name: brewreel
-description: 精酿 · BrewReel：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写一份分镜 JSON（storyboard.json），画面由现成镜头组件画，校验脚本拦规则和行业合规，一条命令出片（带原创配乐和音效，可选 MiniMax 配音）。
+description: 精酿 · BrewReel：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写一份分镜 JSON（storyboard.json），画面由现成镜头组件画，校验脚本拦规则和行业合规，一条命令出片（带原创配乐和音效，可选 MiniMax / 阿里云 / 火山引擎配音）。
 license: Apache-2.0
 metadata:
-  version: 0.5.0
+  version: 0.5.1
 ---
 
 # 精酿 · BrewReel：产品宣传短片
@@ -121,7 +121,7 @@ metadata:
    - **make 没结束不许收工**：排队加渲染可能超过你的单条命令时限。超时就把 make 放后台跑，每 30 秒左右看一次输出目录里的 `manifest.json`，直到 `status` 出现（`delivered` 才算成）。没看到 `交付：` 那一行之前，不许写交付报告、不许结束。
    - 产物：`video.mp4`、`sheet.png`（每秒一帧拼图）、`check/`（第 0 帧 + 每镜结束前的全尺寸帧）、`report.txt`、`layout.json`、`manifest.json`（分镜和成片的 sha256、时长、各项检查结论）。开跑时会先清掉目录里上一次的这些产物。
    - 只想快速看几帧：加 `--stills 0,3.5,8`（秒），只出单帧，不出整片（不是交付）。
-   - 写了 `meta.voice`（配音）：make 会先合成旁白、按声音改写镜头时长，见下文「配音」。没有 `MINIMAX_API_KEY` 时加 `--voice-provider mock` 先看节奏（占位音，不能交付），或加 `--no-voice` 出无配音版。
+   - 写了 `meta.voice`（配音）：make 会先合成旁白、按声音改写镜头时长，见下文「配音」。没有这家的 key 时加 `--voice-provider mock` 先看节奏（占位音，不能交付），或加 `--no-voice` 出无配音版。
    - **只认最后一行**：成功时 make 最后一行是 `交付：<mp4 路径>`，交给用户的路径**只能抄这一行**。没有这一行就是失败，不许把别的 mp4 当成片。
    - 退出码：0 可交付 / 1 校验没过 / 2 参数错 / 3 版式或汉字自查有 ✗（成片改名 `video.rejected.mp4`，只给人看哪里坏了）/ 4 渲染失败或时长不对 / 5 排队超时 / 6 内部错误 / 130 被中断。
 11. **看 `report.txt`**：「机器自查」「文字排版报告」「布局自查」里**有一个 ✗ 就不能交付**（make 会返回 3）。布局自查在渲染后量每个文字块：被卡片裁切、两块字互相压住、关键文字出了 x180–900、英文片画面上出现汉字（每半拍抽一帧查）。✗ 通常是某个字段写太多：删条目或缩短文字，改完回到第 9 步。全是 ✓ 之后再看 `sheet.png` 和 `check/`，按下面清单自查。
@@ -134,11 +134,11 @@ metadata:
 1. **`meta.voice`**（只能写这 6 个字段，多写报错）：
    | 字段 | 写法 |
    |---|---|
-   | `provider` | 必填。`minimax` = 真人感配音（出片要环境变量 `MINIMAX_API_KEY`）；`mock` = 不联网的占位音，只用来听节奏 |
-   | `voiceId` | 音色，不写用默认（中文 `Chinese (Mandarin)_Male_Announcer`）。推荐见下 |
+   | `provider` | 必填。`minimax` / `aliyun` / `volcengine` = 真人感配音（各要自己的环境变量，见下表）；`mock` = 不联网的占位音，只用来听节奏。用户没指定就写 `minimax` |
+   | `voiceId` | 音色，不写用这家的默认（下表）。音色 id 各家不通用，换 provider 要一起换 |
    | `speed` | 0.5–2，默认 1。广告旁白 1–1.15；念不完就删字或拆镜，别靠调快硬塞 |
-   | `emotion` | 可选：`calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`。不写用音色默认；广告旁白建议 `calm` 或 `fluent` |
-   | `model` | 一般不写（默认 `speech-2.8-hd`） |
+   | `emotion` | **只有 minimax 认**：`calm` / `fluent` / `happy` / `sad` / `angry` / `fearful` / `disgusted` / `surprised` / `whisper`。不写用音色默认；广告旁白建议 `calm` 或 `fluent`。aliyun / volcengine 写了会被忽略 |
+   | `model` | 一般不写（用这家的默认，见下表）。volcengine 这里填资源 ID，音色要和它对上 |
    | `subtitles` | `karaoke`（默认，逐字点亮）/ `line`（整句出现）/ `off`（只念不出旁白字幕） |
 2. **每镜的 `vo`**（这一镜要念的一句话）：
    - **口语化**：说给人听的短句，主语清楚，像跟朋友介绍；不念画面上的清单，不说「如图所示」「下面我们来看」。
@@ -148,16 +148,28 @@ metadata:
    - `{}` 强调：和字幕一样，每句最多 1 处（24 字以内），字幕上变强调色。
    - **字幕谁来出**：cards 里写了 `vo`、没写 `caption` 的镜头，字幕由 `vo` 自动生成（逐字点亮）；写了 `caption` 的镜头照旧显示 `caption`、旁白只念——**hook 必须写 `caption`**（它是封面标题）；`endCard` 只念不出字幕。quiz / journey 在自己的字幕条上显示旁白。
    - 片尾那句带上产品名（和 `meta.product` 一字不差）。
-3. **推荐音色**（MiniMax 系统音色；以 MiniMax 控制台的音色列表为准，第一次用先试听）：
+   **三家怎么选**（都按字符计费、都能给逐字时间戳；以各家控制台为准，第一次用先试听）：
+
+   | provider | 要设的环境变量 | 默认模型 | 中文默认音色 | 英文默认音色 | 实测 |
+   |---|---|---|---|---|---|
+   | `minimax` | `MINIMAX_API_KEY`（可选 `MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`） | `speech-2.8-hd` | `Chinese (Mandarin)_Male_Announcer`（播报男声） | `English_expressive_narrator` | 已用真实 key 出片 |
+   | `aliyun`（阿里云百炼 CosyVoice） | `DASHSCOPE_API_KEY`（可选 `DASHSCOPE_WORKSPACE_ID`、`DASHSCOPE_REGION`、`DASHSCOPE_TTS_URL`） | `cosyvoice-v3-flash` | `longsanshu_v3`（沉稳质感男） | `loongabby_v3` | 未实测 |
+   | `volcengine`（火山引擎豆包语音） | `VOLCENGINE_TTS_API_KEY`，或旧版 `VOLCENGINE_TTS_APP_ID` + `VOLCENGINE_TTS_ACCESS_TOKEN`（可选 `VOLCENGINE_TTS_BASE_URL`） | `seed-tts-2.0` | `zh_male_guanggaojieshuo_uranus_bigtts`（广告解说） | `en_male_alex_uranus_bigtts` | 未实测 |
+
+   「未实测」= 按官方文档接入、用假响应测过，还没用真实 key 出过片；第一次用出了问题，报错里会写是鉴权、限流还是参数，按提示改或换 minimax。
+3. **推荐音色**：
+   - **minimax**（MiniMax 系统音色）：
    - `Chinese (Mandarin)_Male_Announcer`（默认）：播报男声，稳重清楚，适合大多数产品片
    - `Chinese (Mandarin)_News_Anchor`：新闻女声，稳重播报，适合 B 端、办公、工具
    - `female-shaonv`：年轻女声，适合 C 端生活、情感、轻工具
    - `male-qn-qingse`：年轻男声，口语感强，适合答题互动、种草
    - `presenter_female`：女主持，适合讲解、教培
    - 英文片（`meta.lang: "en"`）：`English_expressive_narrator`（默认）；英文片最好写明 `voiceId`
+   - **aliyun**：`longsanshu_v3`（默认，沉稳质感男）、`longshu_v3`（沉稳青年男）、`longxiaoxia_v3`（沉稳权威女）、`longxiaochun_v3`（知性积极女）；英文 `loongabby_v3`
+   - **volcengine**（2.0 音色，`model` 用默认 `seed-tts-2.0`）：`zh_male_guanggaojieshuo_uranus_bigtts`（默认，广告解说）、`zh_male_cixingjieshuonan_uranus_bigtts`（磁性解说男）、`zh_female_tianmeixiaoyuan_uranus_bigtts`（甜美女声）、`zh_female_zhixingnv_uranus_bigtts`（知性女声）；英文 `en_male_alex_uranus_bigtts`
 4. **没有 key 怎么预览**：出片加 `--voice-provider mock`（不联网的占位音，时间轴、逐字字幕、配乐压低都照常，不用改分镜）；或加 `--no-voice` 出无配音版。**mock 出的片子只是看节奏，不能当成片交付**——交付时要明说「这是占位音，设好 key 重跑才是真人配音」。没有 key 时 validate 只提醒、不拦。
-5. **费用**：MiniMax 按字符计费（旁白全文，价格看 MiniMax 官网）。同一句（提供者、模型、音色、语速、情绪、文字都一样）合成过一次就缓存在用户目录 `~/.cache/brewreel/tts`（环境变量 `BREWREEL_TTS_CACHE` 可改），改画面、改字幕、重渲染都不再计费；改了 `vo` 或音色才会重新合成。`manifest.json` 的 `voice.billedCharacters` 是这一次计费的字符数。
-6. **密钥**：只从环境变量 `MINIMAX_API_KEY`（需要时加 `MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`）读。不要把 key 写进分镜、简报、命令行参数或任何文件，也不要打印出来。
+5. **费用**：三家都按字符计费（旁白全文，价格看各家官网）。同一句（提供者、模型、音色、语速、情绪、文字都一样）合成过一次就缓存在用户目录 `~/.cache/brewreel/tts`（环境变量 `BREWREEL_TTS_CACHE` 可改），改画面、改字幕、重渲染都不再计费；改了 `vo` 或音色才会重新合成。`manifest.json` 的 `voice.billedCharacters` 是这一次计费的字符数。
+6. **密钥**：只从环境变量读（每家的变量名见上表；自定义接口地址只接受 https）。不要把 key 写进分镜、简报、命令行参数或任何文件，也不要打印出来。
 7. **配音相关退出码**：旁白比这一镜最长时长还长 → 1（删字或拆镜）；没 key、鉴权失败、限流重试用完、网络不通 → 2（让用户设 key 或稍后重跑；先看效果用 `--voice-provider mock`）。
 
 ## 自查清单（看拼图，逐条对照画面写结论，不要直接打勾）
@@ -232,7 +244,7 @@ metadata:
 | 里有字面的 \n | JSON 里换行只写一个反斜杠 |
 | vo：旁白 N 字，这一镜最长 M 秒，要每秒念 X 字才念得完 | 删字，或把这句拆到两镜（每镜一句）；别靠调快 speed |
 | 配音失败：旁白念完要 N 秒，超过这一镜最长 M 秒 | 按提示的字数缩短，或拆镜 |
-| 当前环境没有 MINIMAX_API_KEY（提醒） | 让用户设好环境变量再出片；先看节奏加 `--voice-provider mock` |
+| 当前环境没有 MINIMAX_API_KEY / DASHSCOPE_API_KEY / VOLCENGINE_TTS_API_KEY（提醒） | 让用户设好对应的环境变量再出片；先看节奏加 `--voice-provider mock` |
 | 配音设置要写在 meta.voice 里 | 顶层的 `voice` 挪进 `meta`，每镜要念的话写 `vo` |
 | 含平台名「公众号」（提醒） | 产品本身的品类词：加进 `meta.allowWords`；引流：删掉 |
 | 缺少必填字段 meta.action | 写一句「用户做什么 → 产品给出什么」 |

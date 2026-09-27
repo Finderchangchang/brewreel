@@ -2,7 +2,7 @@
 """
 无 agent 模式：简报 → 便宜模型写分镜 → 校验（报错原文回喂，最多重试 3 次）→ make.mjs 出片。
 
-  python scripts/llm_make.py <brief.md> [--out <输出目录>] [--example examples/ledger.json] [--retries 3] [--no-render] [--dry-run] [--voice minimax|mock]
+  python scripts/llm_make.py <brief.md> [--out <输出目录>] [--example examples/ledger.json] [--retries 3] [--no-render] [--dry-run] [--voice minimax|aliyun|volcengine|mock]
 
 接口（OpenAI 兼容 /chat/completions），运行时从环境变量读：
   LLM_API_KEY（没有再读 DEEPSEEK_API_KEY）
@@ -12,7 +12,8 @@
   <简报目录>/<简报名>.storyboard.json   模型写的分镜（素材路径相对简报目录）
   <输出目录>（默认 <简报目录>/<简报名>_out/）  video.mp4、sheet.png、check/、llm_log.json
 --dry-run：不调接口、不读密钥，只把拼好的提示写到 <输出目录>/prompt.txt 并估算 token 数。
---voice：可选开启配音。模型会写 meta.voice（provider 就是这里给的值）和每镜一句 vo；minimax 出片要环境变量 MINIMAX_API_KEY，
+--voice：可选开启配音。模型会写 meta.voice（provider 就是这里给的值）和每镜一句 vo；出片要对应的环境变量（minimax = MINIMAX_API_KEY，
+  aliyun = DASHSCOPE_API_KEY，volcengine = VOLCENGINE_TTS_API_KEY），
   没有 key 先用 --voice mock（不联网的占位音，只看节奏，不能交付）。不给 --voice 就不配音，和以前一样。
 """
 import argparse
@@ -215,7 +216,7 @@ def main():
     ap.add_argument('--no-render', action='store_true', help='只出分镜，不渲染')
     ap.add_argument('--dry-run', action='store_true', help='不调接口：只写 prompt.txt 并估算 token')
     ap.add_argument('--lang', choices=['zh', 'en'], default='zh', help='字幕/文案语言，默认 zh；en 会要求模型写 meta.lang="en" 和英文字幕')
-    ap.add_argument('--voice', choices=['minimax', 'mock'], help='可选开启配音：模型写 meta.voice 和每镜 vo。minimax 出片要 MINIMAX_API_KEY；没有 key 用 mock（占位音，只看节奏）')
+    ap.add_argument('--voice', choices=['minimax', 'aliyun', 'volcengine', 'mock'], help='可选开启配音：模型写 meta.voice 和每镜 vo。minimax 要 MINIMAX_API_KEY、aliyun 要 DASHSCOPE_API_KEY、volcengine 要 VOLCENGINE_TTS_API_KEY；没有 key 用 mock（占位音，只看节奏）')
     a = ap.parse_args()
 
     brief_path = os.path.abspath(a.brief)

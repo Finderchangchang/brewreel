@@ -163,7 +163,7 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 - **写入范围**：只写会话工作区里的输出目录（默认 `promo/<片名>/`）、`extraWriteRoots`，以及插件运行目录。输出目录不能是工作区根目录、`outputRoot` 本身、用户主目录或盘符根目录；`make.mjs` 开跑会按固定文件名清旧产物（`video.mp4`、`report.txt`、`layout.json`、`manifest.json`、`check/*.png` 等），所以目录里已有别人的 `storyboard.json`，或者有这些文件名、却不是本工具或 `make.mjs` 产出的（没有它写的 `manifest.json`，也没有插件的标记文件 `.brewreel-out.json`，0.1.x 写的 `.distill-video-out.json` 也认），一律拒绝。所有路径先解析真实路径再比较，符号链接 / 目录联接跑不出去。
 - **可读范围**：分镜、简报必须在工作区里；分镜引用的素材不能跑出分镜目录和工作区。
 - **不执行任意命令**：插件只启动当前 Node 跑 skill 里固定的脚本（validate.mjs、make.mjs、Remotion CLI、npm），Python 只跑固定的检测命令，Windows 上用 `taskkill` 终止自己启动的进程树；`make.mjs` 自己还会调 Python 生成配乐、调 ffmpeg（配置了的话）。全部 `shell: false`，参数是固定数组；模型给的字符串只以「校验过的绝对路径」或「校验过的数字」进入参数。
-- **环境变量白名单**：子进程只拿到 PATH、TEMP、HOME、LANG 等基础变量；DeepSeek key 等凭据不会传给渲染进程。唯一的例外是配音：渲染进程（`make.mjs`）额外拿到固定的四个变量 `MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`（MiniMax 语音合成用）和 `BREWREEL_TTS_CACHE`（配音缓存目录），校验、doctor、setup 进程都拿不到；别的 key 一律不给，`envPassthrough` 也加不进来。`make.mjs` 只把 key 放在请求头里发给 MiniMax，不写进任何文件、日志或 `manifest.json`，报错里也不带。分镜没写 `meta.voice` 时根本不会用到它。
+- **环境变量白名单**：子进程只拿到 PATH、TEMP、HOME、LANG 等基础变量；DeepSeek key 等凭据不会传给渲染进程。唯一的例外是配音：渲染进程（`make.mjs`）额外拿到一组固定的变量——MiniMax（`MINIMAX_API_KEY`、`MINIMAX_GROUP_ID`、`MINIMAX_BASE_URL`）、阿里云（`DASHSCOPE_API_KEY`、`DASHSCOPE_WORKSPACE_ID`、`DASHSCOPE_REGION`、`DASHSCOPE_TTS_URL`）、火山引擎（`VOLCENGINE_TTS_API_KEY`、`VOLCENGINE_TTS_APP_ID`、`VOLCENGINE_TTS_ACCESS_TOKEN`、`VOLCENGINE_TTS_BASE_URL`）和 `BREWREEL_TTS_CACHE`（配音缓存目录），校验、doctor、setup 进程都拿不到；别的 key 一律不给，`envPassthrough` 也加不进来。`make.mjs` 只把 key 放在请求头里发给对应的配音服务，不写进任何文件、日志或 `manifest.json`，报错里也不带。分镜没写 `meta.voice` 时根本不会用到它。
 - **如实说明**：渲染子进程**不经过 dsh 的 shell 沙箱**，以当前用户权限运行，插件靠上面的规则自我约束。setup 会从 npm 和 Google 下载 Remotion 与 Chrome Headless Shell。
 
 ## 故障排查
@@ -184,7 +184,7 @@ Python 依赖插件**只检测、不安装**；需要配乐就自己执行 docto
 ## 与主仓库的关系、版本对应
 
 - 仓库根目录是唯一源头。npm / tgz 包里的 `skill/` 是打包时由 `scripts/sync-skill.mjs` 生成的快照，`skill/.distill-source.json` 记录 skill 版本、仓库 commit 和文件哈希；`brewreel_doctor` 会显示这几项。
-- 插件版本独立编号。0.1.0（包名 `dsh-distill-video`）随 v0.3.0 发布；0.2.0 起包名改为 `dsh-brewreel`，随 v0.4.0 发布；0.3.0 随 v0.5.0 发布，渲染进程多放行配音用的四个环境变量（见「安全说明」）。包里的 skill 快照具体是哪个版本、哪个 commit，以 `skill/.distill-source.json`（doctor 结果里也有）为准。
+- 插件版本独立编号。0.1.0（包名 `dsh-distill-video`）随 v0.3.0 发布；0.2.0 起包名改为 `dsh-brewreel`，随 v0.4.0 发布；0.3.0 随 v0.5.x 发布（npm 上的 0.3.0 是 v0.5.1 的快照），渲染进程多放行配音用的环境变量：MiniMax、阿里云、火山引擎三家的 key 和地址，以及配音缓存目录（见「安全说明」）。包里的 skill 快照具体是哪个版本、哪个 commit，以 `skill/.distill-source.json`（doctor 结果里也有）为准。
 - 升级：重装插件后重启 profile；新快照会暂存到新的运行子目录，`package-lock.json` 的依赖没变时沿用已下载的依赖（只改模板包名或版本号不算变），只保留最近两份。
 
 ## 从 dsh-distill-video 升级

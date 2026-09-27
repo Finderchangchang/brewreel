@@ -105,7 +105,7 @@ export function planRender(args, {runtimeRoot, roots, cfg, verify = false}) {
 
 /**
  * Environment for make.mjs. Besides the base whitelist it passes the fixed voice-over variables
- * (MINIMAX_API_KEY / MINIMAX_GROUP_ID / MINIMAX_BASE_URL / BREWREEL_TTS_CACHE) so a storyboard with
+ * (VOICE_ENV in run.js: the MiniMax / DashScope / Volcengine TTS keys and hosts, BREWREEL_TTS_CACHE) so a storyboard with
  * meta.voice can be voiced; no other key reaches the render process, and validate / doctor never get them.
  * @param {import('./config.js').BrewreelConfig} cfg
  */
