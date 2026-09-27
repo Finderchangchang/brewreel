@@ -21,7 +21,7 @@
 
 ## ❤️ Sponsors
 
-> None yet. Want to appear here? See ["Community / feature requests"](#community--feature-requests).
+> Want to appear here? Add me on WeChat: **jskjkf007**.
 
 ## Screenshots
 
