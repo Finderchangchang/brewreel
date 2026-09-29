@@ -13,7 +13,7 @@
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-0B84F3?style=flat-square)](https://www.remotion.dev)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 
-[Website](https://brewreel.com) · [Demo video](https://github.com/Finderchangchang/brewreel/releases/download/v0.3.0/demo-5MB.mp4) · [Releases](https://github.com/Finderchangchang/brewreel/releases) · [Changelog](CHANGELOG.en.md) · [Use it in DeepSeek Harness](#use-it-in-deepseek-harness) · [Sister project: Jev chat assistant](https://github.com/jev-chat/jev-chat-jarvis) · [中文](README.md)
+[Website](https://brewreel.com/en.html) · [First video guide](https://brewreel.com/guides/first-promo-video.en.html) · [Product brief template](https://brewreel.com/guides/product-brief.en.html) · [Demo video](https://github.com/Finderchangchang/brewreel/releases/download/v0.3.0/demo-5MB.mp4) · [Releases](https://github.com/Finderchangchang/brewreel/releases) · [Changelog](CHANGELOG.en.md) · [Use it in DeepSeek Harness](#use-it-in-deepseek-harness) · [Sister project: Jev chat assistant](https://github.com/jev-chat/jev-chat-jarvis) · [中文](README.md)
 
 <sub>Formerly promo-video-skill / Distill Video (蒸馏视频); old links redirect automatically.</sub>
 
