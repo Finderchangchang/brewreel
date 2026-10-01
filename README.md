@@ -30,7 +30,7 @@
 **三种配方**
 
 <table align="center">
-<tr><td align="center"><img src="docs/images/style-cards.png" width="760" alt="cards 卡片信息流" /><br/><sub><b>cards 卡片信息流</b>（默认，9:16）：渐变底 + 居中白卡片 + 描边大字幕，一镜讲一件事</sub></td></tr>
+<tr><td align="center"><img src="docs/images/style-cards.png" width="760" alt="cards 卡片信息流" /><br/><sub><b>cards 卡片信息流</b>（默认，9:16）：情绪渐变 + 纸面卡片 + 描边大字幕；数据内容可用 dataChart 串起结论、KPI、图表和来源</sub></td></tr>
 <tr><td align="center"><img src="docs/images/style-quiz.png" width="760" alt="quiz 答题互动" /><br/><sub><b>quiz 答题互动</b>（9:16）：红笔圈出一个常见误解 → 出一道选择题 → 揭晓 → 词条卡讲清楚</sub></td></tr>
 <tr><td align="center"><img src="docs/images/style-journey.png" width="760" alt="journey 角色漫游" /><br/><sub><b>journey 角色漫游</b>（4:5 / 9:16）：原创吉祥物一镜到底横穿剪纸城市，每站一张明信片讲一个类别</sub></td></tr>
 </table>
@@ -173,7 +173,7 @@ dsh web
 | `quiz` 答题互动 | 9:16 | 有一个常见误解、能出一道唯一正确答案的选择题（「X 到底是什么意思？」） |
 | `journey` 角色漫游 | 4:5（默认）/ 9:16 | 有 4–6 个清楚的类别、功能或站点，想按一条路线挨站逛一遍 |
 
-怎么选：能出一道选择题 → `quiz`；有 4–6 个类别想挨站逛 → `journey`；其余情况 → `cards`，也就是不写。`quiz` 只接受 9:16，它的专属镜头（出题、揭晓、释义卡等）只能在 `quiz` 里用，和 `cards` 的 18 个镜头不混用，写错会被校验拦下。
+怎么选：能出一道选择题 → `quiz`；有 4–6 个类别想挨站逛 → `journey`；其余情况 → `cards`，也就是不写。`quiz` 只接受 9:16，它的专属镜头（出题、揭晓、释义卡等）只能在 `quiz` 里用，和 `cards` 的 19 个镜头不混用，写错会被校验拦下。
 
 ```json
 { "meta": { "style": "quiz", "industry": "software", "lang": "zh" }, "shots": [ ... ] }
@@ -182,7 +182,7 @@ dsh web
 <details>
 <summary><b>每种配方长什么样</b></summary>
 
-**`cards` 卡片信息流**（默认，可用，9:16）：渐变底 + 居中白卡片 + 描边大字幕，一镜讲一件事。适合单一卖点、讲使用流程、演示界面、实物和门店。18 个镜头、六个行业的样例都在 `examples/`。
+**`cards` 卡片信息流**（默认，可用，9:16）：情绪渐变 + 居中纸面卡片 + 描边大字幕，一镜讲一件事。适合单一卖点、讲使用流程、演示界面、实物和门店；dataChart 可一镜组织标题、结论、KPI、图表、旁注与来源。19 个镜头、六个行业的样例都在 `examples/`。
 
 **`quiz` 答题互动**（可用，9:16）：皮肤是「批改纸」——点阵答题纸底加一条朱红页边线，深色主色 + 杏黄马克笔 + 朱红批改笔，标签用等宽字，卡片是小圆角 + 实色硬投影；三套配色（`sage-pine` 灰绿纸 + 松绿，默认；`rice-soy` 米纸 + 酱色，餐饮默认；`ash-teal` 灰纸 + 深青），三套口吻（`phraseTitle.params.voice`：`exam` 考场腔 / `chat` 闲聊腔 / `show` 挑战腔）。两个原创角色一矮一高：戴耳机的主讲人（懂了耳罩亮起、发出声波）和反戴棒球帽的搭档。节奏是「红笔圈出一个常见误解 → 答题卡出一道 A/B/C 题、秒表倒数 3 → 揭晓打勾 → 词条卡翻正（误解被波浪线划掉 + 编号释义）→ 回放原片段、盖一枚「懂了」章 → 小剧场演一遍 → 评论区互动 → 印章擦除落到结业卡」。适合有常见误解、能出一道选择题的产品：一句外语的真正意思、软件里一个常被误会的功能（如「归档 = 删掉了？」）、一道菜为什么要这么做。说明见 [`styles/quiz/`](styles/quiz/README.md)，写法和字数见 `styles/quiz/recipes.md`，5 份样例分镜在 `styles/quiz/examples/`。
 
@@ -217,7 +217,7 @@ dsh web
 
 `meta.lang`：`zh`（默认，中文字幕）/ `en`（英文字幕）。
 
-- 11 个通用镜头 + 7 个行业镜头（实拍、价目表、门店卡、评价、前后对比、参数表、资历卡）。`shots.md` 是 18 个镜头的参数总表，`docs/shots/*.md` 是每个镜头的详细文档。
+- 12 个通用镜头 + 7 个行业镜头（实拍、价目表、门店卡、评价、前后对比、参数表、资历卡）。`shots.md` 是 19 个镜头的参数总表，`docs/shots/*.md` 是每个镜头的详细文档。
 - 每个行业包带合规规则、推荐的镜头结构、给商家的简报模板和一份回归测试简报。
 - **不做**（校验规则没覆盖，硬要做也不保证合规）：医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
 
@@ -397,10 +397,10 @@ brewreel/
   SKILL.md / SKILL.en.md      AI 助手看的说明书（怎么挑镜头、写字段、走流程）
   README.md / README.en.md    人看的项目说明（本文件）
   LICENSE / NOTICE / THIRD_PARTY_LICENSES.md
-  shots.md / shots.en.md      18 个镜头的参数总表
+  shots.md / shots.en.md      19 个镜头的参数总表
   brief-template.md           通用简报模板
   docs/
-    shots/                    每个镜头的详细文档（18 × 2 语言）
+    shots/                    每个镜头的详细文档（19 × 2 语言）
     images/                   README 里的 logo 和效果示例图
   industries/                 六个行业包
   scripts/
@@ -413,7 +413,7 @@ brewreel/
     check-originality.mjs     原创性检查：和参考片的配色色差（CIEDE2000）+ 招牌逐条记录
     checks/ lib/              校验规则的实现
   template/                   Remotion 渲染工程
-    src/shots/                18 个公共镜头组件 + 参数 spec（cards 配方用）
+    src/shots/                19 个公共镜头组件 + 参数 spec（cards 配方用）
     src/styles/               各配方的清单、设计令牌、专属镜头；registry.gen.ts 由 scripts/gen-styles.mjs 生成
     src/core/                 字体、主题、动画、版式等公共逻辑
     src/illust/               行业插画兜底

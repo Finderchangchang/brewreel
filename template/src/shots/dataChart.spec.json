@@ -1,0 +1,41 @@
+{
+  "type": "dataChart",
+  "purpose": "数据叙事卡：把标题、核心结论、1–3 个 KPI、图表、旁注和来源组织在同一镜，适合有真实数据依据的内容。支持横向条形、趋势折线、点图、构成环图和堆叠条。",
+  "tips": [
+    "推荐叙事顺序：hook 提出问题 → dataChart 给结论和证据（标题、结论、KPI、图）→ compare/steps/phone 展开过程 → endCard 收束品牌与 CTA。",
+    "每张图只回答一个问题；标题写指标范围，takeaway 写读图结论，不要把结论藏在图例里。",
+    "bar/dot/line/donut 的 data 是 {label,value,series?} 数组（最多 6 项）；stacked 用相同 label 的多条记录表示分段，并给每段写 series。",
+    "数值、KPI 和旁注都必须来自 meta.facts，至少引用一条真实来源 refs；渲染会把 refs 对应的来源写在卡片底部。",
+    "annotations 最多 2 条，只写读图要点/口径；donut 建议不超过 5 类；趋势图按时间顺序排列。图表配色只代表系列，不代表 good/warn/bad 语义。"
+  ],
+  "dur": {"default": 4, "min": 3, "max": 7},
+  "mood": 0.2,
+  "caption": "optional",
+  "exit": "push",
+  "params": {
+    "type": "object",
+    "required": ["title", "takeaway", "chartType", "data", "refs"],
+    "properties": {
+      "title": {"type": "string", "minLen": 1, "maxLen": 16, "description": "图表标题，说明主题或指标范围"},
+      "takeaway": {"type": "string", "minLen": 1, "maxLen": 28, "description": "核心结论，一句话说清图表意味着什么"},
+      "chartType": {"type": "string", "enum": ["bar", "line", "dot", "stacked", "donut"], "description": "bar 横向比较；line 趋势；dot 点图；stacked 构成；donut 占比"},
+      "palette": {"type": "string", "enum": ["micro", "mono", "porcelain", "palm", "wire"], "description": "不写时使用主题自带图表色板，无自带色板则用 micro；显式可选 micro 墨蓝/莓紫/雾蓝、mono 灰墨、porcelain 单色阶、palm 低饱和绿黄、wire 灰底单橙重点"},
+      "data": {"type": "array", "minItems": 2, "maxItems": 6, "description": "图表数据；堆叠图用同一 label 的不同 series 表示分段；focus=true 标记一个重点项", "items": {"type": "object", "required": ["label", "value"], "properties": {"label": {"type": "string", "minLen": 1, "maxLen": 12}, "value": {"type": "number", "minimum": 0, "maximum": 100000000}, "series": {"type": "string", "maxLen": 10}, "focus": {"type": "boolean", "description": "可选重点项；micro/palm/wire 使用各自的焦点色"}}}},
+      "kpis": {"type": "array", "maxItems": 3, "description": "可选 1–3 个 KPI 摘要", "items": {"type": "object", "required": ["label", "value"], "properties": {"label": {"type": "string", "minLen": 1, "maxLen": 10}, "value": {"type": "string", "minLen": 1, "maxLen": 10}}}},
+      "annotations": {"type": "array", "maxItems": 2, "description": "可选旁注/口径说明", "items": {"type": "string", "maxLen": 26}},
+      "unit": {"type": "string", "maxLen": 3, "description": "数据单位，如 %、次、天"},
+      "max": {"type": "number", "minimum": 0.01, "maximum": 100000000, "description": "图表坐标上限；默认取数据最大值"},
+      "refs": {"type": "array", "minItems": 1, "maxItems": 2, "description": "引用 1–2 条 meta.facts 来源 ID", "items": {"type": "string", "minLen": 1, "maxLen": 20}}
+    }
+  },
+  "sfx": [{"at": 0.04, "kind": "pop", "vol": 0.18}, {"at": 0.55, "kind": "tick", "vol": 0.14}, {"at": 1.05, "kind": "tick", "vol": 0.12}],
+  "example": {
+    "caption": "用户更常选{无需等待}的方案",
+    "mood": 0.2,
+    "dur": 4,
+    "demoData": true,
+    "disclaimer": "演示画面，数据为示例",
+    "facts": [{"id": "choice-survey", "text": "演示调查样本 1,240 个：即时方案 59%，预约方案 41%，差值 18 个百分点（示例数据）", "source": "演示数据"}],
+    "params": {"title": "选择偏好（本周）", "takeaway": "无需等待的方案领先 18 个百分点", "chartType": "bar", "kpis": [{"label": "完成样本", "value": "1,240"}, {"label": "领先幅度", "value": "18%"}], "data": [{"label": "即时方案", "value": 59, "focus": true}, {"label": "预约方案", "value": 41}], "unit": "%", "annotations": ["统计口径：完成选择的用户"], "refs": ["choice-survey"]}
+  }
+}

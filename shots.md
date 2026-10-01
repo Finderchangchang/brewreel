@@ -15,6 +15,7 @@
 | [compare](#compare) | 对比：左右两栏（lr）或前后滑杆揭晓（beforeAfter） | 2.5–7（默认 4） | 可选 |
 | [beforeAfter](#beforeafter) | 前后对比滑块：美发/美甲/美睫专用，同一位顾客做之前和做完的对比，擦除滑杆切换 | 2–4（默认 3） | 可选 |
 | [counter](#counter) | 大数字滚动：数字从 from 滚到 to（嗒嗒声 + 进度条同步走），落定那一拍弹一下 + 放射光线 + 叮，下面写这个数字的含义和口径 | 2–5（默认 3） | 可选 |
+| [dataChart](#datachart) | 数据叙事卡：把标题、核心结论、1–3 个 KPI、图表、旁注和来源组织在同一镜，适合有真实数据依据的内容 | 3–7（默认 4） | 可选 |
 | [priceCard](#pricecard) | 价格卡/价目表：把明码标价的排版规则做进组件里，模型只填数字和条件 | 2–4.5（默认 3） | 可选 |
 | [storeCard](#storecard) | 门店、位置和到店指引：讲清楚店在哪、几点开门、怎么过来，以及平台内怎么操作 | 2.5–4（默认 3） | 可选 |
 | [reviewCard](#reviewcard) | 引用真实顾客评价：只能摘原文，可以删减，不能改写得更夸张 | 2–4.5（默认 3） | 可选 |
@@ -25,11 +26,11 @@
 | [quickList](#quicklist) | 快切列表：3–6 行白卡按拍左右交替飞入，每行右边「盖章」出判定：分数滚动落定（可带判词），或一个彩色标签砸下来；左边色条按语气色长满 | 2–6（默认 3） | 可选 |
 | [endCard](#endcard) | 片尾：logo/品牌图标 + 产品名 + 一句大字口号 + 1–3 个卖点 + 可选行动号召 | 3–6（默认 4） | 不能写 |
 
-**常规结构**：hook（0–3 秒）→ 痛点/场景（chat / quickList / compare / meter）→ 产品出场（phone / mockApp / photoShot）→ 卖点/演示（features / counter / meter / steps）→ endCard。
+**常规结构**：hook（0–3 秒）→ 痛点/场景 → 证据（dataChart / compare / meter / counter）→ 产品出场（phone / mockApp / photoShot）→ endCard。dataChart 在一镜内组织标题、核心结论、KPI、图表、旁注和来源。
 
 **行业镜头**（`meta.industry` 决定哪些能用，见各 `industries/<id>/rules.json` 的 `enabledShots`）：photoShot（实拍/示意图）、priceCard（价目表）、storeCard（门店/地图/预订）、reviewCard（真实评价）、factSheet（参数表/大纲/色卡）、credCard（资历/荣誉）、beforeAfter（前后对比，仅美业）。
 
-**主题**：`warm-emotion` `tech-dark` `fresh-light` `business-blue` `festival-red` `mono-premium`
+**主题**：`warm-emotion` `tech-dark` `fresh-light` `business-blue` `festival-red` `mono-premium` `citrus-pop` `coral-pop` `cobalt-pop` `mint-pop` `lilac-pop` `apricot-pop` `studio-blue` `studio-pink` `studio-green` `studio-magenta` `studio-lemon` `studio-mint` `studio-orange` `studio-red` `studio-teal` `studio-violet` `studio-lavender` `studio-apricot` `studio-cyan` `studio-lime-purple` `studio-indigo` `studio-graphite`
 
 **图标**（所有 icon 字段只能从这里选）：`check` `clock` `chart` `chat` `lock` `bolt` `star` `doc` `send` `image` `phone` `user` `users` `search` `shield` `gift` `heart` `money` `calendar` `bell` `cloud` `code` `sparkle` `arrow` `alert` `x` `trend` `eye`
 
@@ -892,6 +893,72 @@ hero 1.5–3 秒；clip 2–4 秒；grid 2.5–4 秒；tour 每张 1.2–3 秒�
 
 ```json
 {"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2, "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "icon": "clock", "tone": "good"}}
+```
+
+---
+
+<a id="datachart"></a>
+## dataChart 数据叙事卡
+
+**一镜组织一段数据论证**：标题交代指标范围，核心结论先说人话，KPI 给出关键读数，图表展开证据，旁注补口径，底部标出来源。常见顺序是 hook 提问 → dataChart 回答 → 产品镜头解释如何做到 → endCard 收束品牌和行动号召。
+
+```json
+{"type":"dataChart", "dur":4, "caption":"账本数据摊开，\n{看清支出分布}", "mood":0.35,
+ "params":{"title":"示例账本条目", "takeaway":"外卖示例金额为 ¥860", "chartType":"donut",
+   "kpis":[{"label":"外卖支出","value":"¥860"},{"label":"预算使用","value":"62%"}],
+   "data":[{"label":"外卖","value":860,"focus":true},{"label":"奶茶咖啡","value":326},{"label":"自动续费","value":98},{"label":"深夜打车","value":410}],
+   "unit":"元", "annotations":["虚构账本示例，仅演示图表排版"], "refs":["f1","f2"]}}
+```
+
+完整可校验的演示在 `examples/ledger.json`。示例数据必须标 `meta.demoData: true`、在 `meta.disclaimer` 说明“演示/示例”，并引用相应 fact；真实内容必须引用简报中的真实来源。图表数值必须能在所引用的 fact 原文中找到。不要把推算总数写成来源原值。
+
+### 图形怎么选
+
+- `bar`：比较类别或排名；标签短、排序明确。
+- `line`：看时间趋势；按时间顺序排列。
+- `dot`：用统一的横向数值刻度比较离散类别，行尾直接显示读数。
+- `stacked`：看类别构成；同一类别写多条 data，并用 `series` 区分组成部分。每条归一化为 100%，段内显示原始数值，不用于比较总量。
+- `donut`：看整体中的占比，类别控制在 5 个以内。
+
+每镜最多 6 条数据、3 个 KPI、2 条旁注。标题最多 16 字，结论最多 28 字。data 结构是 `{label,value,series?}`；堆叠图的相同 label 组成一条堆叠条。单位写在 `unit`，自定义上限写 `max`。
+
+### 设计规范
+
+新增鲜活主题 `citrus-pop`、`coral-pop`、`cobalt-pop`、`mint-pop`、`lilac-pop`、`apricot-pop` 自带图表色板。不写 `palette` 时使用主题系列色，显式填写 `palette` 时使用指定色板；品牌色仍覆盖重点项。卡外标题以白色为主，卡内使用蓝灰正文与明亮数字强调色。
+
+卡片优先展示核心结论：范围标题 30 px，结论 44 px，KPI 数字 52 px，标签与来源 28–30 px。折线图提供零点、中点和上限刻度；点图从零点比较各类别。相同系列在所有数据段和图例中保持同色，`focus` 位于某系列时突出整个系列，避免单段换色造成歧义。环图中心显示重点类别及其占比；没有 `focus` 时选择最大类别。
+
+图表用稳定纸面卡承载，避免随 `mood` 改变读数的颜色。默认 `micro` 色板取自项目提供的 MicroPalettes 色卡：墨蓝、莓紫、雾蓝与灰紫，整体压低饱和度，并以细留白分隔环图扇区。`palette` 还可选 `mono`（灰墨）、`porcelain`（单色阶）、`palm`（低饱和绿黄与琥珀重点）、`wire`（灰阶配单橙重点）。将需要突出的数据行标记 `focus: true`，重点项使用焦点色；设置 `meta.brandColor` 时，重点项改用品牌强调色。其他颜色只区分系列，不承担 good/warn/bad 的语义；情绪渐变与字幕强调色仍由主题系统管理。
+
+来源由 `refs` 中 1–2 个 fact ID 找到 `meta.facts[].source`，自动显示在卡片底部。旁注用来说明统计口径或读图限制，不能替来源背书。图表负责解释数据；片尾仍用 `endCard` 展示品牌、口号和 CTA。
+
+### 参数速查（自动生成自 dataChart.spec.json）
+
+时长 3–7 秒（默认 4）；字幕 可选；默认情绪 0.2；退场 push。
+
+| 字段 | 必填 | 类型 / 可选值 | 限制 | 说明 |
+|---|---|---|---|---|
+| `title` | 是 | 文字 | ≤16 字 | 图表标题，说明主题或指标范围 |
+| `takeaway` | 是 | 文字 | ≤28 字 | 核心结论，一句话说清图表意味着什么 |
+| `chartType` | 是 | bar / line / dot / stacked / donut |  | bar 横向比较；line 趋势；dot 点图；stacked 构成；donut 占比 |
+| `palette` |  | micro / mono / porcelain / palm / wire |  | 不写时使用主题自带图表色板，无自带色板则用 micro；显式可选 micro 墨蓝/莓紫/雾蓝、mono 灰墨、porcelain 单色阶、palm 低饱和绿黄、wire 灰底单橙重点 |
+| `data` | 是 | 数组 | 2–6 项 | 图表数据；堆叠图用同一 label 的不同 series 表示分段；focus=true 标记一个重点项 |
+| `data[].label` | 是 | 文字 | ≤12 字 |  |
+| `data[].value` | 是 | 数字 | 0–100000000 |  |
+| `data[].series` |  | 文字 | ≤10 字 |  |
+| `data[].focus` |  | true/false |  | 可选重点项；micro/palm/wire 使用各自的焦点色 |
+| `kpis` |  | 数组 | 0–3 项 | 可选 1–3 个 KPI 摘要 |
+| `kpis[].label` | 是 | 文字 | ≤10 字 |  |
+| `kpis[].value` | 是 | 文字 | ≤10 字 |  |
+| `annotations` |  | 数组 | 0–2 项 | 可选旁注/口径说明 |
+| `unit` |  | 文字 | ≤3 字 | 数据单位，如 %、次、天 |
+| `max` |  | 数字 | 0.01–100000000 | 图表坐标上限；默认取数据最大值 |
+| `refs` | 是 | 数组 | 1–2 项 | 引用 1–2 条 meta.facts 来源 ID |
+
+示例（能直接通过校验）：
+
+```json
+{"type": "dataChart", "dur": 4, "caption": "用户更常选{无需等待}的方案", "mood": 0.2, "params": {"title": "选择偏好（本周）", "takeaway": "无需等待的方案领先 18 个百分点", "chartType": "bar", "kpis": [{"label": "完成样本", "value": "1,240"}, {"label": "领先幅度", "value": "18%"}], "data": [{"label": "即时方案", "value": 59, "focus": true}, {"label": "预约方案", "value": 41}], "unit": "%", "annotations": ["统计口径：完成选择的用户"], "refs": ["choice-survey"]}}
 ```
 
 ---

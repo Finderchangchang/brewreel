@@ -4,8 +4,9 @@ import {bump, clamp, fitTimeline, pop} from '../core/anim';
 import {emWidth, fitLine, glueBreaks} from '../core/fit';
 import {FONT, MONO} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
-import {IconDisc, Lang, Sweep} from '../core/kit';
+import {IconDisc, Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
+import {CARD_RHYTHM as SPACE} from '../core/cardRhythm';
 import {Theme, alpha, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
@@ -21,9 +22,10 @@ type Tone = 'good' | 'bad' | 'neutral';
 type Side = {title: string; items: string[]; tone?: Tone; icon?: string; stat?: string; level?: number};
 type P = {mode?: 'lr' | 'beforeAfter'; left: Side; right: Side; meterLabel?: string; verdict?: string};
 
-const GAP = 20;
-const COL_W = (CARD.w - GAP) / 2; // 380
+const GAP = SPACE.sectionGap;
+const COL_W = (CARD.w - GAP) / 2;
 const VERDICT_H = 92;
+const VERDICT_GAP = 64;
 
 // ---------- 时间线（120 BPM 基准，按 beat 缩放，内容多/时长短时整体压缩） ----------
 export const plan = (p: P, dur: number, beat: number) => {
@@ -107,19 +109,21 @@ const wrapLineCount = (text: string, size: number, w: number): number => {
 
 // ---------- 一栏的版面计算（lr 与 beforeAfter 共用，宽度不同） ----------
 const layoutSide = (s: Side, w: number, hasMeter: boolean, availH: number, wide: boolean) => {
-  const HEAD = wide ? 104 : 96;
-  const PAD = wide ? 30 : 22;
-  const statH = s.stat ? (wide ? 130 : 104) : 0;
-  const meterH = hasMeter ? 84 : 0;
-  const bullet = wide ? 44 : 36;
+  const HEAD = 88;
+  const PAD = wide ? SPACE.pad : SPACE.narrowPad;
+  const statH = s.stat ? (wide ? 120 : 96) : 0;
+  const meterH = hasMeter ? 76 : 0;
+  const bullet = wide ? 36 : 28;
   const textW = w - 2 * PAD - bullet - 12;
   const items = (s.items ?? []).slice(0, 3);
   const rows = (size: number) => items.map((it) => wrapLineCount(it, size, textW));
-  const itemsH = (size: number) => rows(size).reduce((a, n) => a + n * size * 1.25 + 26, 0);
-  const fixed = HEAD + PAD + statH + meterH + 14 + PAD;
-  let size = wide ? 44 : 40;
-  while (size > 34 && fixed + itemsH(size) > availH) size -= 1;
-  return {HEAD, PAD, statH, meterH, bullet, size, rows: rows(size), h: Math.min(availH, Math.max(wide ? 420 : 380, Math.ceil(fixed + itemsH(size))))};
+  const contentH = (size: number) => rows(size).reduce((a, n) => a + n * size * 1.35, 0);
+  const fixed = HEAD + PAD + statH + meterH + SPACE.rowGap + PAD;
+  const gapAt = (size: number) => items.length > 1 ? Math.max(0, Math.min(SPACE.rowGap, (availH - fixed - contentH(size)) / (items.length - 1))) : 0;
+  const itemsH = (size: number) => contentH(size) + gapAt(size) * Math.max(0, items.length - 1);
+  let size = wide ? 46 : 42;
+  while (size > 36 && fixed + contentH(size) + SPACE.compactGap * Math.max(0, items.length - 1) > availH) size -= 1;
+  return {HEAD, PAD, statH, meterH, bullet, size, rowGap: gapAt(size), rows: rows(size), h: Math.min(availH, Math.max(wide ? 420 : 380, Math.ceil(fixed + itemsH(size))))};
 };
 type Lay = ReturnType<typeof layoutSide>;
 
@@ -178,10 +182,10 @@ const SideCard: React.FC<{
   const icon = isIcon(s.icon) ? s.icon : tone === 'good' ? 'bolt' : tone === 'bad' ? 'clock' : 'doc';
   const VS_ROOM = 34;
   const BADGE_ROOM = inset === 'l' ? 40 : 0; // 右卡右上角有胜出角标，标题别钻到它底下
-  const titleSize = fitLine(s.title ?? '', w - 2 * lay.PAD - (wide ? 84 : 72) - 16 - (inset ? VS_ROOM : 0) - BADGE_ROOM, wide ? 48 : 42, 34);
+  const titleSize = fitLine(s.title ?? '', w - 2 * lay.PAD - (wide ? 64 : 56) - 16 - (inset ? VS_ROOM : 0) - BADGE_ROOM, wide ? 36 : 34, 30);
   const statP = pop(t, statAt, 12, 190);
   const statBump = bump(t, statAt + 0.3, 0.45);
-  const statSize = s.stat ? fitLine(s.stat, w - 2 * lay.PAD, wide ? 104 : 84, 48) : 0;
+  const statSize = s.stat ? fitLine(s.stat, w - 2 * lay.PAD, wide ? 76 : 64, 48) : 0;
   const meterP = interpolate(t, [statAt, statAt + 0.6], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
   const items = (s.items ?? []).slice(0, 3);
   return (
@@ -201,8 +205,8 @@ const SideCard: React.FC<{
     >
       {/* 顶部色带：图标 + 标题 */}
       <div style={{height: lay.HEAD, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 16, padding: `0 ${lay.PAD + (inset === 'r' ? VS_ROOM : 0) + BADGE_ROOM}px 0 ${lay.PAD + (inset === 'l' ? VS_ROOM : 0)}px`, background: alpha(c, th.dark ? 0.22 : 0.12), borderBottom: `3px solid ${alpha(c, 0.35)}`}}>
-        <IconDisc name={icon} size={wide ? 68 : 60} tone={tone === 'neutral' ? 'accent' : tone} />
-        <div style={{fontSize: titleSize, fontWeight: 900, color: th.cardText, whiteSpace: 'nowrap'}}>{s.title}</div>
+        <IconDisc name={icon} size={wide ? 48 : 40} tone={tone === 'neutral' ? 'accent' : tone} />
+        <div style={{fontSize: titleSize, fontWeight: 700, color: th.cardText, whiteSpace: 'nowrap'}}>{s.title}</div>
       </div>
       <div style={{padding: `${lay.PAD}px ${lay.PAD}px 0`}}>
         {s.stat && (
@@ -232,12 +236,12 @@ const SideCard: React.FC<{
             <MiniMeter level={typeof s.level === 'number' ? s.level : 0} p={meterP} color={c} label={meterLabel} w={w - 2 * lay.PAD} />
           </div>
         )}
-        <div style={{marginTop: 14}}>
+        <div style={{marginTop: SPACE.rowGap}}>
           {items.map((it, i) => {
             const at = itemAt[i] ?? 0;
             const q = pop(t, at, 14, 200);
             const lines = lay.rows[i] ?? 1;
-            const rowH = lines * lay.size * 1.25 + 26;
+            const rowH = lines * lay.size * 1.35 + (i < items.length - 1 ? lay.rowGap : 0);
             return (
               <div key={i} style={{height: rowH, position: 'relative'}}>
                 {t < at ? (
@@ -251,7 +255,7 @@ const SideCard: React.FC<{
                       style={{
                         width: lay.bullet,
                         height: lay.bullet,
-                        marginTop: (lay.size * 1.25 - lay.bullet) / 2,
+                        marginTop: (lay.size * 1.35 - lay.bullet) / 2,
                         borderRadius: lay.bullet / 2,
                         background: alpha(c, th.dark ? 0.25 : 0.14),
                         display: 'flex',
@@ -262,7 +266,7 @@ const SideCard: React.FC<{
                     >
                       <Icon name={bulletIcon(tone)} size={lay.bullet * 0.62} color={c} stroke={3} />
                     </div>
-                    <div style={{fontSize: lay.size, lineHeight: 1.25, fontWeight: 700, color: th.cardText, wordBreak: 'normal', overflowWrap: 'normal'}}>{glueBreaks(it, lang)}</div>
+                    <div style={{fontSize: lay.size, lineHeight: 1.35, fontWeight: 600, color: th.cardText, wordBreak: 'normal', overflowWrap: 'normal'}}>{glueBreaks(it, lang)}</div>
                   </div>
                 )}
               </div>
@@ -302,11 +306,11 @@ const WinBadge: React.FC<{x: number; y: number; p: number; color: string; icon?:
 const Verdict: React.FC<{text: string; t: number; at: number; top: number}> = ({text, t, at, top}) => {
   const th = useTheme();
   if (t < at) return null;
-  const q = pop(t, at, 12, 180);
+  const progress = Math.max(0, Math.min(1, (t - at) / 0.32));
+  const q = 1 - Math.pow(1 - progress, 3);
   const size = fitLine(text, 620, 46, 38);
-  const sweep = interpolate(t, [at + 0.2, at + 0.9], [0, 1], clamp);
   return (
-    <div style={{position: 'absolute', left: CARD.x0, width: CARD.w, top, height: VERDICT_H, display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: Math.min(1, q * 1.6), transform: `translateY(${(1 - q) * 30}px) scale(${0.8 + 0.2 * q})`}}>
+    <div style={{position: 'absolute', left: CARD.x0, width: CARD.w, top, height: VERDICT_H, display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: q, transform: `translateY(${(1 - q) * 12}px)`}}>
       <div
         style={{
           position: 'relative',
@@ -314,10 +318,10 @@ const Verdict: React.FC<{text: string; t: number; at: number; top: number}> = ({
           display: 'flex',
           alignItems: 'center',
           gap: 14,
-          background: th.hot,
-          color: '#1b1a18',
+          background: th.card,
+          color: th.accent,
           fontFamily: FONT,
-          fontWeight: 900,
+          fontWeight: 800,
           fontSize: size,
           padding: '14px 38px',
           borderRadius: 50,
@@ -328,7 +332,6 @@ const Verdict: React.FC<{text: string; t: number; at: number; top: number}> = ({
       >
         <Icon name="sparkle" size={size} color="#1b1a18" stroke={2.6} />
         {text}
-        <Sweep p={sweep} w={700} />
       </div>
     </div>
   );
@@ -343,7 +346,7 @@ const Compare: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const lt = sideTone(L, 'bad');
   const rt = sideTone(R, 'good');
   const hasMeter = typeof L.level === 'number' || typeof R.level === 'number';
-  const verdictSpace = p.verdict ? VERDICT_H + 20 : 0;
+  const verdictSpace = p.verdict ? VERDICT_H + VERDICT_GAP : 0;
   const availH = MAIN.h - 30 - verdictSpace;
   const win = t >= pl.winAt ? pop(t, pl.winAt, 12, 170) : 0;
   const winBump = bump(t, pl.winAt, 0.5);
@@ -408,7 +411,7 @@ const Compare: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
           )}
           <WinBadge x={w - 74} y={-34} p={win} color={rc} icon={rt === 'bad' ? 'alert' : 'check'} />
         </div>
-        {p.verdict && <Verdict text={p.verdict} t={t} at={pl.verdictAt} top={top + h + 20} />}
+        {p.verdict && <Verdict text={p.verdict} t={t} at={pl.verdictAt} top={top + h + VERDICT_GAP} />}
       </div>
     );
   }
@@ -445,7 +448,7 @@ const Compare: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
             width: 92,
             height: 92,
             borderRadius: 46,
-            background: th.hot,
+            background: th.cardAlt,
             border: '6px solid #ffffff',
             boxShadow: '0 10px 26px rgba(0,0,0,0.3)',
             display: 'flex',
@@ -453,9 +456,9 @@ const Compare: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
             justifyContent: 'center',
             fontFamily: FONT,
             fontWeight: 900,
-            fontStyle: 'italic',
+            fontStyle: 'normal',
             fontSize: 44,
-            color: '#1b1a18',
+            color: th.accent,
             transform: `scale(${vs}) rotate(${(1 - vs) * 90}deg)`,
           }}
         >
@@ -463,7 +466,7 @@ const Compare: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
         </div>
       )}
       <WinBadge x={xR + COL_W - 74} y={top - 34} p={win} color={rc} icon={rt === 'bad' ? 'alert' : 'check'} />
-      {p.verdict && <Verdict text={p.verdict} t={t} at={pl.verdictAt} top={top + h + 20} />}
+      {p.verdict && <Verdict text={p.verdict} t={t} at={pl.verdictAt} top={top + h + VERDICT_GAP} />}
     </div>
   );
 };

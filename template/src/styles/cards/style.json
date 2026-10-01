@@ -2,8 +2,8 @@
   "id": "cards",
   "name": {"zh": "卡片信息流", "en": "Cards"},
   "summary": {
-    "zh": "渐变底 + 居中卡片 + 描边大字幕，18 个镜头覆盖六个行业。单一卖点、要讲流程、要演示界面的产品都能用；默认风格",
-    "en": "Gradient background, centered cards and bold outlined captions; 18 shots across six industries. Fits single-benefit products, how-it-works flows and UI demos. Default style"
+    "zh": "情绪渐变 + 居中纸面卡片 + 描边大字幕，19 个镜头覆盖六个行业，含数据叙事图表。单一卖点、要讲流程、要演示界面的产品都能用；默认风格",
+    "en": "Mood gradients, centered paper cards and bold outlined captions; 19 shots across six industries, including data story charts. Fits single-benefit products, how-it-works flows and UI demos. Default style"
   },
   "status": "stable",
   "defaultAspect": "9:16",

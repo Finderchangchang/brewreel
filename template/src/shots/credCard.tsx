@@ -4,7 +4,7 @@ import {bump, pop} from '../core/anim';
 import {fitLine} from '../core/fit';
 import {FONT, MONO} from '../core/font';
 import {Icon} from '../core/icons';
-import {Sweep, pick} from '../core/kit';
+import {pick} from '../core/kit';
 import type {Lang} from '../core/kit';
 import {Illust, isIllust} from '../illust';
 import {CARD, MAIN} from '../core/safe';
@@ -182,7 +182,6 @@ const Badge: React.FC<{t: number; year?: number; photo?: string}> = ({t, year, p
   const th = useTheme();
   const q = pop(t, 0.05, 13, 150);
   const spin = pop(t, 0.05, 20, 60);
-  const sweepP = Math.min(1, Math.max(0, (t - 0.35) / 0.9));
   const D = 220;
   if (photo) {
     return (
@@ -224,7 +223,6 @@ const Badge: React.FC<{t: number; year?: number; photo?: string}> = ({t, year, p
           <Icon name="star" size={40} color={th.accentText} stroke={2.4} />
           {typeof year === 'number' && <div style={{fontFamily: MONO, fontWeight: 800, fontSize: 30, color: th.accentText, marginTop: 4}}>{year}</div>}
         </div>
-        <Sweep p={sweepP} w={148} />
       </div>
     </div>
   );

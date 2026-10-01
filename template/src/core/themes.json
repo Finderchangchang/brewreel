@@ -1,170 +1,920 @@
 {
   "warm-emotion": {
-    "label": "情绪渐变（Jev 同款）：平静蓝绿 → 留神橙 → 危险暖红，白卡片",
+    "label": "情绪渐变：沉静蓝 → 聚焦莓紫 → 危险红，暖纸白卡片",
     "dark": false,
-    "bgTop": ["#86DDD0", "#FFC877", "#FF8C73"],
-    "bgBot": ["#5A97E8", "#F2915A", "#DD3950"],
-    "glow": "rgba(255,255,255,0.22)",
-    "blobs": ["rgba(255,255,255,0.20)", "rgba(255,225,77,0.18)"],
-    "ambient": {"pattern": "bubbles", "a": "#FFFFFF", "b": "#FFE14D", "hint": "情绪类：底部一串慢慢上浮的圆泡，情绪越紧张浮得越快、越暖"},
-    "accent": "#3B82F6",
+    "bgTop": [
+      "#5E7FB5",
+      "#6D2B50",
+      "#D63D3B"
+    ],
+    "bgBot": [
+      "#0E1531",
+      "#2F2A41",
+      "#6D2B50"
+    ],
+    "glow": "rgba(255,248,235,0.20)",
+    "blobs": [
+      "rgba(255,248,235,0.18)",
+      "rgba(250,218,95,0.14)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFF8EB",
+      "b": "#E8D44D",
+      "hint": "默认 cards 使用干净的情绪渐变底；不叠加浮泡、图标剪影或装饰进度条"
+    },
+    "accent": "#0E1531",
     "accentText": "#FFFFFF",
-    "hot": "#FFE14D",
-    "capFill": "#FFFFFF",
+    "hot": "#F1C8D2",
+    "capFill": "#F7F2E8",
     "capStroke": "#141218",
     "onBg": "#FFFFFF",
     "onBgSub": "rgba(255,255,255,0.78)",
-    "card": "#FFFFFF",
-    "cardAlt": "#F4F5F7",
-    "cardText": "#111827",
-    "cardSub": "#6B7280",
-    "cardMuted": "#9CA3AF",
-    "line": "#EEF0F3",
-    "bubbleOther": "#EEF0F3",
-    "bubbleOtherText": "#111827",
-    "shadow": "0 18px 50px rgba(20,16,40,0.22)",
-    "good": "#16A34A",
-    "warn": "#D97706",
-    "bad": "#DC2626"
+    "card": "#F7F2E8",
+    "cardAlt": "#EEE7DA",
+    "cardText": "#0E1531",
+    "cardSub": "#59625D",
+    "cardMuted": "#85877E",
+    "line": "#E2DACC",
+    "bubbleOther": "#E9E3D8",
+    "bubbleOtherText": "#0E1531",
+    "shadow": "0 18px 50px rgba(14,35,32,0.24)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539"
   },
   "tech-dark": {
-    "label": "科技暗色：深蓝紫底，青色强调，玻璃深色卡片",
+    "label": "雾蓝 · 暗色：简洁标题与协调图表色板",
     "dark": true,
-    "bgTop": ["#12204A", "#1E1A52", "#3A1640"],
-    "bgBot": ["#060B1E", "#0B0A24", "#16061A"],
-    "glow": "rgba(94,160,255,0.20)",
-    "blobs": ["rgba(56,189,248,0.22)", "rgba(168,85,247,0.20)"],
-    "ambient": {"pattern": "grid", "a": "#38BDF8", "b": "#A855F7", "hint": "科技类：透视网格地面 + 地平线光带，每拍向前推一格"},
-    "accent": "#4F8CFF",
-    "accentText": "#FFFFFF",
-    "hot": "#5EEAD4",
-    "capFill": "#FFFFFF",
+    "bgTop": [
+      "#28394C",
+      "#343A55",
+      "#593C4B"
+    ],
+    "bgBot": [
+      "#101B28",
+      "#1A2036",
+      "#2B1B29"
+    ],
+    "glow": "rgba(167,184,239,0.10)",
+    "blobs": [
+      "rgba(167,184,239,0.08)",
+      "rgba(167,184,239,0.04)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#202E3E",
+      "b": "#B7C7F4",
+      "hint": "统一 cards 简洁渐变背景"
+    },
+    "accent": "#B7C7F4",
+    "accentText": "#172131",
+    "hot": "#B7C7F4",
+    "capFill": "#F0F3F6",
     "capStroke": "#05070F",
-    "onBg": "#FFFFFF",
-    "onBgSub": "rgba(226,232,255,0.75)",
-    "card": "#141B33",
-    "cardAlt": "#1C2544",
-    "cardText": "#EEF2FF",
-    "cardSub": "#A5B0CF",
-    "cardMuted": "#7C87A8",
-    "line": "rgba(255,255,255,0.09)",
-    "bubbleOther": "#243052",
-    "bubbleOtherText": "#EEF2FF",
-    "shadow": "0 18px 60px rgba(0,0,0,0.55), 0 0 0 1.5px rgba(120,160,255,0.18)",
+    "onBg": "#F0F3F6",
+    "onBgSub": "#C1CCD5",
+    "card": "#202E3E",
+    "cardAlt": "#2C3C4F",
+    "cardText": "#F0F3F6",
+    "cardSub": "#C1CCD5",
+    "cardMuted": "#A2B2C1",
+    "line": "#425365",
+    "bubbleOther": "#2C3C4F",
+    "bubbleOtherText": "#F0F3F6",
+    "shadow": "0 18px 50px rgba(0,0,0,0.32)",
     "good": "#34D399",
     "warn": "#FBBF24",
-    "bad": "#F87171"
+    "bad": "#F87171",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#9BAFCA",
+      "#A7B8EF",
+      "#6E8DA7",
+      "#C0CDD6",
+      "#7583AC"
+    ]
   },
   "fresh-light": {
-    "label": "清新亮色：薄荷 → 天蓝 → 橘黄，白卡片，适合生活/效率工具",
+    "label": "浅绿 · 纸白：简洁标题与协调图表色板",
     "dark": false,
-    "bgTop": ["#9AF0CF", "#A9DEFF", "#FFE08A"],
-    "bgBot": ["#2FC6A0", "#3AA6F2", "#FF9442"],
-    "glow": "rgba(255,255,255,0.28)",
-    "blobs": ["rgba(255,255,255,0.28)", "rgba(255,255,255,0.16)"],
-    "ambient": {"pattern": "waves", "a": "#FFFFFF", "b": "#FFF3B0", "hint": "生活/效率类：三层起伏的水波，每拍鼓一下"},
-    "accent": "#0EA5E9",
+    "bgTop": [
+      "#E7EEE5",
+      "#E2E9DD",
+      "#EEDCD3"
+    ],
+    "bgBot": [
+      "#C6D5C4",
+      "#C5D0BF",
+      "#DCC0B4"
+    ],
+    "glow": "rgba(255,255,255,0.20)",
+    "blobs": [
+      "rgba(255,255,255,0.14)",
+      "rgba(255,255,255,0.08)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FCFBF5",
+      "b": "#286458",
+      "hint": "统一 cards 简洁渐变背景"
+    },
+    "accent": "#286458",
     "accentText": "#FFFFFF",
-    "hot": "#FFE14D",
-    "capFill": "#FFFFFF",
+    "hot": "#286458",
+    "capFill": "#243B32",
     "capStroke": "#0F2530",
-    "onBg": "#FFFFFF",
-    "onBgSub": "rgba(255,255,255,0.85)",
-    "card": "#FFFFFF",
-    "cardAlt": "#F1F7F9",
-    "cardText": "#0F2530",
-    "cardSub": "#5B6B75",
-    "cardMuted": "#94A3AD",
-    "line": "#E6EEF1",
-    "bubbleOther": "#EDF2F5",
-    "bubbleOtherText": "#0F2530",
-    "shadow": "0 18px 46px rgba(10,60,80,0.20)",
+    "onBg": "#243B32",
+    "onBgSub": "#516459",
+    "card": "#FCFBF5",
+    "cardAlt": "#EAEFE5",
+    "cardText": "#243B32",
+    "cardSub": "#516459",
+    "cardMuted": "#69776B",
+    "line": "#D5DDD0",
+    "bubbleOther": "#EAEFE5",
+    "bubbleOtherText": "#243B32",
+    "shadow": "0 18px 50px rgba(14,21,49,0.16)",
     "good": "#10B981",
     "warn": "#F59E0B",
-    "bad": "#EF4444"
+    "bad": "#EF4444",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#45645B",
+      "#286458",
+      "#849B7A",
+      "#BB866D",
+      "#A5AD92"
+    ]
   },
   "business-blue": {
-    "label": "商务蓝：沉稳蓝 → 靛紫 → 警示红，白卡片，适合 B 端/SaaS",
+    "label": "浅蓝 · 商务：简洁标题与协调图表色板",
     "dark": false,
-    "bgTop": ["#4C8DF6", "#6D6CF0", "#F0706A"],
-    "bgBot": ["#173A8F", "#2C2A7E", "#9E1C2E"],
-    "glow": "rgba(255,255,255,0.18)",
-    "blobs": ["rgba(147,197,253,0.22)", "rgba(255,255,255,0.12)"],
-    "ambient": {"pattern": "bars", "a": "#93C5FD", "b": "#FFFFFF", "hint": "B 端/数据类：一排柱状图天际线，每拍跳动"},
-    "accent": "#2563EB",
+    "bgTop": [
+      "#E4ECF5",
+      "#DEE3F0",
+      "#E9DDE4"
+    ],
+    "bgBot": [
+      "#BBCDE2",
+      "#BFC8DF",
+      "#D0B7C6"
+    ],
+    "glow": "rgba(255,255,255,0.20)",
+    "blobs": [
+      "rgba(255,255,255,0.12)",
+      "rgba(255,255,255,0.06)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FAFCFF",
+      "b": "#315F9B",
+      "hint": "统一 cards 简洁渐变背景"
+    },
+    "accent": "#315F9B",
     "accentText": "#FFFFFF",
-    "hot": "#FDE047",
-    "capFill": "#FFFFFF",
+    "hot": "#315F9B",
+    "capFill": "#1A2C43",
     "capStroke": "#0B1633",
-    "onBg": "#FFFFFF",
-    "onBgSub": "rgba(255,255,255,0.78)",
-    "card": "#FFFFFF",
-    "cardAlt": "#F3F6FB",
-    "cardText": "#0F172A",
-    "cardSub": "#64748B",
-    "cardMuted": "#94A3B8",
-    "line": "#E8EDF5",
-    "bubbleOther": "#EEF2F7",
-    "bubbleOtherText": "#0F172A",
-    "shadow": "0 18px 50px rgba(8,20,60,0.30)",
+    "onBg": "#1A2C43",
+    "onBgSub": "#53677F",
+    "card": "#FAFCFF",
+    "cardAlt": "#E9EFF7",
+    "cardText": "#1A2C43",
+    "cardSub": "#53677F",
+    "cardMuted": "#6A7C90",
+    "line": "#D6E0EB",
+    "bubbleOther": "#E9EFF7",
+    "bubbleOtherText": "#1A2C43",
+    "shadow": "0 18px 50px rgba(14,21,49,0.16)",
     "good": "#16A34A",
     "warn": "#D97706",
-    "bad": "#DC2626"
+    "bad": "#DC2626",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#243D60",
+      "#315F9B",
+      "#7297BD",
+      "#A5B6C8",
+      "#577086"
+    ]
   },
   "festival-red": {
-    "label": "节日红金：正红底 + 金色强调，奶白卡片，适合节日/促销",
+    "label": "酒红 · 奶油：简洁标题与协调图表色板",
     "dark": false,
-    "bgTop": ["#F4533F", "#F0612B", "#FF8A1F"],
-    "bgBot": ["#A80F1E", "#B3141B", "#C0280E"],
-    "glow": "rgba(255,214,120,0.26)",
-    "blobs": ["rgba(255,210,110,0.26)", "rgba(255,255,255,0.12)"],
-    "ambient": {"pattern": "confetti", "a": "#FFD86B", "b": "#FFF8E8", "hint": "节日/促销类：金色纸屑缓缓落下 + 底部一排暖光圆"},
-    "accent": "#D6263A",
+    "bgTop": [
+      "#873A47",
+      "#963E46",
+      "#AB4144"
+    ],
+    "bgBot": [
+      "#3B202B",
+      "#48212C",
+      "#59222D"
+    ],
+    "glow": "rgba(229,203,160,0.08)",
+    "blobs": [
+      "rgba(229,203,160,0.08)",
+      "rgba(255,255,255,0.04)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FCF3E7",
+      "b": "#8F3443",
+      "hint": "统一 cards 简洁渐变背景"
+    },
+    "accent": "#8F3443",
     "accentText": "#FFFFFF",
-    "hot": "#FFD86B",
-    "capFill": "#FFF8E8",
+    "hot": "#E5CBA0",
+    "capFill": "#FCF3E7",
     "capStroke": "#3A0508",
-    "onBg": "#FFF8E8",
-    "onBgSub": "rgba(255,240,215,0.85)",
-    "card": "#FFF8EC",
-    "cardAlt": "#FCEBD2",
-    "cardText": "#3A0A0A",
-    "cardSub": "#8A5A44",
-    "cardMuted": "#B08B74",
-    "line": "#F3DEC2",
-    "bubbleOther": "#F7E6CE",
-    "bubbleOtherText": "#3A0A0A",
-    "shadow": "0 18px 50px rgba(90,0,10,0.35)",
+    "onBg": "#FCF3E7",
+    "onBgSub": "#E5CBA0",
+    "card": "#FCF3E7",
+    "cardAlt": "#F0E2D1",
+    "cardText": "#48282E",
+    "cardSub": "#765A56",
+    "cardMuted": "#8C6E66",
+    "line": "#DFCEBC",
+    "bubbleOther": "#F0E2D1",
+    "bubbleOtherText": "#48282E",
+    "shadow": "0 18px 50px rgba(14,21,49,0.16)",
     "good": "#15803D",
     "warn": "#C2410C",
-    "bad": "#B91C1C"
+    "bad": "#B91C1C",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#674245",
+      "#9B3E49",
+      "#BE9A60",
+      "#B77B79",
+      "#867364"
+    ]
   },
   "mono-premium": {
-    "label": "高级灰金：石墨黑底 + 香槟金强调，深色卡片，适合高客单/质感产品",
+    "label": "石墨 · 香槟：简洁标题与协调图表色板",
     "dark": true,
-    "bgTop": ["#34363D", "#3D3731", "#4A2E2A"],
-    "bgBot": ["#0D0E11", "#12100E", "#170C0B"],
-    "glow": "rgba(233,201,139,0.14)",
-    "blobs": ["rgba(233,201,139,0.14)", "rgba(255,255,255,0.06)"],
-    "ambient": {"pattern": "rays", "a": "#E9C98B", "b": "#FFFFFF", "hint": "质感类：细金线斜纹 + 一道慢扫光"},
-    "accent": "#C9A46A",
-    "accentText": "#16130F",
-    "hot": "#E9C98B",
-    "capFill": "#FFFFFF",
+    "bgTop": [
+      "#3B3D40",
+      "#444039",
+      "#544039"
+    ],
+    "bgBot": [
+      "#16191C",
+      "#1B1916",
+      "#231A18"
+    ],
+    "glow": "rgba(217,188,139,0.08)",
+    "blobs": [
+      "rgba(217,188,139,0.06)",
+      "rgba(255,255,255,0.03)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#282B2D",
+      "b": "#D9BC8B",
+      "hint": "统一 cards 简洁渐变背景"
+    },
+    "accent": "#D9BC8B",
+    "accentText": "#211D17",
+    "hot": "#D9BC8B",
+    "capFill": "#F0EBE2",
     "capStroke": "#07070A",
-    "onBg": "#F5F5F4",
-    "onBgSub": "rgba(245,245,244,0.70)",
-    "card": "#1C1D21",
-    "cardAlt": "#26272C",
-    "cardText": "#F5F5F4",
-    "cardSub": "#B4B0A8",
-    "cardMuted": "#86827B",
-    "line": "rgba(255,255,255,0.08)",
-    "bubbleOther": "#2C2D33",
-    "bubbleOtherText": "#F5F5F4",
-    "shadow": "0 18px 60px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(233,201,139,0.16)",
+    "onBg": "#F0EBE2",
+    "onBgSub": "#CDC6BA",
+    "card": "#282B2D",
+    "cardAlt": "#35383A",
+    "cardText": "#F0EBE2",
+    "cardSub": "#CDC6BA",
+    "cardMuted": "#ABA396",
+    "line": "#494B4B",
+    "bubbleOther": "#35383A",
+    "bubbleOtherText": "#F0EBE2",
+    "shadow": "0 18px 50px rgba(0,0,0,0.32)",
     "good": "#4ADE80",
     "warn": "#FBBF24",
-    "bad": "#F87171"
+    "bad": "#F87171",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#E4DDD0",
+      "#CEAF7B",
+      "#91A497",
+      "#A0A5AF",
+      "#8A7968"
+    ]
+  },
+  "studio-cream-blue": {
+    "label": "奶油 · 蓝橙：背景、卡片、文字与重点色分工搭配",
+    "dark": false,
+    "bgTop": [
+      "#F5EDDD",
+      "#F5ECDC",
+      "#F3E3D1"
+    ],
+    "bgBot": [
+      "#EDE1CA",
+      "#ECE0C9",
+      "#EBDBC3"
+    ],
+    "glow": "rgba(255,255,255,0)",
+    "blobs": [
+      "rgba(255,255,255,0)",
+      "rgba(255,255,255,0)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFFCF4",
+      "b": "#1555BC",
+      "hint": "保留主色辨识度的情绪渐变，不叠加装饰"
+    },
+    "accent": "#1555BC",
+    "accentText": "#FFFFFF",
+    "hot": "#DA572C",
+    "capFill": "#1D252E",
+    "capStroke": "#141218",
+    "onBg": "#1D252E",
+    "onBgSub": "#1D252E",
+    "card": "#FFFCF4",
+    "cardAlt": "#ECE7DB",
+    "cardText": "#1D252E",
+    "cardSub": "#66696C",
+    "cardMuted": "#66696C",
+    "line": "#ECE7DB",
+    "bubbleOther": "#ECE7DB",
+    "bubbleOtherText": "#1D252E",
+    "shadow": "0 12px 30px rgba(14,20,30,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#202832",
+      "#1555BC",
+      "#F06B35",
+      "#BFAE88"
+    ]
+  },
+  "studio-neon": {
+    "label": "黑底 · 荧光绿粉：背景、卡片、文字与重点色分工搭配",
+    "dark": true,
+    "bgTop": [
+      "#141517",
+      "#131416",
+      "#1E2219"
+    ],
+    "bgBot": [
+      "#0A0C0E",
+      "#090B0D",
+      "#11140F"
+    ],
+    "glow": "rgba(255,255,255,0)",
+    "blobs": [
+      "rgba(255,255,255,0)",
+      "rgba(255,255,255,0)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#202427",
+      "b": "#D0F646",
+      "hint": "保留主色辨识度的情绪渐变，不叠加装饰"
+    },
+    "accent": "#D0F646",
+    "accentText": "#202427",
+    "hot": "#D0F646",
+    "capFill": "#F4F8EF",
+    "capStroke": "#141218",
+    "onBg": "#F4F8EF",
+    "onBgSub": "#F4F8EF",
+    "card": "#202427",
+    "cardAlt": "#2F3535",
+    "cardText": "#F5F9EE",
+    "cardSub": "#BAC5B9",
+    "cardMuted": "#BAC5B9",
+    "line": "#2F3535",
+    "bubbleOther": "#2F3535",
+    "bubbleOtherText": "#F5F9EE",
+    "shadow": "0 12px 30px rgba(14,20,30,0.12)",
+    "good": "#34D399",
+    "warn": "#FBBF24",
+    "bad": "#F87171",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#A8B9B2",
+      "#D0F646",
+      "#ED62C7",
+      "#4E7371"
+    ]
+  },
+  "studio-pink-green": {
+    "label": "浅粉 · 墨绿：背景、卡片、文字与重点色分工搭配",
+    "dark": true,
+    "bgTop": [
+      "#EBC2D0",
+      "#F4C7D6",
+      "#E7BFCD"
+    ],
+    "bgBot": [
+      "#E7B3C5",
+      "#EDB7C9",
+      "#E5B3C3"
+    ],
+    "glow": "rgba(255,255,255,0)",
+    "blobs": [
+      "rgba(255,255,255,0)",
+      "rgba(255,255,255,0)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#173F36",
+      "b": "#F4C2D2",
+      "hint": "保留主色辨识度的情绪渐变，不叠加装饰"
+    },
+    "accent": "#F4C2D2",
+    "accentText": "#173F36",
+    "hot": "#1D493D",
+    "capFill": "#1D493D",
+    "capStroke": "#141218",
+    "onBg": "#1D493D",
+    "onBgSub": "#1D493D",
+    "card": "#173F36",
+    "cardAlt": "#24564A",
+    "cardText": "#FFF7E9",
+    "cardSub": "#C8D9C8",
+    "cardMuted": "#C8D9C8",
+    "line": "#24564A",
+    "bubbleOther": "#24564A",
+    "bubbleOtherText": "#FFF7E9",
+    "shadow": "0 12px 30px rgba(14,20,30,0.12)",
+    "good": "#34D399",
+    "warn": "#FBBF24",
+    "bad": "#F87171",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#AEC9AD",
+      "#F4C2D2",
+      "#F3DF87",
+      "#79A597"
+    ]
+  },
+  "studio-blue-orange": {
+    "label": "钴蓝 · 奶油橙：背景、卡片、文字与重点色分工搭配",
+    "dark": false,
+    "bgTop": [
+      "#2959CF",
+      "#2053CF",
+      "#2D59C9"
+    ],
+    "bgBot": [
+      "#1C3FA2",
+      "#153AA0",
+      "#1E3F9E"
+    ],
+    "glow": "rgba(255,255,255,0)",
+    "blobs": [
+      "rgba(255,255,255,0)",
+      "rgba(255,255,255,0)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFF1D4",
+      "b": "#C25019",
+      "hint": "保留主色辨识度的情绪渐变，不叠加装饰"
+    },
+    "accent": "#C25019",
+    "accentText": "#FFFFFF",
+    "hot": "#FFBB6A",
+    "capFill": "#FFF4DC",
+    "capStroke": "#141218",
+    "onBg": "#FFF4DC",
+    "onBgSub": "#FFF4DC",
+    "card": "#FFF1D4",
+    "cardAlt": "#F1E1C1",
+    "cardText": "#183366",
+    "cardSub": "#67718B",
+    "cardMuted": "#67718B",
+    "line": "#F1E1C1",
+    "bubbleOther": "#F1E1C1",
+    "bubbleOtherText": "#183366",
+    "shadow": "0 12px 30px rgba(14,20,30,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#1D438E",
+      "#DF6729",
+      "#D7B861",
+      "#95A5C4"
+    ]
+  },
+  "studio-red-black": {
+    "label": "白灰 · 红黑：背景、卡片、文字与重点色分工搭配",
+    "dark": false,
+    "bgTop": [
+      "#F4F4F1",
+      "#F4F4F0",
+      "#F1E8E5"
+    ],
+    "bgBot": [
+      "#E8E9E6",
+      "#E7E8E5",
+      "#E6E0DE"
+    ],
+    "glow": "rgba(255,255,255,0)",
+    "blobs": [
+      "rgba(255,255,255,0)",
+      "rgba(255,255,255,0)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFFFFF",
+      "b": "#C32936",
+      "hint": "保留主色辨识度的情绪渐变，不叠加装饰"
+    },
+    "accent": "#C32936",
+    "accentText": "#FFFFFF",
+    "hot": "#C32936",
+    "capFill": "#181C20",
+    "capStroke": "#141218",
+    "onBg": "#181C20",
+    "onBgSub": "#181C20",
+    "card": "#FFFFFF",
+    "cardAlt": "#F2F2EE",
+    "cardText": "#181C20",
+    "cardSub": "#666B70",
+    "cardMuted": "#666B70",
+    "line": "#F2F2EE",
+    "bubbleOther": "#F2F2EE",
+    "bubbleOtherText": "#181C20",
+    "shadow": "0 12px 30px rgba(14,20,30,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#20272E",
+      "#DC3443",
+      "#949DA3",
+      "#BBC1C4"
+    ]
+  },
+  "studio-purple-yellow": {
+    "label": "深紫 · 淡黄：背景、卡片、文字与重点色分工搭配",
+    "dark": false,
+    "bgTop": [
+      "#492C60",
+      "#42245D",
+      "#4D3061"
+    ],
+    "bgBot": [
+      "#2B1936",
+      "#251333",
+      "#2D1B37"
+    ],
+    "glow": "rgba(255,255,255,0)",
+    "blobs": [
+      "rgba(255,255,255,0)",
+      "rgba(255,255,255,0)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#F5E69D",
+      "b": "#71408F",
+      "hint": "保留主色辨识度的情绪渐变，不叠加装饰"
+    },
+    "accent": "#71408F",
+    "accentText": "#FFFFFF",
+    "hot": "#F5E69D",
+    "capFill": "#FFF7CF",
+    "capStroke": "#141218",
+    "onBg": "#FFF7CF",
+    "onBgSub": "#FFF7CF",
+    "card": "#F5E69D",
+    "cardAlt": "#E7D888",
+    "cardText": "#412558",
+    "cardSub": "#79684C",
+    "cardMuted": "#79684C",
+    "line": "#E7D888",
+    "bubbleOther": "#E7D888",
+    "bubbleOtherText": "#412558",
+    "shadow": "0 12px 30px rgba(14,20,30,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#4A2B66",
+      "#8751AD",
+      "#AF873B",
+      "#B899B7"
+    ]
+  },
+  "studio-cyan": {
+    "label": "湖蓝 · 黑白：主色、黑白与对比色统一搭配",
+    "dark": false,
+    "bgTop": [
+      "#18BDD5",
+      "#17b9d1",
+      "#33aac1"
+    ],
+    "bgBot": [
+      "#0390AE",
+      "#038fac",
+      "#17809d"
+    ],
+    "glow": "rgba(255,255,255,0.02)",
+    "blobs": [
+      "rgba(255,255,255,0.02)",
+      "rgba(255,255,255,0.01)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFFFFF",
+      "b": "#047A91",
+      "hint": "统一品牌色板，保留克制情绪渐变"
+    },
+    "accent": "#047A91",
+    "accentText": "#FFFFFF",
+    "hot": "#FFFFFF",
+    "capFill": "#FFFFFF",
+    "capStroke": "#141218",
+    "onBg": "#FFFFFF",
+    "onBgSub": "rgba(255,255,255,0.86)",
+    "card": "#FFFFFF",
+    "cardAlt": "#E8F7FA",
+    "cardText": "#21343C",
+    "cardSub": "#5C747F",
+    "cardMuted": "#5C747F",
+    "line": "#E8F7FA",
+    "bubbleOther": "#E8F7FA",
+    "bubbleOtherText": "#21343C",
+    "shadow": "0 12px 30px rgba(12,20,35,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#243740",
+      "#11A5C3",
+      "#8AD2DF",
+      "#E6A347"
+    ]
+  },
+  "studio-lime-purple": {
+    "label": "青柠 · 葡萄紫：主色、黑白与对比色统一搭配",
+    "dark": false,
+    "bgTop": [
+      "#C1B931",
+      "#bcb238",
+      "#c1a637"
+    ],
+    "bgBot": [
+      "#9E9D1F",
+      "#9b9727",
+      "#9a8b25"
+    ],
+    "glow": "rgba(255,255,255,0.02)",
+    "blobs": [
+      "rgba(255,255,255,0.02)",
+      "rgba(255,255,255,0.01)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFFDF7",
+      "b": "#7441AB",
+      "hint": "统一品牌色板，保留克制情绪渐变"
+    },
+    "accent": "#7441AB",
+    "accentText": "#FFFFFF",
+    "hot": "#FFFFFF",
+    "capFill": "#FFFFFF",
+    "capStroke": "#141218",
+    "onBg": "#FFFFFF",
+    "onBgSub": "rgba(255,255,255,0.86)",
+    "card": "#FFFDF7",
+    "cardAlt": "#F2F0DE",
+    "cardText": "#322A43",
+    "cardSub": "#6D667D",
+    "cardMuted": "#6D667D",
+    "line": "#F2F0DE",
+    "bubbleOther": "#F2F0DE",
+    "bubbleOtherText": "#322A43",
+    "shadow": "0 12px 30px rgba(12,20,35,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#AAA62E",
+      "#7D47B7",
+      "#353041",
+      "#C99AD8"
+    ]
+  },
+  "studio-indigo": {
+    "label": "靛蓝 · 珊瑚：主色、黑白与对比色统一搭配",
+    "dark": false,
+    "bgTop": [
+      "#3B47C8",
+      "#3b47c7",
+      "#5147b6"
+    ],
+    "bgBot": [
+      "#272FA0",
+      "#2831a1",
+      "#362f91"
+    ],
+    "glow": "rgba(255,255,255,0.02)",
+    "blobs": [
+      "rgba(255,255,255,0.02)",
+      "rgba(255,255,255,0.01)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFFFFF",
+      "b": "#354EB5",
+      "hint": "统一品牌色板，保留克制情绪渐变"
+    },
+    "accent": "#354EB5",
+    "accentText": "#FFFFFF",
+    "hot": "#FFFFFF",
+    "capFill": "#FFFFFF",
+    "capStroke": "#141218",
+    "onBg": "#FFFFFF",
+    "onBgSub": "rgba(255,255,255,0.86)",
+    "card": "#FFFFFF",
+    "cardAlt": "#EEF0FC",
+    "cardText": "#222C47",
+    "cardSub": "#626D87",
+    "cardMuted": "#626D87",
+    "line": "#EEF0FC",
+    "bubbleOther": "#EEF0FC",
+    "bubbleOtherText": "#222C47",
+    "shadow": "0 12px 30px rgba(12,20,35,0.12)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#24345C",
+      "#465DC4",
+      "#EE7C68",
+      "#97A5D8"
+    ]
+  },
+  "studio-graphite": {
+    "label": "石墨 · 电橘：主色、黑白与对比色统一搭配",
+    "dark": true,
+    "bgTop": [
+      "#303640",
+      "#3c3d43",
+      "#483844"
+    ],
+    "bgBot": [
+      "#151C25",
+      "#23252a",
+      "#271f2a"
+    ],
+    "glow": "rgba(255,255,255,0.02)",
+    "blobs": [
+      "rgba(255,255,255,0.02)",
+      "rgba(255,255,255,0.01)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#252D38",
+      "b": "#FFB276",
+      "hint": "统一品牌色板，保留克制情绪渐变"
+    },
+    "accent": "#FFB276",
+    "accentText": "#252D38",
+    "hot": "#FFFFFF",
+    "capFill": "#FFFFFF",
+    "capStroke": "#141218",
+    "onBg": "#FFFFFF",
+    "onBgSub": "rgba(255,255,255,0.86)",
+    "card": "#252D38",
+    "cardAlt": "#343E4B",
+    "cardText": "#F7FAFF",
+    "cardSub": "#C2CFDE",
+    "cardMuted": "#C2CFDE",
+    "line": "#343E4B",
+    "bubbleOther": "#343E4B",
+    "bubbleOtherText": "#F7FAFF",
+    "shadow": "0 12px 30px rgba(12,20,35,0.12)",
+    "good": "#34D399",
+    "warn": "#FBBF24",
+    "bad": "#F87171",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#CBD7E5",
+      "#FF9B59",
+      "#91A6BC",
+      "#6F8BA9"
+    ]
+  },
+  "coral-pop": {
+    "label": "珊瑚桃红：白色标题、白卡与明亮数据强调色",
+    "dark": false,
+    "bgTop": [
+      "#F6B5A5",
+      "#F3A291",
+      "#EF897F"
+    ],
+    "bgBot": [
+      "#EC8874",
+      "#E87569",
+      "#D96066"
+    ],
+    "glow": "rgba(255,255,255,0.12)",
+    "blobs": [
+      "rgba(255,255,255,0.10)",
+      "rgba(255,255,255,0.04)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FFF9F0",
+      "b": "#B53951",
+      "hint": "鲜活配色，干净渐变底"
+    },
+    "accent": "#D33E62",
+    "accentText": "#FFFFFF",
+    "hot": "#FFFFFF",
+    "capFill": "#FFFFFF",
+    "capStroke": "#141218",
+    "onBg": "#FFFFFF",
+    "onBgSub": "rgba(255,255,255,0.88)",
+    "card": "#FFFFFF",
+    "cardAlt": "#FFF0F3",
+    "cardText": "#33435B",
+    "cardSub": "#65738A",
+    "cardMuted": "#6D7A8C",
+    "line": "#FFF0F3",
+    "bubbleOther": "#FFF0F3",
+    "bubbleOtherText": "#33435B",
+    "shadow": "0 18px 50px rgba(30,35,40,0.16)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#8C74D6",
+      "#E45479",
+      "#F2B24C",
+      "#42A7A7",
+      "#D39AB2"
+    ]
+  },
+  "mint-pop": {
+    "label": "鲜薄荷：白色标题、白卡与明亮数据强调色",
+    "dark": false,
+    "bgTop": [
+      "#CCF58B",
+      "#B5EE92",
+      "#B4E3AA"
+    ],
+    "bgBot": [
+      "#81D8A1",
+      "#68CEA9",
+      "#69BAA1"
+    ],
+    "glow": "rgba(255,255,255,0.12)",
+    "blobs": [
+      "rgba(255,255,255,0.10)",
+      "rgba(255,255,255,0.04)"
+    ],
+    "ambient": {
+      "pattern": "none",
+      "a": "#FCFFF3",
+      "b": "#B8422B",
+      "hint": "鲜活配色，干净渐变底"
+    },
+    "accent": "#16826D",
+    "accentText": "#FFFFFF",
+    "hot": "#FFFFFF",
+    "capFill": "#FFFFFF",
+    "capStroke": "#141218",
+    "onBg": "#FFFFFF",
+    "onBgSub": "rgba(255,255,255,0.88)",
+    "card": "#FFFFFF",
+    "cardAlt": "#EBF8F1",
+    "cardText": "#33435B",
+    "cardSub": "#65738A",
+    "cardMuted": "#6D7A8C",
+    "line": "#EBF8F1",
+    "bubbleOther": "#EBF8F1",
+    "bubbleOtherText": "#33435B",
+    "shadow": "0 18px 50px rgba(30,35,40,0.16)",
+    "good": "#237A49",
+    "warn": "#A85A17",
+    "bad": "#C73539",
+    "captionStyle": "clean",
+    "chartColors": [
+      "#46A99B",
+      "#1C957D",
+      "#A5CE61",
+      "#F28B61",
+      "#7BAFE2"
+    ]
   }
 }

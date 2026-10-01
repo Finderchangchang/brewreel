@@ -5,6 +5,7 @@ import {FONT, MONO} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
 import {Avatar, IconDisc} from '../core/kit';
 import {MAIN} from '../core/safe';
+import {CARD_RHYTHM as SPACE} from '../core/cardRhythm';
 import {alpha, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
@@ -19,14 +20,14 @@ type Row = {text: string; tag?: string; tone?: Tone; icon?: string; score?: numb
 type P = {title?: string; items: Row[]; max?: number; quote?: boolean};
 
 const RIGHT_W = 176; // 右侧判定区宽
-const TITLE_H = 76;
-const TITLE_GAP = 24;
+const TITLE_H = 64;
+const TITLE_GAP = SPACE.sectionGap;
 
 export const geom = (n: number, hasTitle: boolean) => {
   const top0 = MAIN.y0 + (hasTitle ? TITLE_H + TITLE_GAP : 0);
   const H = MAIN.y1 - top0;
-  const gap = n >= 5 ? 16 : 22;
-  const rh = Math.floor(Math.min(170, (H - gap * (n - 1)) / n));
+  const gap = n >= 5 ? SPACE.compactGap : SPACE.rowGap;
+  const rh = Math.floor(Math.min(156, (H - gap * (n - 1)) / n));
   const tot = rh * n + gap * (n - 1);
   const y0 = top0 + Math.round((H - tot) / 2);
   return {rh, gap, y0};
@@ -76,13 +77,13 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
   const strip = easeOut(t, stampAt, 0.3);
 
   // 左侧
-  const lead = quote ? Math.min(64, Math.round(rh * 0.5)) : Math.min(84, Math.round(rh * 0.58));
-  const inner = 780 - 34 - 26; // 左右内边距后
-  const textW = inner - lead - (quote ? 14 : 20) - (hasRight ? RIGHT_W + 16 : 0);
+  const lead = Math.min(SPACE.icon, Math.round(rh * 0.5));
+  const inner = MAIN.w - 2 * SPACE.pad;
+  const textW = inner - lead - SPACE.rowGap - (hasRight ? RIGHT_W + SPACE.rowGap : 0);
   const text = row.text ?? '';
   const textSize = quote
     ? Math.max(40, Math.min(big ? 52 : 46, Math.floor(textW / (emWidth(text) + 1.16))))
-    : fitLine(text, textW, big ? 56 : 48, 40);
+    : fitLine(text, textW, big ? 48 : 44, 40);
   const icon = isIcon(row.icon) ? row.icon : row.tone === 'good' ? 'check' : row.tone === 'bad' || row.tone === 'warn' ? 'alert' : 'sparkle';
 
   // 右侧
@@ -90,9 +91,9 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
   const numStr = hasScore ? fmtScore(row.score as number, dec) : '';
   const suffix = hasScore && typeof max === 'number' ? `/${max}` : '';
   const wordSize = 30;
-  const numMax = Math.min(100, Math.round(rh * (row.tag ? 0.56 : 0.72)));
+  const numMax = Math.min(76, Math.round(rh * (row.tag ? 0.56 : 0.64)));
   const nSize = hasScore ? scoreSize(numStr, suffix, numMax) : 0;
-  const tagSize = row.tag ? Math.max(34, Math.min(big ? 46 : 40, Math.floor((RIGHT_W - 30) / Math.max(1, emWidth(row.tag))))) : 0;
+  const tagSize = row.tag ? Math.max(34, Math.min(big ? 44 : 40, Math.floor((RIGHT_W - 30) / Math.max(1, emWidth(row.tag))))) : 0;
 
   return (
     <div
@@ -109,7 +110,7 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
         boxShadow: th.shadow,
         display: 'flex',
         alignItems: 'center',
-        padding: '0 26px 0 34px',
+        padding: `0 ${SPACE.pad}px`,
         opacity: Math.min(1, p * 1.6),
         transform: `translateX(${(1 - p) * (i % 2 ? 170 : -170)}px) scale(${0.9 + 0.1 * p})`,
       }}
@@ -118,7 +119,7 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
       <div style={{position: 'absolute', left: 0, bottom: 0, width: 12, height: `${strip * 100}%`, background: tone}} />
       {/* 左：头像+气泡 或 图标+文字 */}
       {quote ? (
-        <div style={{display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: SPACE.rowGap, flex: 1, minWidth: 0}}>
           <Avatar size={lead} hue={(i * 67 + 12) % 360} />
           <div
             style={{
@@ -137,14 +138,14 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
           </div>
         </div>
       ) : (
-        <div style={{display: 'flex', alignItems: 'center', gap: 20, flex: 1, minWidth: 0}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: SPACE.rowGap, flex: 1, minWidth: 0}}>
           <IconDisc name={icon} size={lead} tone={toneKey} soft />
-          <div style={{fontSize: textSize, fontWeight: 800, color: th.cardText, whiteSpace: 'nowrap'}}>{text}</div>
+          <div style={{fontSize: textSize, fontWeight: 700, color: th.cardText, whiteSpace: 'nowrap'}}>{text}</div>
         </div>
       )}
       {/* 右：分数 / 判词 */}
       {hasRight && (
-        <div style={{width: RIGHT_W, flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginLeft: 16}}>
+        <div style={{width: RIGHT_W, flex: 'none', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginLeft: SPACE.rowGap}}>
           {hasScore ? (
             <>
               <div
@@ -209,13 +210,13 @@ const QuickList: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
   const g = geom(n, hasTitle);
   const pl = plan(n, dur, beat);
   const tq = pop(t, 0, 15, 190);
-  const titleSize = hasTitle ? fitLine(p.title as string, 640, 44, 40) : 0;
+  const titleSize = hasTitle ? fitLine(p.title as string, 640, 36, 32) : 0;
   return (
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
       {hasTitle && (
         <div style={{position: 'absolute', left: MAIN.x0, width: MAIN.w, top: MAIN.y0, height: TITLE_H, display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: Math.min(1, tq * 1.6), transform: `translateY(${(1 - tq) * -30}px)`}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: 14, height: TITLE_H, boxSizing: 'border-box', padding: '0 36px', borderRadius: TITLE_H / 2, background: th.hot, color: '#1b1a18', fontSize: titleSize, fontWeight: 900, whiteSpace: 'nowrap', boxShadow: '0 10px 26px rgba(0,0,0,0.2)', border: '4px solid #ffffff'}}>
-            <Icon name="bolt" size={40} color="#1b1a18" stroke={2.6} />
+          <div style={{display: 'flex', alignItems: 'center', gap: SPACE.compactGap, height: TITLE_H, width: '100%', boxSizing: 'border-box', padding: `0 ${SPACE.pad}px`, color: th.onBg, fontSize: titleSize, fontWeight: 600, whiteSpace: 'nowrap'}}>
+            <Icon name="bolt" size={32} color={th.onBg} stroke={2.6} />
             {p.title}
           </div>
         </div>

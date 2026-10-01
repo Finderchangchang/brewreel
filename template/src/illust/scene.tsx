@@ -97,8 +97,6 @@ export const IllustScene: React.FC<{name?: string; w: number; h: number; t: numb
         {x: w * 0.8, y: h * 0.2, from: 1},
       ];
 
-  // 入场扫光（0.25–1.05s）
-  const sweep = Math.min(1, Math.max(0, (t - 0.25) / 0.8));
   const particle = PARTICLE[ind] ?? 'bits';
 
   return (
@@ -192,20 +190,7 @@ export const IllustScene: React.FC<{name?: string; w: number; h: number; t: numb
         <Particles kind={particle} w={w} h={h} cx={cx} cy={cy} r={mainSize / 2} t={t} ink={ink} card={light} />
       </div>
 
-      {/* 入场扫光 */}
-      {sweep > 0 && sweep < 1 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: -h * 0.2,
-            height: h * 1.4,
-            left: -w * 0.4 + sweep * w * 1.6,
-            width: w * 0.22,
-            transform: 'rotate(18deg)',
-            background: `linear-gradient(90deg, ${alpha(light, 0)} 0%, ${alpha(light, th.dark ? 0.16 : 0.55)} 50%, ${alpha(light, 0)} 100%)`,
-          }}
-        />
-      )}
+
     </div>
   );
 };

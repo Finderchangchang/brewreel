@@ -127,11 +127,9 @@ const AmbientPattern: React.FC<{kind: string; t: number; e: number; bb: number; 
     );
   }
   if (kind === 'rays') {
-    const sweep = ((t * 0.35 * e) % 1.6) - 0.3;
     return (
       <>
         <div style={{position: 'absolute', inset: 0, background: `repeating-linear-gradient(115deg, ${alpha(a, 0.16)} 0px, ${alpha(a, 0.16)} 2px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 38px)`}} />
-        <div style={{position: 'absolute', top: -100, bottom: -100, left: sweep * 1080 - 160, width: 320, transform: 'skewX(-25deg)', background: `linear-gradient(90deg, ${alpha(b, 0)} 0%, ${alpha(b, 0.16)} 50%, ${alpha(b, 0)} 100%)`}} />
         <div style={{position: 'absolute', left: 180, right: 180, top: 120, height: 2, background: alpha(a, 0.45 + 0.35 * bb)}} />
       </>
     );
@@ -171,6 +169,7 @@ export const LowerAmbient: React.FC<{slots: Slot[]; t: number; m: number; beat: 
   const th = useTheme();
   const amb = (th as {ambient?: {pattern?: string; a?: string; b?: string}}).ambient ?? {};
   const kind = amb.pattern ?? 'bubbles';
+  if (kind === 'none') return null;
   // mood 越高（紧张）动得越快、颜色越往 hot 偏；越低越慢越冷
   const e = 0.6 + 0.8 * m;
   const bp = beat > 0 ? (t % beat) / beat : 0;
@@ -328,7 +327,7 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
         .map((s) => {
           const text = s.text;
           const instant = s.instant;
-          const size = captionSize(text, lang);
+          const size = th.name === 'warm-emotion' || th.captionStyle === 'clean' ? Math.min(78, captionSize(text, lang)) : captionSize(text, lang);
           const nLines = text.split('\n').length;
           const h = nLines * size * lineHeight;
           const top = Math.round(CAP.y0 + (CAP.y1 - CAP.y0 - h) / 2);
@@ -345,7 +344,7 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
                 textAlign: 'center',
                 fontFamily: FONT,
                 fontSize: size,
-                fontWeight: 900,
+                fontWeight: th.name === 'warm-emotion' || th.captionStyle === 'clean' ? 800 : 900,
                 lineHeight,
                 letterSpacing: lang === 'en' ? 0 : undefined,
                 whiteSpace: 'nowrap',

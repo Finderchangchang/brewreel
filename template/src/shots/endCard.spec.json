@@ -7,7 +7,7 @@
     "cta 只能原样照抄 meta.cta（= 简报「获取方式」原文），简报没写就不放 cta；不许写网址、二维码、账号",
     "brand 必须和 meta.product 一字不差",
     "这一镜不要写 caption，大字写在 slogan 里",
-    "layout 可不写：同一产品每次挑到同一种，不同产品大概率不同；想指定就写 stack（居中一列）/ panel（口号当标题 + 白卡清单）/ spotlight（大 logo + 光芒 + 一排小胶囊）",
+    "layout 可不写：同一产品每次挑到同一种，不同产品大概率不同；想指定就写 stack（居中一列）/ panel（口号当标题 + 白卡清单）/ spotlight（品牌图标 + 产品名大字 + 按行排列的卖点胶囊）",
     "points 别和 meta.disclaimer / meta.notices 说同一句（组件会自动去掉重复的那条）"
   ],
   "dur": {
@@ -66,7 +66,7 @@
           "panel",
           "spotlight"
         ],
-        "description": "版式：stack 居中一列 / panel 口号当标题 + 白卡清单 / spotlight 大 logo + 光芒 + 一排小胶囊；不写就按产品名自动挑一种"
+        "description": "版式：stack 产品名优先的居中一列 / panel 口号标题与卡片清单 / spotlight 品牌图标与分行胶囊；不写就按产品名自动挑一种"
       }
     }
   },

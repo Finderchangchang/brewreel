@@ -14,7 +14,7 @@ logo (`meta.logo`, or an icon disc if unset) → product name → a two-line hea
 |---|---|
 | `stack` | One centred column: logo → product-name pill → big headline → selling-point pills → call to action |
 | `panel` | The headline sits on top like a title; below it one white card that grows with its content: logo + product name on one row, one ticked row per selling point, a full-width call-to-action button |
-| `spotlight` | A big logo with light rays turning on the beat behind it; the product name in big type, the headline, the selling points as a row of small chips, the call to action |
+| `spotlight` | A brand icon, prominent product name, secondary slogan, selling-point chips arranged into explicit rows, and a call to action |
 
 **Leave `layout` out and one is picked from the product name**: the same product always gets the same layout, and different products usually get different ones, so a batch of films doesn't end on identical cards. `panel` is never picked when there are no selling points.
 

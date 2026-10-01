@@ -20,7 +20,7 @@
 // ============================================================
 
 /** 主题预设名（颜色定义在 core/themes.json） */
-export type ThemeName = 'warm-emotion' | 'tech-dark' | 'fresh-light' | 'business-blue' | 'festival-red' | 'mono-premium';
+export type ThemeName = keyof typeof import('./core/themes.json');
 
 /** 行业（决定读哪个 industries/<name>/rules.json；默认 software，即第一阶段的软件产品片） */
 export type IndustryName = 'software' | 'food' | 'ecommerce' | 'education' | 'beauty' | 'travel';
@@ -62,6 +62,7 @@ export type ShotType =
   | 'meter' // 仪表 / 评分
   | 'compare' // 左右或前后对比
   | 'counter' // 大数字滚动
+  | 'dataChart' // 数据叙事：结论、KPI、图表、旁注与来源
   | 'features' // 2–4 个卖点卡
   | 'steps' // 1-2-3 流程
   | 'quickList' // 快切列表
@@ -74,7 +75,7 @@ export type Meta = {
   product: string;
   /** 节拍速度，默认 120（一拍 0.5 秒）。允许 90–150 */
   bpm?: number;
-  /** 主题预设名（cards 风格：core/themes.json 的 6 套；其他风格：该风格 style.json 的 themes，可不写） */
+  /** 主题预设名（cards 风格：core/themes.json；其他风格：该风格 style.json 的 themes，可不写） */
   theme: ThemeName | (string & {});
   /** 视觉风格（template/src/styles/<id>/ + styles/<id>/），不写 = "cards"（渐变底 + 卡片 + 描边大字幕） */
   style?: string;

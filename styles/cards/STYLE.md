@@ -10,15 +10,21 @@
 
 ## 2. 叙事结构
 
-hook（2–3 秒，第 0 帧就有封面大标题）→ 中段 3–7 镜（至少一镜演示核心动作、至少一镜 compare/steps/phone/meter）→ endCard（4 秒）。各行业的推荐结构见 `industries/<行业>/recipe.md`。
+hook（2–3 秒，第 0 帧就有封面大标题）→ 场景/问题 → 证据与解释（可用 dataChart、counter、compare、meter）→ 产品动作/卖点 → endCard（4 秒）。有真实数据时，dataChart 按「标题 → 核心结论 → 1–3 个 KPI → 图表 → 旁注 → 数据来源」组织一屏；缺少数据时用定性 compare/steps。各行业的推荐结构见 `industries/<行业>/recipe.md`。
 
 ## 3. 视觉系统
 
-- 背景：随 `mood` 变化的上下两色渐变（痛点偏暖红，产品和片尾偏冷）+ 下三分之一氛围层。
-- 主体：居中白卡或深色卡（6 套主题，`meta.theme`），`meta.brandColor` 只换强调色。
-- 字：思源黑体可变字重；字幕是白字 + 粗描边 + 硬投影，`{}` 包住的字变强调黄。
+- 背景：随 `mood` 变化的上下两色渐变。默认 warm-emotion 保持沉静蓝 → 莓紫 → 危险红的情绪顺序；全部主题统一干净渐变底，不叠加浮泡、图标剪影或装饰进度条。
+- 主体：居中暖纸白/白卡或深色卡（18 套主题，`meta.theme`），`meta.brandColor` 只换强调色；good/warn/bad 仍只表达状态语义。精选配色与选择方式见 [THEMES.md](THEMES.md)。
+- 数据图：dataChart 支持横向条形 bar、趋势折线 line、点图 dot、堆叠条 stacked、占比环图 donut。默认 Micro 色板使用墨蓝、莓紫、雾蓝与灰紫；另有 Mono、Porcelain、Palm、Wire。数据系列色不挪用 good/warn/bad。卡片内按固定层级展示标题/结论/KPI/图/旁注/来源。
+- 字：全部主题的卡外标题统一无粗描边、字重 800。默认 warm-emotion 使用暖白与浅玫瑰强调，浅色背景使用深字，深色背景使用浅字，强调字取主题搭配色。`{}` 标记强调字。dataChart 的 1080×1920 字级为范围标题 30、核心结论 44、KPI 数字 52、图例 30、旁注与来源 28 px。范围标题退一级，结论优先；折线图带数值刻度，点图使用统一横向刻度；堆叠图按每条 100% 展示，系列与图例保持同色，段内文字随底色选择深浅；环图中心显示重点类别占比。
+- 列表与产品演示：栏目标题 32–36 px，列表正文 40–52 px，对比正文 36–46 px，结果数字 48–76 px，辅助文字 28–34 px。长文按可用宽度与高度收敛字号。列表栏目标题使用主题背景文字色、左对齐；对比结论使用主题卡片底；产品演示高亮使用 accentSoft，避免白色字幕强调色影响卡内读数。
 
 ## 4. 镜头语言
+
+### 卡片内部间距
+
+列表卡、对比卡与产品演示共享 `template/src/core/cardRhythm.ts`：宽卡左右内边距 40 px，窄对比栏 30 px，分组间距 32 px，常规行间距 24 px，密集行间距 16 px。列表栏目标题左对齐，与行内容共用起始线；正文降低字重，数值优先。对比卡缩小栏头图标，正文行距 1.35，结论与卡片保持 64 px 间距。产品演示的指标标签与数字相隔 12 px，图表与明细相隔 24 px，点击位置与实际行布局同步计算；五项明细按剩余空间收敛行高。
 
 固定机位。每镜一个「会动的主角」（指针、数字、气泡、点击），卡片在主体区内入场、演完、4 帧内淡出下移。
 
@@ -28,7 +34,7 @@ hook（2–3 秒，第 0 帧就有封面大标题）→ 中段 3–7 镜（至�
 
 ## 6. 元件库
 
-18 个公共镜头：hook、chat、phone、mockApp、meter、compare、counter、features、steps、quickList、endCard，以及行业镜头 photoShot、priceCard、storeCard、reviewCard、factSheet、credCard、beforeAfter。字段和字数上限见 `shots.md`。
+19 个公共镜头：hook、chat、phone、mockApp、meter、compare、counter、dataChart、features、steps、quickList、endCard，以及行业镜头 photoShot、priceCard、storeCard、reviewCard、factSheet、credCard、beforeAfter。字段和字数上限见 `shots.md`。
 
 ## 7. 声音
 
@@ -49,3 +55,7 @@ hook（2–3 秒，第 0 帧就有封面大标题）→ 中段 3–7 镜（至�
 
 - 适合：单一卖点、要讲流程、要演示界面、实物门店（配行业镜头）。
 - 不适合：需要「先猜再揭晓」互动的内容（用 quiz），类别很多要一次铺开的内容平台（用 journey）。
+
+## 开场与片尾层级
+
+开场主标题优先，产品提示使用主题卡片色、36–48 px 产品文字与 56 px 图标；取消固定标题笔触，首帧完整展示主视觉。片尾保留 stack / panel / spotlight：居中和品牌版式的产品名为 56–92 px、口号为 64–112 px；卡片版式产品名 40–64 px、口号 64–104 px。卖点为 34–46 px 次级列表或分行胶囊。行动按钮固定 96 px 高，使用 accent / accentText，距卖点至少 40 px。胶囊换行与整体高度共用计算，不再单独钳制按钮位置。

@@ -32,7 +32,7 @@ Every video opens with it, exactly once. 2–3 seconds.
 ## Rings and bars only show numbers that mean something
 - The `stat` arc length is `pct` (or a percentage in `text`). If "6 h" is meant as "a quarter of the day", write `"pct": 25`. Without a share, leave it out: the ring is drawn with no arc.
 - If `text` has no number ("Bamboo outside the window", "Split by hand"), don't use `stat`: use `illust` for a place or an object, `icon` for a feature. A `stat` with no number falls back to a big-word card with no ring.
-- Same for `statBar`: with no `level`, `pct` or percentage, only the empty track and a light sweep are drawn, no "8/10".
+- Same for `statBar`: with no `level`, `pct` or percentage, only the empty track is drawn, no "8/10".
 
 ## Don't reuse the same visual, and don't lean on default decoration
 If every video in a batch uses `bubble`, or every one uses `stat`, the frame-0 covers all start to look like the same template with a new skin. For data/efficiency pitches, alternate between `stat` (a ring) and `statBar` (a full-width bar); for "before vs. now" pitches, try `split`; for an industry film about one object or place, use `illust`. Orbiting and floating icons are only drawn when you list them (`orbit` / `deco`); the old defaults that had nothing to do with the product are gone.

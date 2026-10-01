@@ -15,6 +15,7 @@
 | [compare](#compare) | A comparison: side-by-side columns (lr) or a before/after wipe reveal (beforeAfter) | 2.5–7 (default 4) | optional |
 | [beforeAfter](#beforeafter) | A before/after wipe slider: hair/nail/lash only, the same customer before and after, revealed with a wipe | 2–4 (default 3) | optional |
 | [counter](#counter) | A rolling number from `from` to `to`, bumping and flashing as it lands, with the number's meaning and basis below it | 2–5 (default 3) | optional |
+| [dataChart](#datachart) | A data story card with a title, takeaway, KPIs, chart, annotations, and cited source; supports bars, lines, dots, stacked bars, and donut charts | 3–7 (default 4) | optional |
 | [priceCard](#pricecard) | A price card/list: the display-pricing rules are built into the component, the model only fills in numbers and conditions | 2–4.5 (default 3) | optional |
 | [storeCard](#storecard) | Store location and directions: where it is, hours, how to get there, and how to act on the platform | 2.5–4 (default 3) | optional |
 | [reviewCard](#reviewcard) | A real customer review, quoted verbatim (may be trimmed, never rewritten to sound better) | 2–4.5 (default 3) | optional |
@@ -25,11 +26,11 @@
 | [quickList](#quicklist) | 3–6 rows fly in alternating left/right, each stamped with a score or a colored tag; the left edge fills in by tone | 2–6 (default 3) | optional |
 | [endCard](#endcard) | The end card: logo/brand icon + product name + a big headline + 1–3 selling-point pills + an optional call to action | 3–6 (default 4) | not allowed |
 
-**Typical structure**: hook (0–3s) → pain point / scene (chat / quickList / compare / meter) → product appears (phone / mockApp / photoShot) → selling points / demo (features / counter / meter / steps) → endCard.
+**Typical structure**: hook (0–3s) → pain point / scene → evidence (dataChart / compare / meter / counter) → product appears (phone / mockApp / photoShot) → endCard. dataChart organizes a title, takeaway, KPIs, chart, annotations, and cited sources in one shot.
 
 **Industry shots** (which ones are allowed depends on `meta.industry`, see `enabledShots` in each `industries/<id>/rules.json`): photoShot (real or illustrated photos), priceCard (price list), storeCard (location/map/booking), reviewCard (real customer reviews), factSheet (spec sheet/syllabus/swatches), credCard (credentials/honors), beforeAfter (before/after slider, beauty industry only).
 
-**Themes**: `warm-emotion` `tech-dark` `fresh-light` `business-blue` `festival-red` `mono-premium`
+**Themes**: `warm-emotion` `tech-dark` `fresh-light` `business-blue` `festival-red` `mono-premium` `citrus-pop` `coral-pop` `cobalt-pop` `mint-pop` `lilac-pop` `apricot-pop` `studio-blue` `studio-pink` `studio-green` `studio-magenta` `studio-lemon` `studio-mint` `studio-orange` `studio-red` `studio-teal` `studio-violet` `studio-lavender` `studio-apricot` `studio-cyan` `studio-lime-purple` `studio-indigo` `studio-graphite`
 
 **Icons** (every `icon` field must pick from this list): `check` `clock` `chart` `chat` `lock` `bolt` `star` `doc` `send` `image` `phone` `user` `users` `search` `shield` `gift` `heart` `money` `calendar` `bell` `cloud` `code` `sparkle` `arrow` `alert` `x` `trend` `eye`
 
@@ -915,6 +916,72 @@ Example (passes validation as-is):
 
 ```json
 {"type": "counter", "dur": 3, "caption": "周报不用再熬，\n{几分钟就交}", "mood": 0.2, "params": {"from": 45, "to": 6, "suffix": "分钟", "showFrom": true, "label": "整理一份周报", "icon": "clock", "tone": "good"}}
+```
+
+---
+
+<a id="datachart"></a>
+## dataChart · data story card
+
+**One shot, one data argument:** the title sets the scope, the takeaway states the conclusion, KPIs surface key readings, the chart shows evidence, annotations clarify the basis, and the footer names the source. A common sequence is hook → dataChart → product demonstration → endCard.
+
+```json
+{"type":"dataChart", "dur":4, "caption":"A few sample expenses,\n{the pattern is clear}", "mood":0.35,
+ "params":{"title":"Sample ledger entries", "takeaway":"Delivery is the largest sample category", "chartType":"donut",
+   "kpis":[{"label":"Largest item","value":"¥860"},{"label":"Budget used","value":"62%"}],
+   "data":[{"label":"Delivery","value":860},{"label":"Tea and coffee","value":326},{"label":"Auto-renewal","value":98},{"label":"Late ride","value":410}],
+   "unit":"yuan", "annotations":["Fictional ledger, for chart layout only"], "refs":["f1","f2"]}}
+```
+
+The complete validated demo is `examples/ledger.json`. Sample values require `meta.demoData: true`, a `meta.disclaimer` that says they are examples, and matching fact references. For real content, cite the real brief. Every chart value must appear in the cited fact text; do not present derived totals as source values.
+
+### Choose a chart
+
+- `bar`: compare categories or ranks.
+- `line`: show a trend; order values chronologically.
+- `dot`: compare categories on a shared horizontal scale with direct value labels.
+- `stacked`: show composition; repeat a category label and use `series` to identify segments. Each bar is normalized to 100%; segment labels show raw values. Bar lengths do not compare totals.
+- `donut`: show part-to-whole shares; keep to five categories or fewer.
+
+Each shot supports up to 6 data rows, 3 KPIs, and 2 annotations. `data` rows use `{label,value,series?}`. `unit` labels the values; `max` sets a custom axis limit.
+
+### Visual rules
+
+The vivid themes `citrus-pop`, `coral-pop`, `cobalt-pop`, `mint-pop`, `lilac-pop`, and `apricot-pop` include chart colors. Omit `palette` to use these theme colors, or supply it to select an explicit palette. Brand color still overrides the focal color. Captions are white; cards use blue-gray body text and bright numeric accents.
+
+The scope title uses 30 px, the takeaway 44 px, KPI numbers 52 px, and labels/sources 28–30 px. Line charts include zero, midpoint, and upper ticks. Dot charts compare categories from zero. A series keeps the same color in every segment and its legend; focusing a row within a series highlights that entire series. The donut center names the focused category and its share, falling back to the largest category when no focus is supplied.
+
+The chart sits on a stable paper card so readings do not change color with `mood`. The default `micro` palette adapts the project's supplied MicroPalettes references into ink navy, berry, muted blue, and lavender, with narrow paper gaps between donut slices. Other choices are `mono` (ink grays), `porcelain` (ordered single hue), `palm` (muted greens/yellows with an amber focal color), and `wire` (grayscale with one orange focal color). Set `focus: true` on a data row to use the palette focal color; `meta.brandColor` still overrides the focal color. Other series colors distinguish data; they do not carry good/warn/bad semantics. Theme mood gradients and brand color overrides remain managed by the existing theme system.
+
+`refs` accepts 1–2 fact IDs, resolves them to `meta.facts[].source`, and renders the sources in the card footer. Annotations clarify scope or limitations but do not replace a source. Use `endCard` for the closing brand, slogan, and CTA.
+
+### Params (auto-generated from dataChart.spec.json)
+
+Duration 3–7s (default 4); caption optional; default mood 0.2; exit push.
+
+| Field | Required | Type / values | Limit | Notes |
+|---|---|---|---|---|
+| `title` | Yes | text | ≤16 chars | 图表标题，说明主题或指标范围 |
+| `takeaway` | Yes | text | ≤28 chars | 核心结论，一句话说清图表意味着什么 |
+| `chartType` | Yes | bar / line / dot / stacked / donut |  | bar 横向比较；line 趋势；dot 点图；stacked 构成；donut 占比 |
+| `palette` |  | micro / mono / porcelain / palm / wire |  | 不写时使用主题自带图表色板，无自带色板则用 micro；显式可选 micro 墨蓝/莓紫/雾蓝、mono 灰墨、porcelain 单色阶、palm 低饱和绿黄、wire 灰底单橙重点 |
+| `data` | Yes | array | 2–6 items | 图表数据；堆叠图用同一 label 的不同 series 表示分段；focus=true 标记一个重点项 |
+| `data[].label` | Yes | text | ≤12 chars |  |
+| `data[].value` | Yes | number | 0–100000000 |  |
+| `data[].series` |  | text | ≤10 chars |  |
+| `data[].focus` |  | true/false |  | 可选重点项；micro/palm/wire 使用各自的焦点色 |
+| `kpis` |  | array | 0–3 items | 可选 1–3 个 KPI 摘要 |
+| `kpis[].label` | Yes | text | ≤10 chars |  |
+| `kpis[].value` | Yes | text | ≤10 chars |  |
+| `annotations` |  | array | 0–2 items | 可选旁注/口径说明 |
+| `unit` |  | text | ≤3 chars | 数据单位，如 %、次、天 |
+| `max` |  | number | 0.01–100000000 | 图表坐标上限；默认取数据最大值 |
+| `refs` | Yes | array | 1–2 items | 引用 1–2 条 meta.facts 来源 ID |
+
+Example (passes validation as-is):
+
+```json
+{"type": "dataChart", "dur": 4, "caption": "用户更常选{无需等待}的方案", "mood": 0.2, "params": {"title": "选择偏好（本周）", "takeaway": "无需等待的方案领先 18 个百分点", "chartType": "bar", "kpis": [{"label": "完成样本", "value": "1,240"}, {"label": "领先幅度", "value": "18%"}], "data": [{"label": "即时方案", "value": 59, "focus": true}, {"label": "预约方案", "value": 41}], "unit": "%", "annotations": ["统计口径：完成选择的用户"], "refs": ["choice-survey"]}}
 ```
 
 ---

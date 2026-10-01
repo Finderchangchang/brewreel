@@ -13,7 +13,7 @@ import {loadSpecs} from './validate.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ORDER = [
-  'hook', 'chat', 'phone', 'mockApp', 'photoShot', 'meter', 'compare', 'beforeAfter', 'counter',
+  'hook', 'chat', 'phone', 'mockApp', 'photoShot', 'meter', 'compare', 'beforeAfter', 'counter', 'dataChart',
   'priceCard', 'storeCard', 'reviewCard', 'factSheet', 'credCard', 'features', 'steps', 'quickList', 'endCard',
 ];
 const specs = loadSpecs();
@@ -32,6 +32,7 @@ const PURPOSE_EN = {
   compare: 'A comparison: side-by-side columns (lr) or a before/after wipe reveal (beforeAfter)',
   beforeAfter: 'A before/after wipe slider: hair/nail/lash only, the same customer before and after, revealed with a wipe',
   counter: 'A rolling number from `from` to `to`, bumping and flashing as it lands, with the number\'s meaning and basis below it',
+  dataChart: 'A data story card with a title, takeaway, KPIs, chart, annotations, and cited source; supports bars, lines, dots, stacked bars, and donut charts',
   priceCard: 'A price card/list: the display-pricing rules are built into the component, the model only fills in numbers and conditions',
   storeCard: 'Store location and directions: where it is, hours, how to get there, and how to act on the platform',
   reviewCard: 'A real customer review, quoted verbatim (may be trimmed, never rewritten to sound better)',
@@ -86,7 +87,7 @@ const build = (lang) => {
       md.push(`| [${t}](#${t.toLowerCase()}) | ${PURPOSE_EN[t] ?? s.purpose.split('。')[0]} | ${s.dur.min}–${s.dur.max} (default ${s.dur.default}) | ${capRule[s.caption]} |`);
     }
     md.push('');
-    md.push('**Typical structure**: hook (0–3s) → pain point / scene (chat / quickList / compare / meter) → product appears (phone / mockApp / photoShot) → selling points / demo (features / counter / meter / steps) → endCard.');
+    md.push('**Typical structure**: hook (0–3s) → pain point / scene → evidence (dataChart / compare / meter / counter) → product appears (phone / mockApp / photoShot) → endCard. dataChart organizes a title, takeaway, KPIs, chart, annotations, and cited sources in one shot.');
     md.push('');
     md.push('**Industry shots** (which ones are allowed depends on `meta.industry`, see `enabledShots` in each `industries/<id>/rules.json`): photoShot (real or illustrated photos), priceCard (price list), storeCard (location/map/booking), reviewCard (real customer reviews), factSheet (spec sheet/syllabus/swatches), credCard (credentials/honors), beforeAfter (before/after slider, beauty industry only).');
     md.push('');
@@ -110,7 +111,7 @@ const build = (lang) => {
       md.push(`| [${t}](#${t.toLowerCase()}) | ${s.purpose.split('。')[0]} | ${s.dur.min}–${s.dur.max}（默认 ${s.dur.default}） | ${capRule[s.caption]} |`);
     }
     md.push('');
-    md.push('**常规结构**：hook（0–3 秒）→ 痛点/场景（chat / quickList / compare / meter）→ 产品出场（phone / mockApp / photoShot）→ 卖点/演示（features / counter / meter / steps）→ endCard。');
+    md.push('**常规结构**：hook（0–3 秒）→ 痛点/场景 → 证据（dataChart / compare / meter / counter）→ 产品出场（phone / mockApp / photoShot）→ endCard。dataChart 在一镜内组织标题、核心结论、KPI、图表、旁注和来源。');
     md.push('');
     md.push('**行业镜头**（`meta.industry` 决定哪些能用，见各 `industries/<id>/rules.json` 的 `enabledShots`）：photoShot（实拍/示意图）、priceCard（价目表）、storeCard（门店/地图/预订）、reviewCard（真实评价）、factSheet（参数表/大纲/色卡）、credCard（资历/荣誉）、beforeAfter（前后对比，仅美业）。');
     md.push('');

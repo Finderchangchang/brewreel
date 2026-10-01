@@ -28,12 +28,14 @@ export const parseRich = (s: string): Ch[] => {
 };
 
 export const glyph = (th: Theme, size: number, hot: boolean, strokeK = 0.15): React.CSSProperties =>
-  ({
-    color: hot ? th.hot : th.capFill,
-    WebkitTextStroke: `${Math.round(size * strokeK)}px ${th.capStroke}`,
-    paintOrder: 'stroke fill',
-    textShadow: `0 ${Math.round(size * 0.08)}px 0 ${th.capStroke}`,
-  }) as React.CSSProperties;
+  th.name === 'warm-emotion' || th.captionStyle === 'clean'
+    ? {color: hot ? th.hot : th.capFill, textShadow: th.capFill === th.cardText ? 'none' : '0 5px 18px rgba(14,21,49,0.28)'}
+    : ({
+        color: hot ? th.hot : th.capFill,
+        WebkitTextStroke: `${Math.round(size * strokeK)}px ${th.capStroke}`,
+        paintOrder: 'stroke fill',
+        textShadow: `0 ${Math.round(size * 0.08)}px 0 ${th.capStroke}`,
+      } as React.CSSProperties);
 
 /** 静态大字（封面/片尾用）；逐字动画的版本在 layers.tsx 的 Captions。
  * lang='en' 时行高更松、不用中文的 palt 特性、字距归零（拉丁字重叠比汉字更明显） */
@@ -51,7 +53,7 @@ export const BigText: React.FC<{text: string; size: number; lineHeight?: number;
       style={{
         fontFamily: FONT,
         fontSize: size,
-        fontWeight: 900,
+        fontWeight: th.name === 'warm-emotion' || th.captionStyle === 'clean' ? 800 : 900,
         lineHeight: lh,
         letterSpacing: lang === 'en' ? 0 : undefined,
         textAlign: 'center',
@@ -207,22 +209,9 @@ export const IconDisc: React.FC<{name: string; size?: number; tone?: 'accent' | 
   );
 };
 
-// ---------- 扫光（胶囊/按钮上的一道高光） p: 0→1 ----------
-export const Sweep: React.FC<{p: number; w: number}> = ({p, w}) =>
-  p > 0 && p < 1 ? (
-    <div
-      style={{
-        position: 'absolute',
-        top: -20,
-        bottom: -20,
-        left: -140 + p * (w + 280),
-        width: 90,
-        transform: 'skewX(-22deg)',
-        background: 'linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0) 100%)',
-        pointerEvents: 'none',
-      }}
-    />
-  ) : null;
+// ---------- 旧扫光接口：保留兼容，不再绘制高光 ----------
+// Legacy API: keep old shot imports compatible without the light sweep.
+export const Sweep: React.FC<{p: number; w: number}> = () => null;
 
 // ---------- 点击指示（手指点下的圆圈），d = t - 点击时刻 ----------
 export const TapRipple: React.FC<{x: number; y: number; d: number}> = ({x, y, d}) =>

@@ -4,15 +4,15 @@ import {beatPulse, bump, clamp, float, pop} from '../core/anim';
 import {emWidth, fitLine, glueBreaks} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
-import {Avatar, Card, IconDisc, Lang, Sweep, pick} from '../core/kit';
+import {Avatar, Card, IconDisc, Lang, pick} from '../core/kit';
 import {alpha, mixHex, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 import {Illust, isIllust} from '../illust';
 
 // ============================================================
 // hook：第 0 帧即封面。标题由全局字幕层画（第 1 镜字幕第 0 帧完整显示）。
-// 这里画：标题旁的高光笔触、产品高亮胶囊（y 572–660）、主视觉（y 690–1340）。
-// 第 0 帧所有元素都已在位；之后只有漂浮、扫光、卡拍脉冲这类「活着」的小动作。
+// 这里画：产品提示（y 572–660）、主视觉（y 700–1340）。
+// 第 0 帧所有元素都已在位；之后只有漂浮、卡拍脉冲这类「活着」的小动作。
 //
 // visual 分两类：bubble/stat/icon/illust/phone 按「内容类型」选（聊天消息/数字/图标/行业插画/截图）；
 // split/statBar 是两种独立的「构图」变体（分屏对比 / 通栏数字条），用来让同一内容类型
@@ -50,7 +50,7 @@ type P = {
 
 const BADGE_TOP = 572;
 const BADGE_H = 88;
-const VIS_TOP = 690;
+const VIS_TOP = 700;
 const VIS_BOT = 1330;
 
 const ownDeco = (p: P) => (p.deco ?? []).filter((x) => isIcon(x));
@@ -62,63 +62,15 @@ const pctOf = (p: P): number | null => {
   return m ? Math.max(0, Math.min(100, parseFloat(m[1]))) : null;
 };
 
-// 标题旁的高光笔触
-const Stroke: React.FC<{x: number; y: number; len: number; rot: number; color: string}> = ({x, y, len, rot, color}) => (
-  <div
-    style={{
-      position: 'absolute',
-      left: x,
-      top: y,
-      width: len,
-      height: 12,
-      borderRadius: 6,
-      background: color,
-      transform: `rotate(${rot}deg)`,
-      transformOrigin: '0 50%',
-      boxShadow: '0 2px 0 rgba(0,0,0,0.18)',
-    }}
-  />
-);
-
-// 产品高亮胶囊：白→强调黄渐变 + 左侧 logo/图标 + 扫光
+// 产品提示：主题卡片色、较小图标与次级字重；首帧完整呈现
 const Badge: React.FC<{text: string; t: number; logo?: string; icon?: string}> = ({text, t, logo, icon}) => {
   const th = useTheme();
   const size = fitLine(text, 560, 48, 36);
-  const w = Math.round(size * (text.length * 0.92) + 150);
-  const sweep = interpolate(t, [0.4, 1.1], [0, 1], clamp);
   return (
-    <div style={{position: 'absolute', left: 0, right: 0, top: BADGE_TOP, display: 'flex', justifyContent: 'center'}}>
-      <div style={{position: 'relative'}}>
-        <div
-          style={{
-            position: 'relative',
-            overflow: 'hidden',
-            height: BADGE_H,
-            boxSizing: 'border-box',
-            display: 'flex',
-            alignItems: 'center',
-            padding: '0 40px 0 112px',
-            borderRadius: BADGE_H / 2,
-            background: `linear-gradient(90deg, #ffffff 0%, ${mixHex(th.hot, '#ffffff', 0.6)} 45%, ${th.hot} 100%)`,
-            border: '4px solid #ffffff',
-            boxShadow: '0 12px 26px rgba(0,0,0,0.22)',
-            fontFamily: FONT,
-            fontWeight: 900,
-            fontSize: size,
-            color: '#1b1a18',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {text}
-          <Sweep p={sweep} w={w} />
-        </div>
-        <div style={{position: 'absolute', left: -6, top: -10, width: 108, height: 108, transform: `translateY(${float(t, 0.8, 5)}px)`}}>
-          {logo ? (
-            <Img src={staticFile(logo)} style={{width: 108, height: 108, objectFit: 'contain'}} />
-          ) : (
-            <IconDisc name={icon && isIcon(icon) ? icon : 'sparkle'} size={108} style={{border: '5px solid #ffffff'}} />
-          )}
-        </div>
+    <div style={{position: 'absolute', left: 150, width: 780, top: BADGE_TOP, display: 'flex', justifyContent: 'center'}}>
+      <div style={{position: 'relative', overflow: 'hidden', height: BADGE_H, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 20, padding: '0 32px', borderRadius: 24, background: th.card, boxShadow: th.shadow, color: th.cardText, fontSize: size, fontWeight: 700, whiteSpace: 'nowrap'}}>
+        {logo ? <Img src={staticFile(logo)} style={{width: 64, height: 64, objectFit: 'contain'}} /> : <Icon name={icon && isIcon(icon) ? icon : 'sparkle'} size={56} color={th.accent} stroke={2.2} />}
+        {text}
       </div>
     </div>
   );
@@ -202,7 +154,6 @@ const BubbleVisual: React.FC<{p: P; t: number; lang: Lang}> = ({p, t, lang}) => 
   const hit = bump(t, 1.0, 0.5);
   const text = p.text ?? '';
   const bubbleSize = fitLine(text, 1200, 56, 44) >= 52 ? 56 : 48;
-  const shine = (t % 1.6) / 1.6;
   return (
     <>
       <Floaties p={p} t={t} spots={[[36, 820, 112, -10], [934, 900, 104, 12], [46, 1150, 92, 8]]} />
@@ -256,7 +207,6 @@ const BubbleVisual: React.FC<{p: P; t: number; lang: Lang}> = ({p, t, lang}) => 
                 <div style={{fontSize: 46, fontWeight: 900, color: tone, lineHeight: 1.15}}>{p.sub}</div>
                 {/* 一条连续的警示光带（不再是 9 格里亮 8 格——那像一个没有定义的「8/9」分数） */}
                 <div style={{position: 'relative', overflow: 'hidden', marginTop: 14, height: 16, borderRadius: 8, background: `linear-gradient(90deg, ${alpha(tone, 0.25)}, ${tone})`}}>
-                  <div style={{position: 'absolute', top: 0, bottom: 0, left: `${shine * 130 - 30}%`, width: '24%', background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.7), rgba(255,255,255,0))'}} />
                 </div>
               </div>
             </div>
@@ -622,7 +572,6 @@ const StatBarVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) 
   const top0 = Math.round(VIS_TOP + Math.max(0, (VIS_BOT - VIS_TOP - groupH) / 2));
   const barY = Math.round(top0 + size * 1.05 + subH + 60);
   const pulse = bump(t, 0.5, 0.4) + beatPulse(t, beat) * 0.5;
-  const shine = (t % 1.5) / 1.5;
   return (
     <>
       <Floaties p={p} t={t} spots={[[36, 800, 100, -10], [940, 1160, 100, 10]]} />
@@ -667,7 +616,6 @@ const StatBarVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) 
             {Array.from({length: 9}, (_, i) => (
               <div key={i} style={{position: 'absolute', left: `${(i + 1) * 10}%`, top: 26, bottom: 26, width: 4, marginLeft: -2, borderRadius: 2, background: alpha('#ffffff', 0.45)}} />
             ))}
-            <div style={{position: 'absolute', top: 0, bottom: 0, left: `${shine * 130 - 30}%`, width: '22%', background: `linear-gradient(90deg, ${alpha(tone, 0)}, ${alpha(tone, 0.7)}, ${alpha(tone, 0)})`}} />
           </>
         )}
       </div>
@@ -689,10 +637,6 @@ const Hook: React.FC<ShotProps<P>> = ({params: p, t, beat, meta}) => {
   const visual = p.visual === 'illust' && !isIllust(p.illust) ? 'icon' : p.visual;
   return (
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
-      <Stroke x={194} y={266} len={44} rot={40} color={th.hot} />
-      <Stroke x={172} y={306} len={32} rot={8} color={th.hot} />
-      <Stroke x={846} y={292} len={44} rot={-40} color={th.hot} />
-      <Stroke x={852} y={326} len={32} rot={-8} color={th.hot} />
       {visual === 'stat' ? (
         <StatVisual p={p} t={t} beat={b} />
       ) : visual === 'icon' ? (

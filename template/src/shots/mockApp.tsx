@@ -4,9 +4,10 @@ import {bump, clamp, easeOut, fitTimeline, pop} from '../core/anim';
 import {emWidth, fitLine} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
-import {IconDisc, Sweep, TapRipple, pick} from '../core/kit';
+import {IconDisc, TapRipple, pick} from '../core/kit';
 import type {Lang} from '../core/kit';
 import {CARD, SAFE} from '../core/safe';
+import {CARD_RHYTHM as SPACE} from '../core/cardRhythm';
 import {alpha, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
@@ -36,17 +37,21 @@ type P = {
 
 const X = CARD.x0;
 const W = CARD.w;
-const HEADER = 92;
-const PADX = 30;
-const IN_W = W - 2 * PADX; // 720
+const HEADER = 96;
+const PADX = SPACE.pad;
+const PAD_T = SPACE.sectionGap;
+const PAD_B = SPACE.sectionGap;
+const ROW_GAP = SPACE.compactGap;
+const SECTION_GAP = SPACE.rowGap;
+const IN_W = W - 2 * PADX;
 const KIND_ICON: Record<Kind, string> = {dashboard: 'chart', list: 'doc', editor: 'sparkle', form: 'check'};
 const hexOr = (c: string, d: string) => (/^#[0-9a-f]{6}$/i.test(c) ? c : d);
 
 const kindOf = (p: P): Kind => (['dashboard', 'list', 'editor', 'form'].includes(p.kind) ? p.kind : 'list');
 // dashboard 的主体高度固定（卡片用满主体区）：提问框 + 大数字 + 图表（至少 CHART_MIN）之后剩下的高度能放几行就放几行，保证最后一行完整落在卡片里
-const DASH_BODY = 780 - 92 - 28 - 30; // SAFE.h - HEADER - PAD_T - PAD_B
+const DASH_BODY = SAFE.h - HEADER - PAD_T - PAD_B;
 const CHART_MIN = 140;
-export const dashRowsMax = (p: {input?: string; stat?: unknown}) => Math.max(0, Math.min(3, Math.floor((DASH_BODY - (p.input ? 80 + 18 : 0) - (p.stat ? 150 : 0) - CHART_MIN - 10) / (84 + 10))));
+export const dashRowsMax = (p: {input?: string; stat?: unknown}) => Math.max(0, Math.min(3, Math.floor((DASH_BODY - (p.input ? 80 + SECTION_GAP : 0) - (p.stat ? 144 : 0) - CHART_MIN - SECTION_GAP + ROW_GAP) / (88 + ROW_GAP))));
 const items = (p: P) => (Array.isArray(p.items) ? p.items : []).filter((x) => x && typeof x.text === 'string').slice(0, kindOf(p) === 'dashboard' ? dashRowsMax(p) : 5);
 const hl = (p: P) => (typeof p.highlight === 'number' && p.highlight >= 0 && p.highlight < items(p).length ? p.highlight : -1);
 const chars = (s?: string) => Array.from(s ?? '');
@@ -244,9 +249,9 @@ const Row: React.FC<{it: Item; t: number; at: number; hot: boolean; hotAt: numbe
   const tone = toneColor(th, it.tone ?? (kind === 'dashboard' ? 'neutral' : 'accent'));
   const icon = isIcon(it.icon) ? it.icon : kind === 'dashboard' ? 'trend' : 'doc';
   const dash = kind === 'dashboard';
-  const valueSize = dash ? 42 : 30;
+  const valueSize = dash ? 48 : 32;
   const valW = it.value ? Math.min(260, (dash ? valueSize * 0.62 : 30) * chars(it.value).length + (dash ? 10 : 60)) : 0;
-  const textSize = fitLine(it.text, IN_W - 40 - 64 - 40 - valW, dash ? 38 : 40, 34);
+  const textSize = fitLine(it.text, IN_W - 48 - 56 - 40 - valW, 42, 36);
   const discTone = it.tone === 'good' || it.tone === 'warn' || it.tone === 'bad' ? it.tone : 'accent';
   return (
     <div
@@ -256,7 +261,7 @@ const Row: React.FC<{it: Item; t: number; at: number; hot: boolean; hotAt: numbe
         display: 'flex',
         alignItems: 'center',
         gap: 20,
-        padding: '0 20px',
+        padding: '0 24px',
         borderRadius: 22,
         background: sel > 0 ? th.accentSoft : th.cardAlt,
         boxShadow: sel > 0 ? `inset 0 0 0 ${3 * sel}px ${th.accent}, 0 ${10 * sel}px ${24 * sel}px ${alpha(hexOr(th.accent, '#3B82F6'), 0.25 * sel)}` : undefined,
@@ -264,7 +269,7 @@ const Row: React.FC<{it: Item; t: number; at: number; hot: boolean; hotAt: numbe
         transform: `translateY(${(1 - q) * 30}px) scale(${1 + b * 0.04})`,
       }}
     >
-      <IconDisc name={icon} size={64} tone={discTone} soft />
+      <IconDisc name={icon} size={56} tone={discTone} soft />
       <div style={{flex: 1, fontSize: textSize, fontWeight: 700, color: th.cardText, whiteSpace: 'nowrap', overflow: 'hidden'}}>{it.text}</div>
       {it.value &&
         (dash ? (
@@ -308,14 +313,14 @@ const Thinking: React.FC<{h: number; t: number}> = ({h, t}) => {
 };
 
 // ---------- dashboard ----------
-const DASH_ROW = 84;
+const DASH_ROW = 88;
 const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = ({p, pl, t: t0, bodyH, lang}) => {
   const th = useTheme();
   const rows = pl.rows;
-  const rowsH = rows.length ? rows.length * (DASH_ROW + 10) + 6 : 0;
-  const askH = p.input ? SEARCH_H + 18 : 0;
-  const statH = p.stat ? 150 : 0;
-  const chartH = Math.max(CHART_MIN, bodyH - askH - statH - rowsH - 4);
+  const rowsH = rows.length ? rows.length * DASH_ROW + (rows.length - 1) * ROW_GAP + SECTION_GAP : 0;
+  const askH = p.input ? SEARCH_H + SECTION_GAP : 0;
+  const statH = p.stat ? 144 : 0;
+  const chartH = Math.max(CHART_MIN, bodyH - askH - statH - rowsH);
   const ask = typed(p.input ?? '', t0, pl.typeFrom, pl.charSec);
   // 出数前的时间轴整体后移 ansAt（没有 input 时 ansAt = 0，和原来一样）
   const t = t0 - pl.ansAt;
@@ -333,8 +338,8 @@ const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang
           {p.stat && (
             <div style={{height: statH, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', paddingBottom: 6, boxSizing: 'border-box'}}>
               <div>
-                <div style={{fontSize: 34, fontWeight: 700, color: th.cardSub, lineHeight: 1.2}}>{p.stat.label}</div>
-                <div style={{fontSize: fitLine(p.stat.value, 440, 104, 72), fontWeight: 900, color: th.cardText, lineHeight: 1.05, letterSpacing: -1, transformOrigin: '0% 80%', transform: `scale(${1 + settle * 0.08})`, opacity: p.input ? Math.min(1, Math.max(0, (t - 0.05) / 0.15)) : 1}}>
+                <div style={{fontSize: 34, fontWeight: 600, color: th.cardSub, lineHeight: 1.2, marginBottom: 12}}>{p.stat.label}</div>
+                <div style={{fontSize: fitLine(p.stat.value, 440, 76, 60), fontWeight: 800, color: th.accent, lineHeight: 1.05, letterSpacing: -1, transformOrigin: '0% 80%', transform: `scale(${1 + settle * 0.08})`, opacity: p.input ? Math.min(1, Math.max(0, (t - 0.05) / 0.15)) : 1}}>
                   {rollText(p.stat.value, roll)}
                 </div>
               </div>
@@ -356,7 +361,7 @@ const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang
         </>
       )}
       {rows.length > 0 && (
-        <div style={{display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6}}>
+        <div style={{display: 'flex', flexDirection: 'column', gap: ROW_GAP, marginTop: SECTION_GAP}}>
           {rows.map((it, i) => (t0 >= pl.rowAt[i] ? <Row key={i} it={it} t={t0} at={pl.rowAt[i]} hot={i === pl.h} hotAt={pl.tapAt} h={DASH_ROW} kind="dashboard" /> : <Skeleton key={i} h={DASH_ROW} on={t0 >= pl.rowAt[i] - SKELETON_MAX} />))}
         </div>
       )}
@@ -366,11 +371,11 @@ const Dashboard: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang
 
 // ---------- list ----------
 const SEARCH_H = 80;
-const listRowH = (n: number) => (n >= 5 ? 96 : 104);
+const listRowH = (n: number, hasInput = false) => Math.min(n >= 5 ? 96 : 104, Math.floor((DASH_BODY - (hasInput ? SEARCH_H + SECTION_GAP : 0) - Math.max(0, n - 1) * ROW_GAP) / Math.max(1, n)));
 const SearchBar: React.FC<{text: string; t: number; focus: boolean; icon?: string; lang?: Lang}> = ({text, t, focus, icon = 'search', lang}) => {
   const th = useTheme();
   return (
-    <div style={{height: SEARCH_H, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '0 24px', borderRadius: 40, background: th.cardAlt, border: `2px solid ${focus ? th.accentLine : th.line}`, marginBottom: 18}}>
+    <div style={{height: SEARCH_H, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '0 24px', borderRadius: 40, background: th.cardAlt, border: `2px solid ${focus ? th.accentLine : th.line}`, marginBottom: SECTION_GAP}}>
       <Icon name={icon} size={40} color={icon === 'search' ? th.cardMuted : th.accent} stroke={2.4} />
       <div style={{fontSize: 38, color: th.cardText, whiteSpace: 'nowrap'}}>
         {text || <span style={{color: th.cardMuted}}>{icon === 'search' ? pick(lang, '搜索', 'Search') : pick(lang, '问一句…', 'Ask anything…')}</span>}
@@ -384,11 +389,11 @@ const List: React.FC<{p: P; pl: Plan; t: number; lang?: Lang}> = ({p, pl, t, lan
   const rows = pl.rows;
   const text = typed(p.input ?? '', t, pl.typeFrom, pl.charSec);
   const focus = !!p.input && t >= pl.typeFrom && (pl.rowAt[0] === undefined || t < pl.rowAt[0] + 0.3);
-  const rowH = listRowH(rows.length);
+  const rowH = listRowH(rows.length, !!p.input);
   return (
     <div>
       {p.input && <SearchBar text={text} t={t} focus={focus} lang={lang} />}
-      <div style={{display: 'flex', flexDirection: 'column', gap: 12}}>
+      <div style={{display: 'flex', flexDirection: 'column', gap: ROW_GAP}}>
         {rows.map((it, i) => (t >= pl.rowAt[i] ? <Row key={i} it={it} t={t} at={pl.rowAt[i]} hot={i === pl.h} hotAt={pl.tapAt} h={rowH} kind="list" /> : <Skeleton key={i} h={rowH} on={t >= pl.rowAt[i] - SKELETON_MAX} />))}
       </div>
     </div>
@@ -431,9 +436,9 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> 
           const first = i === 0;
           const size = first ? 52 : lineSize;
           return (
-            <div key={i} style={{position: 'relative', fontSize: size, fontWeight: first ? 900 : 500, lineHeight: first ? 1.5 : 1.75, color: th.cardText, whiteSpace: 'nowrap', marginBottom: first ? 8 : 2}}>
+            <div key={i} style={{position: 'relative', fontSize: size, fontWeight: first ? 800 : 600, lineHeight: first ? 1.5 : 1.75, color: th.cardText, whiteSpace: 'nowrap', marginBottom: first ? 8 : 2}}>
               <span style={{position: 'relative', display: 'inline-block'}}>
-                {mark > 0 && <span style={{position: 'absolute', left: -8, top: '20%', height: '66%', width: `calc(${mark * 100}% + 16px)`, background: alpha(hexOr(th.hot, '#FFE14D'), 0.6), borderRadius: 8}} />}
+                {mark > 0 && <span style={{position: 'absolute', left: -8, top: '20%', height: '66%', width: `calc(${mark * 100}% + 16px)`, background: th.accentSoft, borderRadius: 8}} />}
                 <span style={{position: 'relative'}}>
                   {!first && <span style={{color: th.accent, fontWeight: 900, marginRight: 14}}>•</span>}
                   {s}
@@ -456,7 +461,6 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> 
           </div>
           <div style={{position: 'relative', overflow: 'hidden', height: 80, padding: '0 28px', borderRadius: 24, background: th.accent, color: th.accentText, fontSize: fitLine(btn, 170, 36, 34), fontWeight: 900, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', transform: `scale(${1 - press * 0.1})`}}>
             {btn}
-            <Sweep p={interpolate(t, [0.2, 0.9], [0, 1], clamp)} w={200} />
           </div>
         </div>
       )}
@@ -547,12 +551,10 @@ const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = 
 };
 
 // ---------- 卡片高度（list/form 按内容定并居中；dashboard/editor 用满） ----------
-const PAD_T = 28;
-const PAD_B = 30;
 const cardHeight = (p: P) => {
   const kind = kindOf(p);
   const n = items(p).length;
-  if (kind === 'list') return Math.min(SAFE.h, Math.max(480, HEADER + PAD_T + (p.input ? SEARCH_H + 18 : 0) + n * (listRowH(n) + 12) - 12 + PAD_B));
+  if (kind === 'list') return Math.min(SAFE.h, Math.max(480, HEADER + PAD_T + (p.input ? SEARCH_H + SECTION_GAP : 0) + n * (listRowH(n, !!p.input) + ROW_GAP) - ROW_GAP + PAD_B));
   if (kind === 'form') return Math.min(SAFE.h, Math.max(520, HEADER + PAD_T + n * 132 + 24 + FORM_BTN + PAD_B));
   return SAFE.h;
 };
@@ -575,11 +577,11 @@ const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   let tap: {x: number; y: number} | null = null;
   const bodyY = Y + HEADER + PAD_T;
   if (kind === 'dashboard' && pl.h >= 0 && pl.tapAt >= 0) {
-    const rowsTop = bodyY + bodyH - pl.rows.length * (DASH_ROW + 10) + 10;
-    tap = {x: X + W - 170, y: rowsTop + pl.h * (DASH_ROW + 10) + DASH_ROW / 2};
+    const rowsTop = bodyY + bodyH - pl.rows.length * DASH_ROW - Math.max(0, pl.rows.length - 1) * ROW_GAP;
+    tap = {x: X + W - 170, y: rowsTop + pl.h * (DASH_ROW + ROW_GAP) + DASH_ROW / 2};
   } else if (kind === 'list' && pl.h >= 0 && pl.tapAt >= 0) {
-    const rh = listRowH(pl.rows.length);
-    tap = {x: X + W - 160, y: bodyY + (p.input ? SEARCH_H + 18 : 0) + pl.h * (rh + 12) + rh / 2};
+    const rh = listRowH(pl.rows.length, !!p.input);
+    tap = {x: X + W - 160, y: bodyY + (p.input ? SEARCH_H + SECTION_GAP : 0) + pl.h * (rh + ROW_GAP) + rh / 2};
   } else if (kind === 'editor' && pl.tapAt >= 0) tap = {x: X + W - PADX - 90, y: bodyY + bodyH - 40};
   else if (kind === 'form' && pl.tapAt >= 0) tap = {x: 540, y: bodyY + bodyH - FORM_BTN / 2};
   return (
@@ -604,7 +606,7 @@ const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
           <div style={{width: 56, height: 56, borderRadius: 16, background: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
             <Icon name={KIND_ICON[kind]} size={34} color={th.accentText} stroke={2.4} />
           </div>
-          <div style={{flex: 1, fontSize: fitLine(title, badge ? Math.min(440, 646 - 18 - badgeW) : 440, 42, 34), fontWeight: 900, color: th.cardText, whiteSpace: 'nowrap', overflow: 'hidden'}}>{title}</div>
+          <div style={{flex: 1, fontSize: fitLine(title, badge ? Math.min(440, 646 - 18 - badgeW) : 440, 36, 32), fontWeight: 700, color: th.cardSub, whiteSpace: 'nowrap', overflow: 'hidden'}}>{title}</div>
           {badge ? (
             doneQ > 0 ? (
               <div

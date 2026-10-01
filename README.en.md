@@ -30,7 +30,7 @@ Everything below is an actual render. The storyboards are all in the repo, and t
 **Three recipes**
 
 <table align="center">
-<tr><td align="center"><img src="docs/images/style-cards.png" width="760" alt="cards style" /><br/><sub><b>cards</b> (default, 9:16): gradient background, a centered white card and bold outlined captions, one point per shot</sub></td></tr>
+<tr><td align="center"><img src="docs/images/style-cards.png" width="760" alt="cards style" /><br/><sub><b>cards</b> (default, 9:16): mood gradient, a centered paper card and bold outlined captions; dataChart brings conclusions, KPIs, charts and sources together</sub></td></tr>
 <tr><td align="center"><img src="docs/images/style-quiz.png" width="760" alt="quiz style" /><br/><sub><b>quiz</b> (9:16): circle a common misconception in red pen → ask one multiple-choice question → reveal → a dictionary card explains it</sub></td></tr>
 <tr><td align="center"><img src="docs/images/style-journey.png" width="760" alt="journey style" /><br/><sub><b>journey</b> (4:5 / 9:16): an original mascot crosses a paper-cut city in one take, one postcard per stop for each category</sub></td></tr>
 </table>
@@ -173,7 +173,7 @@ A storyboard picks its recipe with `meta.style`; without it you get the default 
 | `quiz` | 9:16 | A common misconception that can be framed as one multiple-choice question with exactly one right answer ("What does X actually mean?") |
 | `journey` | 4:5 (default) / 9:16 | 4–6 clear categories, features or stops worth touring along one route |
 
-How to choose: one multiple-choice question → `quiz`; 4–6 categories to tour → `journey`; everything else → `cards`, i.e. leave it out. `quiz` only supports 9:16. Its own shots (question, reveal, meaning card, etc.) can only be used in `quiz` and do not mix with the 18 `cards` shots; validation blocks a storyboard that mixes them.
+How to choose: one multiple-choice question → `quiz`; 4–6 categories to tour → `journey`; everything else → `cards`, i.e. leave it out. `quiz` only supports 9:16. Its own shots (question, reveal, meaning card, etc.) can only be used in `quiz` and do not mix with the 19 `cards` shots; validation blocks a storyboard that mixes them.
 
 ```json
 { "meta": { "style": "quiz", "industry": "software", "lang": "zh" }, "shots": [ ... ] }
@@ -182,7 +182,7 @@ How to choose: one multiple-choice question → `quiz`; 4–6 categories to tour
 <details>
 <summary><b>What each recipe looks like</b></summary>
 
-**`cards`** (default, ready, 9:16): gradient background, a centered white card and bold outlined captions, one point per shot. Fits a single selling point, a how-it-works flow, UI demos, physical products and stores. Its 18 shots and samples for all six industries are in `examples/`.
+**`cards`** (default, ready, 9:16): mood gradient, centered paper cards and bold outlined captions, one point per shot. Fits a single selling point, a how-it-works flow, UI demos, physical products and stores. dataChart can organize a title, conclusion, KPIs, chart, annotations and sources in one shot. Its 19 shots and samples for all six industries are in `examples/`.
 
 **`quiz`** (ready, 9:16): the skin is a "marked answer sheet": dot-grid paper with a vermilion margin line, a deep primary plus an amber highlighter and a vermilion marking pen, monospaced labels, and cards with small radii and solid hard shadows. Three palettes (`sage-pine` grey-green paper + pine, the default; `rice-soy` rice paper + soy brown, the food default; `ash-teal` grey paper + deep teal) and three voices (`phraseTitle.params.voice`: `exam`, `chat`, `show`). Two original characters, one short and one tall: a host in headphones (the ear cup lights up and sends out sound waves when it clicks) and a buddy in a backwards cap. The beat is: circle a common misconception in red pen → an A/B/C question on an answer sheet with a stopwatch counting 3 → reveal with a check mark → a dictionary card flips in (the misreading struck through with a wavy line, numbered meanings) → replay the clip and stamp it → a short scene acting it out → a comment prompt → a stamp wipe that lands on the closing card. Fits products with a common misconception that can be framed as one multiple-choice question: what a foreign phrase really means, a software feature people often misread (e.g. "Archive = deleted?"), or why a dish is made the way it is. See [`styles/quiz/`](styles/quiz/README.md); templates and length limits are in `styles/quiz/recipes.md` (Chinese); five sample storyboards are in `styles/quiz/examples/`.
 
@@ -217,7 +217,7 @@ Which provider to pick, how to write it, recommended voices and length limits ar
 
 `meta.lang`: `zh` (default, Chinese captions) / `en` (English captions).
 
-- 11 general-purpose shots plus 7 industry shots (real photo, price card, store card, review card, before/after, fact sheet, credential card). `shots.en.md` is the parameter reference for all 18 shots; `docs/shots/*.en.md` has one detailed doc per shot.
+- 12 general-purpose shots plus 7 industry shots (real photo, price card, store card, review card, before/after, fact sheet, credential card). `shots.en.md` is the parameter reference for all 19 shots; `docs/shots/*.en.md` has one detailed doc per shot.
 - Each industry pack has compliance rules, a recommended shot structure, a brief template for merchants and a regression-test brief.
 - **Not supported** (the compliance rules don't cover these, so results aren't guaranteed compliant even if you force them): medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.
 
@@ -397,10 +397,10 @@ brewreel/
   SKILL.md / SKILL.en.md      The instructions an AI assistant reads (how to pick shots, fill fields, follow the flow)
   README.md / README.en.md    This file
   LICENSE / NOTICE / THIRD_PARTY_LICENSES.md
-  shots.md / shots.en.md      Parameter reference for all 18 shots
+  shots.md / shots.en.md      Parameter reference for all 19 shots
   brief-template.md           Generic brief template
   docs/
-    shots/                    Detailed per-shot docs (18 shots × 2 languages)
+    shots/                    Detailed per-shot docs (19 shots × 2 languages)
     images/                   The logo and example images used in the READMEs
   industries/                 The six industry packs
   scripts/
@@ -413,7 +413,7 @@ brewreel/
     check-originality.mjs     Originality check: color difference from the reference (CIEDE2000) + signature-by-signature record
     checks/ lib/              Rule implementations
   template/                   The Remotion rendering project
-    src/shots/                18 shared shot components + parameter specs (used by cards)
+    src/shots/                19 shared shot components + parameter specs (used by cards)
     src/styles/               Per-recipe manifest, design tokens and shots; registry.gen.ts is generated by scripts/gen-styles.mjs
     src/core/                 Fonts, themes, animation, layout helpers
     src/illust/               Industry fallback illustrations
