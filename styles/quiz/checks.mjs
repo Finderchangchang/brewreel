@@ -169,7 +169,7 @@ export function run(sb, ctx) {
       errors.push({where: ctx.where(eI, 'brandEnd', 'button'), problem: `按钮「${e.button}」和 meta.cta「${meta.cta}」对不上：落版上看不到简报里的行动引导`, fix: '删掉 button（按钮直接显示 meta.cta），或者让 button 是 meta.cta 里的关键几个字（如「应用商店搜闪记」→「搜闪记」）'});
   }
 
-  // Q10 出题前不许剧透：钩子语境、clip 台词（text 和 zh）、quiz 卡里的字幕条都不能含正确答案、释义卡 = 行，也不能含它们里的数字
+  // Q10 出题前不许剧透：钩子语境、clip 台词（text 和 zh）、quiz 卡里的字幕条、揭晓前的配音 vo 都不能含正确答案、释义卡 = 行，也不能含它们里的数字
   if (quizI >= 0) {
     const answers = [];
     if (Number.isInteger(quiz.answer) && text(opts[quiz.answer])) answers.push(opts[quiz.answer]);
@@ -207,6 +207,12 @@ export function run(sb, ctx) {
     const hitQ = spoil(shown);
     if (hitQ && !(field === 'quizLine' && !text(quiz.quizLine) && lines.length))
       errors.push({where: ctx.where(quizI, 'quiz', field), problem: `出题时卡里字幕条「${shown}」就是答案（「${hitQ}」）：正解一直挂在题目上方`, fix: '写 quizLine（≤12 字）只放被误解的那半句，如「老火两个字」「我给它加了双链」，不含答案和数字'});
+    const revealAt = mI2 >= 0 ? mI2 : shots.length;
+    shots.forEach((shot, i) => {
+      if (i >= revealAt || !shot) return;
+      const hitVo = spoil(shot.vo);
+      if (hitVo) errors.push({where: ctx.where(i, shot.type || '?', 'vo'), problem: `配音「${shot.vo}」在揭晓前把答案说出来了（「${hitVo}」）`, fix: '揭晓前的 vo 只卖关子，不说正确答案、释义和其中的数字；答案留到 meaningCard 及之后'});
+    });
   }
 
   // Q11 数量题：题目问「几个小时 / 多少 / 几次 / 几天」，每个选项都要是一个数量

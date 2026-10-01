@@ -50,18 +50,20 @@ dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 
 Run the second command from the folder that contains the clone (relative paths resolve against the current directory). The plugin uses the skill in that clone (`checkout` mode): render dependencies go into the clone's `template/node_modules/`, and while rendering `make.mjs` writes temporary assets and a render lock inside the clone's `template/` (both ignored by the repository's `.gitignore`). Set `stageCheckout: true` to leave the clone untouched and run from a copy in the runtime folder instead.
 
-**B. GitHub Release asset (before the npm release)**
-
-Download `dsh-brewreel-<version>.tgz` from the Releases page, then:
-
-```sh
-dsh plugin --profile web add ./dsh-brewreel-0.3.0.tgz
-```
-
-**C. npm (once the author publishes it)**
+**B. npm (available now)**
 
 ```sh
 dsh plugin --profile web add dsh-brewreel
+```
+
+`dsh-brewreel@0.3.0` on npm is the v0.5.1 snapshot.
+
+**C. A local tgz**
+
+If you already downloaded the release package:
+
+```sh
+dsh plugin --profile web add ./dsh-brewreel-0.3.0.tgz
 ```
 
 **D. Skill only, no plugin**

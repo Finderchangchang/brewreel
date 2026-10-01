@@ -131,7 +131,7 @@ export ANTHROPIC_MODEL=deepseek-flash[1m]
 # 或者直接用无头脚本，不接 Claude Code：
 export LLM_API_KEY=<你的 DeepSeek API Key>
 export LLM_BASE_URL=https://api.deepseek.com
-export LLM_MODEL=deepseek-chat
+export LLM_MODEL=deepseek-flash
 python scripts/llm_make.py path/to/brief.md
 ```
 

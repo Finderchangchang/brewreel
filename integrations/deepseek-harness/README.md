@@ -50,18 +50,20 @@ dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 
 在 clone 的上一级目录执行第二条命令（相对路径按当前目录解析）。插件会直接使用这份 clone 里的 skill（`checkout` 模式）：渲染依赖装在 clone 的 `template/node_modules/`，出片时 `make.mjs` 会在 clone 的 `template/` 里写临时素材和渲染锁（都已被仓库 `.gitignore` 忽略）；不想碰 clone，就在配置里开 `stageCheckout: true`，改为复制到运行目录再跑。
 
-**B. GitHub Release 附件（npm 发布前）**
-
-从 Release 页面下载 `dsh-brewreel-<版本>.tgz`，然后：
-
-```sh
-dsh plugin --profile web add ./dsh-brewreel-0.3.0.tgz
-```
-
-**C. npm（作者发布后）**
+**B. npm（当前可用）**
 
 ```sh
 dsh plugin --profile web add dsh-brewreel
+```
+
+npm 上的 `dsh-brewreel@0.3.0` 对应仓库 v0.5.1。
+
+**C. 本地 tgz**
+
+已经下载了发布包时：
+
+```sh
+dsh plugin --profile web add ./dsh-brewreel-0.3.0.tgz
 ```
 
 **D. 只装 skill、不装插件**

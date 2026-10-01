@@ -1,0 +1,115 @@
+{
+  "meta": {
+    "title": "style-test quiz-vo-spoiler-ok.json",
+    "product": "巷口汤铺",
+    "style": "quiz",
+    "industry": "food",
+    "action": "招牌老火汤每锅用小火慢熬，客人到店点一碗",
+    "disclaimer": "虚构门店，画面为插画示意",
+    "cta": "到店尝一碗",
+    "facts": [
+      {
+        "id": "f1",
+        "text": "招牌老火汤每锅用小火熬6小时",
+        "source": "后厨熬汤记录（商家自证）"
+      }
+    ]
+  },
+  "shots": [
+    {
+      "type": "phraseTitle",
+      "beats": 12,
+      "params": {
+        "eyebrow": "吃货冷知识",
+        "phrase": "老火汤",
+        "guess": "大火煮一会儿",
+        "context": "头回来店里的客人，看到菜单常会问一句",
+        "scene": "street"
+      },
+      "vo": "你猜这锅要熬多久"
+    },
+    {
+      "type": "clip",
+      "beats": 10,
+      "params": {
+        "lines": [
+          {
+            "speaker": "客人",
+            "text": "老火汤，是火开得很大吗？"
+          },
+          {
+            "speaker": "店长",
+            "text": "你猜是不是小火"
+          }
+        ],
+        "key": "小火",
+        "scene": "cafe"
+      }
+    },
+    {
+      "type": "quiz",
+      "beats": 19,
+      "params": {
+        "question": "猜猜这锅汤熬了多久？",
+        "options": [
+          "大火煮一会儿",
+          "小火熬 6 小时",
+          "隔夜泡一晚"
+        ],
+        "answer": 1
+      }
+    },
+    {
+      "type": "meaningCard",
+      "beats": 12,
+      "params": {
+        "eyebrow": "今天这碗汤",
+        "rows": [
+          {
+            "kind": "word",
+            "text": "老火"
+          },
+          {
+            "kind": "neq",
+            "text": "大火煮一会儿"
+          },
+          {
+            "kind": "eq",
+            "text": "小火慢慢熬"
+          },
+          {
+            "kind": "eq",
+            "text": "每锅熬 6 小时"
+          }
+        ]
+      },
+      "vo": "每锅熬6小时"
+    },
+    {
+      "type": "duoScene",
+      "beats": 15,
+      "params": {
+        "context": "带朋友来喝汤：",
+        "ask": "这汤怎么这么浓？",
+        "reply": "小火熬了 6 小时",
+        "key": "小火"
+      }
+    },
+    {
+      "type": "commentCta",
+      "beats": 7,
+      "params": {
+        "question": "你刚才猜的哪个？",
+        "footnote": "猜 A 的，来喝一碗就记住了"
+      }
+    },
+    {
+      "type": "brandEnd",
+      "beats": 11,
+      "params": {
+        "badge": "老火汤你懂了",
+        "slogan": "想喝这锅慢汤\n来巷口汤铺"
+      }
+    }
+  ]
+}

@@ -45,6 +45,11 @@
 ## 8. 风格 / 主题（可选）
 warm-emotion 情感 / tech-dark 科技 / fresh-light 清新 / business-blue 商务 / festival-red 节日 / mono-premium 高级极简
 
+## 8b. 配方（可选，写了才会把该配方的写法说明交给模型）
+cards 卡片 / quiz 答题 / journey 漫游
+例：`配方：quiz`
+不写就先在这三个里选一个，再用 `--style` 重跑。不要写 blueprint。
+
 ## 9. 时长
 例：25 秒（允许 15–45 秒，推荐 20–30 秒）
 

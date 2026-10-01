@@ -44,6 +44,8 @@ const CASES = [
   {file: 'quiz-number-bad.json', rule: 'quiz：错误选项不许写阿拉伯数字', level: 'errors', expect: true, match: '错误选项「隔夜泡 12 小时」写了具体数字'},
   {file: 'quiz-english-ok.json', rule: 'quiz：英文台词的半角标点不误报', level: 'errors', expect: false, match: '半角标点'},
   {file: 'quiz-spoiler-bad.json', rule: 'quiz：clip 台词不许说出答案（含数字）', level: 'errors', expect: true, match: '把答案说出来了'},
+  {file: 'quiz-vo-spoiler-bad.json', rule: 'quiz：揭晓前的配音不许说出答案', level: 'errors', expect: true, match: '在揭晓前把答案说出来了'},
+  {file: 'quiz-vo-spoiler-ok.json', rule: 'quiz：揭晓之后的配音可以说答案', level: 'errors', expect: false, match: '在揭晓前把答案说出来了'},
   {file: 'quiz-qty-bad.json', rule: 'quiz：数量题的选项都要是数量', level: 'errors', expect: true, match: '问的是数量'},
   {file: 'quiz-qty-ok.json', rule: 'quiz：数量题错误项用中文数字能过', level: 'errors', expect: false, match: '问的是数量'},
   {file: 'quiz-screen-bad.json', rule: 'quiz：scene=phone/screen 没写 screenItems 要拦', level: 'errors', expect: true, match: '没写 screenItems'},

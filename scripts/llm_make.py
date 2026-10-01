@@ -7,7 +7,7 @@
 接口（OpenAI 兼容 /chat/completions），运行时从环境变量读：
   LLM_API_KEY（没有再读 DEEPSEEK_API_KEY）
   LLM_BASE_URL  默认 https://api.deepseek.com
-  LLM_MODEL     默认 deepseek-chat
+  LLM_MODEL     默认 deepseek-flash
 产物：
   <简报目录>/<简报名>.storyboard.json   模型写的分镜（素材路径相对简报目录）
   <输出目录>（默认 <简报目录>/<简报名>_out/）  video.mp4、sheet.png、check/、llm_log.json
@@ -46,7 +46,46 @@ def est_tokens(text):
     return int(cjk * 0.7 + (len(text) - cjk) / 3.5)
 
 
-def build_messages(brief_text, example_text, example_name, lang='zh', voice=None):
+STABLE_STYLES = ('cards', 'quiz', 'journey')
+_STYLE_RE = re.compile(
+    r'(?im)(?:^|\n)\s*(?:#{1,6}\s*)?(?:配方|recipe|meta\.style)\s*[:：=]\s*[`"*]*\s*(cards|quiz|journey|blueprint)\b'
+)
+
+
+def resolve_style(brief_text, style_arg):
+    """简报里的「配方：」或 --style。没写就返回 None，不替用户猜。blueprint 直接拒绝。"""
+    chosen = (style_arg or '').strip().lower()
+    if not chosen:
+        found = _STYLE_RE.search(brief_text or '')
+        chosen = found.group(1).lower() if found else ''
+    if not chosen:
+        return None
+    if chosen == 'blueprint':
+        raise SystemExit('blueprint 还在开发中，这次不把它的写法说明交给模型。请改成 cards、quiz 或 journey。')
+    if chosen not in STABLE_STYLES:
+        raise SystemExit(f'不认识的配方 {chosen}。只能是 cards、quiz、journey。')
+    return chosen
+
+
+def load_style_pack(style, lang):
+    folder = os.path.join(ROOT, 'styles', style)
+    if lang == 'en':
+        names = [
+            'STYLE.en.md' if os.path.exists(os.path.join(folder, 'STYLE.en.md')) else 'STYLE.md',
+            'recipes.en.md' if os.path.exists(os.path.join(folder, 'recipes.en.md')) else 'recipes.md',
+        ]
+    else:
+        names = ['STYLE.md', 'recipes.md']
+    chunks = []
+    for name in names:
+        path = os.path.join(folder, name)
+        if not os.path.exists(path):
+            raise SystemExit(f'找不到配方说明：{path}')
+        chunks.append(f'======== styles/{style}/{name} ========\n' + read(path))
+    return '\n\n'.join(chunks)
+
+
+def build_messages(brief_text, example_text, example_name, lang='zh', voice=None, style=None):
     skill = read(os.path.join(ROOT, 'SKILL.md'))
     shots = read(os.path.join(ROOT, 'shots.md'))
     system = (
@@ -76,6 +115,18 @@ def build_messages(brief_text, example_text, example_name, lang='zh', voice=None
         )
     else:
         system += '这次不配音：不要写 meta.voice，也不要写 vo 字段。\n'
+    if style:
+        system += (
+            f'这次指定配方是 {style}。meta.style 必须写 "{style}"。'
+            '镜头类型、顺序和字段以下面这份配方说明为准，不要改用别的配方，也不要写 blueprint。\n'
+        )
+        system += '\n' + load_style_pack(style, lang) + '\n'
+    else:
+        system += (
+            '这次没有指定配方。meta.style 必须写成 cards、quiz、journey 之一。不要写 blueprint。'
+            '下面没有附上某一份配方的 STYLE.md 和 recipes.md；选定后用 --style cards|quiz|journey 再跑一次，'
+            '程序才会把那份写法说明交给你。\n'
+        )
     system += '\n======== SKILL.md ========\n' + skill + '\n\n======== shots.md ========\n' + shots
     user = (
         f'参考样例（{example_name}，结构和写法可以学，内容不要照抄）：\n{example_text}\n\n'
@@ -217,6 +268,7 @@ def main():
     ap.add_argument('--dry-run', action='store_true', help='不调接口：只写 prompt.txt 并估算 token')
     ap.add_argument('--lang', choices=['zh', 'en'], default='zh', help='字幕/文案语言，默认 zh；en 会要求模型写 meta.lang="en" 和英文字幕')
     ap.add_argument('--voice', choices=['minimax', 'aliyun', 'volcengine', 'mock'], help='可选开启配音：模型写 meta.voice 和每镜 vo。minimax 要 MINIMAX_API_KEY、aliyun 要 DASHSCOPE_API_KEY、volcengine 要 VOLCENGINE_TTS_API_KEY；没有 key 用 mock（占位音，只看节奏）')
+    ap.add_argument('--style', choices=['cards', 'quiz', 'journey'], help='指定配方。不写时从简报里的「配方：cards|quiz|journey」读取；都没有就不猜')
     a = ap.parse_args()
 
     brief_path = os.path.abspath(a.brief)
@@ -224,8 +276,10 @@ def main():
     stem = os.path.splitext(os.path.basename(brief_path))[0]
     out_dir = os.path.abspath(a.out or os.path.join(brief_dir, stem + '_out'))
     sb_path = os.path.join(brief_dir, stem + '.storyboard.json')
+    brief_text = read(brief_path)
+    style = resolve_style(brief_text, a.style)
 
-    messages = build_messages(read(brief_path), read(a.example), os.path.basename(a.example), a.lang, a.voice)
+    messages = build_messages(brief_text, read(a.example), os.path.basename(a.example), a.lang, a.voice, style)
 
     if a.dry_run:
         prompt_file = os.path.join(out_dir, 'prompt.txt')
@@ -234,7 +288,7 @@ def main():
         n = est_tokens(text)
         print(f'[dry-run] 提示已写到 {prompt_file}')
         print(f'[dry-run] 共 {len(text)} 字符，估算约 {n} 输入 token（system {est_tokens(messages[0]["content"])} + user {est_tokens(messages[1]["content"])}）')
-        print(f'[dry-run] 每轮输出约 1500–3000 token；最多 1 + {a.retries} 轮，通过后再最多 2 轮通读检查。语言：{a.lang}。配音：{a.voice or "不配音"}。未调用任何接口。')
+        print(f'[dry-run] 每轮输出约 1500–3000 token；最多 1 + {a.retries} 轮，通过后再最多 2 轮通读检查。语言：{a.lang}。配音：{a.voice or "不配音"}。配方：{style or "未指定"}。未调用任何接口。')
         return 0
 
     key = os.environ.get('LLM_API_KEY') or os.environ.get('DEEPSEEK_API_KEY')
@@ -242,7 +296,7 @@ def main():
         print('没有找到 LLM_API_KEY / DEEPSEEK_API_KEY 环境变量。先设置再运行，或用 --dry-run 只看提示。')
         return 2
     base = os.environ.get('LLM_BASE_URL', 'https://api.deepseek.com')
-    model = os.environ.get('LLM_MODEL', 'deepseek-chat')
+    model = os.environ.get('LLM_MODEL', 'deepseek-flash')
     print(f'模型 {model} @ {base}')
 
     log = []
@@ -269,7 +323,9 @@ def main():
         ]
 
     # 校验通过后，再做一次「通读」：规则查不出来的逻辑/语义问题（回复答非所问、字幕像镜头说明、数字和简报对不上…），
-    # 有问题就把问题原文回喂重写，最多 2 轮；每轮重写后要重新过校验，校验没过就放弃这次通读修改、保留上一份能过校验的分镜
+    # 有问题就把问题原文回喂重写，最多 2 轮；每轮重写后要重新过校验，校验没过就放弃这次通读修改、保留上一份能过校验的分镜。
+    # 次数用完问题还在：留下分镜和日志，不出片。
+    blocked = False
     if ok:
         max_rt_fixes = 2  # 最多回喂重写 2 次；检查轮数 = 修回轮数 + 1（最后一轮只检查、不再改）
         for rt_round in range(max_rt_fixes + 1):
@@ -298,7 +354,8 @@ def main():
             for it in issues[:8]:
                 print(f'   - {it}')
             if rt_round == max_rt_fixes:
-                print(f'  已达通读检查最多重写次数（{max_rt_fixes}），保留当前分镜继续出片')
+                print(f'  已达通读检查最多重写次数（{max_rt_fixes}），问题还在，停止，不出片')
+                blocked = True
                 break
             feedback = '\n'.join(f'{k + 1}. {it}' for k, it in enumerate(issues))
             fix_prompt = (
@@ -322,8 +379,12 @@ def main():
                 break
 
     write(os.path.join(out_dir, 'llm_log.json'), json.dumps(log, ensure_ascii=False, indent=2))
-    if not ok:
-        print(f'重试 {a.retries} 次仍未通过，分镜留在 {sb_path}，报错见 {os.path.join(out_dir, "llm_log.json")}')
+    if not ok or blocked:
+        log_path = os.path.join(out_dir, 'llm_log.json')
+        if not ok:
+            print(f'重试 {a.retries} 次仍未通过，分镜留在 {sb_path}，报错见 {log_path}')
+        else:
+            print(f'通读问题没有改完，不出片。分镜留在 {sb_path}，记录见 {log_path}')
         return 1
     print(f'分镜：{sb_path}')
     if a.no_render:
