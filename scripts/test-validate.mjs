@@ -46,6 +46,8 @@ const CASES = [
   {file: 'quiz-spoiler-bad.json', rule: 'quiz：clip 台词不许说出答案（含数字）', level: 'errors', expect: true, match: '把答案说出来了'},
   {file: 'quiz-vo-spoiler-bad.json', rule: 'quiz：揭晓前的配音不许说出答案', level: 'errors', expect: true, match: '在揭晓前把答案说出来了'},
   {file: 'quiz-vo-spoiler-ok.json', rule: 'quiz：揭晓之后的配音可以说答案', level: 'errors', expect: false, match: '在揭晓前把答案说出来了'},
+  {file: 'quiz-vo-options-ok.json', rule: 'quiz：念完全部选项、钩子并列设问不算配音剧透', level: 'errors', expect: false, match: '把答案说出来了'},
+  {file: 'quiz-vo-options-ok.json', rule: 'quiz：念完全部选项的配音整份通过', level: 'errors', expect: false, match: '｜'},
   {file: 'quiz-qty-bad.json', rule: 'quiz：数量题的选项都要是数量', level: 'errors', expect: true, match: '问的是数量'},
   {file: 'quiz-qty-ok.json', rule: 'quiz：数量题错误项用中文数字能过', level: 'errors', expect: false, match: '问的是数量'},
   {file: 'quiz-screen-bad.json', rule: 'quiz：scene=phone/screen 没写 screenItems 要拦', level: 'errors', expect: true, match: '没写 screenItems'},
@@ -183,7 +185,47 @@ for (const c of CASES) {
   }
 }
 
+function listStoryboardExamples() {
+  const out = [];
+  const take = (dir) => {
+    if (!fs.existsSync(dir)) return;
+    for (const name of fs.readdirSync(dir)) {
+      if (!name.endsWith('.json') || name.startsWith('_')) continue;
+      const full = path.join(dir, name);
+      if (fs.statSync(full).isFile()) out.push(full);
+    }
+  };
+  take(path.join(ROOT, 'examples'));
+  const stylesDir = path.join(ROOT, 'styles');
+  for (const name of fs.readdirSync(stylesDir)) {
+    if (name.startsWith('_')) continue;
+    const dir = path.join(stylesDir, name);
+    if (!fs.statSync(dir).isDirectory()) continue;
+    take(path.join(dir, 'examples'));
+  }
+  return out;
+}
+
+let exPass = 0;
+let exFail = 0;
+for (const file of listStoryboardExamples()) {
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
+  try {
+    const parsed = parseFile(file);
+    if (parsed.error) throw new Error(parsed.error.problem);
+    const r = validate(parsed.sb, {baseDir: path.dirname(file)});
+    if (r.errors.length) {
+      exFail++;
+      fails.push(`[FAIL] 样例 ${rel}：${r.errors.length} 个错误\n  ` + r.errors.map((e) => `${e.where}：${e.problem}`).join('\n  '));
+    } else exPass++;
+  } catch (e) {
+    exFail++;
+    fails.push(`[ERR] 样例 ${rel}：${e.message}`);
+  }
+}
+
 console.log(`用例：${CASES.length}，通过：${pass}，失败：${fail}${skip ? `，跳过：${skip}` : ''}`);
+console.log(`样例：${exPass + exFail}，通过：${exPass}，失败：${exFail}`);
 for (const x of skips) console.log(x);
 if (fails.length) {
   console.log('\n失败明细：');

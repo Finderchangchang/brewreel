@@ -1,6 +1,7 @@
 // @ts-check
 // Where the skill comes from (configured clone / the checkout around this plugin / the bundled snapshot)
 // and where it runs (in place, or a staged copy under the runtime directory).
+import {spawnSync} from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -48,11 +49,76 @@ export function findSkillSource({skillRoot = '', pluginDir = PLUGIN_DIR} = {}) {
   return {mode: 'missing', root: bundled, error: 'no skill found: neither a BrewReel checkout around the plugin nor a bundled skill/ snapshot'};
 }
 
+/** @param {string} a @param {string} b */
+function samePath(a, b) {
+  const left = path.resolve(a);
+  const right = path.resolve(b);
+  return process.platform === 'win32' ? left.toLowerCase() === right.toLowerCase() : left === right;
+}
+
+/** @param {string} rel */
+function whitelistedRel(rel) {
+  const norm = rel.split('\\').join('/');
+  if (WHITELIST.exclude.some((ex) => norm === ex || norm.startsWith(ex + '/'))) return false;
+  if (WHITELIST.files.includes(norm)) return true;
+  return WHITELIST.dirs.some((d) => norm === d || norm.startsWith(d + '/'));
+}
+
+/**
+ * Tracked files when `root` is a git worktree root. null = not a checkout (caller walks the disk).
+ * An empty array means the checkout has no tracked files; do not fall back to the walk.
+ * @param {string} root
+ * @returns {string[] | null}
+ */
+function gitTrackedFiles(root) {
+  if (!fs.existsSync(path.join(root, '.git'))) return null;
+  const top = spawnSync('git', ['-C', root, 'rev-parse', '--show-toplevel'], {encoding: 'utf8', windowsHide: true});
+  if (top.status !== 0 || !top.stdout.trim()) return null;
+  const topPath = top.stdout.trim();
+  let same = samePath(topPath, root);
+  if (!same) {
+    try {
+      same = samePath(fs.realpathSync(topPath), fs.realpathSync(root));
+    } catch {
+      same = false;
+    }
+  }
+  if (!same) return null;
+  const ls = spawnSync('git', ['-C', root, '-c', 'core.quotepath=false', 'ls-files', '-z'], {
+    encoding: 'utf8',
+    windowsHide: true,
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  if (ls.status !== 0) return null;
+  return ls.stdout.split('\0').filter(Boolean);
+}
+
 /**
  * Relative paths (forward slashes, sorted) of every whitelisted file under `root`.
+ * A git checkout contributes only `git ls-files` (ignored and untracked files stay out).
+ * A directory that is not a checkout — plugin tests build these under the temp dir — is walked on disk.
  * @param {string} root
  */
 export function listWhitelistFiles(root) {
+  const tracked = gitTrackedFiles(root);
+  if (tracked !== null) {
+    /** @type {string[]} */
+    const out = [];
+    for (const rel0 of tracked) {
+      const rel = rel0.split('\\').join('/');
+      if (!whitelistedRel(rel)) continue;
+      const abs = path.join(root, rel);
+      let st;
+      try {
+        st = fs.lstatSync(abs);
+      } catch {
+        continue;
+      }
+      if (st.isSymbolicLink() || !st.isFile()) continue;
+      out.push(rel);
+    }
+    return out.sort();
+  }
   /** @type {string[]} */
   const out = [];
   const excluded = new Set(WHITELIST.exclude);

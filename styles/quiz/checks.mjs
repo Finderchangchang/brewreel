@@ -14,7 +14,8 @@
 //   Q7 评论区的 letters / answer 如果写了，必须和 quiz 一致；commentCta 后面紧跟 brandEnd
 //   Q8 brandEnd 的产品名和按钮：没写 name 就要有 meta.product；按钮文案（默认 meta.cta）≤8 字
 //   Q9 提问到揭晓 6–8 秒（quiz 写 17–21 拍）
-//   Q10 出题前不剧透：钩子语境、clip 台词（text / zh）、quiz 卡里字幕条不许含正确答案、释义卡 = 行及其中的数字
+//   Q10 出题前不剧透：钩子语境、clip 台词（text / zh）、quiz 卡里字幕条、揭晓前的 vo 不许含正确答案、释义卡 = 行及其中的数字。
+//       旁白和钩子语境先剥掉该镜全部选项原文再比：念完全部选项，或「是 A 还是 B」并列设问，不算剧透；单独点名正确项，或说出 = 行 / 数字答案，才拦。
 //   Q11 数量题（几个小时 / 多少 / 几次 / 几天）：每个选项都要是数量
 //   Q12 scene 是 screen / phone 就要写 screenItems（界面真字）；软件题材必须有
 //   Q13 有 clip 没 replay 提醒
@@ -169,7 +170,11 @@ export function run(sb, ctx) {
       errors.push({where: ctx.where(eI, 'brandEnd', 'button'), problem: `按钮「${e.button}」和 meta.cta「${meta.cta}」对不上：落版上看不到简报里的行动引导`, fix: '删掉 button（按钮直接显示 meta.cta），或者让 button 是 meta.cta 里的关键几个字（如「应用商店搜闪记」→「搜闪记」）'});
   }
 
-  // Q10 出题前不许剧透：钩子语境、clip 台词（text 和 zh）、quiz 卡里的字幕条、揭晓前的配音 vo 都不能含正确答案、释义卡 = 行，也不能含它们里的数字
+  // Q10 出题前不许剧透。
+  // 画面上的 clip 台词、quiz 字幕签：含正确答案、释义卡 = 行或其中的数字就拦。
+  // 旁白 vo 和钩子语境：念题 + 念全部选项，或「是 A 还是 B」并列设问，不算剧透。
+  // 先在去标点的原文上把该镜所有选项剥掉（要比 key 先剥：key「小火」是选项「小火熬6小时」的前缀，先剥 key 会把数字 6 留在剩下的字里），
+  // 再和 = 行、数字答案比。正确项单独出现（没有同时念出别的选项）才拦。
   if (quizI >= 0) {
     const answers = [];
     if (Number.isInteger(quiz.answer) && text(opts[quiz.answer])) answers.push(opts[quiz.answer]);
@@ -190,6 +195,31 @@ export function run(sb, ctx) {
       const n = numsIn(line).find((x) => nums.has(x));
       return n ? n : null;
     };
+    const optionNorms = opts.map((o) => norm(o)).filter((o) => o.length >= 2).sort((a, b) => b.length - a.length);
+    const correctNorm = Number.isInteger(quiz.answer) ? norm(text(opts[quiz.answer])) : '';
+    const withoutOptions = (line) => {
+      let L = norm(line);
+      for (const o of optionNorms) L = L.split(o).join('');
+      return L;
+    };
+    const stripNorm = (L) => [hook.phrase, c.key].filter((x) => text(x)).reduce((acc, x) => {
+      const n = norm(x);
+      return n ? acc.split(n).join('') : acc;
+    }, L);
+    const spoilVo = (line) => {
+      if (!text(line)) return null;
+      const raw = norm(line);
+      if (correctNorm.length >= 2 && raw.includes(correctNorm) && !optionNorms.some((o) => o !== correctNorm && raw.includes(o)))
+        return text(opts[quiz.answer]);
+      const L = stripNorm(withoutOptions(line));
+      for (const a of answers) {
+        const A = norm(a);
+        if (A.length < 2) continue;
+        if (L.includes(A) || lcs(L, A) >= Math.max(2, Math.ceil(A.length * 0.5))) return a;
+      }
+      const n = numsIn(L).find((x) => nums.has(x));
+      return n ? n : null;
+    };
     const FIX = '改成卖关子（例：『这汤看起来好浓，你猜熬了多久？』），只露短语 / 功能名 / 菜名，不说效果；答案留给 meaningCard';
     const lines = Array.isArray(c.lines) ? c.lines : [];
     lines.forEach((l, k) => {
@@ -199,8 +229,8 @@ export function run(sb, ctx) {
       }
     });
     if (hookI >= 0) {
-      const hit = spoil(hook.context);
-      if (hit) errors.push({where: ctx.where(hookI, 'phraseTitle', 'context'), problem: `钩子语境句「${hook.context}」把答案说出来了（「${hit}」）`, fix: '语境只交代谁在什么情况下碰到它，别揭晓；答案留给 meaningCard'});
+      const hit = spoilVo(hook.context);
+      if (hit) errors.push({where: ctx.where(hookI, 'phraseTitle', 'context'), problem: `钩子语境句「${hook.context}」把答案说出来了（「${hit}」）`, fix: '语境只交代谁在什么情况下碰到它，别揭晓；答案留给 meaningCard。并列设问（「是 A 还是 B」）可以把选项都念出来'});
     }
     const shown = text(quiz.quizLine) || text(quiz.sub) || quizLineOf(lines[lines.length - 1]?.text, c.key);
     const field = text(quiz.quizLine) ? 'quizLine' : text(quiz.sub) ? 'sub' : 'quizLine';
@@ -210,8 +240,8 @@ export function run(sb, ctx) {
     const revealAt = mI2 >= 0 ? mI2 : shots.length;
     shots.forEach((shot, i) => {
       if (i >= revealAt || !shot) return;
-      const hitVo = spoil(shot.vo);
-      if (hitVo) errors.push({where: ctx.where(i, shot.type || '?', 'vo'), problem: `配音「${shot.vo}」在揭晓前把答案说出来了（「${hitVo}」）`, fix: '揭晓前的 vo 只卖关子，不说正确答案、释义和其中的数字；答案留到 meaningCard 及之后'});
+      const hitVo = spoilVo(shot.vo);
+      if (hitVo) errors.push({where: ctx.where(i, shot.type || '?', 'vo'), problem: `配音「${shot.vo}」在揭晓前把答案说出来了（「${hitVo}」）`, fix: '揭晓前的 vo 可以念题并念完全部选项，也可以并列设问（「是 A 还是 B」）。不要单独点名正确项，也不要说出释义卡 = 行或其中的数字；答案留到 meaningCard 及之后'});
     });
   }
 

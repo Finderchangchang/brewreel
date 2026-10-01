@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Snapshot the repository root into ./skill/ for npm pack (the repository root stays the only source).
+// listWhitelistFiles keeps only git ls-files inside the whitelist, so ignored files never enter the snapshot.
 //   node scripts/sync-skill.mjs                 copy the whitelist, self-check, write skill/.distill-source.json
 //   node scripts/sync-skill.mjs --check-clean   same, but refuse when whitelisted files have uncommitted changes (prepack)
 //   node scripts/sync-skill.mjs --check         only compare an existing snapshot with the repository (exit 1 on drift)

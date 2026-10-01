@@ -55,7 +55,7 @@
   },
   "scripts": {
     "sync": "node scripts/sync-skill.mjs",
-    "prepack": "node scripts/sync-skill.mjs --check-clean",
+    "prepack": "node scripts/sync-skill.mjs --check-clean && node skill/scripts/privacy-scan.mjs",
     "test": "node --test \"test/*.test.mjs\"",
     "smoke": "node scripts/smoke.mjs"
   }

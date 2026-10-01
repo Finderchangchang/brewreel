@@ -1,5 +1,6 @@
 // U1 package manifest, U2 skill source lookup, U3 skill registration, U4 tool registration, config rules.
 import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
@@ -61,6 +62,29 @@ test('U2 staging copies only the whitelist and reuses nothing it should not', ()
   assert.equal(stageSkill({mode: 'configured', root: src}, plan).status, 'skipped');
   const files = listWhitelistFiles(src);
   assert.ok(files.includes('scripts/make.mjs') && !files.some((f) => f.includes('node_modules')));
+});
+
+test('U2 git ls-files: ignored and untracked files stay out of the whitelist', () => {
+  const root = tmpDir('dv-git-');
+  const email = ['pack', 'example.test'].join('@');
+  const git = (args) => execFileSync('git', ['-C', root, '-c', 'user.name=Pack Test', '-c', `user.email=${email}`, '-c', 'commit.gpgsign=false', ...args], {stdio: 'pipe'});
+  git(['init']);
+  fs.mkdirSync(path.join(root, 'scripts'), {recursive: true});
+  fs.mkdirSync(path.join(root, 'template'), {recursive: true});
+  fs.writeFileSync(path.join(root, 'SKILL.md'), '# x\n');
+  fs.writeFileSync(path.join(root, 'scripts', 'make.mjs'), '');
+  fs.writeFileSync(path.join(root, 'template', 'ok.txt'), 'ok\n');
+  fs.writeFileSync(path.join(root, '.gitignore'), 'template/.env\n');
+  fs.writeFileSync(path.join(root, 'template', '.env'), 'IGNORED=1\n');
+  git(['add', '-A']);
+  git(['commit', '-m', 'init']);
+  fs.writeFileSync(path.join(root, 'scripts', 'untracked.mjs'), 'nope\n');
+  const files = listWhitelistFiles(root);
+  assert.ok(files.includes('scripts/make.mjs'));
+  assert.ok(files.includes('template/ok.txt'));
+  assert.ok(files.includes('SKILL.md'));
+  assert.ok(!files.includes('template/.env'));
+  assert.ok(!files.includes('scripts/untracked.mjs'));
 });
 
 test('U2 rename compatibility: runtime dir of plugin 0.1.x is reused; a renamed template package keeps node_modules', () => {

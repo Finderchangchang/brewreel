@@ -6,6 +6,7 @@ import {test} from 'node:test';
 import {describeExit} from '../lib/exit-codes.js';
 import {applyPlugin} from '../lib/plugin.js';
 import {parseProgress} from '../lib/render.js';
+import {VOICE_ENV} from '../lib/run.js';
 import {TOOL_NAMES} from '../lib/skill.js';
 import {execIn, fakeCtx, fakeJobs, fakeSkillRoot, stubDefineTool, tmpDir, writeStoryboard} from './helpers.mjs';
 
@@ -27,6 +28,14 @@ test('U10 exit code table', () => {
 });
 
 test('U10 delivered only when exit 0 + delivery line + manifest + sha256 all agree', async () => {
+  const savedVoiceEnv = new Map();
+  for (const k of VOICE_ENV) {
+    if (Object.prototype.hasOwnProperty.call(process.env, k)) {
+      savedVoiceEnv.set(k, process.env[k]);
+      delete process.env[k];
+    }
+  }
+  try {
   const {tool, ws} = setup();
   const render = tool(TOOL_NAMES.render);
   const ok = await render.execute({storyboard: writeStoryboard(ws, 'ok', {code: 0})}, execIn(ws));
@@ -63,6 +72,9 @@ test('U10 delivered only when exit 0 + delivery line + manifest + sha256 all agr
   const argv = JSON.parse(fs.readFileSync(path.join(ws, 'promo', 'st', 'argv.json'), 'utf8'));
   assert.ok(argv.argv.includes('--stills'));
   assert.ok(!argv.env.some((k) => /API_KEY|TOKEN/i.test(k)));
+  } finally {
+    for (const [k, v] of savedVoiceEnv) process.env[k] = v;
+  }
 });
 
 test('U10 renderTimeoutMin kills the render (status killed)', async () => {

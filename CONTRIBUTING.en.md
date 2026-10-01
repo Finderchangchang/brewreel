@@ -66,7 +66,7 @@ Full process and reusable prompts: [`distill/`](distill/README.en.md) (breakdown
 - [ ] `node scripts/gen-styles.mjs --check` passes
 - [ ] `cd template && npx tsc -p .` has zero errors
 - [ ] `node scripts/validate.mjs --specs`, `node scripts/test-validate.mjs`, `node scripts/test-rules.mjs` all pass
-- [ ] All 9 storyboards in `examples/` still validate (if you touched shared code, render at least one cards film)
+- [ ] Every storyboard example validates, including `examples/` and `styles/*/examples/` (if you touched shared code, render at least one cards film)
 - [ ] New style: at least one storyboard in `styles/<id>/examples/` renders; frame 0 has content and a hook; font sizes ≥ 40 body / 34 panel / 26 minimum; key content inside the safe area (`template/src/core/aspects.json`)
 - [ ] New style, remix, or changed palette / characters: the originality check passes — `node scripts/check-originality.mjs --style <id> --ref <reference tokens.json (outside the repo) or the source style's tokens.json> [--signatures <signature list outside the repo>]`; `styles/<id>/originality.md` is complete (skeleton kept, skin rebuilt, a "Replaced with" line for every signature item, check results, confusability ≤ 3)
 - [ ] Touched `scripts/check-originality.mjs` or `scripts/lib/color.mjs`: `node tests/originality/originality.test.mjs` passes

@@ -135,7 +135,7 @@ export LLM_MODEL=deepseek-flash
 python scripts/llm_make.py path/to/brief.md
 ```
 
-On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of the values above are placeholders; swap in your own key, and never commit a key or paste one into an issue. You may also put these variables into your AI assistant's own global config (e.g. `~/.claude/settings.json`); that's optional, and this repo never changes any global config for you. With `--dry-run` it calls no API and reads no key; it only writes out the assembled prompt and estimates its token count.
+On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of the values above are placeholders; swap in your own key, and never commit a key or paste one into an issue. You may also put these variables into your AI assistant's own global config (e.g. `~/.claude/settings.json`); that's optional, and this repo never changes any global config for you. With `--dry-run` it calls no API and reads no key; it only writes out the assembled prompt and estimates its token count. Pass `--skip-readthrough-gate` to only warn about read-through problems and still render; by default those problems block rendering.
 
 ### Use it in DeepSeek Harness
 

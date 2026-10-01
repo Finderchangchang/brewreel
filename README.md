@@ -135,7 +135,7 @@ export LLM_MODEL=deepseek-flash
 python scripts/llm_make.py path/to/brief.md
 ```
 
-Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上都是占位符，换成你自己的 key；不要把 key 提交进仓库或写进 issue。也可以把这些变量写进 AI 编程助手自己的全局配置（如 `~/.claude/settings.json`），这是可选做法，本仓库不会替你改任何全局配置。加 `--dry-run` 不调接口、不读密钥，只把拼好的提示写出来并估算 token 数。
+Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上都是占位符，换成你自己的 key；不要把 key 提交进仓库或写进 issue。也可以把这些变量写进 AI 编程助手自己的全局配置（如 `~/.claude/settings.json`），这是可选做法，本仓库不会替你改任何全局配置。加 `--dry-run` 不调接口、不读密钥，只把拼好的提示写出来并估算 token 数。加 `--skip-readthrough-gate` 时，通读检查发现的问题只警告，仍照常出片；默认会拦下、不出片。
 
 ### 在 DeepSeek Harness 里用
 

@@ -205,7 +205,7 @@
 - Q7 评论区的 `letters` / `answer` 写了就必须和 quiz 一致；`commentCta` 后面紧跟 `brandEnd`（提醒，印章擦除要接上）。
 - Q8 落版要有产品名；必须有行动引导（`meta.cta` 或 `brandEnd.button`），写了 `button` 要和 `meta.cta` 对得上；按钮文案 ≤14 字。
 - Q9 提问到揭晓 6–8 秒（quiz 写 17–21 拍，提醒）。
-- Q10 出题前不剧透：钩子语境句、clip 台词（`text` 和 `zh`）、quiz 卡里的字幕签，都不许含正确答案、释义卡 = 行及其中的数字。
+- Q10 出题前不剧透：钩子语境句、clip 台词（`text` 和 `zh`）、quiz 卡里的字幕签，都不许含正确答案、释义卡 = 行及其中的数字。揭晓前的配音同样查：把该镜所有选项原文念完，或钩子里「是 A 还是 B」这种并列设问，不算剧透；只有单独点名正确项，或说出 = 行 / 数字答案时才拦。
 - Q11 数量题：每个选项都要是数量；错误项用中文数字，正确项的阿拉伯数字出自 `meta.facts`。
 - Q12 `scene` 是 `screen` / `phone` 就要写 `screenItems`；`industry: "software"` 必须写。
 - Q13 有 `clip` 没 `replay` 提醒（少了回放复证这一拍）。

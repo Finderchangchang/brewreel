@@ -11,18 +11,24 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // 内置规则：[名字, 正则, 说明]
 const RULES = [
-  ['本机路径-Windows', /[A-Za-z]:\\(?=\w{2,})[^\s"'`]*/g, 'Windows 盘符路径'],
+  // 单个盘符字母（前面不能再是字母或数字，避免 https:// 、stdout:\n）。
+  // 两种才算路径：JSON 里连续两个以上反斜杠（H:\\...），或一个反斜杠后面直接是中文等非 ASCII。
+  // 不把 I:\s 这种正则、https:// 当成盘符。
+  ['本机路径-Windows', /(?<![A-Za-z0-9])[A-Za-z]:(?:\\{2,}[^\s"'`]*|\\[^\x00-\x7f][^\s"'`]*)/gu, 'Windows 盘符路径（含 JSON 转义反斜杠和中文）'],
   ['本机路径-Unix', /\/(Users|home)\/[^\s"'`]+/g, 'Unix 用户目录路径'],
   ['本机账号', /\bAdministrator\b/g, '本机账号名'],
   ['本机路径关键词-AppData', /\bAppData\b/g, ''],
   ['本机路径关键词-Desktop', /\bDesktop\b/g, ''],
   ['手机号', /(?<!\d)1[3-9]\d{9}(?!\d)/g, '大陆手机号（脱敏写法如 138****0000 / 138xxxx0000 不会命中）'],
   ['邮箱', /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, ''],
-  ['OpenAI 风格 key', /\bsk-[A-Za-z0-9]{20,}\b/g, ''],
+  // 短横也算在 key 里，例如 sk-cp- 后面一长串。
+  ['OpenAI 风格 key', /\bsk-[A-Za-z0-9_-]{20,}\b/g, ''],
   ['GitHub token', /\bghp_[A-Za-z0-9]{20,}\b|\bgithub_pat_[A-Za-z0-9_]{20,}\b/g, ''],
   ['AWS key', /\bAKIA[0-9A-Z]{16}\b/g, ''],
   ['私钥块', /-----BEGIN [A-Z ]*PRIVATE KEY-----/g, ''],
   ['Anthropic env key/token', /\bANTHROPIC_(API_KEY|AUTH_TOKEN)=\S{8,}/g, ''],
+  // XXX_API_KEY=值 / XXX_ACCESS_TOKEN=值（等号，且值不加引号）。文档里的短占位符、测试里的引号假值不会中。
+  ['环境变量 key 赋值', /\b[A-Z0-9_]*(?:API_KEY|ACCESS_TOKEN)\s*=\s*(?!['"`<])\S{8,}/g, ''],
   // 人名、内部项目名、客户名不要写在这里（本文件会公开），写进 .privacy-denylist.local
 ];
 
@@ -32,6 +38,8 @@ const ALLOW = [
   {fileIncludes: path.join('industries', 'education', 'expected.md'), textIncludes: '13800000000'},
   {fileIncludes: path.join('industries', 'food', 'expected.md'), textIncludes: '13800005678'},
   {fileIncludes: path.join('tests', 'rules', 'food', '02-refprice-induce-alcohol-rival-contact.json'), textIncludes: '13800005678'},
+  // 插件在找不到 SystemRoot 时用的系统目录兜底，不是个人路径。
+  {fileIncludes: path.join('integrations', 'deepseek-harness', 'lib', 'run.js'), textIncludes: 'C:\\\\Windows'},
 ];
 
 const EXCLUDE_DIRS = new Set(['.git', 'node_modules', 'out', '.render.lock']);
@@ -46,7 +54,7 @@ const SELF_EXCLUDE = new Set([
 const EXCLUDE_PATH_PARTS = ['public/_run', 'public\\_run', 'public/_dev', 'public\\_dev'];
 const BINARY_EXT = new Set([
   '.png', '.jpg', '.jpeg', '.gif', '.webp', '.mp4', '.mov', '.wav', '.mp3', '.ttf', '.otf', '.woff', '.woff2',
-  '.ico', '.zip', '.lock', '.tgz', '.gz',
+  '.ico', '.zip', '.lock', '.tgz', '.gz', '.pyc',
 ]);
 
 function loadDenylist() {
@@ -57,7 +65,7 @@ function loadDenylist() {
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l && !l.startsWith('#'))
-    .map((l) => ({name: `denylist: ${l}`, re: new RegExp(l, 'g')}));
+    .map((l) => ({name: `denylist: ${l}`, re: new RegExp(l, 'gi')}));
 }
 
 function isAllowed(relFile, text) {
@@ -81,25 +89,29 @@ function walk(dir, out) {
   return out;
 }
 
+function eachMatch(re, text, onMatch) {
+  const flags = re.flags.includes('g') ? re.flags : re.flags + 'g';
+  const copy = new RegExp(re.source, flags);
+  let m;
+  while ((m = copy.exec(text))) {
+    onMatch(m);
+    if (copy.lastIndex === m.index) copy.lastIndex++;
+  }
+}
+
 function scanText(label, text, denylistRules) {
   const hits = [];
   for (const [name, re, note] of RULES) {
-    re.lastIndex = 0;
-    let m;
-    while ((m = re.exec(text))) {
+    eachMatch(re, text, (m) => {
       const snippet = m[0];
-      if (label !== '<stdin>' && isAllowed(label, text.slice(Math.max(0, m.index - 40), m.index + snippet.length + 40))) continue;
+      if (label !== '<stdin>' && isAllowed(label, text.slice(Math.max(0, m.index - 40), m.index + snippet.length + 40))) return;
       hits.push({file: label, rule: name, match: snippet, note});
-      if (re.lastIndex === m.index) re.lastIndex++;
-    }
+    });
   }
   for (const {name, re} of denylistRules) {
-    re.lastIndex = 0;
-    let m;
-    while ((m = re.exec(text))) {
+    eachMatch(re, text, (m) => {
       hits.push({file: label, rule: name, match: m[0], note: ''});
-      if (re.lastIndex === m.index) re.lastIndex++;
-    }
+    });
   }
   return hits;
 }
@@ -138,4 +150,7 @@ async function main() {
   process.exit(1);
 }
 
-main();
+export {RULES, scanText, loadDenylist};
+
+const invoked = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();
+if (invoked) main();

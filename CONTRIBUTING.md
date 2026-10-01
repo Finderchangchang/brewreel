@@ -66,7 +66,7 @@ template/src/styles/<id>/          代码
 - [ ] `node scripts/gen-styles.mjs --check` 通过（注册表最新，清单/令牌/镜头对得上）
 - [ ] `cd template && npx tsc -p .` 零错误
 - [ ] `node scripts/validate.mjs --specs`、`node scripts/test-validate.mjs`、`node scripts/test-rules.mjs` 全绿
-- [ ] `examples/` 下 9 份样例仍全部通过校验（改了公共代码时，至少出一支 cards 片证明没坏）
+- [ ] 所有样例（含 `examples/` 和 `styles/*/examples/`）都要通过校验（改了公共代码时，至少出一支 cards 片证明没坏）
 - [ ] 新风格：`styles/<id>/examples/` 至少一份分镜能出片，第 0 帧有内容和钩子，字号不低于 正文 40 / 面板 34 / 最小 26px，关键内容在安全区内（`template/src/core/aspects.json`）
 - [ ] 新风格 / 二创 / 改了配色或角色：原创性检查通过——`node scripts/check-originality.mjs --style <id> --ref <参考 tokens.json（仓库外）或源风格 tokens.json> [--signatures <仓库外招牌清单.md>]`；`styles/<id>/originality.md` 已填完（保留的骨架、重做的皮肤、招牌逐条「已替换为」、检查结果、混淆度 ≤ 3）
 - [ ] 改了 `scripts/check-originality.mjs` 或 `scripts/lib/color.mjs`：`node tests/originality/originality.test.mjs` 全绿
