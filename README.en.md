@@ -8,7 +8,7 @@
 
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![Forks](https://img.shields.io/github/forks/Finderchangchang/brewreel?style=flat-square&logo=github&label=Forks)](https://github.com/Finderchangchang/brewreel/forks)
-[![Version](https://img.shields.io/badge/version-v0.5.1-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.6.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
 [![Remotion](https://img.shields.io/badge/Remotion-4.0-0B84F3?style=flat-square)](https://www.remotion.dev)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
