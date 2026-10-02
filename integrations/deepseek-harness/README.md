@@ -37,7 +37,7 @@
 npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm
 ```
 
-版本号要写上：npm 上 dsh 的 `latest` 标签目前还指向更早的 0.1.5-rc.3，低于插件要求的 0.1.7-rc.2（新版本在 `next` 标签下）。已经装过 dsh 的，先用 `dsh --version` 看一下版本。
+版本号要写上：npm 上 dsh 的 `latest` 和 `next` 现在都已经是 0.2.0-rc.2，本插件还没在 0.2 上测过，目前只声明支持 0.1.x（0.1.7-rc.2 起），请按上面的命令装 0.1.7-rc.2。已经装过 dsh 的，先用 `dsh --version` 看一下版本。
 
 下面的命令都以 `web` profile 为例，换成你自己的 profile 名也行。第一次 `dsh plugin --profile web …` 会自动建好这个 profile。装完用 `dsh web` 启动；如果 profile 已经在运行，要**重启**（dsh 的 bundle 变更在下次启动时生效）。
 
@@ -56,7 +56,7 @@ dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 dsh plugin --profile web add dsh-brewreel
 ```
 
-npm 上的 `dsh-brewreel@0.3.0` 对应仓库 v0.5.1。
+npm 上的 `dsh-brewreel@0.4.0` 对应仓库 v0.6.0。
 
 **C. 本地 tgz**
 

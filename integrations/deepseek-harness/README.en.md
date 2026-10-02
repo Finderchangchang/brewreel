@@ -37,7 +37,7 @@ If dsh is not installed yet, install it together with pnpm (`dsh plugin` forward
 npm install -g @deepseek-ai/dsh@0.1.7-rc.2 pnpm
 ```
 
-Keep the version: dsh's `latest` tag on npm still points to the older 0.1.5-rc.3, below the 0.1.7-rc.2 this plugin needs (newer builds are under the `next` tag). If dsh is already installed, check it with `dsh --version`.
+Keep the version: dsh's `latest` and `next` tags on npm both point to 0.2.0-rc.2 now. This plugin has not been tested on 0.2 yet and only declares support for 0.1.x (0.1.7-rc.2 and later), so install 0.1.7-rc.2 as shown above. If dsh is already installed, check it with `dsh --version`.
 
 The commands use the `web` profile; any profile name works. The first `dsh plugin --profile web …` creates the profile. Start it with `dsh web` afterwards; if the profile is already running, **restart** it (dsh applies bundle changes on the next boot).
 
@@ -56,7 +56,7 @@ Run the second command from the folder that contains the clone (relative paths r
 dsh plugin --profile web add dsh-brewreel
 ```
 
-`dsh-brewreel@0.3.0` on npm is the v0.5.1 snapshot.
+`dsh-brewreel@0.4.0` on npm is the v0.6.0 snapshot.
 
 **C. A local tgz**
 

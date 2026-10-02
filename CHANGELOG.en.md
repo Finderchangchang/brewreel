@@ -2,6 +2,29 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.6.0 · 2026-10-02 · Steadier scripts: recipe-specific guidance, no render on a failed read-through, sharper spoiler check
+
+Old storyboards need no changes. The default script model changes from `deepseek-chat` to `deepseek-flash` (DeepSeek's current model name).
+
+### Script writing (llm_make)
+- With a recipe chosen, the model only gets that recipe's guide and examples, not the cards recipe's shot catalog and sample; cards-only rules (such as "at least one product-demo shot") only appear for cards. With no recipe chosen, cards is used.
+- Common brief formats now set the recipe: `配方：quiz`, `- 配方：quiz`, `**配方**：quiz`, a heading followed by the value, and the Chinese names; an unrecognized value prints a warning. Available recipes are read from `styles/*/style.json` instead of a hard-coded list.
+- A storyboard written in the wrong recipe is sent back for a rewrite.
+- Read-through problems that can't be fixed now **block rendering** (including when a fix breaks validation and the old draft is restored, and when the read-through call fails); pass `--skip-readthrough-gate` to render anyway. Timeouts and dropped connections are retried, and `llm_log.json` is always written, including the model used.
+
+### Validation
+- Quiz spoiler check: voice-over that names the correct answer on its own before the reveal is blocked; reading all options, as the recipe guide recommends, is not.
+
+### Safety
+- The npm plugin snapshot copies only files tracked by git, so ignored files (such as a `.env` holding keys) never ship; a privacy scan runs before packing.
+- The privacy scan now catches keys with dashes (such as `sk-cp-…`), `XXX_API_KEY=value`, escaped Windows paths in JSON and Chinese paths; the denylist is case-insensitive.
+
+### Tests
+- Every bundled example (including `styles/*/examples/`) is validated on each run; new unit tests for the script writer (`python scripts/test-llm-make.py`) and the privacy scan; plugin tests no longer depend on local environment variables.
+
+### DeepSeek Harness plugin 0.4.0
+- Ships this version's skill snapshot. dsh's default npm version is now 0.2.0-rc.2; the plugin has not been tested on 0.2 yet and supports 0.1.x (0.1.7-rc.2 and later) for now.
+
 ## v0.5.1 · 2026-09-27 · Two more voice providers: Alibaba Cloud and Volcengine; MiniMax tested for real
 
 Old storyboards need no changes, and neither do v0.5.0 voice-over storyboards (Chinese films without a `voiceId` now default to a male announcer instead of the female newsreader; to keep the old voice, write `"voiceId": "Chinese (Mandarin)_News_Anchor"`).
