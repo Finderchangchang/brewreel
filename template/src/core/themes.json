@@ -53,7 +53,8 @@
     "shadow": "0 18px 60px rgba(0,0,0,0.55), 0 0 0 1.5px rgba(120,160,255,0.18)",
     "good": "#34D399",
     "warn": "#FBBF24",
-    "bad": "#F87171"
+    "bad": "#F87171",
+    "chartColors": ["#9BAFCA", "#A7B8EF", "#6E8DA7", "#C0CDD6", "#7583AC"]
   },
   "fresh-light": {
     "label": "清新亮色：薄荷 → 天蓝 → 橘黄，白卡片，适合生活/效率工具",
@@ -81,7 +82,8 @@
     "shadow": "0 18px 46px rgba(10,60,80,0.20)",
     "good": "#10B981",
     "warn": "#F59E0B",
-    "bad": "#EF4444"
+    "bad": "#EF4444",
+    "chartColors": ["#45645B", "#286458", "#849B7A", "#BB866D", "#A5AD92"]
   },
   "business-blue": {
     "label": "商务蓝：沉稳蓝 → 靛紫 → 警示红，白卡片，适合 B 端/SaaS",
@@ -109,7 +111,8 @@
     "shadow": "0 18px 50px rgba(8,20,60,0.30)",
     "good": "#16A34A",
     "warn": "#D97706",
-    "bad": "#DC2626"
+    "bad": "#DC2626",
+    "chartColors": ["#243D60", "#315F9B", "#7297BD", "#A5B6C8", "#577086"]
   },
   "festival-red": {
     "label": "节日红金：正红底 + 金色强调，奶白卡片，适合节日/促销",
@@ -137,7 +140,8 @@
     "shadow": "0 18px 50px rgba(90,0,10,0.35)",
     "good": "#15803D",
     "warn": "#C2410C",
-    "bad": "#B91C1C"
+    "bad": "#B91C1C",
+    "chartColors": ["#674245", "#9B3E49", "#BE9A60", "#B77B79", "#867364"]
   },
   "mono-premium": {
     "label": "高级灰金：石墨黑底 + 香槟金强调，深色卡片，适合高客单/质感产品",
@@ -165,6 +169,7 @@
     "shadow": "0 18px 60px rgba(0,0,0,0.6), 0 0 0 1.5px rgba(233,201,139,0.16)",
     "good": "#4ADE80",
     "warn": "#FBBF24",
-    "bad": "#F87171"
+    "bad": "#F87171",
+    "chartColors": ["#E4DDD0", "#CEAF7B", "#91A497", "#A0A5AF", "#8A7968"]
   }
 }
