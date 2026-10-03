@@ -69,12 +69,12 @@
       "note": "核心动作演示：用户拍小票 → 产品给出金额、商家、分类"
     },
     {
-      "type": "meter",
-      "dur": 3,
-      "caption": "预算快花完，\n{它先提醒你}",
+      "type": "dataChart",
+      "dur": 4,
+      "caption": "账本数据摊开，\n{看清支出分布}",
       "mood": 0.35,
-      "params": {"value": 62, "max": 100, "label": "餐饮预算已用", "unit": "%", "style": "ring", "higherIs": "bad", "word": "留神", "note": "超过八成会弹提醒"},
-      "note": "单个读数（演示账本里的预算进度），不是效果对比；meta.demoData 已声明"
+      "params": {"title": "示例账本条目", "takeaway": "外卖示例金额为 ¥860", "chartType": "donut", "kpis": [{"label": "外卖支出", "value": "¥860"}, {"label": "预算使用", "value": "62%"}], "data": [{"label": "外卖", "value": 860, "focus": true}, {"label": "奶茶咖啡", "value": 326}, {"label": "自动续费", "value": 98}, {"label": "深夜打车", "value": 410}], "unit": "元", "annotations": ["虚构账本示例，仅演示图表排版"], "refs": ["f1", "f2"]},
+      "note": "用示例账本演示标题、结论、KPI、环图、旁注和两条数据来源的完整信息层级；meta.demoData 已声明"
     },
     {
       "type": "endCard",

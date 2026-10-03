@@ -62,6 +62,7 @@ export type ShotType =
   | 'meter' // 仪表 / 评分
   | 'compare' // 左右或前后对比
   | 'counter' // 大数字滚动
+  | 'dataChart' // 数据叙事：结论、KPI、图表、旁注与来源
   | 'features' // 2–4 个卖点卡
   | 'steps' // 1-2-3 流程
   | 'quickList' // 快切列表

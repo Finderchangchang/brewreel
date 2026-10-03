@@ -66,7 +66,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Holiday, promotion, launch → `festival-red`
    - Premium, minimal, design-forward → `mono-premium`
    If there's a brand color, set `meta.brandColor` (#RRGGBB) — it only swaps the accent color.
-5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, an 18-shot overview table is at the top; with quiz / journey use that style's shots and keep their fields inside `params`, see step 0). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
+5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, a 19-shot overview table is at the top; with quiz / journey use that style's shots and keep their fields inside `params`, see step 0). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
    **At least one shot must demonstrate the core action** (the `meta.action` from step 2). The allowed shots depend on the industry; validation blocks the video otherwise:
    - **software, education (UI products)**: `chat` with messages + panel (question → answer); or `mockApp` with `input` (what the user typed/asked) + a result (dashboard's `stat`, editor's `items`/`done`); use `phone` if you have a screenshot.
      - A messaging/reply product needs chat (or a real phone screenshot); a product that isn't about chatting must not be shown as a chat.

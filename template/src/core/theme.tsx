@@ -6,7 +6,10 @@ import THEMES from './themes.json';
 // 主题：组件只通过 useTheme() 取色，不写死颜色。
 // brandColor 只替换 accent（按钮、我方气泡、图标、进度条），字幕强调色 hot 不变。
 // ============================================================
-export type ThemeData = (typeof THEMES)['warm-emotion'];
+export type ThemeData = (typeof THEMES)['warm-emotion'] & {
+  /** 主题可带自己的图表系列色（dataChart）；显式 palette 仍可覆盖。 */
+  chartColors?: string[];
+};
 export type Theme = ThemeData & {
   name: string;
   /** 强调色的浅底（卡片上的高亮底色） */
@@ -34,6 +37,12 @@ export const mixHex = (a: string, b: string, p: number) => {
 export const alpha = (c: string, a: number) => {
   const x = hex(c);
   return x ? `rgba(${x[0]},${x[1]},${x[2]},${a})` : c;
+};
+
+/** Solid labels on chart segments must remain readable on light and dark series. */
+export const inkOn = (color: string) => {
+  const rgb = hex(color);
+  return rgb && rgb[0] * 0.299 + rgb[1] * 0.587 + rgb[2] * 0.114 > 165 ? '#1B2738' : '#FFFFFF';
 };
 
 export const resolveTheme = (name: string | undefined, brandColor?: string): Theme => {

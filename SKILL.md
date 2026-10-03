@@ -66,7 +66,7 @@ metadata:
    - 节日、促销、上新 → `festival-red`
    - 高端、极简、设计 → `mono-premium`
    有品牌色就写 `meta.brandColor`（#RRGGBB），它只换强调色。
-5. **挑 5–9 个镜头**（镜头说明看 `<SKILL>/shots.md`，18 个镜头一览表在最上面；用 quiz / journey 时镜头换成那个风格的，字段照第 0 步写进 `params`）。`hook` 必须第 1 镜（2–3 秒），`endCard` 必须最后 1 镜（4 秒）。
+5. **挑 5–9 个镜头**（镜头说明看 `<SKILL>/shots.md`，19 个镜头一览表在最上面；用 quiz / journey 时镜头换成那个风格的，字段照第 0 步写进 `params`）。`hook` 必须第 1 镜（2–3 秒），`endCard` 必须最后 1 镜（4 秒）。
    **必须有一镜演示核心动作**（第 2 步写的 `meta.action`），按行业用不同的镜头，校验会拦：
    - **software、education（界面类）**：`chat` 写 messages + panel（提问 → 回答）；或 `mockApp` 写 input（用户输入/提问）+ 结果（dashboard 的 stat、editor 的 items、done）；有截图用 `phone`。
      - 核心动作是发消息/回复的产品 → 必须有 chat（或 phone 真截图）；不是聊天类的产品 → 别用 chat 演。

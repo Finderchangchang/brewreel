@@ -1,5 +1,5 @@
 import type React from 'react';
-import type {Meta, IndustryName} from '../schema';
+import type {Meta, IndustryName, Fact} from '../schema';
 
 // ============================================================
 // 镜头接口（写镜头的人只需要看这个文件 + SHOT_API.md）
@@ -90,6 +90,10 @@ export type ShotSpec = {
     params: Record<string, unknown>;
     /** 这个镜头只在某些行业开放时，自检（--specs）用这个行业身份跑示例；缺省 software */
     industry?: IndustryName;
+    /** 镜头示例所需的数据来源及演示标记（供 spec 自检正确验证来源） */
+    facts?: Fact[];
+    demoData?: boolean;
+    disclaimer?: string;
   };
 };
 

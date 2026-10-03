@@ -1,5 +1,5 @@
 // ============================================================
-// 镜头注册表（第一阶段写好 11 个软件通用镜头；第二阶段行业扩展加了 7 个共享镜头，见 docs/dev/industry-design.md 第 1 节）。
+// 镜头注册表（12 个软件通用镜头 + 7 个共享行业镜头；见 docs/dev/industry-design.md 第 1 节）。
 // 每个镜头 = <type>.tsx（default 导出组件，可选导出 sfx()）+ <type>.spec.json（单一来源，validate.mjs 也读）。
 // 写新镜头只改自己的两个文件，加完了在这里补一行 import + 一行 REG 注册（新镜头不多，改这里没关系）。
 // ============================================================
@@ -19,6 +19,8 @@ import * as compare from './compare';
 import compareSpec from './compare.spec.json';
 import * as counter from './counter';
 import counterSpec from './counter.spec.json';
+import * as dataChart from './dataChart';
+import dataChartSpec from './dataChart.spec.json';
 import * as features from './features';
 import featuresSpec from './features.spec.json';
 import * as steps from './steps';
@@ -51,6 +53,7 @@ const REG: Record<string, {mod: ShotModule; spec: ShotSpec}> = {
   meter: {mod: meter as ShotModule, spec: meterSpec as unknown as ShotSpec},
   compare: {mod: compare as ShotModule, spec: compareSpec as unknown as ShotSpec},
   counter: {mod: counter as ShotModule, spec: counterSpec as unknown as ShotSpec},
+  dataChart: {mod: dataChart as ShotModule, spec: dataChartSpec as unknown as ShotSpec},
   features: {mod: features as ShotModule, spec: featuresSpec as unknown as ShotSpec},
   steps: {mod: steps as ShotModule, spec: stepsSpec as unknown as ShotSpec},
   quickList: {mod: quickList as ShotModule, spec: quickListSpec as unknown as ShotSpec},

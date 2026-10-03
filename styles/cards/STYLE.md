@@ -28,7 +28,7 @@ hook（2–3 秒，第 0 帧就有封面大标题）→ 中段 3–7 镜（至�
 
 ## 6. 元件库
 
-18 个公共镜头：hook、chat、phone、mockApp、meter、compare、counter、features、steps、quickList、endCard，以及行业镜头 photoShot、priceCard、storeCard、reviewCard、factSheet、credCard、beforeAfter。字段和字数上限见 `shots.md`。
+19 个公共镜头：hook、chat、phone、mockApp、meter、compare、counter、dataChart、features、steps、quickList、endCard，以及行业镜头 photoShot、priceCard、storeCard、reviewCard、factSheet、credCard、beforeAfter。字段和字数上限见 `shots.md`。
 
 ## 7. 声音
 

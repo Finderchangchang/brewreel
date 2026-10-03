@@ -57,7 +57,7 @@ export const BROKEN_WORDS = [
 /** 数字来源关键词：counter.sub 出现它们，meta.facts 里就必须有对应来源 */
 export const SOURCE_WORDS = ['测试', '实测', '统计', '调研', '数据显示', '调查', '报告显示'];
 /** 中段镜头：常规结构里至少要有一个，避免片子都长成 hook → quickList → mockApp → counter → endCard */
-export const MID_SHOTS = ['compare', 'steps', 'phone', 'meter'];
+export const MID_SHOTS = ['compare', 'steps', 'phone', 'meter', 'dataChart'];
 export const BPM_RANGE = [90, 150];
 
 // ---------------- 路径与数据 ----------------
@@ -280,6 +280,19 @@ export function crossCheck(type, p, W, err, warn) {
     const max = num(p.max) ? p.max : 10;
     if (num(p.value) && p.value > max) err(W('value'), `value ${p.value} 比 max ${max} 还大，画面数字会对不上`, `把 value 改到 0–${max}，或把 max 调大`);
     if (num(p.from) && p.from > max) err(W('from'), `from ${p.from} 比 max ${max} 还大`, `把 from 改到 0–${max}`);
+  }
+  if (type === 'dataChart') {
+    const rows = Array.isArray(p.data) ? p.data : [];
+    if (p.chartType === 'donut' && rows.length > 5) err(W('data'), 'donut 类别超过 5 个，标签和占比会挤在一起', '合并小类别，或改用 bar');
+    if (rows.length && rows.every((d) => num(d?.value) && d.value === 0)) err(W('data'), '所有图表数据都是 0，无法读出比较或占比', '换成有差异的数据，或改用文字解释');
+    if (p.chartType === 'line') {
+      const groups = new Map();
+      rows.forEach((d) => { const key = d?.series ?? ''; groups.set(key, (groups.get(key) ?? 0) + 1); });
+      if ([...groups.values()].some((n) => n < 2)) err(W('data'), 'line 每条 series 至少要有两个时间点才能连成趋势', '补上另一个时间点，或改用 dot 展示单点');
+    }
+    if (p.chartType === 'stacked' && rows.some((d) => !d?.series)) err(W('data'), 'stacked 每条数据都需要 series 来标识堆叠分段', '给每条数据加 series 名称；相同 label 的数据会组成一条堆叠条');
+    if (num(p.max) && rows.some((d) => num(d?.value) && d.value > p.max)) err(W('max'), 'max 小于某条数据，图表会截断或把点画出坐标区', '把 max 调到不小于最大数据值');
+    if (rows.filter((d) => d?.focus === true).length > 1) err(W('data'), '一张图只能突出一个 focus 数据项', '只保留最重要的一条为 focus: true');
   }
   if (type === 'counter') {
     if (p.showFrom === true && !num(p.from)) err(W('from'), 'showFrom 是 true 但没写 from（旧值）', '补上 "from": 旧值，或删掉 showFrom');
@@ -868,7 +881,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
   const factNums = new Set([...realNums, ...demoNums]);
   const realIds = new Set(realFacts.map((f) => f.id));
   const demoOn = meta?.demoData === true;
-  const DEMO_UI_TYPES = ['mockApp', 'phone', 'chat', 'priceCard', 'factSheet', 'storeCard', 'photoShot'];
+  const DEMO_UI_TYPES = ['mockApp', 'phone', 'chat', 'priceCard', 'factSheet', 'storeCard', 'photoShot', 'dataChart'];
   const EFFECT_TYPES = ['compare', 'counter', 'meter'];
   const EFFECT_WORDS = /省|节省|缩短|提升|提高|降低|减少|只要|只需|仅需|就能|就够|变成|→|比上|比以前|比手动|相比|更快|加快|耗时|花了|要花|得花|多存|多赚|增长|翻倍|\bsaves?\b|faster|quicker|boost|down to/i;
   /** 这个数字是不是「效果说法」：compare/counter/meter 里的数、秒级说法、字幕和卖点里的百分比/倍数、带「省/缩短/提升…」的时长和金额。
@@ -1004,6 +1017,17 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
           change
             ? '删掉 from（不演「从 3 到 7」）；想说前后变化，用 compare 的 items 写具体差别（「不用切窗口」「少 3 步」），或 meter 的 word 写定性判词；简报真给了前后数值才能写 from'
             : '这个读数如果是产品在演示里给出的判断（如 AI 给这句话打的危险程度），写 meta.demoData: true 并在 meta.disclaimer 标「演示」；如果是在说效果/评分，简报没给就删掉这一镜，换成 compare（items 写具体差别）');
+    }
+    if (sh.type === 'dataChart') {
+      const refs = Array.isArray(P.refs) ? P.refs : [];
+      const citedReal = realFacts.filter((f) => refs.includes(f.id));
+      const citedDemo = demoFacts.filter((f) => refs.includes(f.id));
+      const demoChart = !citedReal.length && citedDemo.length > 0 && demoOn && /演示|示例/.test(String(meta?.disclaimer ?? ''));
+      if (!citedReal.length && !demoChart) err(W('params.refs'), 'dataChart 必须引用至少一条 meta.facts 中有来源的真实数据；示例数据需同时声明 demoData 和演示/示例提示', '将简报原文与来源写入 meta.facts 并引用其 id；如为样例画面，标注 meta.demoData 与 meta.disclaimer');
+      const citedNums = numsOf(citedReal.length ? citedReal : citedDemo);
+      const visible = [P.title, P.takeaway, ...(Array.isArray(P.kpis) ? P.kpis.flatMap((k) => [k?.label, k?.value]) : []), ...(Array.isArray(P.annotations) ? P.annotations : []), ...(Array.isArray(P.data) ? P.data.flatMap((d) => [d?.label, d?.value]) : [])].filter((x) => typeof x === 'string' || num(x)).join(' ');
+      const visibleNums = numsOf([{text: visible}]);
+      for (const v of visibleNums) if (!citedNums.has(v)) err(W('params.refs'), `画面数值 ${v} 不在 refs 指向的 fact 中；来源必须与图表、KPI、结论和旁注一一对应`, '只引用包含画面数值的事实，并把原文及来源写入 meta.facts；不要将未注明的数据写成 KPI 或结论');
     }
   });
   // 同一个 compare 栏内部（stat vs items）耗时/数字别打架：同一栏说的是同一件事，只能有一个数量级
@@ -1153,7 +1177,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       if (near) warn('shots', `镜头顺序和样例 ${near.file}（${near.seq}）几乎一样：只差一两处，或时长也对得上`, '换掉或加入一种镜头，别照这支样例的时长排');
       else if (TEMPLATES.includes(seq)) warn('shots', `镜头顺序是最常见的模板（${seq}），和别的片子放在一起会像换皮`, `中段换成 ${MID_SHOTS.join(' / ')} 之一`);
     }
-    if (shots.length >= 4 && !types.some((t) => MID_SHOTS.includes(t))) warn('shots', `中段没有 ${MID_SHOTS.join(' / ')} 里的任何一镜`, '至少放一镜：对比（compare）、流程（steps）、真截图（phone）或仪表（meter）');
+    if (shots.length >= 4 && !types.some((t) => MID_SHOTS.includes(t))) warn('shots', `中段没有 ${MID_SHOTS.join(' / ')} 里的任何一镜`, '至少放一镜：对比（compare）、流程（steps）、真截图（phone）、仪表（meter）或数据叙事图（dataChart）');
     if (types.includes('quickList') && types.includes('counter')) warn('shots', 'quickList 和 counter 同时出现，结构太像模板', '二选一：痛点用 compare 或 meter 讲，或者把 counter 换成 steps');
     // 单镜时长占比：chat 超过 8 秒，或任意一镜占全片超过 40%，都会让片子头重脚轻
     const totalDur = slots.length ? slots[slots.length - 1].end : 0;
@@ -1244,7 +1268,7 @@ export function checkSpecs(specs = loadSpecs()) {
       const shots = type === 'hook' ? [] : [{type: 'hook', caption: hook?.caption ?? '标题', params: hook?.params ?? {visual: 'icon', icon: 'sparkle'}}];
       shots.push({type, dur: s.example.dur ?? s.dur?.default, caption: s.example.caption, mood: s.example.mood, params: s.example.params});
       const ep = s.example.params;
-      const r = validate({meta: {title: 'spec-check', product: typeof ep.brand === 'string' ? ep.brand : 'x', theme: 'warm-emotion', ...(s.example.industry ? {industry: s.example.industry} : {}), ...(typeof ep.cta === 'string' ? {cta: ep.cta} : {})}, shots}, {baseDir: TEMPLATE, specs});
+      const r = validate({meta: {title: 'spec-check', product: typeof ep.brand === 'string' ? ep.brand : 'x', theme: 'warm-emotion', ...(s.example.industry ? {industry: s.example.industry} : {}), ...(s.example.facts ? {facts: s.example.facts} : {}), ...(s.example.demoData ? {demoData: true} : {}), ...(s.example.disclaimer ? {disclaimer: s.example.disclaimer} : {}), ...(typeof ep.cta === 'string' ? {cta: ep.cta} : {})}, shots}, {baseDir: TEMPLATE, specs});
       // 单镜示例不要求「全片有演示镜」「meta.action」「meta.facts 数字来源」这类整片才有意义的业务规则，只查 spec/schema 本身对不对
       for (const e of r.errors)
         if (
@@ -1275,7 +1299,7 @@ export function checkSpecs(specs = loadSpecs()) {
       const shots = [];
       if (first && first !== type && all[first]?.example) shots.push({type: first, dur: all[first].example.dur, params: all[first].example.params});
       shots.push({type, dur: s.example.dur ?? s.dur?.default, caption: s.example.caption, mood: s.example.mood, params: s.example.params});
-      const r = validate({meta: {title: 'spec-check', product: 'x', style: st.id, ...(s.example.industry ? {industry: s.example.industry} : {})}, shots}, {baseDir: TEMPLATE, specs, allowDraftStyles: true});
+      const r = validate({meta: {title: 'spec-check', product: 'x', style: st.id, ...(s.example.industry ? {industry: s.example.industry} : {}), ...(s.example.facts ? {facts: s.example.facts} : {}), ...(s.example.demoData ? {demoData: true} : {}), ...(s.example.disclaimer ? {disclaimer: s.example.disclaimer} : {})}, shots}, {baseDir: TEMPLATE, specs, allowDraftStyles: true});
       for (const e of r.errors)
         if (!e.where.startsWith('总时长') && e.where !== 'shots' && e.where !== 'meta.action' && !/在 meta\.facts 里找不到来源|没有简报依据|示例\/演示」的 fact|没声明这是演示数据/.test(e.problem))
           problems.push(`${tag} 示例：${e.where}：${e.problem}`);

@@ -3,7 +3,7 @@
   "name": "美业",
   "version": "2026-09-26",
   "note": "美发、美甲、美睫、皮肤清洁护理（生活美容）。不含医美；纹绣/半永久/医美项目一律拒绝。整理自公开法规与平台规则，仅供自查，不构成法律意见。",
-  "enabledShots": ["hook", "chat", "steps", "beforeAfter", "photoShot", "priceCard", "storeCard", "quickList", "features", "compare", "credCard", "factSheet", "reviewCard", "endCard"],
+  "enabledShots": ["hook", "chat", "steps", "beforeAfter", "photoShot", "priceCard", "storeCard", "quickList", "features", "compare", "credCard", "factSheet", "reviewCard", "dataChart", "endCard"],
   "coreAction": {"surface": "physical", "note": "核心动作用照片或插画场景演示（photoShot 实拍或 source:drawn 插画 / beforeAfter）；不许用 mockApp 编 App 界面，见 scripts/checks/core-action.mjs"},
   "disabledShots": [],
   "mediaPolicy": {"shots": ["photoShot", "hook"], "allowSources": ["merchant", "drawn"]},

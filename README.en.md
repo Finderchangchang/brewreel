@@ -182,7 +182,7 @@ How to choose: one multiple-choice question → `quiz`; 4–6 categories to tour
 <details>
 <summary><b>What each recipe looks like</b></summary>
 
-**`cards`** (default, ready, 9:16): gradient background, a centered white card and bold outlined captions, one point per shot. Fits a single selling point, a how-it-works flow, UI demos, physical products and stores. Its 18 shots and samples for all six industries are in `examples/`.
+**`cards`** (default, ready, 9:16): gradient background, a centered white card and bold outlined captions, one point per shot. Fits a single selling point, a how-it-works flow, UI demos, physical products and stores. Its 19 shots and samples for all six industries are in `examples/`.
 
 **`quiz`** (ready, 9:16): the skin is a "marked answer sheet": dot-grid paper with a vermilion margin line, a deep primary plus an amber highlighter and a vermilion marking pen, monospaced labels, and cards with small radii and solid hard shadows. Three palettes (`sage-pine` grey-green paper + pine, the default; `rice-soy` rice paper + soy brown, the food default; `ash-teal` grey paper + deep teal) and three voices (`phraseTitle.params.voice`: `exam`, `chat`, `show`). Two original characters, one short and one tall: a host in headphones (the ear cup lights up and sends out sound waves when it clicks) and a buddy in a backwards cap. The beat is: circle a common misconception in red pen → an A/B/C question on an answer sheet with a stopwatch counting 3 → reveal with a check mark → a dictionary card flips in (the misreading struck through with a wavy line, numbered meanings) → replay the clip and stamp it → a short scene acting it out → a comment prompt → a stamp wipe that lands on the closing card. Fits products with a common misconception that can be framed as one multiple-choice question: what a foreign phrase really means, a software feature people often misread (e.g. "Archive = deleted?"), or why a dish is made the way it is. See [`styles/quiz/`](styles/quiz/README.md); templates and length limits are in `styles/quiz/recipes.md` (Chinese); five sample storyboards are in `styles/quiz/examples/`.
 
@@ -217,7 +217,7 @@ Which provider to pick, how to write it, recommended voices and length limits ar
 
 `meta.lang`: `zh` (default, Chinese captions) / `en` (English captions).
 
-- 11 general-purpose shots plus 7 industry shots (real photo, price card, store card, review card, before/after, fact sheet, credential card). `shots.en.md` is the parameter reference for all 18 shots; `docs/shots/*.en.md` has one detailed doc per shot.
+- 12 general-purpose shots plus 7 industry shots (real photo, price card, store card, review card, before/after, fact sheet, credential card). `shots.en.md` is the parameter reference for all 19 shots; `docs/shots/*.en.md` has one detailed doc per shot.
 - Each industry pack has compliance rules, a recommended shot structure, a brief template for merchants and a regression-test brief.
 - **Not supported** (the compliance rules don't cover these, so results aren't guaranteed compliant even if you force them): medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.
 
@@ -397,10 +397,10 @@ brewreel/
   SKILL.md / SKILL.en.md      The instructions an AI assistant reads (how to pick shots, fill fields, follow the flow)
   README.md / README.en.md    This file
   LICENSE / NOTICE / THIRD_PARTY_LICENSES.md
-  shots.md / shots.en.md      Parameter reference for all 18 shots
+  shots.md / shots.en.md      Parameter reference for all 19 shots
   brief-template.md           Generic brief template
   docs/
-    shots/                    Detailed per-shot docs (18 shots × 2 languages)
+    shots/                    Detailed per-shot docs (19 shots × 2 languages)
     images/                   The logo and example images used in the READMEs
   industries/                 The six industry packs
   scripts/
