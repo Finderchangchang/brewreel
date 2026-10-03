@@ -112,7 +112,7 @@ const RouteChip: React.FC<{r: Route; t: number; at: number; lang?: Lang; maxW: n
         transform: `translateX(${(1 - q) * -20}px)`,
       }}
     >
-      {r.mode === METRO ? <Subway size={28} color={th.accent} /> : <div style={{width: 12, height: 12, borderRadius: 6, background: th.accent, flex: 'none'}} />}
+      {r.mode === METRO ? <Subway size={28} color={th.accentInk} /> : <div style={{width: 12, height: 12, borderRadius: 6, background: th.accentFill, flex: 'none'}} />}
       <span style={{fontSize: fitLine(text, maxW - 70, 30, 26), fontWeight: 700, color: th.cardText, whiteSpace: 'nowrap'}}>{text}</span>
     </div>
   );
@@ -180,7 +180,7 @@ const MapPanel: React.FC<{p: P; routes: Route[]; t: number; w: number; h: number
           if (pr <= 0) return null;
           const x2 = s.x + (pin.x - s.x) * pr;
           const y2 = s.y + (pin.y - s.y) * pr;
-          return <line key={i} x1={s.x} y1={s.y} x2={x2} y2={y2} stroke={th.accent} strokeWidth={8} strokeDasharray="4 16" strokeLinecap="round" />;
+          return <line key={i} x1={s.x} y1={s.y} x2={x2} y2={y2} stroke={th.accentInk} strokeWidth={8} strokeDasharray="4 16" strokeLinecap="round" />;
         })}
       </svg>
       {/* 「示意图」角标放在左侧中上（四个角留给目的地标签） */}
@@ -189,9 +189,9 @@ const MapPanel: React.FC<{p: P; routes: Route[]; t: number; w: number; h: number
       </div>
 
       {/* 定位针 + 店名 */}
-      <div style={{position: 'absolute', left: pin.x - 60, top: pin.y + 6, width: 120, height: 40, borderRadius: '50%', border: `5px solid ${th.accent}`, transform: `scale(${0.6 + halo * 0.9})`, opacity: (1 - halo) * drop}} />
+      <div style={{position: 'absolute', left: pin.x - 60, top: pin.y + 6, width: 120, height: 40, borderRadius: '50%', border: `5px solid ${th.accentInk}`, transform: `scale(${0.6 + halo * 0.9})`, opacity: (1 - halo) * drop}} />
       <div style={{position: 'absolute', left: pin.x - 32, top: pin.y - 72, transform: `translateY(${(1 - drop) * -80}px)`, opacity: Math.min(1, drop * 2)}}>
-        <PinSolid size={64} color={th.accent} dot={th.card} />
+        <PinSolid size={64} color={th.accentInk} dot={th.card} />
       </div>
       {drop > 0.5 && (
         <div style={{position: 'absolute', left: pin.x - 200, top: pin.y + 36, width: 400, textAlign: 'center', opacity: Math.min(1, (drop - 0.5) * 3)}}>
@@ -224,10 +224,10 @@ const MapPanel: React.FC<{p: P; routes: Route[]; t: number; w: number; h: number
           >
             <div style={{maxWidth: LABEL_W, boxSizing: 'border-box', padding: '8px 18px', borderRadius: 20, background: th.card, boxShadow: th.shadow, textAlign: 'center'}}>
               <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8}}>
-                {r.mode === METRO && <Subway size={28} color={th.accent} />}
+                {r.mode === METRO && <Subway size={28} color={th.accentInk} />}
                 <span style={{fontSize: fitLine(r.to, LABEL_W - 36 - (r.mode === METRO ? 36 : 0), 32, 26), fontWeight: 900, color: th.cardText, whiteSpace: 'nowrap'}}>{r.to}</span>
               </div>
-              <div style={{fontSize: fitLine(how, LABEL_W - 36, 28, 26), fontWeight: 700, color: th.accent, whiteSpace: 'nowrap'}}>{how}</div>
+              <div style={{fontSize: fitLine(how, LABEL_W - 36, 28, 26), fontWeight: 700, color: th.accentInk, whiteSpace: 'nowrap'}}>{how}</div>
             </div>
           </div>
         );
@@ -277,7 +277,7 @@ const InfoBody: React.FC<{p: P; routes: Route[]; badges: string[]; t: number; la
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12}}>
           <div style={{display: 'flex', alignItems: 'center', gap: 12, transform: `scale(${1 + nameHit * 0.06})`, transformOrigin: '0% 50%'}}>
             <div style={{width: 56, height: 56, borderRadius: 28, background: th.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
-              <Pin size={30} color={th.accent} />
+              <Pin size={30} color={th.accentInk} />
             </div>
             <span style={{fontSize: nameSize, fontWeight: 900, color: th.cardText, whiteSpace: 'nowrap'}}>{p.name}</span>
           </div>

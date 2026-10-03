@@ -185,13 +185,13 @@ const InfoOverlay: React.FC<{p: P; t: number}> = ({p, t}) => {
             gap: 4,
             padding: '10px 22px',
             borderRadius: 26,
-            background: th.accent,
+            background: th.accentFill,
             color: th.accentText,
             fontFamily: FONT,
             whiteSpace: 'nowrap',
             opacity: Math.min(1, q * 1.8),
             transform: `scale(${0.85 + 0.15 * q})`,
-            boxShadow: `0 10px 24px ${alpha(th.accent, 0.4)}`,
+            boxShadow: `0 10px 24px ${alpha(th.accentFill, 0.4)}`,
           }}
         >
           <span style={{fontWeight: 900, fontSize: 40}}>¥{p.price}</span>

@@ -138,6 +138,10 @@ const CASES = [
   {file: 'voice-nokey-warn.json', env: {MINIMAX_API_KEY: 'placeholder-for-test'}, rule: '有 key 时不再提醒', level: 'warnings', expect: false, match: 'MINIMAX_API_KEY'},
   {file: 'voice-orphan-bad.json', rule: '写了 vo 但没开 meta.voice 要提醒', level: 'warnings', expect: true, match: '写了 vo（旁白），但没写 meta.voice'},
   {file: 'voice-orphan-bad.json', rule: '配音设置写在顶层 voice 要拦（顶层 voice 是 make 生成的配音轨）', level: 'errors', expect: true, match: '配音设置要写在 meta.voice 里'},
+  {file: 'brand-dark.json', rule: '深色品牌色配深色卡片：提醒已自动调亮', level: 'warnings', expect: true, match: '已自动调亮用于卡片上的文字'},
+  {file: 'brand-light.json', rule: '浅色品牌色配浅色卡片：提醒已自动调暗', level: 'warnings', expect: true, match: '已自动调暗用于卡片上的文字'},
+  {file: 'brand-clear.json', rule: '品牌色本来就够清楚时不提醒自动调色', level: 'warnings', expect: false, match: '已自动调'},
+  {file: 'brand-dark.json', rule: '对比度不够只提醒，不拦', level: 'errors', expect: false, match: '已自动调'},
 ];
 
 const flatten = (list) => list.map((e) => `${e.where}｜${e.problem}｜${e.fix}`).join('\n');

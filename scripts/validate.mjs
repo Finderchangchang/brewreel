@@ -76,6 +76,22 @@ export const loadSpecs = () => {
   return specs;
 };
 const THEMES = readJson(path.join(TEMPLATE, 'src', 'core', 'themes.json'));
+// 和 template/src/core/brand-contrast.ts 的 relLuminance 同一条 WCAG 折线（0.03928）。
+// 这里只决定要不要提醒；真正调色在渲染侧，对比度已经够时不会改色。
+const brandLum = (color) => {
+  const n = parseInt(color.slice(1), 16);
+  const ch = (c) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255);
+};
+const brandContrast = (a, b) => {
+  const hi = Math.max(brandLum(a), brandLum(b));
+  const lo = Math.min(brandLum(a), brandLum(b));
+  return (hi + 0.05) / (lo + 0.05);
+};
+const brandCardIsDark = (color) => brandLum(color) < 0.18;
 /** 样例里的文字（examples/*.json、spec.json 的 example、shots.md 的 json 代码块）：新分镜的字和它们太像就提醒（别照抄样例）。
  *  kind: caption = 字幕/口号；param = 其他参数文字。SEQS = examples 的镜头类型序列 */
 const collectStrings = (v, out) => {
@@ -678,6 +694,14 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
           if (Math.hypot(r - r2, g - g2, b - b2) < 70) {
             warn('meta.brandColor', `${meta.brandColor} 很像某聊天软件的标志绿，我方气泡会显得像它`, '换一个品牌色，或删掉 brandColor 用主题默认色');
             break;
+          }
+        }
+        if (isCards) {
+          const themeName = typeof meta.theme === 'string' && meta.theme in THEMES ? meta.theme : 'warm-emotion';
+          const card = THEMES[themeName] && THEMES[themeName].card;
+          if (typeof card === 'string' && /^#[0-9a-fA-F]{6}$/.test(card) && brandContrast(meta.brandColor, card) < 4.5 - 1e-6) {
+            const dir = brandCardIsDark(card) ? '调亮' : '调暗';
+            warn('meta.brandColor', `${meta.brandColor} 和「${themeName}」卡片对比度不到 4.5:1，已自动${dir}用于卡片上的文字`, '想保持原色就换一个和卡片拉开的品牌色，或换一套主题');
           }
         }
       }

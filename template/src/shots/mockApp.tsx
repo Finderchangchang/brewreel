@@ -135,7 +135,7 @@ const typed = (text: string, t: number, t0: number, cs: number) => {
 
 const Caret: React.FC<{t: number; size: number; on?: boolean}> = ({t, size, on = true}) => {
   const th = useTheme();
-  return on ? <span style={{display: 'inline-block', width: 4, height: size * 1.05, marginLeft: 4, verticalAlign: 'middle', background: th.accent, opacity: Math.floor(t * 2.5) % 2 === 0 ? 1 : 0}} /> : null;
+  return on ? <span style={{display: 'inline-block', width: 4, height: size * 1.05, marginLeft: 4, verticalAlign: 'middle', background: th.accentFill, opacity: Math.floor(t * 2.5) % 2 === 0 ? 1 : 0}} /> : null;
 };
 
 // ---------- 数字滚动（从字符串里取出数字部分滚动，前后缀保留） ----------
@@ -174,7 +174,7 @@ const Chart: React.FC<{p: P; t: number; w: number; h: number}> = ({p, t, w, h}) 
         {ser.map((v, i) => {
           const g = pop(t, 0.3 + i * 0.1, 14, 150);
           const bh = (base - yOf(v)) * g;
-          return <rect key={i} x={10 + step * i + (step - bw) / 2} y={base - bh} width={bw} height={Math.max(0, bh)} rx={10} fill={i === n - 1 ? th.accent : alpha(th.accent, 0.35)} />;
+          return <rect key={i} x={10 + step * i + (step - bw) / 2} y={base - bh} width={bw} height={Math.max(0, bh)} rx={10} fill={i === n - 1 ? th.accentFill : alpha(th.accentFill, 0.35)} />;
         })}
       </svg>
     );
@@ -200,17 +200,17 @@ const Chart: React.FC<{p: P; t: number; w: number; h: number}> = ({p, t, w, h}) 
     <svg width={w} height={h} style={{display: 'block', overflow: 'visible'}}>
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={th.accent} stopOpacity={0.32} />
-          <stop offset="100%" stopColor={th.accent} stopOpacity={0} />
+          <stop offset="0%" stopColor={th.accentFill} stopOpacity={0.32} />
+          <stop offset="100%" stopColor={th.accentFill} stopOpacity={0} />
         </linearGradient>
       </defs>
       {gridEls}
       {area && <path d={area} fill={`url(#${gid})`} />}
-      {vis.length > 1 && <path d={d} fill="none" stroke={th.accent} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />}
+      {vis.length > 1 && <path d={d} fill="none" stroke={th.accentFill} strokeWidth={7} strokeLinecap="round" strokeLinejoin="round" />}
       {draw > 0 && (
         <>
-          <circle cx={tip[0]} cy={tip[1]} r={14 + pulse * 18} fill="none" stroke={th.accent} strokeWidth={3} opacity={1 - pulse} />
-          <circle cx={tip[0]} cy={tip[1]} r={11} fill={th.card} stroke={th.accent} strokeWidth={6} />
+          <circle cx={tip[0]} cy={tip[1]} r={14 + pulse * 18} fill="none" stroke={th.accentFill} strokeWidth={3} opacity={1 - pulse} />
+          <circle cx={tip[0]} cy={tip[1]} r={11} fill={th.card} stroke={th.accentFill} strokeWidth={6} />
         </>
       )}
     </svg>
@@ -259,7 +259,7 @@ const Row: React.FC<{it: Item; t: number; at: number; hot: boolean; hotAt: numbe
         padding: '0 20px',
         borderRadius: 22,
         background: sel > 0 ? th.accentSoft : th.cardAlt,
-        boxShadow: sel > 0 ? `inset 0 0 0 ${3 * sel}px ${th.accent}, 0 ${10 * sel}px ${24 * sel}px ${alpha(hexOr(th.accent, '#3B82F6'), 0.25 * sel)}` : undefined,
+        boxShadow: sel > 0 ? `inset 0 0 0 ${3 * sel}px ${th.accentFill}, 0 ${10 * sel}px ${24 * sel}px ${alpha(hexOr(th.accentFill, '#3B82F6'), 0.25 * sel)}` : undefined,
         opacity: Math.min(1, q * 1.6),
         transform: `translateY(${(1 - q) * 30}px) scale(${1 + b * 0.04})`,
       }}
@@ -301,7 +301,7 @@ const Thinking: React.FC<{h: number; t: number}> = ({h, t}) => {
       {[0, 1, 2].map((i) => {
         const ph = (((t * 1.6 - i * 0.22) % 1) + 1) % 1;
         const s = Math.max(0, Math.sin(Math.PI * Math.min(1, ph * 1.5)));
-        return <div key={i} style={{width: 22, height: 22, borderRadius: 11, background: th.accent, opacity: 0.35 + 0.65 * s, transform: `translateY(${-s * 16}px)`}} />;
+        return <div key={i} style={{width: 22, height: 22, borderRadius: 11, background: th.accentFill, opacity: 0.35 + 0.65 * s, transform: `translateY(${-s * 16}px)`}} />;
       })}
     </div>
   );
@@ -371,7 +371,7 @@ const SearchBar: React.FC<{text: string; t: number; focus: boolean; icon?: strin
   const th = useTheme();
   return (
     <div style={{height: SEARCH_H, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, padding: '0 24px', borderRadius: 40, background: th.cardAlt, border: `2px solid ${focus ? th.accentLine : th.line}`, marginBottom: 18}}>
-      <Icon name={icon} size={40} color={icon === 'search' ? th.cardMuted : th.accent} stroke={2.4} />
+      <Icon name={icon} size={40} color={icon === 'search' ? th.cardMuted : th.accentInk} stroke={2.4} />
       <div style={{fontSize: 38, color: th.cardText, whiteSpace: 'nowrap'}}>
         {text || <span style={{color: th.cardMuted}}>{icon === 'search' ? pick(lang, '搜索', 'Search') : pick(lang, '问一句…', 'Ask anything…')}</span>}
         <Caret t={t} size={38} on={focus} />
@@ -416,8 +416,8 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> 
         ))}
         <div style={{flex: 1}} />
         {generating && (
-          <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 800, color: th.accent}}>
-            <Icon name="sparkle" size={30} color={th.accent} stroke={2.4} style={{transform: `rotate(${t * 180}deg)`}} />
+          <div style={{display: 'flex', alignItems: 'center', gap: 8, fontSize: 28, fontWeight: 800, color: th.accentInk}}>
+            <Icon name="sparkle" size={30} color={th.accentInk} stroke={2.4} style={{transform: `rotate(${t * 180}deg)`}} />
             {pick(lang, '生成中', 'Generating')}
           </div>
         )}
@@ -435,7 +435,7 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> 
               <span style={{position: 'relative', display: 'inline-block'}}>
                 {mark > 0 && <span style={{position: 'absolute', left: -8, top: '20%', height: '66%', width: `calc(${mark * 100}% + 16px)`, background: alpha(hexOr(th.hot, '#FFE14D'), 0.6), borderRadius: 8}} />}
                 <span style={{position: 'relative'}}>
-                  {!first && <span style={{color: th.accent, fontWeight: 900, marginRight: 14}}>•</span>}
+                  {!first && <span style={{color: th.accentInk, fontWeight: 900, marginRight: 14}}>•</span>}
                   {s}
                   <Caret t={t} size={size} on={i === cursorLine && (pl.hlAt < 0 || t < pl.hlAt + 0.4)} />
                 </span>
@@ -448,13 +448,13 @@ const Editor: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> 
       {p.input && (
         <div style={{height: PROMPT_H, flex: 'none', boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 14, borderTop: `2px solid ${th.line}`, paddingTop: 14}}>
           <div style={{flex: 1, height: 80, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 12, padding: '0 22px', borderRadius: 24, background: th.cardAlt, border: `2px solid ${pl.tapAt >= 0 && t < pl.tapAt ? th.accentLine : th.line}`, overflow: 'hidden'}}>
-            <Icon name="sparkle" size={36} color={th.accent} stroke={2.4} />
+            <Icon name="sparkle" size={36} color={th.accentInk} stroke={2.4} />
             <div style={{fontSize: fitLine(p.input, 410, 36, 34), color: th.cardText, whiteSpace: 'nowrap'}}>
               {prompt}
               <Caret t={t} size={36} on={t >= pl.typeFrom && (pl.tapAt < 0 || t < pl.tapAt)} />
             </div>
           </div>
-          <div style={{position: 'relative', overflow: 'hidden', height: 80, padding: '0 28px', borderRadius: 24, background: th.accent, color: th.accentText, fontSize: fitLine(btn, 170, 36, 34), fontWeight: 900, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', transform: `scale(${1 - press * 0.1})`}}>
+          <div style={{position: 'relative', overflow: 'hidden', height: 80, padding: '0 28px', borderRadius: 24, background: th.accentFill, color: th.accentText, fontSize: fitLine(btn, 170, 36, 34), fontWeight: 900, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap', transform: `scale(${1 - press * 0.1})`}}>
             {btn}
             <Sweep p={interpolate(t, [0.2, 0.9], [0, 1], clamp)} w={200} />
           </div>
@@ -501,8 +501,8 @@ const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = 
                 padding: '0 22px',
                 borderRadius: 18,
                 background: th.cardAlt,
-                border: `3px solid ${focus ? th.accent : filled ? alpha(good, 0.5) : th.line}`,
-                boxShadow: focus ? `0 0 0 6px ${alpha(hexOr(th.accent, '#3B82F6'), 0.18)}` : undefined,
+                border: `3px solid ${focus ? th.accentFill : filled ? alpha(good, 0.5) : th.line}`,
+                boxShadow: focus ? `0 0 0 6px ${alpha(hexOr(th.accentFill, '#3B82F6'), 0.18)}` : undefined,
               }}
             >
               {isIcon(r.icon) && <Icon name={r.icon} size={34} color={th.cardMuted} stroke={2.2} />}
@@ -527,7 +527,7 @@ const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = 
           height: FORM_BTN,
           flex: 'none',
           borderRadius: 44,
-          background: ok ? th.good : th.accent,
+          background: ok ? th.good : th.accentFill,
           color: ok ? '#ffffff' : th.accentText,
           display: 'flex',
           alignItems: 'center',
@@ -536,7 +536,7 @@ const Form: React.FC<{p: P; pl: Plan; t: number; bodyH: number; lang?: Lang}> = 
           fontSize: 40,
           fontWeight: 900,
           transform: `scale(${1 - press * 0.08})`,
-          boxShadow: `0 12px 26px ${alpha(ok ? good : hexOr(th.accent, '#3B82F6'), 0.35)}`,
+          boxShadow: `0 12px 26px ${alpha(ok ? good : hexOr(th.accentFill, '#3B82F6'), 0.35)}`,
         }}
       >
         {ok && <Icon name="check" size={42} color="#fff" stroke={3.2} style={{transform: `scale(${okQ})`}} />}
@@ -601,7 +601,7 @@ const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
       >
         {/* 顶栏 */}
         <div style={{height: HEADER, boxSizing: 'border-box', display: 'flex', alignItems: 'center', gap: 18, padding: `0 ${PADX}px`, borderBottom: `2px solid ${th.line}`}}>
-          <div style={{width: 56, height: 56, borderRadius: 16, background: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
+          <div style={{width: 56, height: 56, borderRadius: 16, background: th.accentFill, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
             <Icon name={KIND_ICON[kind]} size={34} color={th.accentText} stroke={2.4} />
           </div>
           <div style={{flex: 1, fontSize: fitLine(title, badge ? Math.min(440, 646 - 18 - badgeW) : 440, 42, 34), fontWeight: 900, color: th.cardText, whiteSpace: 'nowrap', overflow: 'hidden'}}>{title}</div>
@@ -638,7 +638,7 @@ const MockApp: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
               </div>
             )
           ) : (kind === 'dashboard' || kind === 'list') && p.button ? (
-            <div style={{height: 56, padding: '0 22px', borderRadius: 28, background: th.accentSoft, color: th.accent, fontSize: 30, fontWeight: 800, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap'}}>{p.button}</div>
+            <div style={{height: 56, padding: '0 22px', borderRadius: 28, background: th.accentSoft, color: th.accentInk, fontSize: 30, fontWeight: 800, display: 'flex', alignItems: 'center', whiteSpace: 'nowrap'}}>{p.button}</div>
           ) : kind === 'dashboard' || kind === 'list' ? (
             <Icon name="bell" size={40} color={th.cardMuted} stroke={2.2} />
           ) : (

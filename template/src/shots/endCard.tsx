@@ -134,7 +134,7 @@ const EndCard: React.FC<ShotProps<P>> = ({params: p, t, beat, meta}) => {
               return (
                 <div key={i} style={{display: 'flex', alignItems: 'center', gap: 20, marginTop: 30, ...rise(q, 24)}}>
                   <div style={{width: 56, height: 56, borderRadius: 28, flex: 'none', background: th.accentSoft, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                    <Icon name="check" size={34} color={th.accent} stroke={3} />
+                    <Icon name="check" size={34} color={th.accentInk} stroke={3} />
                   </div>
                   <div style={{fontSize: rowSize, fontWeight: 700, color: th.cardText, whiteSpace: 'nowrap', lineHeight: 1.3}}>{pt}</div>
                 </div>
@@ -232,7 +232,7 @@ const EndCard: React.FC<ShotProps<P>> = ({params: p, t, beat, meta}) => {
                     ...rise(q, 24),
                   }}
                 >
-                  <div style={{width: 12, height: 12, borderRadius: 6, background: th.accent, flex: 'none'}} />
+                  <div style={{width: 12, height: 12, borderRadius: 6, background: th.accentFill, flex: 'none'}} />
                   {pt}
                 </div>
               );
@@ -302,7 +302,7 @@ const EndCard: React.FC<ShotProps<P>> = ({params: p, t, beat, meta}) => {
                 whiteSpace: 'nowrap',
               }}
             >
-              <Icon name="check" size={f} color={th.accent} stroke={3} />
+              <Icon name="check" size={f} color={th.accentInk} stroke={3} />
               {pt}
             </div>
           </div>

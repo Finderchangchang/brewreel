@@ -63,7 +63,10 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
 }) => {
   const th = useTheme();
   const p = pop(t, at, 13, 210);
-  const tone = toneColor(th, row.tone); // 不写 tone = 品牌强调色
+  const toneRaw = toneColor(th, row.tone); // 不写 tone = 品牌强调色
+  const accentish = !row.tone;
+  const toneFill = accentish ? th.accentFill : toneRaw;
+  const toneInk = accentish ? th.accentInk : toneRaw;
   const toneKey = row.tone === 'good' || row.tone === 'warn' || row.tone === 'bad' ? row.tone : 'accent';
   const hasScore = typeof row.score === 'number' && Number.isFinite(row.score);
   const hasRight = hasScore || !!row.tag;
@@ -115,7 +118,7 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
       }}
     >
       {/* 语气色条 */}
-      <div style={{position: 'absolute', left: 0, bottom: 0, width: 12, height: `${strip * 100}%`, background: tone}} />
+      <div style={{position: 'absolute', left: 0, bottom: 0, width: 12, height: `${strip * 100}%`, background: toneFill}} />
       {/* 左：头像+气泡 或 图标+文字 */}
       {quote ? (
         <div style={{display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 0}}>
@@ -153,7 +156,7 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
                   fontWeight: 700,
                   fontSize: nSize,
                   lineHeight: 1,
-                  color: tone,
+                  color: toneInk,
                   whiteSpace: 'nowrap',
                   opacity: Math.min(1, s * 2),
                   transform: `scale(${1 + hit * 0.25})`,
@@ -164,7 +167,7 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
                 {suffix && <span style={{fontSize: Math.round(nSize * 0.42), color: th.cardMuted}}>{suffix}</span>}
               </div>
               {row.tag && (
-                <div style={{fontFamily: FONT, fontWeight: 800, fontSize: wordSize, color: tone, marginTop: 4, whiteSpace: 'nowrap', opacity: Math.min(1, s * 2)}}>{row.tag}</div>
+                <div style={{fontFamily: FONT, fontWeight: 800, fontSize: wordSize, color: toneInk, marginTop: 4, whiteSpace: 'nowrap', opacity: Math.min(1, s * 2)}}>{row.tag}</div>
               )}
             </>
           ) : (
@@ -179,13 +182,13 @@ const QuickRow: React.FC<{row: Row; i: number; t: number; at: number; stampAt: n
                 borderRadius: tagSize * 0.5,
                 boxSizing: 'border-box',
                 border: `4px solid ${alpha('#FFFFFF', 0.85)}`,
-                background: tone,
+                background: toneFill,
                 color: !row.tone ? th.accentText : row.tone === 'neutral' && th.dark ? th.card : '#FFFFFF',
                 fontFamily: FONT,
                 fontWeight: 900,
                 fontSize: tagSize,
                 whiteSpace: 'nowrap',
-                boxShadow: `0 8px 18px ${alpha(tone.startsWith('#') ? tone : '#000000', 0.35)}`,
+                boxShadow: `0 8px 18px ${alpha(toneFill.startsWith('#') ? toneFill : '#000000', 0.35)}`,
                 opacity: Math.min(1, s * 2.5),
                 transform: `scale(${1.8 - 0.8 * s}) rotate(${-4 - (1 - s) * 14}deg)`, // 盖章：从大砸下，最后微斜 4°
                 transformOrigin: '70% 50%',

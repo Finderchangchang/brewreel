@@ -1,10 +1,12 @@
 import React, {createContext, useContext} from 'react';
 import {interpolateColors} from 'remotion';
+import {brandOnCard} from './brand-contrast';
 import THEMES from './themes.json';
 
 // ============================================================
 // 主题：组件只通过 useTheme() 取色，不写死颜色。
-// brandColor 只替换 accent（按钮、我方气泡、图标、进度条），字幕强调色 hot 不变。
+// brandColor 替换 accent。画在卡片上的文字/图标用 accentInk，画在卡片上的底色用 accentFill。
+// 和卡片对比度够时这两个字段等于 accent，画面不变。字幕强调色 hot 不变。
 // ============================================================
 export type ThemeData = (typeof THEMES)['warm-emotion'] & {
   /** 主题可带自己的图表系列色（dataChart）；显式 palette 仍可覆盖。 */
@@ -20,6 +22,10 @@ export type Theme = ThemeData & {
   accentSoft: string;
   /** 强调色的中间调（描边/进度底） */
   accentLine: string;
+  /** 画在卡片上的底色。和卡片不到 3:1 时只调亮度；够了就等于 accent */
+  accentFill: string;
+  /** 画在卡片上的文字和图标色。和卡片不到 4.5:1 时只调亮度；够了就等于 accent */
+  accentInk: string;
 };
 export const THEME_NAMES = Object.keys(THEMES);
 
@@ -82,12 +88,17 @@ export const textOnHot = (th: {hot: string; onHot?: string}) => th.onHot ?? inkO
 export const resolveTheme = (name: string | undefined, brandColor?: string): Theme => {
   const key = name && name in THEMES ? (name as keyof typeof THEMES) : 'warm-emotion';
   const base = THEMES[key] as ThemeData;
-  const accent = brandColor && hex(brandColor) ? brandColor : base.accent;
   const cardHex = hex(base.card) ? base.card : base.dark ? '#141B33' : '#FFFFFF';
+  const branded = brandColor && hex(brandColor) ? brandOnCard(brandColor, cardHex, base.accentText) : null;
+  // 没写品牌色，或品牌色本来就够清楚：accent / accentFill / accentInk 是同一个色值。
+  const accent = branded ? branded.accent : base.accent;
   return {
     ...base,
     name: key,
     accent,
+    accentFill: branded ? branded.accentFill : base.accent,
+    accentInk: branded ? branded.accentInk : base.accent,
+    accentText: branded ? branded.accentText : base.accentText,
     accentSoft: mixHex(accent, cardHex, base.dark ? 0.78 : 0.88),
     accentLine: mixHex(accent, cardHex, base.dark ? 0.55 : 0.7),
   };

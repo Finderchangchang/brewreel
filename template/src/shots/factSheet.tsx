@@ -92,7 +92,7 @@ const BoxTile: React.FC<{r: Row; t: number; at: number; w: number; lang?: Lang}>
         transform: `scale(${(0.82 + 0.18 * q) * (1 + hit * 0.06)})`,
       }}
     >
-      {typeof r.qty === 'number' && <div style={{position: 'absolute', right: 14, top: 12, fontFamily: MONO, fontWeight: 800, fontSize: 28, color: th.accent}}>×{r.qty}</div>}
+      {typeof r.qty === 'number' && <div style={{position: 'absolute', right: 14, top: 12, fontFamily: MONO, fontWeight: 800, fontSize: 28, color: th.accentInk}}>×{r.qty}</div>}
       {r.isGift && (
         <div
           style={{
@@ -128,12 +128,12 @@ const SyllabusRow: React.FC<{r: Row; t: number; at: number; w: number; lang?: La
   const nameSize = fitLine(name, w - (lang === 'en' ? 220 : 170), 38, 32);
   return (
     <div style={{display: 'flex', alignItems: 'center', gap: 16, padding: '11px 0', opacity: Math.min(1, q * 1.7), transform: `translateX(${(1 - q) * 40}px)`}}>
-      <div style={{width: 50, height: 50, borderRadius: 25, background: th.accent, color: th.accentText, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: MONO, fontWeight: 800, fontSize: 25}}>
+      <div style={{width: 50, height: 50, borderRadius: 25, background: th.accentFill, color: th.accentText, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: MONO, fontWeight: 800, fontSize: 25}}>
         {r.no ?? ''}
       </div>
       <div style={{flex: 1, fontSize: nameSize, fontWeight: 800, color: th.cardText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{name}</div>
       {lessons !== undefined && (
-        <div style={{flex: 'none', padding: '6px 18px', borderRadius: 20, background: th.accentSoft, color: th.accent, fontWeight: 800, fontSize: 28, whiteSpace: 'nowrap'}}>{lessonsText}</div>
+        <div style={{flex: 'none', padding: '6px 18px', borderRadius: 20, background: th.accentSoft, color: th.accentInk, fontWeight: 800, fontSize: 28, whiteSpace: 'nowrap'}}>{lessonsText}</div>
       )}
     </div>
   );
@@ -239,7 +239,7 @@ const FactSheet: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
             {facts.map((f, i) => (
               <div key={i} style={{display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 16px', borderRadius: 18, background: th.accentSoft}}>
                 <span style={{fontSize: 26, color: th.cardMuted}}>{f.label}</span>
-                <span style={{fontSize: 30, fontWeight: 800, color: th.accent, whiteSpace: 'nowrap'}}>{f.value}</span>
+                <span style={{fontSize: 30, fontWeight: 800, color: th.accentInk, whiteSpace: 'nowrap'}}>{f.value}</span>
               </div>
             ))}
           </div>

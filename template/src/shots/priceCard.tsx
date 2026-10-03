@@ -120,7 +120,7 @@ const NoteLine: React.FC<{icon: string; text: string; t: number; at: number; str
   if (t < at) return null;
   return (
     <div style={{display: 'flex', alignItems: 'flex-start', gap: 10, opacity: Math.min(1, q * 1.8), transform: `translateY(${(1 - q) * 10}px)`}}>
-      <Icon name={icon} size={size} color={strong ? th.accent : th.cardMuted} stroke={2.4} style={{marginTop: 2, flex: 'none'}} />
+      <Icon name={icon} size={size} color={strong ? th.accentInk : th.cardMuted} stroke={2.4} style={{marginTop: 2, flex: 'none'}} />
       <span style={{fontSize: size, fontWeight: strong ? 800 : 600, color: strong ? th.cardText : th.cardSub, lineHeight: 1.3}}>{text}</span>
     </div>
   );
@@ -171,11 +171,11 @@ const PriceBlock: React.FC<{item?: Item; compare?: Compare; label?: string; t: n
     <div style={{display: 'flex', flexDirection: 'column', gap: 6}}>
       {label && <LabelPill text={tr(lang, label, LABEL_EN)} q={q} />}
       <div style={{display: 'flex', alignItems: 'baseline', gap: 10, transform: `scale(${1 + hit * 0.08})`, transformOrigin: '0% 60%'}}>
-        {item?.from && en && <span style={{fontSize: 34, fontWeight: 800, color: th.accent, opacity: Math.min(1, q * 2)}}>from</span>}
-        <span style={{fontFamily: MONO, fontWeight: 700, fontSize: 40, color: th.accent, opacity: Math.min(1, q * 2)}}>¥</span>
-        <span style={{fontFamily: MONO, fontWeight: 800, fontSize: size, lineHeight: 1, color: th.accent, opacity: Math.min(1, q * 2)}}>{priceStr}</span>
-        {item?.unit && <span style={{fontSize: unitSize, fontWeight: 700, color: th.accent, opacity: Math.min(1, q * 2)}}>/{item.unit}</span>}
-        {item?.from && !en && <span style={{fontSize: unitSize, fontWeight: 900, color: th.accent, opacity: Math.min(1, q * 2)}}>{pick(lang, '起', '')}</span>}
+        {item?.from && en && <span style={{fontSize: 34, fontWeight: 800, color: th.accentInk, opacity: Math.min(1, q * 2)}}>from</span>}
+        <span style={{fontFamily: MONO, fontWeight: 700, fontSize: 40, color: th.accentInk, opacity: Math.min(1, q * 2)}}>¥</span>
+        <span style={{fontFamily: MONO, fontWeight: 800, fontSize: size, lineHeight: 1, color: th.accentInk, opacity: Math.min(1, q * 2)}}>{priceStr}</span>
+        {item?.unit && <span style={{fontSize: unitSize, fontWeight: 700, color: th.accentInk, opacity: Math.min(1, q * 2)}}>/{item.unit}</span>}
+        {item?.from && !en && <span style={{fontSize: unitSize, fontWeight: 900, color: th.accentInk, opacity: Math.min(1, q * 2)}}>{pick(lang, '起', '')}</span>}
         {compare && <Struck price={compare.price} t={t} settle={settle} />}
       </div>
       {compare && (
@@ -238,11 +238,11 @@ const PriceStack: React.FC<{items: Item[]; compare?: Compare; label?: string; t:
               {sub && <span style={{fontSize: fitLine(sub, leftW, 28, 26), fontWeight: 600, color: th.cardSub, whiteSpace: 'nowrap'}}>{sub}</span>}
             </div>
             <div style={{display: 'flex', alignItems: 'baseline', gap: 6, whiteSpace: 'nowrap', transform: `scale(${1 + hit * 0.08})`, transformOrigin: '100% 60%'}}>
-              {it.from && en && <span style={{fontSize: 28, fontWeight: 800, color: th.accent}}>from</span>}
-              <span style={{fontFamily: MONO, fontWeight: 700, fontSize: 34, color: th.accent}}>¥</span>
-              <span style={{fontFamily: MONO, fontWeight: 800, fontSize: priceSize, lineHeight: 1, color: th.accent}}>{priceStr}</span>
-              {it.unit && <span style={{fontSize: 34, fontWeight: 700, color: th.accent}}>/{it.unit}</span>}
-              {it.from && !en && <span style={{fontSize: 34, fontWeight: 900, color: th.accent}}>{pick(lang, '起', '')}</span>}
+              {it.from && en && <span style={{fontSize: 28, fontWeight: 800, color: th.accentInk}}>from</span>}
+              <span style={{fontFamily: MONO, fontWeight: 700, fontSize: 34, color: th.accentInk}}>¥</span>
+              <span style={{fontFamily: MONO, fontWeight: 800, fontSize: priceSize, lineHeight: 1, color: th.accentInk}}>{priceStr}</span>
+              {it.unit && <span style={{fontSize: 34, fontWeight: 700, color: th.accentInk}}>/{it.unit}</span>}
+              {it.from && !en && <span style={{fontSize: 34, fontWeight: 900, color: th.accentInk}}>{pick(lang, '起', '')}</span>}
             </div>
           </div>
         );
@@ -274,7 +274,7 @@ const MenuRow: React.FC<{item: Item; t: number; at: number; w: number; lang?: La
       <div style={{display: 'flex', alignItems: 'baseline', gap: 10}}>
         <span style={{fontSize: nameSize, fontWeight: 800, color: th.cardText, whiteSpace: 'nowrap'}}>{name}</span>
         <span style={{flex: 1, borderBottom: `2px dotted ${th.line}`, transform: 'translateY(-6px)'}} />
-        <span style={{fontFamily: MONO, fontSize: dense ? 36 : 38, fontWeight: 800, color: th.accent, whiteSpace: 'nowrap'}}>
+        <span style={{fontFamily: MONO, fontSize: dense ? 36 : 38, fontWeight: 800, color: th.accentInk, whiteSpace: 'nowrap'}}>
           {item.from && en && <span style={{fontFamily: FONT, fontSize: 26, fontWeight: 700}}>from </span>}¥{item.price}
           <span style={{fontSize: 26, fontWeight: 600}}>
             {item.unit ? `/${item.unit}` : ''}

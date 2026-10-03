@@ -112,6 +112,9 @@ export const Pill: React.FC<{
 }> = ({text, size = 30, tone = 'accent', filled, icon, style}) => {
   const th = useTheme();
   const c = toneColor(th, tone);
+  // 强调色要拆开：字用 accentInk，实心底用 accentFill。没触发时两者都等于 accent。
+  const fill = tone === 'accent' ? th.accentFill : c;
+  const ink = tone === 'accent' ? th.accentInk : c;
   return (
     <div
       style={{
@@ -126,8 +129,8 @@ export const Pill: React.FC<{
         fontWeight: 800,
         fontSize: size,
         whiteSpace: 'nowrap',
-        color: filled ? (tone === 'accent' ? th.accentText : '#FFFFFF') : c,
-        background: filled ? c : tone === 'accent' ? th.accentSoft : alpha(c, th.dark ? 0.18 : 0.12),
+        color: filled ? (tone === 'accent' ? th.accentText : '#FFFFFF') : ink,
+        background: filled ? fill : tone === 'accent' ? th.accentSoft : alpha(c, th.dark ? 0.18 : 0.12),
         ...style,
       }}
     >
@@ -165,7 +168,7 @@ export const Bubble: React.FC<{
       <div
         style={{
           maxWidth: maxW,
-          background: mine ? th.accent : th.bubbleOther,
+          background: mine ? th.accentFill : th.bubbleOther,
           color: mine ? th.accentText : th.bubbleOtherText,
           fontFamily: FONT,
           fontWeight: 500,
@@ -195,6 +198,8 @@ export const IconDisc: React.FC<{name: string; size?: number; tone?: 'accent' | 
 }) => {
   const th = useTheme();
   const c = toneColor(th, tone);
+  const fill = tone === 'accent' ? th.accentFill : c;
+  const ink = tone === 'accent' ? th.accentInk : c;
   return (
     <div
       style={{
@@ -205,12 +210,12 @@ export const IconDisc: React.FC<{name: string; size?: number; tone?: 'accent' | 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: soft ? (tone === 'accent' ? th.accentSoft : alpha(c, 0.14)) : c,
-        boxShadow: soft ? undefined : `0 10px 24px ${alpha(c, 0.35)}`,
+        background: soft ? (tone === 'accent' ? th.accentSoft : alpha(c, 0.14)) : fill,
+        boxShadow: soft ? undefined : `0 10px 24px ${alpha(fill, 0.35)}`,
         ...style,
       }}
     >
-      <Icon name={name} size={size * 0.52} color={soft ? c : tone === 'accent' ? th.accentText : '#FFFFFF'} stroke={2.2} />
+      <Icon name={name} size={size * 0.52} color={soft ? ink : tone === 'accent' ? th.accentText : '#FFFFFF'} stroke={2.2} />
     </div>
   );
 };
@@ -294,7 +299,7 @@ export const Placeholder: React.FC<{type: string; t: number; lines?: string[]}> 
   return (
     <div style={{position: 'absolute', left: 150, top: 560, width: 780, height: 780, opacity: p, transform: `translateY(${(1 - p) * 40}px)`}}>
       <Card style={{width: '100%', height: '100%', padding: 50, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 24, border: `4px dashed ${th.accentLine}`}}>
-        <Icon name="doc" size={96} color={th.accent} />
+        <Icon name="doc" size={96} color={th.accentInk} />
         <div style={{fontSize: 72, fontWeight: 900, color: th.cardText}}>{type}</div>
         {/* i18n-ignore：开发占位，只在镜头没实现时出现，validate 会先拦掉未知镜头 */}
         <div style={{fontSize: 34, color: th.cardSub}}>镜头待实现（占位）</div>

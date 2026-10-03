@@ -123,7 +123,7 @@ const FeatureCard: React.FC<{b: Box; item: Item; i: number; t: number; at: numbe
 
   const discEl = (
     <div style={{position: 'relative', width: disc, height: disc, flex: 'none', transform: `scale(${1 + hit * 0.22})`}}>
-      {active && <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${th.accent}`, transform: `scale(${1 + pulse * 0.55})`, opacity: 1 - pulse}} />}
+      {active && <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${th.accentInk}`, transform: `scale(${1 + pulse * 0.55})`, opacity: 1 - pulse}} />}
       <IconDisc name={icon} size={disc} soft={!active} />
       <div
         style={{

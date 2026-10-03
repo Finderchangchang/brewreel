@@ -5,6 +5,7 @@
 ## Unreleased
 
 - Data-chart shot, 12 optional palettes, and the render-lock fix. Thanks to @opc8838-hub (#2).
+- When a brand color is too close to the card, text and icons painted on the card are lightened or darkened (hue unchanged), and fills such as buttons are adjusted the same way. A color that is already clear enough, or no brand color at all, leaves the picture unchanged.
 
 ## v0.6.0 · 2026-10-02 · Steadier scripts: recipe-specific guidance, no render on a failed read-through, sharper spoiler check
 

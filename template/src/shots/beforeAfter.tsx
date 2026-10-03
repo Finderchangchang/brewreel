@@ -132,7 +132,7 @@ const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur, meta}) => {
             bottom: 22,
             padding: '8px 20px',
             borderRadius: 18,
-            background: th.accent,
+            background: th.accentFill,
             color: th.accentText,
             fontWeight: 800,
             fontSize: labelSize(beforeLabel),

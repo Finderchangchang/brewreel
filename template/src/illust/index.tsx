@@ -92,8 +92,8 @@ export const Illust: React.FC<Props> = ({name, size = 320, color = 'primary', an
   }
 
   // 2 种主题填色 + 1 种描边色（设计 §2.1）；color='accent' 时整体更强调
-  const fillMain = color === 'accent' ? th.accent : th.cardAlt;
-  const fillPop = color === 'accent' ? th.accentSoft : th.accent;
+  const fillMain = color === 'accent' ? th.accentFill : th.cardAlt;
+  const fillPop = color === 'accent' ? th.accentSoft : th.accentFill;
   const stroke = th.cardText;
   const effT = animate ? t : 0;
 

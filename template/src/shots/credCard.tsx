@@ -87,7 +87,7 @@ const Person: React.FC<{p: P; t: number; beat: number; industry?: string; lang?:
                 height: AV,
                 borderRadius: AV / 2,
                 background: th.accentSoft,
-                color: th.accent,
+                color: th.accentInk,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -108,7 +108,7 @@ const Person: React.FC<{p: P; t: number; beat: number; industry?: string; lang?:
           <div style={{fontSize: nameSize, fontWeight: 900, color: th.cardText, whiteSpace: 'nowrap'}}>{p.name}</div>
           {p.role && <div style={{fontSize: 36, fontWeight: 700, color: th.cardSub, whiteSpace: 'nowrap'}}>{p.role}</div>}
           {typeof p.years === 'number' && (
-            <div style={{display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', padding: '5px 18px', borderRadius: 18, background: th.accentSoft, color: th.accent, fontWeight: 800, fontSize: 28}}>
+            <div style={{display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', padding: '5px 18px', borderRadius: 18, background: th.accentSoft, color: th.accentInk, fontWeight: 800, fontSize: 28}}>
               {yearsText(p.years, lang)}
             </div>
           )}
@@ -203,7 +203,7 @@ const Badge: React.FC<{t: number; year?: number; photo?: string}> = ({t, year, p
           const y1 = 110 + Math.sin(ang) * r1;
           const x2 = 110 + Math.cos(ang) * r2;
           const y2 = 110 + Math.sin(ang) * r2;
-          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={th.accent} strokeWidth={10} strokeLinecap="round" opacity={0.85} />;
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke={th.accentInk} strokeWidth={10} strokeLinecap="round" opacity={0.85} />;
         })}
       </svg>
       <div
@@ -214,8 +214,8 @@ const Badge: React.FC<{t: number; year?: number; photo?: string}> = ({t, year, p
           width: 148,
           height: 148,
           borderRadius: 74,
-          background: th.accent,
-          boxShadow: `0 14px 30px ${alpha(th.accent, 0.4)}`,
+          background: th.accentFill,
+          boxShadow: `0 14px 30px ${alpha(th.accentFill, 0.4)}`,
           border: '6px solid #ffffff',
           overflow: 'hidden',
         }}

@@ -70,7 +70,7 @@ const DataChart: React.FC<ShotProps<P>> = ({params: p, t, meta}) => {
   const data = (p.data ?? []).slice(0, 6);
   const max = p.max && p.max > 0 ? p.max : Math.max(1, ...data.map((d) => d.value));
   const labels = [...new Set(data.map((d) => d.series ?? ''))].filter(Boolean);
-  const focusColor = meta.brandColor ? th.accent : paletteName === 'micro' ? colors[1] : paletteName === 'palm' || paletteName === 'wire' ? colors[4] : colors[0];
+  const focusColor = meta.brandColor ? th.accentFill : paletteName === 'micro' ? colors[1] : paletteName === 'palm' || paletteName === 'wire' ? colors[4] : colors[0];
   const seriesColor = (series: string) => {
     // A series keeps one color across segments and its legend, including focused rows.
     if (data.some((d) => d.series === series && d.focus)) return focusColor;
@@ -80,7 +80,7 @@ const DataChart: React.FC<ShotProps<P>> = ({params: p, t, meta}) => {
   };
   const colorFor = (d: Datum, i: number) => {
     if (d.series) return seriesColor(d.series);
-    if (d.focus && meta.brandColor) return th.accent;
+    if (d.focus && meta.brandColor) return th.accentFill;
     if (d.focus && paletteName === 'micro') return colors[1];
     if (d.focus && p.palette === 'wire') return colors[4];
     if (d.focus && paletteName === 'palm') return colors[4];
@@ -406,7 +406,7 @@ const DataChart: React.FC<ShotProps<P>> = ({params: p, t, meta}) => {
               const labelFs = textWidth(k.label, TYPE.kpiLabel) <= kpiColW ? TYPE.kpiLabel : 26;
               return (
                 <div key={i} style={{minWidth: 0, padding: '12px 14px', borderRadius: 16, background: th.cardAlt, opacity: Math.min(1, pop(t, 0.2 + i * 0.12, 14, 200) * 1.5)}}>
-                  <div style={{fontFamily: FONT, fontSize: valueFs, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, fontWeight: 800, color: th.accent, whiteSpace: 'nowrap'}}>{k.value}</div>
+                  <div style={{fontFamily: FONT, fontSize: valueFs, fontVariantNumeric: 'tabular-nums', lineHeight: 1.1, fontWeight: 800, color: th.accentInk, whiteSpace: 'nowrap'}}>{k.value}</div>
                   <div style={{fontSize: labelFs, marginTop: 5, color: th.cardSub, whiteSpace: 'nowrap'}}>{k.label}</div>
                 </div>
               );

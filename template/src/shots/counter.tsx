@@ -99,7 +99,8 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const from = hasFrom ? (p.from as number) : 0;
   const dec = Math.max(0, Math.min(2, Math.round(p.decimals ?? 0)));
   const toneKey = p.tone === 'good' || p.tone === 'bad' ? p.tone : 'accent';
-  const tone = toneKey === 'accent' ? th.accent : toneColor(th, toneKey);
+  const toneFill = toneKey === 'accent' ? th.accentFill : toneColor(th, toneKey);
+  const toneInk = toneKey === 'accent' ? th.accentInk : toneColor(th, toneKey);
   const prog = interpolate(t, [pl.start, pl.land], [0, 1], {...clamp, easing: Easing.out(Easing.cubic)});
   const landed = t >= pl.land;
   const v = landed ? to : from + (to - from) * prog;
@@ -169,7 +170,7 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
             width: 660,
             height: 400,
             borderRadius: '50%',
-            background: `radial-gradient(ellipse at 50% 50%, ${alpha(tone, th.dark ? 0.28 : 0.16 + 0.12 * hit)} 0%, ${alpha(tone, 0)} 70%)`,
+            background: `radial-gradient(ellipse at 50% 50%, ${alpha(toneFill, th.dark ? 0.28 : 0.16 + 0.12 * hit)} 0%, ${alpha(toneFill, 0)} 70%)`,
           }}
         />
         {/* 放射光线（落定时） */}
@@ -188,7 +189,7 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
                   y1={cy + Math.sin(a) * r0 * 0.8}
                   x2={cx + Math.cos(a) * r1 * 1.5}
                   y2={cy + Math.sin(a) * r1 * 0.8}
-                  stroke={i % 2 ? th.hot : tone}
+                  stroke={i % 2 ? th.hot : toneInk}
                   strokeWidth={10}
                   strokeLinecap="round"
                   opacity={1 - rays}
@@ -199,8 +200,8 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
         )}
         {/* 图标（下降时 trend 上下翻转成下降箭头） */}
         <div style={{position: 'absolute', left: W / 2 - ICON / 2, top: 40, width: ICON, height: ICON, transform: `translateY(${float(t, 0, 4)}px)`}}>
-          <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${tone}`, transform: `scale(${1 + halo * 0.5})`, opacity: 0.6 * (1 - halo)}} />
-          <div style={{position: 'absolute', inset: 0, borderRadius: '50%', background: tone, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 10px 24px ${alpha(tone, 0.35)}`}}>
+          <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${toneInk}`, transform: `scale(${1 + halo * 0.5})`, opacity: 0.6 * (1 - halo)}} />
+          <div style={{position: 'absolute', inset: 0, borderRadius: '50%', background: toneFill, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 10px 24px ${alpha(toneFill, 0.35)}`}}>
             <Icon name={icon} size={ICON * 0.52} color={toneKey === 'accent' ? th.accentText : '#FFFFFF'} stroke={2.2} style={flipIcon ? {transform: 'scaleY(-1)'} : undefined} />
           </div>
         </div>
@@ -217,14 +218,14 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
                   fontFamily: FONT,
                   fontWeight: 900,
                   fontSize: 42,
-                  color: '#ffffff',
-                  background: tone,
+                  color: toneKey === 'accent' && th.accentFill !== th.accent ? th.accentText : '#ffffff',
+                  background: toneFill,
                   borderRadius: 30,
                   padding: '4px 24px',
                   whiteSpace: 'nowrap',
                   opacity: landed ? Math.min(1, deltaP * 2) : 0,
                   transform: `scale(${landed ? 0.5 + 0.5 * deltaP : 0.5})`,
-                  boxShadow: `0 8px 20px ${alpha(tone, 0.35)}`,
+                  boxShadow: `0 8px 20px ${alpha(toneFill, 0.35)}`,
                 }}
               >
                 {delta}
@@ -236,7 +237,7 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
           <div style={{position: 'absolute', left: 0, right: 0, top: 40 + ICON + 18, height: FROM_H, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 18, color: th.cardSub}}>
             <Value num={fmtNum(from, dec)} prefix={prefix} suffix={suffix} size={52} unitK={0.8} />
             <div style={{opacity: arrowIn, transform: `translateX(${(1 - arrowIn) * -16}px)`}}>
-              <Icon name="arrow" size={46} color={tone} stroke={2.8} />
+              <Icon name="arrow" size={46} color={toneInk} stroke={2.8} />
             </div>
           </div>
         )}
@@ -252,7 +253,7 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
             alignItems: 'center',
             justifyContent: 'center',
             whiteSpace: 'nowrap',
-            color: tone,
+            color: toneInk,
             transformOrigin: '50% 60%',
             transform: `scale(${1 + hit * 0.22})`,
           }}
@@ -265,9 +266,9 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
         </div>
         {/* 液位条：从旧值的位置降到（升到）新值；change 模式下旧值位置留残影 + 刻度 */}
         <div style={{position: 'absolute', left: W / 2 - barW / 2, top: 40 + ICON + 18 + FROM_H + NUM_H + 22, width: barW, height: BAR_H}}>
-          <div style={{position: 'absolute', inset: 0, borderRadius: BAR_H / 2, background: alpha(tone, th.dark ? 0.2 : 0.14), overflow: 'hidden'}}>
-            {change && <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: `${ghost * 100}%`, background: alpha(tone, th.dark ? 0.32 : 0.26)}} />}
-            <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: `${fill * 100}%`, borderRadius: BAR_H / 2, background: tone, boxShadow: landed ? `0 0 ${16 * hit}px ${tone}` : undefined}} />
+          <div style={{position: 'absolute', inset: 0, borderRadius: BAR_H / 2, background: alpha(toneFill, th.dark ? 0.2 : 0.14), overflow: 'hidden'}}>
+            {change && <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: `${ghost * 100}%`, background: alpha(toneFill, th.dark ? 0.32 : 0.26)}} />}
+            <div style={{position: 'absolute', left: 0, top: 0, bottom: 0, width: `${fill * 100}%`, borderRadius: BAR_H / 2, background: toneFill, boxShadow: landed ? `0 0 ${16 * hit}px ${toneFill}` : undefined}} />
           </div>
           {change && <div style={{position: 'absolute', left: `calc(${ghost * 100}% - 3px)`, top: -8, width: 6, height: BAR_H + 16, borderRadius: 3, background: th.cardMuted}} />}
         </div>

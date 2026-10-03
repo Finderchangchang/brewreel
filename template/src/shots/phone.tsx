@@ -63,10 +63,10 @@ const Screen: React.FC<{src?: string; videoStart?: number}> = ({src, videoStart}
   const bar = (w: string, h: string, c: string, mt = '0') => <div style={{width: w, height: h, background: c, borderRadius: '0.4em', marginTop: mt}} />;
   return (
     <div style={{width: '100%', height: '100%', background: th.dark ? '#10131c' : '#F2F4F7', fontSize: 10, display: 'flex', flexDirection: 'column'}}>
-      <div style={{height: '9%', background: th.accent}} />
+      <div style={{height: '9%', background: th.accentFill}} />
       {[0, 1, 2, 3].map((i) => (
         <div key={i} style={{margin: '5% 5% 0', height: i === 0 ? '17%' : '12%', background: th.dark ? '#1b2030' : '#fff', borderRadius: '1.2em', padding: '5%', boxSizing: 'border-box', display: 'flex', gap: '6%'}}>
-          {i > 0 && <div style={{width: '22%', height: '100%', borderRadius: '0.8em', background: alpha(th.accent, 0.18)}} />}
+          {i > 0 && <div style={{width: '22%', height: '100%', borderRadius: '0.8em', background: alpha(th.accentFill, 0.18)}} />}
           <div style={{flex: 1}}>
             {bar('60%', '1.6em', th.dark ? '#3a4260' : '#1f2937')}
             {bar('90%', '1.1em', th.dark ? '#2a3148' : '#9CA3AF', '1.2em')}
@@ -100,7 +100,7 @@ const Floaty: React.FC<{x: number; y: number; icon: string; t: number; ph: numbe
         opacity: 0.95,
       }}
     >
-      <Icon name={icon} size={48} color={th.accent} stroke={2.4} />
+      <Icon name={icon} size={48} color={th.accentInk} stroke={2.4} />
     </div>
   );
 };
@@ -121,7 +121,7 @@ const Label: React.FC<{n: number; text: string; q: number; style?: React.CSSProp
         padding: '0 34px 0 14px',
         borderRadius: PILL_H / 2,
         background: th.card,
-        border: `4px solid ${th.accent}`,
+        border: `4px solid ${th.accentInk}`,
         boxShadow: `0 14px 30px ${alpha('#000000', 0.22)}`,
         fontFamily: FONT,
         fontWeight: 900,
@@ -133,7 +133,7 @@ const Label: React.FC<{n: number; text: string; q: number; style?: React.CSSProp
         transform: `${style?.transform ?? ''} scale(${0.6 + 0.4 * q})`,
       }}
     >
-      <div style={{width: 54, height: 54, borderRadius: 27, background: th.accent, color: th.accentText, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, flex: 'none'}}>
+      <div style={{width: 54, height: 54, borderRadius: 27, background: th.accentFill, color: th.accentText, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32, fontWeight: 900, flex: 'none'}}>
         {n}
       </div>
       {text}
@@ -151,8 +151,8 @@ const BoxStroke: React.FC<{top: number; d: number; n: number; dim?: boolean}> = 
   const per = 2 * (w + h);
   return (
     <>
-      <svg width={w + 20} height={h + 20} style={{position: 'absolute', left: x - 10, top: top - 16, overflow: 'visible', filter: `drop-shadow(0 0 10px ${alpha(th.accent, 0.7)})`, opacity: dim ? 0.75 : 1}}>
-        <rect x={10} y={10} width={w} height={h} rx={16} fill="none" stroke={th.accent} strokeWidth={7} strokeDasharray={`${per * d} ${per}`} />
+      <svg width={w + 20} height={h + 20} style={{position: 'absolute', left: x - 10, top: top - 16, overflow: 'visible', filter: `drop-shadow(0 0 10px ${alpha(th.accentFill, 0.7)})`, opacity: dim ? 0.75 : 1}}>
+        <rect x={10} y={10} width={w} height={h} rx={16} fill="none" stroke={th.accentFill} strokeWidth={7} strokeDasharray={`${per * d} ${per}`} />
       </svg>
       <div
         style={{
@@ -162,7 +162,7 @@ const BoxStroke: React.FC<{top: number; d: number; n: number; dim?: boolean}> = 
           width: 48,
           height: 48,
           borderRadius: 24,
-          background: th.accent,
+          background: th.accentFill,
           color: th.accentText,
           border: '4px solid #ffffff',
           fontFamily: FONT,
@@ -215,7 +215,7 @@ const Zoom: React.FC<{p: P; m: Mark; i: number; k: number; lq: number}> = ({p, m
           borderRadius: 26,
           background: th.card,
           border: `${ZB * k}px solid ${th.card}`,
-          boxShadow: `0 26px 60px rgba(0,0,0,${0.34 * k}), 0 0 0 ${4 * k}px ${th.accent}`,
+          boxShadow: `0 26px 60px rgba(0,0,0,${0.34 * k}), 0 0 0 ${4 * k}px ${th.accentFill}`,
           overflow: 'hidden',
         }}
       >
@@ -234,13 +234,13 @@ const Zoom: React.FC<{p: P; m: Mark; i: number; k: number; lq: number}> = ({p, m
           width: 72,
           height: 72,
           borderRadius: 36,
-          background: th.accent,
+          background: th.accentFill,
           border: '5px solid #ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           transform: `scale(${k})`,
-          boxShadow: `0 8px 20px ${alpha(th.accent, 0.45)}`,
+          boxShadow: `0 8px 20px ${alpha(th.accentFill, 0.45)}`,
         }}
       >
         <Icon name="search" size={38} color={th.accentText} stroke={2.8} />

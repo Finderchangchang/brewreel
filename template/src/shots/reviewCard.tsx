@@ -93,7 +93,7 @@ const ReviewOne: React.FC<{q: Quote; t: number; at: number; w: number; h: number
             fontWeight: 900,
             fontSize: big ? 96 : 64,
             lineHeight: 0.7,
-            color: alpha(th.accent, 0.85),
+            color: alpha(th.accentInk, 0.85),
             flex: 'none',
             marginTop: big ? 4 : 2,
           }}
@@ -110,7 +110,7 @@ const ReviewOne: React.FC<{q: Quote; t: number; at: number; w: number; h: number
               height: big ? 64 : 52,
               borderRadius: big ? 32 : 26,
               background: th.accentSoft,
-              color: th.accent,
+              color: th.accentInk,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',

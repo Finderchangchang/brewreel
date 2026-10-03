@@ -125,13 +125,13 @@ const InputBar: React.FC<{text: string; focus: boolean; t: number; flashAt: numb
           fontSize: INPUT.font,
           lineHeight: 1.4,
           color: th.cardText,
-          boxShadow: flash > 0 ? `0 0 0 ${8 * flash}px ${alpha(th.accent, 0.35 * flash)}` : undefined,
+          boxShadow: flash > 0 ? `0 0 0 ${8 * flash}px ${alpha(th.accentFill, 0.35 * flash)}` : undefined,
         }}
       >
         {text || (!focus ? <span style={{color: th.cardMuted}}>{hint}</span> : null)}
-        {focus && <span style={{display: 'inline-block', width: 4, height: INPUT.font * 1.1, marginLeft: 3, verticalAlign: 'middle', background: th.accent, opacity: blink ? 1 : 0}} />}
+        {focus && <span style={{display: 'inline-block', width: 4, height: INPUT.font * 1.1, marginLeft: 3, verticalAlign: 'middle', background: th.accentFill, opacity: blink ? 1 : 0}} />}
       </div>
-      <div style={{width: INPUT.send, height: INPUT.send, borderRadius: INPUT.send / 2, background: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
+      <div style={{width: INPUT.send, height: INPUT.send, borderRadius: INPUT.send / 2, background: th.accentFill, display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 'none'}}>
         <Icon name="send" size={38} color={th.accentText} stroke={2.4} />
       </div>
     </div>
@@ -146,12 +146,14 @@ const Ball: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
   const d = t - pl.panelAt;
   const jump = on ? Math.sin(Math.min(1, d / 0.5) * Math.PI) * Math.exp(-d * 2) : 0;
   const ring = on ? interpolate(t, [pl.panelAt, pl.panelAt + 0.7], [0, 1], clamp) : 1;
-  const tone = on ? toneColor(th, p.panel.tone ?? 'warn') : th.accent;
+  const tone = on ? toneColor(th, p.panel.tone ?? 'warn') : th.accentFill;
+  // 没触发时 accentFill === accent，图标仍是白字。底色被调过才换上能看清的字色。
+  const glyph = !on && th.accentFill !== th.accent ? th.accentText : '#ffffff';
   return (
     <div style={{position: 'absolute', right: 22, top: (HEADER - BALL) / 2, width: BALL, height: BALL, transform: `translateY(${-jump * 18}px) scale(${1 + jump * 0.14})`}}>
       {on && ring < 1 && <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${tone}`, transform: `scale(${1 + ring * 1.3})`, opacity: 1 - ring}} />}
       <div style={{width: '100%', height: '100%', borderRadius: '50%', background: tone, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 6px 16px ${alpha(tone, 0.45)}`}}>
-        <Icon name={isIcon(p.panel.icon) ? p.panel.icon : 'sparkle'} size={34} color="#ffffff" stroke={2.4} />
+        <Icon name={isIcon(p.panel.icon) ? p.panel.icon : 'sparkle'} size={34} color={glyph} stroke={2.4} />
       </div>
       {on && <div style={{position: 'absolute', right: -3, top: -3, width: 20, height: 20, borderRadius: 10, background: tone, border: '3px solid #fff'}} />}
     </div>
@@ -193,7 +195,7 @@ const Panel: React.FC<{p: P; pl: Plan; t: number; lang?: Lang}> = ({p, pl, t, la
       }}
     >
       <div style={{display: 'flex', alignItems: 'center', gap: 12, height: PANEL.head}}>
-        <Icon name={isIcon(panel.icon) ? panel.icon : 'sparkle'} size={38} color={th.accent} stroke={2.4} />
+        <Icon name={isIcon(panel.icon) ? panel.icon : 'sparkle'} size={38} color={th.accentInk} stroke={2.4} />
         <div style={{flex: 1, fontSize: PANEL.title, fontWeight: 800, color: th.cardText}}>{panel.title}</div>
         <Icon name="x" size={32} color={th.cardMuted} />
       </div>
@@ -252,7 +254,7 @@ const Panel: React.FC<{p: P; pl: Plan; t: number; lang?: Lang}> = ({p, pl, t, la
                   transform: `translateY(${(1 - q) * 20}px)`,
                 }}
               >
-                <div style={{width: 44, fontSize: 26, fontWeight: 800, color: th.accent}}>#{i + 1}</div>
+                <div style={{width: 44, fontSize: 26, fontWeight: 800, color: th.accentInk}}>#{i + 1}</div>
                 <div style={{flex: 1, fontSize: 36, color: th.cardText, whiteSpace: 'nowrap', overflow: 'hidden'}}>{r}</div>
                 <div
                   style={{
@@ -267,8 +269,8 @@ const Panel: React.FC<{p: P; pl: Plan; t: number; lang?: Lang}> = ({p, pl, t, la
                     fontSize: 28,
                     fontWeight: 800,
                     borderRadius: 24,
-                    color: first ? th.accentText : th.accent,
-                    background: first ? th.accent : 'transparent',
+                    color: first ? th.accentText : th.accentInk,
+                    background: first ? th.accentFill : 'transparent',
                     border: first ? 'none' : `2px solid ${th.accentLine}`,
                     transform: `scale(${1 - 0.12 * Math.sin(Math.min(1, pr) * Math.PI)})`,
                     flex: 'none',
@@ -308,7 +310,7 @@ const Fly: React.FC<{p: P; pl: Plan; t: number}> = ({p, pl, t}) => {
         background: th.accentSoft,
         borderRadius: 16,
         padding: '4px 12px',
-        boxShadow: `0 10px 28px ${alpha(th.accent, 0.35)}`,
+        boxShadow: `0 10px 28px ${alpha(th.accentFill, 0.35)}`,
         opacity: fly < 0.9 ? 1 : (1 - fly) * 10,
         whiteSpace: 'nowrap',
       }}
@@ -381,7 +383,7 @@ const Chat: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
                   <div
                     style={{
                       maxWidth: MSG.maxW,
-                      background: mine ? th.accent : th.bubbleOther,
+                      background: mine ? th.accentFill : th.bubbleOther,
                       color: mine ? th.accentText : th.bubbleOtherText,
                       fontSize: MSG.size,
                       lineHeight: 1.36,

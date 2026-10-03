@@ -100,7 +100,7 @@ const Steps: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
           {n > 1 && (
             <>
               <div style={{position: 'absolute', left: ncx - 5, top: lineTop, width: 10, height: lineLen, borderRadius: 5, background: grey(muted, 0.28)}} />
-              <div style={{position: 'absolute', left: ncx - 5, top: lineTop, width: 10, height: lit, borderRadius: 5, background: th.accent, boxShadow: `0 0 14px ${alpha(th.accent, 0.5)}`}} />
+              <div style={{position: 'absolute', left: ncx - 5, top: lineTop, width: 10, height: lit, borderRadius: 5, background: th.accentFill, boxShadow: `0 0 14px ${alpha(th.accentFill, 0.5)}`}} />
             </>
           )}
           {/* 跑动的光点 */}
@@ -159,14 +159,14 @@ const Steps: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
                   </div>
                   {on && (
                     <>
-                      {active && <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${th.accent}`, transform: `scale(${1 + pulse * 0.6})`, opacity: 1 - pulse}} />}
+                      {active && <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${th.accentInk}`, transform: `scale(${1 + pulse * 0.6})`, opacity: 1 - pulse}} />}
                       <div
                         style={{
                           position: 'absolute',
                           inset: 0,
                           borderRadius: '50%',
-                          background: th.accent,
-                          boxShadow: `0 10px 24px ${alpha(th.accent, 0.4)}`,
+                          background: th.accentFill,
+                          boxShadow: `0 10px 24px ${alpha(th.accentFill, 0.4)}`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',

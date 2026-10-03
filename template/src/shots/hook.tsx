@@ -147,7 +147,7 @@ const Floaty: React.FC<{x: number; y: number; icon: string; size: number; t: num
         opacity: 0.95,
       }}
     >
-      <Icon name={icon} size={size * 0.5} color={th.accent} stroke={2.4} />
+      <Icon name={icon} size={size * 0.5} color={th.accentInk} stroke={2.4} />
     </div>
   );
 };
@@ -199,7 +199,9 @@ const Label: React.FC<{text: string; top: number}> = ({text, top}) => (
 const BubbleVisual: React.FC<{p: P; t: number; lang: Lang}> = ({p, t, lang}) => {
   const th = useTheme();
   const head = p.head ?? pick(lang, '新消息 · 刚刚', 'New message · now');
-  const tone = toneColor(th, p.tone ?? 'bad');
+  const toneBase = toneColor(th, p.tone ?? 'bad');
+  const toneInk = p.tone === 'accent' ? th.accentInk : toneBase;
+  const toneFill = p.tone === 'accent' ? th.accentFill : toneBase;
   const pulse = (t % 1.2) / 1.2;
   const hit = bump(t, 1.0, 0.5);
   const text = p.text ?? '';
@@ -245,19 +247,19 @@ const BubbleVisual: React.FC<{p: P; t: number; lang: Lang}> = ({p, t, lang}) => 
                 gap: 24,
                 padding: '22px 26px',
                 borderRadius: 30,
-                background: alpha(tone, th.dark ? 0.18 : 0.1),
-                border: `3px solid ${alpha(tone, 0.35)}`,
+                background: alpha(toneFill, th.dark ? 0.18 : 0.1),
+                border: `3px solid ${alpha(toneInk, 0.35)}`,
                 transform: `scale(${1 + hit * 0.06})`,
               }}
             >
               <div style={{position: 'relative', width: 92, height: 92, flex: 'none'}}>
-                <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${tone}`, transform: `scale(${1 + pulse * 0.7})`, opacity: 1 - pulse}} />
+                <div style={{position: 'absolute', inset: 0, borderRadius: '50%', border: `5px solid ${toneInk}`, transform: `scale(${1 + pulse * 0.7})`, opacity: 1 - pulse}} />
                 <IconDisc name={isIcon(p.icon) ? p.icon : 'alert'} size={92} tone={p.tone === 'accent' ? 'accent' : (p.tone ?? 'bad')} />
               </div>
               <div style={{flex: 1}}>
-                <div style={{fontSize: 46, fontWeight: 900, color: tone, lineHeight: 1.15}}>{p.sub}</div>
+                <div style={{fontSize: 46, fontWeight: 900, color: toneInk, lineHeight: 1.15}}>{p.sub}</div>
                 {/* 一条连续的警示光带（不再是 9 格里亮 8 格——那像一个没有定义的「8/9」分数） */}
-                <div style={{position: 'relative', overflow: 'hidden', marginTop: 14, height: 16, borderRadius: 8, background: `linear-gradient(90deg, ${alpha(tone, 0.25)}, ${tone})`}}>
+                <div style={{position: 'relative', overflow: 'hidden', marginTop: 14, height: 16, borderRadius: 8, background: `linear-gradient(90deg, ${alpha(toneFill, 0.25)}, ${toneFill})`}}>
                   <div style={{position: 'absolute', top: 0, bottom: 0, left: `${shine * 130 - 30}%`, width: '24%', background: 'linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.7), rgba(255,255,255,0))'}} />
                 </div>
               </div>
@@ -278,10 +280,10 @@ const BubbleVisual: React.FC<{p: P; t: number; lang: Lang}> = ({p, t, lang}) => 
                 gap: 12,
               }}
             >
-              <div style={{width: 4, height: 40, background: th.accent, borderRadius: 2, opacity: Math.floor(t * 2) % 2 === 0 ? 1 : 0}} />
+              <div style={{width: 4, height: 40, background: th.accentFill, borderRadius: 2, opacity: Math.floor(t * 2) % 2 === 0 ? 1 : 0}} />
               <span style={{fontSize: 34, color: th.cardMuted}}>{pick(lang, '输入你的回复…', 'Type your reply…')}</span>
             </div>
-            <div style={{width: 84, height: 84, borderRadius: 42, background: th.accent, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+            <div style={{width: 84, height: 84, borderRadius: 42, background: th.accentFill, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
               <Icon name="send" size={40} color={th.accentText} stroke={2.4} />
             </div>
           </div>
@@ -320,7 +322,9 @@ const STAT_MIN = 64;
 
 const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => {
   const th = useTheme();
-  const tone = p.tone === 'accent' || !p.tone ? th.accent : toneColor(th, p.tone);
+  const onAccent = p.tone === 'accent' || !p.tone;
+  const toneFill = onAccent ? th.accentFill : toneColor(th, p.tone);
+  const toneInk = onAccent ? th.accentInk : toneColor(th, p.tone);
   const text = p.text ?? '';
   if (!hasDigit(text)) return <WordVisual p={p} t={t} beat={beat} />;
   // 一行放得下（≥64px）就一行，否则拆两行
@@ -342,27 +346,27 @@ const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
       <Floaties p={p} t={t} spots={[[40, 800, 104, -10], [936, 1120, 104, 10]]} />
       <div style={{position: 'absolute', left: 540 - 300, top: VIS_TOP + 20, width: 600, height: 600}}>
         <div style={{position: 'absolute', inset: 0, borderRadius: '50%', background: th.card, boxShadow: th.shadow}} />
-        {pct === null && <BeatRings cx={300} cy={300} r={RING_R + RING_W / 2} t={t} beat={beat} color={alpha(tone, 0.5)} />}
+        {pct === null && <BeatRings cx={300} cy={300} r={RING_R + RING_W / 2} t={t} beat={beat} color={alpha(toneFill, 0.5)} />}
         <svg width={600} height={600} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible'}}>
-          <circle cx={cx} cy={cy} r={RING_R} stroke={alpha(tone, 0.15)} strokeWidth={RING_W} fill="none" />
+          <circle cx={cx} cy={cy} r={RING_R} stroke={alpha(toneFill, 0.15)} strokeWidth={RING_W} fill="none" />
           {pct !== null && pct > 0 && (
             <>
               <circle
                 cx={cx}
                 cy={cy}
                 r={RING_R}
-                stroke={tone}
+                stroke={toneFill}
                 strokeWidth={RING_W}
                 fill="none"
                 strokeLinecap="round"
                 strokeDasharray={`${(C * pct) / 100} ${C}`}
                 transform={`rotate(-90 ${cx} ${cy})`}
               />
-              <circle cx={cx + Math.cos(endA) * RING_R} cy={cy + Math.sin(endA) * RING_R} r={RING_W * (0.62 + 0.25 * bb)} fill={tone} stroke="#ffffff" strokeWidth={6} />
+              <circle cx={cx + Math.cos(endA) * RING_R} cy={cy + Math.sin(endA) * RING_R} r={RING_W * (0.62 + 0.25 * bb)} fill={toneFill} stroke="#ffffff" strokeWidth={6} />
             </>
           )}
         </svg>
-        <div style={{position: 'absolute', left: 0, right: 0, top: numTop, textAlign: 'center', fontFamily: FONT, fontWeight: 900, fontSize: size, lineHeight: 1.08, color: tone, whiteSpace: 'nowrap', transform: `scale(${1 + bb * 0.025})`}}>
+        <div style={{position: 'absolute', left: 0, right: 0, top: numTop, textAlign: 'center', fontFamily: FONT, fontWeight: 900, fontSize: size, lineHeight: 1.08, color: toneInk, whiteSpace: 'nowrap', transform: `scale(${1 + bb * 0.025})`}}>
           {lines.map((l, i) => (
             <div key={i}>{l}</div>
           ))}
@@ -380,7 +384,7 @@ const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
 // ---------- stat 的文字兜底：text 里没有数字时不套圆环，改成一张贴纸式大字卡（按内容长高） ----------
 const WordVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => {
   const th = useTheme();
-  const tone = p.tone === 'accent' || !p.tone ? th.accent : toneColor(th, p.tone);
+  const tone = p.tone === 'accent' || !p.tone ? th.accentInk : toneColor(th, p.tone);
   const text = p.text ?? '';
   const size = fitLine(text, 640, 150, 64);
   const bb = beatPulse(t, beat);
@@ -460,7 +464,7 @@ const IconVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
                 justifyContent: 'center',
               }}
             >
-              <Icon name={ic} size={50} color={th.accent} stroke={2.4} />
+              <Icon name={ic} size={50} color={th.accentInk} stroke={2.4} />
             </div>
           );
         })}
@@ -545,7 +549,8 @@ const PhoneVisual: React.FC<{p: P; t: number}> = ({p, t}) => {
 const SplitVisual: React.FC<{p: P; t: number; lang: Lang; beat: number}> = ({p, t, lang, beat}) => {
   const th = useTheme();
   const badTone = toneColor(th, 'bad');
-  const rightTone = p.tone === 'warn' || p.tone === 'accent' ? toneColor(th, p.tone) : th.accent;
+  const rightFill = p.tone === 'warn' ? toneColor(th, p.tone) : th.accentFill;
+  const rightInk = p.tone === 'warn' ? toneColor(th, p.tone) : th.accentInk;
   const leftIcon = isIcon(p.deco?.[0] ?? '') ? (p.deco as string[])[0] : 'x';
   const rightIcon = isIcon(p.icon) ? p.icon : 'check';
   const h = 460;
@@ -568,10 +573,10 @@ const SplitVisual: React.FC<{p: P; t: number; lang: Lang; beat: number}> = ({p, 
               </div>
             )}
           </div>
-          <div style={{flex: 1, background: mixHex(th.card.startsWith('#') ? th.card : '#ffffff', rightTone, th.dark ? 0.24 : 0.12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26}}>
+          <div style={{flex: 1, background: mixHex(th.card.startsWith('#') ? th.card : '#ffffff', rightFill, th.dark ? 0.24 : 0.12), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26}}>
             <IconDisc name={rightIcon} size={132} tone={p.tone === 'warn' ? 'warn' : 'accent'} style={{transform: `translateY(${float(t, 1.4, 6)}px) scale(${1 + bb * 0.04})`}} />
             {rightText && (
-              <div style={{fontSize: fitLine(rightText, 300, 44, 30), fontWeight: 800, color: rightTone, textAlign: 'center', maxWidth: 300, whiteSpace: 'nowrap'}}>
+              <div style={{fontSize: fitLine(rightText, 300, 44, 30), fontWeight: 800, color: rightInk, textAlign: 'center', maxWidth: 300, whiteSpace: 'nowrap'}}>
                 {rightText}
               </div>
             )}
