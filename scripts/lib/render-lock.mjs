@@ -74,7 +74,7 @@ export const acquireRenderLock = async ({file, id, log = console.log, timeoutMs 
           const cur = readLock(file);
           if (cur?.pid === process.pid) {
             try {
-              fs.rmSync(file, {force: true});
+              fs.unlinkSync(file);
             } catch {}
           }
         },
@@ -87,9 +87,11 @@ export const acquireRenderLock = async ({file, id, log = console.log, timeoutMs 
       if (++unreadable >= 10) {
         log('渲染锁文件读不出内容，当作坏锁删掉');
         try {
-          fs.rmSync(file, {force: true});
+          fs.unlinkSync(file);
         } catch {}
         unreadable = 0;
+        if (Date.now() - started >= timeoutMs) throw new QueueTimeoutError(info, Date.now() - started);
+        await new Promise((r) => setTimeout(r, pollMs));
         continue;
       }
     } else {
@@ -103,9 +105,11 @@ export const acquireRenderLock = async ({file, id, log = console.log, timeoutMs 
         if (again && again.pid === info.pid && again.at === info.at) {
           log(`回收失效的渲染锁（${info.id ?? '?'}，pid ${info.pid ?? '?'}：${dead ? '进程已经不在了' : `心跳停了 ${fmtDur(Date.now() - last)}`}）`);
           try {
-            fs.rmSync(file, {force: true});
+            fs.unlinkSync(file);
           } catch {}
         }
+        if (Date.now() - started >= timeoutMs) throw new QueueTimeoutError(info, Date.now() - started);
+        await new Promise((r) => setTimeout(r, pollMs));
         continue;
       }
     }
