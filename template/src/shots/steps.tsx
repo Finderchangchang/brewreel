@@ -5,7 +5,7 @@ import {fitLine} from '../core/fit';
 import {FONT, MONO} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
 import {MAIN} from '../core/safe';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -192,7 +192,7 @@ const Steps: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
                             boxSizing: 'border-box',
                             border: `3px solid ${th.card}`,
                             background: th.hot,
-                            color: '#1b1a18',
+                            color: textOnHot(th),
                             fontFamily: MONO,
                             fontWeight: 700,
                             fontSize: 26,

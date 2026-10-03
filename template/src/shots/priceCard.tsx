@@ -6,7 +6,7 @@ import {FONT, MONO} from '../core/font';
 import {Icon} from '../core/icons';
 import {pick, type Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -138,7 +138,7 @@ const LabelPill: React.FC<{text: string; q: number}> = ({text, q}) => {
   const th = useTheme();
   return (
     <div style={{opacity: Math.min(1, q * 2), transform: `translateY(${(1 - q) * -10}px)`}}>
-      <span style={{display: 'inline-block', padding: '6px 18px', borderRadius: 18, background: th.hot, color: '#1B1A18', fontSize: 28, fontWeight: 900}}>{text}</span>
+      <span style={{display: 'inline-block', padding: '6px 18px', borderRadius: 18, background: th.hot, color: textOnHot(th), fontSize: 28, fontWeight: 900}}>{text}</span>
     </div>
   );
 };
@@ -357,7 +357,7 @@ const PriceCard: React.FC<ShotProps<P>> = ({params: p, t, meta}) => {
         {headH > 0 && (
           <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: headH - GAP, opacity: Math.min(1, enter * 2)}}>
             {p.label && layout === 'menu' ? (
-              <span style={{padding: '6px 18px', borderRadius: 18, background: th.hot, color: '#1B1A18', fontSize: 28, fontWeight: 900}}>{tr(lang, p.label, LABEL_EN)}</span>
+              <span style={{padding: '6px 18px', borderRadius: 18, background: th.hot, color: textOnHot(th), fontSize: 28, fontWeight: 900}}>{tr(lang, p.label, LABEL_EN)}</span>
             ) : (
               <span />
             )}

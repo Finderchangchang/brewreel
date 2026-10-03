@@ -42,7 +42,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
      - A shot's `params.refs: ["f1"]` ties a claim (like "made fresh", compare's stat/level, a meter reading) to a fact entry.
    - **Keep sample data apart from result claims** (validation blocks this):
      - A fact whose text or source says "sample / demo / simulated / fictional" (示例 / 演示 / 模拟 / 虚构) is sample data and **can't back a result claim**. Result claims = compare stat/level, counter numbers, a meter moving "for the better", percentages/multipliers in captions or selling points, time or money after "save / cut / boost".
-     - When the UI can only show sample numbers (no real data in the brief): set `"demoData": true` in meta and put "Demo screens, sample data" in `meta.disclaimer`. Sample numbers may only appear in demo UI (mockApp/phone/chat/priceCard) and in price terms.
+     - When the UI can only show sample numbers (no real data in the brief): set `"demoData": true` in meta and put "Demo screens, sample data" in `meta.disclaimer`. Sample numbers may only appear in demo UI (mockApp/phone/chat/priceCard), price terms, and dataChart.
      - No result data in the brief → compare the process only (items like "3 fewer steps", "no app switching"), no stat numbers, no level, no counter.
      - Speed claims ("in seconds", "instantly", "zero wait") need a real fact with a time in seconds. A call to action like "try it now" doesn't count.
    - **Qualifiers travel with the number** (validation blocks this): when an on-screen number matches a fact, the conditions attached to it in that fact must appear in the same shot (caption, card, or bottom notice):
@@ -65,6 +65,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Office, B2B, productivity → `business-blue`
    - Holiday, promotion, launch → `festival-red`
    - Premium, minimal, design-forward → `mono-premium`
+   Those six are the default themes, and their captions stay outlined. Twelve more optional palettes are listed in `<SKILL>/styles/cards/THEMES.md`.
    If there's a brand color, set `meta.brandColor` (#RRGGBB) — it only swaps the accent color.
 5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, a 19-shot overview table is at the top; with quiz / journey use that style's shots and keep their fields inside `params`, see step 0). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
    **At least one shot must demonstrate the core action** (the `meta.action` from step 2). The allowed shots depend on the industry; validation blocks the video otherwise:

@@ -548,7 +548,8 @@ export const VoiceCaptions: React.FC<{plan: VoicePlan | null; slots: Slot[]; sb:
   const p = pageAt(pages, t, total);
   if (!plan || !p) return null;
   const lineHeight = lang === 'en' ? 1.32 : 1.18;
-  const size = p.size;
+  const clean = th.captionStyle === 'clean';
+  const size = clean ? Math.min(78, p.size) : p.size;
   const h = p.lines.length * size * lineHeight;
   const top = Math.round(CAP.y0 + (CAP.y1 - CAP.y0 - h) / 2);
   const {op, dy} = pageFade(pages, p, t, total);
@@ -567,7 +568,7 @@ export const VoiceCaptions: React.FC<{plan: VoicePlan | null; slots: Slot[]; sb:
         textAlign: 'center',
         fontFamily: FONT,
         fontSize: size,
-        fontWeight: 900,
+        fontWeight: clean ? 800 : 900,
         lineHeight,
         letterSpacing: lang === 'en' ? 0 : undefined,
         whiteSpace: 'nowrap',

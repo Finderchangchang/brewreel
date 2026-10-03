@@ -6,7 +6,7 @@ import {FONT, MONO} from '../core/font';
 import {isIcon} from '../core/icons';
 import {IconDisc} from '../core/kit';
 import {MAIN} from '../core/safe';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -136,7 +136,7 @@ const FeatureCard: React.FC<{b: Box; item: Item; i: number; t: number; at: numbe
           boxSizing: 'border-box',
           border: `3px solid ${th.card}`,
           background: active ? th.hot : th.cardAlt,
-          color: active ? '#1b1a18' : th.cardSub,
+          color: active ? textOnHot(th) : th.cardSub,
           fontFamily: MONO,
           fontWeight: 700,
           fontSize: 26,

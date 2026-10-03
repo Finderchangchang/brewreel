@@ -5,7 +5,7 @@ import {emWidth, fitLine, glueBreaks} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
 import {Avatar, Card, IconDisc, Lang, Sweep, pick} from '../core/kit';
-import {alpha, mixHex, toneColor, useTheme} from '../core/theme';
+import {alpha, mixHex, textOnHot, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 import {Illust, isIllust} from '../illust';
 
@@ -83,6 +83,8 @@ const Stroke: React.FC<{x: number; y: number; len: number; rot: number; color: s
 // 产品高亮胶囊：白→强调黄渐变 + 左侧 logo/图标 + 扫光
 const Badge: React.FC<{text: string; t: number; logo?: string; icon?: string}> = ({text, t, logo, icon}) => {
   const th = useTheme();
+  const ink = textOnHot(th);
+  const darkInk = ink.toLowerCase() !== '#ffffff';
   const size = fitLine(text, 560, 48, 36);
   const w = Math.round(size * (text.length * 0.92) + 150);
   const sweep = interpolate(t, [0.4, 1.1], [0, 1], clamp);
@@ -99,13 +101,13 @@ const Badge: React.FC<{text: string; t: number; logo?: string; icon?: string}> =
             alignItems: 'center',
             padding: '0 40px 0 112px',
             borderRadius: BADGE_H / 2,
-            background: `linear-gradient(90deg, #ffffff 0%, ${mixHex(th.hot, '#ffffff', 0.6)} 45%, ${th.hot} 100%)`,
+            background: darkInk ? `linear-gradient(90deg, #ffffff 0%, ${mixHex(th.hot, '#ffffff', 0.6)} 45%, ${th.hot} 100%)` : th.hot,
             border: '4px solid #ffffff',
             boxShadow: '0 12px 26px rgba(0,0,0,0.22)',
             fontFamily: FONT,
             fontWeight: 900,
             fontSize: size,
-            color: '#1b1a18',
+            color: ink,
             whiteSpace: 'nowrap',
           }}
         >
@@ -594,7 +596,7 @@ const SplitVisual: React.FC<{p: P; t: number; lang: Lang; beat: number}> = ({p, 
           transform: `scale(${0.7 + 0.3 * pop(t, 0.05, 14, 170) + bb * 0.05})`,
         }}
       >
-        <Icon name="arrow" size={54} color="#1b1a18" stroke={3} />
+        <Icon name="arrow" size={54} color={textOnHot(th)} stroke={3} />
       </div>
       {p.sub && (
         <div style={{position: 'absolute', left: 150, width: 780, top: y1 + 22, textAlign: 'center', fontSize: fitLine(p.sub, 700, 40, 30), fontWeight: 700, color: th.onBgSub, whiteSpace: 'nowrap'}}>

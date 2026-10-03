@@ -43,7 +43,7 @@
 例：#22C55E（不填就用主题默认色；别用某聊天软件那种绿）
 
 ## 8. 风格 / 主题（可选）
-warm-emotion 情感 / tech-dark 科技 / fresh-light 清新 / business-blue 商务 / festival-red 节日 / mono-premium 高级极简
+默认 6 套：warm-emotion 情感 / tech-dark 科技 / fresh-light 清新 / business-blue 商务 / festival-red 节日 / mono-premium 高级极简。另有 12 套可选配色，见 `styles/cards/THEMES.md`。
 
 ## 8b. 配方（可选，写了才会把该配方的写法说明交给模型）
 cards 卡片 / quiz 答题 / journey 漫游

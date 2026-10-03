@@ -5,7 +5,7 @@ import {FONT, MONO} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
 import {Avatar, IconDisc} from '../core/kit';
 import {MAIN} from '../core/safe';
-import {alpha, toneColor, useTheme} from '../core/theme';
+import {alpha, textOnHot, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -214,8 +214,8 @@ const QuickList: React.FC<ShotProps<P>> = ({params: p, t, dur, beat}) => {
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
       {hasTitle && (
         <div style={{position: 'absolute', left: MAIN.x0, width: MAIN.w, top: MAIN.y0, height: TITLE_H, display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: Math.min(1, tq * 1.6), transform: `translateY(${(1 - tq) * -30}px)`}}>
-          <div style={{display: 'flex', alignItems: 'center', gap: 14, height: TITLE_H, boxSizing: 'border-box', padding: '0 36px', borderRadius: TITLE_H / 2, background: th.hot, color: '#1b1a18', fontSize: titleSize, fontWeight: 900, whiteSpace: 'nowrap', boxShadow: '0 10px 26px rgba(0,0,0,0.2)', border: '4px solid #ffffff'}}>
-            <Icon name="bolt" size={40} color="#1b1a18" stroke={2.6} />
+          <div style={{display: 'flex', alignItems: 'center', gap: 14, height: TITLE_H, boxSizing: 'border-box', padding: '0 36px', borderRadius: TITLE_H / 2, background: th.hot, color: textOnHot(th), fontSize: titleSize, fontWeight: 900, whiteSpace: 'nowrap', boxShadow: '0 10px 26px rgba(0,0,0,0.2)', border: '4px solid #ffffff'}}>
+            <Icon name="bolt" size={40} color={textOnHot(th)} stroke={2.6} />
             {p.title}
           </div>
         </div>

@@ -42,7 +42,7 @@ metadata:
      - 镜头 `params.refs: ["f1"]` 把某个说法（如「现做」、compare 的 stat/level、meter 的读数）和某条 fact 关联起来。
    - **示例数据和效果说法分开**（校验会拦）：
      - text 或 source 里带「示例 / 演示 / 模拟 / 虚构」的 fact 是示例数据，**不能给效果说法作依据**。效果说法 = compare 的 stat/level、counter 的数、meter 往「变好」方向摆、字幕和卖点里的百分比/倍数、「省 / 缩短 / 提升」带的时长和金额。
-     - 界面里只能用示例数字时（简报没给真数据）：meta 写 `"demoData": true`，`meta.disclaimer` 写「演示画面，数据为示例」。示例数字只能出现在 mockApp/phone/chat/priceCard 等演示界面和价格条款里。
+     - 界面里只能用示例数字时（简报没给真数据）：meta 写 `"demoData": true`，`meta.disclaimer` 写「演示画面，数据为示例」。示例数字只能出现在 mockApp/phone/chat/priceCard 等演示界面、价格条款和 dataChart 里。
      - 简报没给效果数据 → compare 只比做法（items 写「少 3 步」「不用切窗口」），不写 stat 数字和 level；不用 counter。
      - 速度说法（「几秒」「秒出」「即刻」「瞬间」「零等待」「instantly」）必须有一条真实 fact 带秒级耗时，否则报错。「马上试试」这类行动号召不算。
    - **限定语跟着数字走**（校验会拦）：屏幕上的数字对上某条 fact 时，fact 里跟着它的条件要在同一镜（字幕、卡片或底部提示条）写出来：
@@ -65,6 +65,7 @@ metadata:
    - 办公、B 端、效率 → `business-blue`
    - 节日、促销、上新 → `festival-red`
    - 高端、极简、设计 → `mono-premium`
+   上面 6 套是默认老主题，字幕仍是描边大字。另有 12 套可选新配色，名单见 `<SKILL>/styles/cards/THEMES.md`。
    有品牌色就写 `meta.brandColor`（#RRGGBB），它只换强调色。
 5. **挑 5–9 个镜头**（镜头说明看 `<SKILL>/shots.md`，19 个镜头一览表在最上面；用 quiz / journey 时镜头换成那个风格的，字段照第 0 步写进 `params`）。`hook` 必须第 1 镜（2–3 秒），`endCard` 必须最后 1 镜（4 秒）。
    **必须有一镜演示核心动作**（第 2 步写的 `meta.action`），按行业用不同的镜头，校验会拦：

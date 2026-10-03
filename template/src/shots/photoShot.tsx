@@ -7,7 +7,7 @@ import {illustFor, isIllust} from '../illust';
 import {IllustScene, resolveSceneIllust} from '../illust/scene';
 import {pick, type Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -153,7 +153,7 @@ const InfoOverlay: React.FC<{p: P; t: number}> = ({p, t}) => {
     <>
       {p.badge && (
         <div style={{position: 'absolute', left: 18, top: 18, opacity: Math.min(1, q * 1.8)}}>
-          <div style={{padding: '8px 20px', borderRadius: 22, background: th.hot, color: '#1B1A18', fontFamily: FONT, fontWeight: 900, fontSize: 28, whiteSpace: 'nowrap', boxShadow: '0 8px 18px rgba(0,0,0,0.25)'}}>{p.badge}</div>
+          <div style={{padding: '8px 20px', borderRadius: 22, background: th.hot, color: textOnHot(th), fontFamily: FONT, fontWeight: 900, fontSize: 28, whiteSpace: 'nowrap', boxShadow: '0 8px 18px rgba(0,0,0,0.25)'}}>{p.badge}</div>
         </div>
       )}
       {has && (

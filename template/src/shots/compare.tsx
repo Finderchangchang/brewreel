@@ -6,7 +6,7 @@ import {FONT, MONO} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
 import {IconDisc, Lang, Sweep} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
-import {Theme, alpha, toneColor, useTheme} from '../core/theme';
+import {Theme, alpha, textOnHot, toneColor, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -315,7 +315,7 @@ const Verdict: React.FC<{text: string; t: number; at: number; top: number}> = ({
           alignItems: 'center',
           gap: 14,
           background: th.hot,
-          color: '#1b1a18',
+          color: textOnHot(th),
           fontFamily: FONT,
           fontWeight: 900,
           fontSize: size,
@@ -326,7 +326,7 @@ const Verdict: React.FC<{text: string; t: number; at: number; top: number}> = ({
           whiteSpace: 'nowrap',
         }}
       >
-        <Icon name="sparkle" size={size} color="#1b1a18" stroke={2.6} />
+        <Icon name="sparkle" size={size} color={textOnHot(th)} stroke={2.6} />
         {text}
         <Sweep p={sweep} w={700} />
       </div>
@@ -455,7 +455,7 @@ const Compare: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
             fontWeight: 900,
             fontStyle: 'italic',
             fontSize: 44,
-            color: '#1b1a18',
+            color: textOnHot(th),
             transform: `scale(${vs}) rotate(${(1 - vs) * 90}deg)`,
           }}
         >

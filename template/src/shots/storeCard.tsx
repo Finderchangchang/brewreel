@@ -6,7 +6,7 @@ import {FONT} from '../core/font';
 import {Icon} from '../core/icons';
 import {pick, type Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 import {IllustScene} from '../illust/scene';
 
@@ -335,9 +335,9 @@ const InfoBody: React.FC<{p: P; routes: Route[]; badges: string[]; t: number; la
           const q = pop(t, ctaAt, 12, 190);
           return t < ctaAt ? null : (
             <div style={{display: 'flex', justifyContent: 'center', marginTop: 4, opacity: Math.min(1, q * 1.8), transform: `translateY(${(1 - q) * 16}px)`}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '12px 32px', borderRadius: 30, background: th.hot, color: '#1B1A18', fontSize: 34, fontWeight: 900, whiteSpace: 'nowrap'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 10, padding: '12px 32px', borderRadius: 30, background: th.hot, color: textOnHot(th), fontSize: 34, fontWeight: 900, whiteSpace: 'nowrap'}}>
                 {p.cta}
-                <Icon name="arrow" size={30} color="#1B1A18" stroke={3} />
+                <Icon name="arrow" size={30} color={textOnHot(th)} stroke={3} />
               </div>
             </div>
           );

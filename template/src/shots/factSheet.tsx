@@ -6,7 +6,7 @@ import {Icon} from '../core/icons';
 import {IconDisc, pick} from '../core/kit';
 import type {Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -102,7 +102,7 @@ const BoxTile: React.FC<{r: Row; t: number; at: number; w: number; lang?: Lang}>
             padding: '3px 13px',
             borderRadius: 12,
             background: th.hot,
-            color: '#1b1a18',
+            color: textOnHot(th),
             fontWeight: 900,
             fontSize: 26,
             boxShadow: '0 6px 14px rgba(0,0,0,0.22)',
@@ -155,7 +155,7 @@ const Swatch: React.FC<{r: Row; t: number; at: number; hi: boolean}> = ({r, t, a
         <div style={{width: D, height: D, borderRadius: '50%', background: hex, boxShadow: `inset 0 0 0 3px ${alpha('#000000', 0.08)}, 0 8px 18px rgba(0,0,0,0.18)`}} />
         {hi && (
           <div style={{position: 'absolute', right: -6, top: -6, width: 32, height: 32, borderRadius: 16, background: th.hot, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <Icon name="star" size={19} color="#1b1a18" stroke={2.4} />
+            <Icon name="star" size={19} color={textOnHot(th)} stroke={2.4} />
           </div>
         )}
       </div>

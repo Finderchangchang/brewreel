@@ -287,10 +287,28 @@ export function crossCheck(type, p, W, err, warn) {
     if (rows.length && rows.every((d) => num(d?.value) && d.value === 0)) err(W('data'), '所有图表数据都是 0，无法读出比较或占比', '换成有差异的数据，或改用文字解释');
     if (p.chartType === 'line') {
       const groups = new Map();
-      rows.forEach((d) => { const key = d?.series ?? ''; groups.set(key, (groups.get(key) ?? 0) + 1); });
+      const order = new Map();
+      rows.forEach((d) => {
+        const key = d?.series ?? '';
+        groups.set(key, (groups.get(key) ?? 0) + 1);
+        if (!order.has(key)) order.set(key, []);
+        order.get(key).push(String(d?.label ?? ''));
+      });
       if ([...groups.values()].some((n) => n < 2)) err(W('data'), 'line 每条 series 至少要有两个时间点才能连成趋势', '补上另一个时间点，或改用 dot 展示单点');
+      const sigs = [...order.values()].map((a) => a.join('\u0001'));
+      if (sigs.length > 1 && sigs.some((s) => s !== sigs[0])) err(W('data'), '折线每条线的时间点不一致，会对不齐', '每条 series 用同一组 label、同一顺序');
     }
     if (p.chartType === 'stacked' && rows.some((d) => !d?.series)) err(W('data'), 'stacked 每条数据都需要 series 来标识堆叠分段', '给每条数据加 series 名称；相同 label 的数据会组成一条堆叠条');
+    if (p.chartType === 'stacked') {
+      const byLabel = new Map();
+      rows.forEach((d) => {
+        const k = String(d?.label ?? '');
+        if (!byLabel.has(k)) byLabel.set(k, new Set());
+        if (d?.series) byLabel.get(k).add(String(d.series));
+      });
+      const counts = [...byLabel.values()].map((s) => s.size);
+      if (counts.length > 1 && counts.some((n) => n !== counts[0])) err(W('data'), '堆叠图每个类别的段数不一致，会画成错误的 100%', '每个类别都写上相同的 series；没有的那段写 value: 0');
+    }
     if (num(p.max) && rows.some((d) => num(d?.value) && d.value > p.max)) err(W('max'), 'max 小于某条数据，图表会截断或把点画出坐标区', '把 max 调到不小于最大数据值');
     if (rows.filter((d) => d?.focus === true).length > 1) err(W('data'), '一张图只能突出一个 focus 数据项', '只保留最重要的一条为 focus: true');
   }
@@ -348,6 +366,7 @@ export function crossCheck(type, p, W, err, warn) {
 // ---------------- 校验主体 ----------------
 /** 「没有简报依据」类错误的统一标记（checkSpecs 单镜自检时按它过滤，单镜示例本来就没有 meta.facts） */
 const NO_BASIS = '没有简报依据';
+const DEMO_HINT_RE = /演示|示例|示意|模拟|虚构|sample|demo|simulated|illustrative/i;
 export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null, allowDraftStyles = false, env = process.env} = {}) {
   const errors = [];
   const warnings = [];
@@ -560,7 +579,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     // 画面上必须有「演示/示例」提示（写在 meta.disclaimer，顶部胶囊会显示）
     if (meta.demoData !== undefined) {
       if (typeof meta.demoData !== 'boolean') err('meta.demoData', '应该是 true/false', '界面里用了示例数字就写 true，并在 meta.disclaimer 写「演示画面，数据为示例」；没用就删掉');
-      else if (meta.demoData && !(typeof meta.disclaimer === 'string' && /演示|示例|示意|模拟|虚构|sample|demo|simulated|illustrative/i.test(meta.disclaimer)))
+      else if (meta.demoData && !(typeof meta.disclaimer === 'string' && DEMO_HINT_RE.test(meta.disclaimer)))
         err('meta.demoData', 'demoData 是 true，但画面上没有「演示数据」提示', meta?.lang === 'en' ? 'Set meta.disclaimer to something like "Demo screens, sample data"' : 'meta.disclaimer 写「演示画面，数据为示例」（顶部胶囊会显示）；不要写进 notices，免得重复');
     }
     // subCategory / attachDeal：行业规则的 sub 层和 checks[].when 早就在用（merge-rules.mjs、util.mjs 的 evalWhen），
@@ -1022,7 +1041,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       const refs = Array.isArray(P.refs) ? P.refs : [];
       const citedReal = realFacts.filter((f) => refs.includes(f.id));
       const citedDemo = demoFacts.filter((f) => refs.includes(f.id));
-      const demoChart = !citedReal.length && citedDemo.length > 0 && demoOn && /演示|示例/.test(String(meta?.disclaimer ?? ''));
+      const demoChart = !citedReal.length && citedDemo.length > 0 && demoOn && DEMO_HINT_RE.test(String(meta?.disclaimer ?? ''));
       if (!citedReal.length && !demoChart) err(W('params.refs'), 'dataChart 必须引用至少一条 meta.facts 中有来源的真实数据；示例数据需同时声明 demoData 和演示/示例提示', '将简报原文与来源写入 meta.facts 并引用其 id；如为样例画面，标注 meta.demoData 与 meta.disclaimer');
       const citedNums = numsOf(citedReal.length ? citedReal : citedDemo);
       const visible = [P.title, P.takeaway, ...(Array.isArray(P.kpis) ? P.kpis.flatMap((k) => [k?.label, k?.value]) : []), ...(Array.isArray(P.annotations) ? P.annotations : []), ...(Array.isArray(P.data) ? P.data.flatMap((d) => [d?.label, d?.value]) : [])].filter((x) => typeof x === 'string' || num(x)).join(' ');

@@ -27,13 +27,21 @@ export const parseRich = (s: string): Ch[] => {
   return out;
 };
 
-export const glyph = (th: Theme, size: number, hot: boolean, strokeK = 0.15): React.CSSProperties =>
-  ({
+export const glyph = (th: Theme, size: number, hot: boolean, strokeK = 0.15): React.CSSProperties => {
+  // 只有主题自己写了 captionStyle: "clean" 才去掉描边。原来的主题不写这个字段，画面保持描边。
+  if (th.captionStyle === 'clean') {
+    return {
+      color: hot ? th.hot : th.capFill,
+      textShadow: '0 4px 14px rgba(14,21,49,0.22)',
+    };
+  }
+  return {
     color: hot ? th.hot : th.capFill,
     WebkitTextStroke: `${Math.round(size * strokeK)}px ${th.capStroke}`,
     paintOrder: 'stroke fill',
     textShadow: `0 ${Math.round(size * 0.08)}px 0 ${th.capStroke}`,
-  }) as React.CSSProperties;
+  };
+};
 
 /** 静态大字（封面/片尾用）；逐字动画的版本在 layers.tsx 的 Captions。
  * lang='en' 时行高更松、不用中文的 palt 特性、字距归零（拉丁字重叠比汉字更明显） */
@@ -51,7 +59,7 @@ export const BigText: React.FC<{text: string; size: number; lineHeight?: number;
       style={{
         fontFamily: FONT,
         fontSize: size,
-        fontWeight: 900,
+        fontWeight: th.captionStyle === 'clean' ? 800 : 900,
         lineHeight: lh,
         letterSpacing: lang === 'en' ? 0 : undefined,
         textAlign: 'center',

@@ -20,7 +20,7 @@
 // ============================================================
 
 /** 主题预设名（颜色定义在 core/themes.json） */
-export type ThemeName = 'warm-emotion' | 'tech-dark' | 'fresh-light' | 'business-blue' | 'festival-red' | 'mono-premium';
+export type ThemeName = keyof typeof import('./core/themes.json');
 
 /** 行业（决定读哪个 industries/<name>/rules.json；默认 software，即第一阶段的软件产品片） */
 export type IndustryName = 'software' | 'food' | 'ecommerce' | 'education' | 'beauty' | 'travel';

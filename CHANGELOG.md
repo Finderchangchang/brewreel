@@ -2,6 +2,10 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
+## Unreleased
+
+- 新增数据图表镜头、12 套可选配色、渲染锁修复。致谢 @opc8838-hub（#2）。
+
 ## v0.6.0 · 2026-10-02 · 写稿更稳：按配方给说明书、通读不过不出片、防剧透更准
 
 老分镜不用改。默认写稿模型从 `deepseek-chat` 换成 `deepseek-flash`（DeepSeek 现在的模型名）。

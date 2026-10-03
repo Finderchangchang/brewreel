@@ -490,7 +490,23 @@ function checkQualifiers(sb, meta, texts, lang, err) {
     // 旁白（vo）念出来的数字同样要带上限定语；限定语写在字幕、画面或旁白里都算
     const vo = typeof sh.vo === 'string' ? sh.vo : null;
     const shotAll = [...[sh.caption].flat().filter((x) => typeof x === 'string'), ...(vo ? [vo] : []), ...strLeaves(sh.params ?? {})].join(' ').replace(/[{}]/g, '');
-    const pool = `${shotAll} ${notices}`;
+    // 图表的 value 是数字，strLeaves 只收字符串。按「次数 / 天数」画的趋势图要把读数和单位补进池子，避免把同一条 fact 里的其他读数误判成没上屏。
+    let chartBits = '';
+    if (sh.type === 'dataChart' && sh.params && typeof sh.params === 'object') {
+      const unit = typeof sh.params.unit === 'string' ? sh.params.unit : '';
+      const bits = [];
+      for (const d of Array.isArray(sh.params.data) ? sh.params.data : []) {
+        if (!d || typeof d.value !== 'number' || !Number.isFinite(d.value)) continue;
+        const n = String(d.value);
+        bits.push(n);
+        if (unit) {
+          bits.push(`${n}${unit}`);
+          bits.push(`${n} ${unit}`);
+        }
+      }
+      chartBits = bits.join(' ');
+    }
+    const pool = `${shotAll} ${chartBits} ${notices}`;
     // 屏幕上的数字：{v, local（紧挨着它的那几个字）, obj（同一个对象里的其他字）, where, text}
     const hits = [];
     const visit = (node, field) => {

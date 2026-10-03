@@ -4,7 +4,8 @@
   "tips": [
     "推荐叙事顺序：hook 提出问题 → dataChart 给结论和证据（标题、结论、KPI、图）→ compare/steps/phone 展开过程 → endCard 收束品牌与 CTA。",
     "每张图只回答一个问题；标题写指标范围，takeaway 写读图结论，不要把结论藏在图例里。",
-    "bar/dot/line/donut 的 data 是 {label,value,series?} 数组（最多 6 项）；stacked 用相同 label 的多条记录表示分段，并给每段写 series。",
+    "bar/dot/line/donut 的 data 是 {label,value,series?} 数组（最多 6 项，label 最多 12 字，画面按这个宽度留白）；stacked 用相同 label 的多条记录表示分段，并给每段写 series，每个类别的段数要一致。",
+    "折线图每条 series 用同一组 label、同一顺序，时间点才能对齐。",
     "数值、KPI 和旁注都必须来自 meta.facts，至少引用一条真实来源 refs；渲染会把 refs 对应的来源写在卡片底部。",
     "annotations 最多 2 条，只写读图要点/口径；donut 建议不超过 5 类；趋势图按时间顺序排列。图表配色只代表系列，不代表 good/warn/bad 语义。"
   ],
@@ -19,7 +20,7 @@
       "title": {"type": "string", "minLen": 1, "maxLen": 16, "description": "图表标题，说明主题或指标范围"},
       "takeaway": {"type": "string", "minLen": 1, "maxLen": 28, "description": "核心结论，一句话说清图表意味着什么"},
       "chartType": {"type": "string", "enum": ["bar", "line", "dot", "stacked", "donut"], "description": "bar 横向比较；line 趋势；dot 点图；stacked 构成；donut 占比"},
-      "palette": {"type": "string", "enum": ["micro", "mono", "porcelain", "palm", "wire"], "description": "不写时使用主题自带图表色板，无自带色板则用 micro；显式可选 micro 墨蓝/莓紫/雾蓝、mono 灰墨、porcelain 单色阶、palm 低饱和绿黄、wire 灰底单橙重点"},
+      "palette": {"type": "string", "enum": ["micro", "mono", "porcelain", "palm", "wire"], "description": "不写时用主题的 chartColors；主题没带图表色时，按卡片底色选一套和底对比至少 3:1 的系列色。显式可选 micro 墨蓝/莓紫/雾蓝、mono 灰墨、porcelain 单色阶、palm 低饱和绿黄、wire 灰底单橙重点"},
       "data": {"type": "array", "minItems": 2, "maxItems": 6, "description": "图表数据；堆叠图用同一 label 的不同 series 表示分段；focus=true 标记一个重点项", "items": {"type": "object", "required": ["label", "value"], "properties": {"label": {"type": "string", "minLen": 1, "maxLen": 12}, "value": {"type": "number", "minimum": 0, "maximum": 100000000}, "series": {"type": "string", "maxLen": 10}, "focus": {"type": "boolean", "description": "可选重点项；micro/palm/wire 使用各自的焦点色"}}}},
       "kpis": {"type": "array", "maxItems": 3, "description": "可选 1–3 个 KPI 摘要", "items": {"type": "object", "required": ["label", "value"], "properties": {"label": {"type": "string", "minLen": 1, "maxLen": 10}, "value": {"type": "string", "minLen": 1, "maxLen": 10}}}},
       "annotations": {"type": "array", "maxItems": 2, "description": "可选旁注/口径说明", "items": {"type": "string", "maxLen": 26}},

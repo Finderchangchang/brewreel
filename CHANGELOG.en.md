@@ -2,6 +2,10 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## Unreleased
+
+- Data-chart shot, 12 optional palettes, and the render-lock fix. Thanks to @opc8838-hub (#2).
+
 ## v0.6.0 · 2026-10-02 · Steadier scripts: recipe-specific guidance, no render on a failed read-through, sharper spoiler check
 
 Old storyboards need no changes. The default script model changes from `deepseek-chat` to `deepseek-flash` (DeepSeek's current model name).

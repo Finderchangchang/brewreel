@@ -5,7 +5,7 @@ import {emWidth, fitLine, fitSize} from '../core/fit';
 import {FONT} from '../core/font';
 import {Icon, isIcon} from '../core/icons';
 import {BigText, Card, IconDisc, Sweep, repeatsHint} from '../core/kit';
-import {alpha, useTheme} from '../core/theme';
+import {alpha, textOnHot, useTheme} from '../core/theme';
 import type {ShotProps} from '../core/types';
 
 // ============================================================
@@ -67,7 +67,7 @@ const Cta: React.FC<{text: string; t: number; at: number; wide?: boolean}> = ({t
           width: wide ? '100%' : undefined,
           boxSizing: 'border-box',
           background: th.hot,
-          color: '#1b1a18',
+          color: textOnHot(th),
           fontWeight: 900,
           fontSize: size,
           padding: '16px 40px',
@@ -78,7 +78,7 @@ const Cta: React.FC<{text: string; t: number; at: number; wide?: boolean}> = ({t
         }}
       >
         {text}
-        <Icon name="arrow" size={size * 0.95} color="#1b1a18" stroke={3} />
+        <Icon name="arrow" size={size * 0.95} color={textOnHot(th)} stroke={3} />
         <Sweep p={sweep} w={600} />
       </div>
     </div>

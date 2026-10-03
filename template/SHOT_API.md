@@ -48,7 +48,7 @@ th.bubbleOther / th.bubbleOtherText / th.shadow / th.dark
 alpha('#RRGGBB', 0.2)  mixHex(a, b, p)                                    // 工具
 ```
 
-6 套主题里有两套是**深色卡片**（tech-dark、mono-premium）：不要写死 `#fff` 卡片、`#111` 字。改完用 `--props='{"type":"<type>","theme":"tech-dark"}'` 看一眼。
+18 套主题里，默认的 6 套有两套是**深色卡片**（tech-dark、mono-premium）：不要写死 `#fff` 卡片、`#111` 字。改完用 `--props='{"type":"<type>","theme":"tech-dark"}'` 看一眼。名单见 `styles/cards/THEMES.md`。
 
 ## 4. 安全区（`core/safe.ts`）
 
@@ -154,5 +154,5 @@ npx remotion still src/index.ts Screen ..\examples\assets\x-screen.png --frame=1
 - 每个镜头都要有一个「会动的主角」，而且它的动作要传达信息（数值落定、状态变色、点中高亮），不是装饰性晃动。
 - 卡片化、白/深色卡片 + 阴影，信息密度够；不要大面积空白，也不要塞满小字。
 - 中性界面：不出现任何第三方 App 的 logo、标志色（如某聊天软件的绿气泡）、网址、二维码、账号名。
-- 全部元素只用主题色；在 6 套主题下都要好看（至少自测 warm-emotion + tech-dark）。
+- 全部元素只用主题色；默认 6 套和可选新配色都要能读（至少自测 warm-emotion + tech-dark）。
 - 交付前用 ShotLab 出 3 帧（入场中 / 主角动作落定 / 结束前）自己看一遍。

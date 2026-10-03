@@ -49,6 +49,7 @@ const AMB_TOP = 1340;
 const AMB_H = 1920 - AMB_TOP;
 
 const AmbientPattern: React.FC<{kind: string; t: number; e: number; bb: number; a: string; b: string; hot: string}> = ({kind, t, e, bb, a, b, hot}) => {
+  if (kind === 'none') return null;
   if (kind === 'grid') {
     const hz = 70;
     const off = (t * 0.9 * e) % 1;
@@ -328,7 +329,8 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
         .map((s) => {
           const text = s.text;
           const instant = s.instant;
-          const size = captionSize(text, lang);
+          const clean = th.captionStyle === 'clean';
+          const size = clean ? Math.min(78, captionSize(text, lang)) : captionSize(text, lang);
           const nLines = text.split('\n').length;
           const h = nLines * size * lineHeight;
           const top = Math.round(CAP.y0 + (CAP.y1 - CAP.y0 - h) / 2);
@@ -345,7 +347,7 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
                 textAlign: 'center',
                 fontFamily: FONT,
                 fontSize: size,
-                fontWeight: 900,
+                fontWeight: clean ? 800 : 900,
                 lineHeight,
                 letterSpacing: lang === 'en' ? 0 : undefined,
                 whiteSpace: 'nowrap',
