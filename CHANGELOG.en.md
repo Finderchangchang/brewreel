@@ -2,10 +2,28 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
-## Unreleased
+## v0.7.0 · 2026-10-03 · Data-chart shot and 12 optional palettes
 
-- Data-chart shot, 12 optional palettes, and the render-lock fix. Thanks to @opc8838-hub (#2).
-- When a brand color is too close to the card, text and icons painted on the card are lightened or darkened (hue unchanged), and fills such as buttons are adjusted the same way. A color that is already clear enough, or no brand color at all, leaves the picture unchanged.
+Old storyboards need no changes and render the same (pixel-identical when there is no brand color, or when the brand color is already clear enough). The chart shot and the new palettes come from PR #2 by @opc8838-hub. Thank you.
+
+### New: `dataChart` shot
+- One shot tells one piece of data: a title, a one-line takeaway, up to 3 key numbers, the chart, notes and the source. Chart types: `bar`, `line`, `dot`, `stacked`, `donut`.
+- Every number must appear in the cited `meta.facts` text, and the source is shown at the bottom of the card. Sample data needs `meta.demoData` and a note in the disclaimer.
+- Validation blocks data that would draw a misleading chart: a stacked category missing a segment, two lines with different time points, more than 6 rows, a donut with more than 5 slices, labels over 12 characters, and so on.
+- Works on dark themes and in English videos; with more rows the chart shrinks instead of covering the key numbers and notes.
+- See `docs/shots/dataChart.en.md`.
+
+### New: 12 optional palettes
+- `studio-cream-blue`, `studio-neon`, `studio-pink-green`, `studio-blue-orange`, `studio-red-black`, `studio-purple-yellow`, `studio-cyan`, `studio-lime-purple`, `studio-indigo`, `studio-graphite`, `coral-pop`, `mint-pop`. Set one in `meta.theme`.
+- Captions in the new palettes have no outline and the emphasized words change color; there is no decorative pattern at the bottom. The original 6 themes are unchanged and remain the default.
+- The full list is in `styles/cards/THEMES.md`; `node scripts/test-themes.mjs` checks text contrast for the new palettes.
+
+### Fixes
+- Render lock: if a crashed render left a lock file that can't be deleted (held by antivirus, for example), the next render used to hang silently; it now stops at the queue timeout and says why.
+- Brand color: when `meta.brandColor` is too close to the card, prices, icons and text painted on the card are lightened or darkened (hue unchanged), and fills such as buttons are adjusted the same way; validation prints a note.
+
+### DeepSeek Harness plugin 0.5.0
+- Ships the skill snapshot for this release (0.4.0 never reached npm, so it goes straight to 0.5.0). Still supports dsh 0.1.x only (0.1.7-rc.2 and later).
 
 ## v0.6.0 · 2026-10-02 · Steadier scripts: recipe-specific guidance, no render on a failed read-through, sharper spoiler check
 

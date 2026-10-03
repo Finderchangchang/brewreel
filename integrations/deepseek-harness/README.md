@@ -56,7 +56,7 @@ dsh plugin --profile web add ./brewreel/integrations/deepseek-harness
 dsh plugin --profile web add dsh-brewreel
 ```
 
-npm 上的 `dsh-brewreel@0.4.0` 对应仓库 v0.6.0。
+npm 上的 `dsh-brewreel@0.5.0` 对应仓库 v0.7.0。
 
 **C. 本地 tgz**
 

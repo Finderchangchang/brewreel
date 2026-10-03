@@ -56,7 +56,7 @@ Run the second command from the folder that contains the clone (relative paths r
 dsh plugin --profile web add dsh-brewreel
 ```
 
-`dsh-brewreel@0.4.0` on npm is the v0.6.0 snapshot.
+`dsh-brewreel@0.5.0` on npm is the v0.7.0 snapshot.
 
 **C. A local tgz**
 
