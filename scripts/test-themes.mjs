@@ -1,14 +1,22 @@
-// 18 套主题的对比度。不联网。
-// 算法和 template/src/core/theme.tsx 的 relLuminance / contrastRatio / inkOn 保持一致。
+// 18 套主题的对比度，外加字幕重点词的三条数值规则。不联网。
+// 对比度算法和 template/src/core/theme.tsx 的 relLuminance / contrastRatio / inkOn 保持一致。
 // 正文（卡片字、强调色小标签、accent 上的字）≥ 4.5:1；大字（字幕）和图形（图表系列色）≥ 3:1。
+// 重点词（hot）另外三条，只强制 12 套新配色：
+//   1. 和普通字 capFill 的 CIEDE2000 ΔE ≥ 30（算法在 scripts/lib/color.mjs）
+//   2. 和 bgTop 每一档的对比度 ≥ 3:1
+//   3. 普通字接近中性（LCh 彩度 C* < 12，和 color.mjs 里「近黑 / 近白 / 灰」同一条线）时，重点词彩度 C* ≥ 35
 // 12 套新配色必须全过。原来 6 套不过的只记录，不把这次运行判失败（它们靠描边，不改色）。
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {chroma, deltaE} from './lib/color.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const themes = JSON.parse(fs.readFileSync(path.join(root, 'template/src/core/themes.json'), 'utf8'));
 const ORIGINAL = ['warm-emotion', 'tech-dark', 'fresh-light', 'business-blue', 'festival-red', 'mono-premium'];
+const NEUTRAL_C = 12;
+const HOT_CHROMA = 35;
+const HOT_DELTA_E = 30;
 
 const hex = (c) => {
   const m = /^#?([0-9a-f]{6})$/i.exec(String(c ?? '').trim());
@@ -47,6 +55,17 @@ for (const [name, th] of Object.entries(themes)) {
   const hotBg = bgs.length ? Math.min(...bgs.map((b) => contrastRatio(th.hot, b))) : null;
   if (capBg != null && capBg < 3) issues.push(`字幕正文 ${th.capFill} 对底色 ${capBg.toFixed(2)}:1`);
   if (hotBg != null && hotBg < 3) issues.push(`字幕重点 ${th.hot} 对底色 ${hotBg.toFixed(2)}:1`);
+  for (const b of th.bgTop ?? []) {
+    const r = contrastRatio(th.hot, b);
+    if (r != null && r < 3) issues.push(`字幕重点 ${th.hot} 对 bgTop ${b} ${r.toFixed(2)}:1`);
+  }
+  const dE = deltaE(th.hot, th.capFill);
+  if (!(dE >= HOT_DELTA_E)) issues.push(`字幕重点 ${th.hot} 对正文 ${th.capFill} ΔE ${Number.isFinite(dE) ? dE.toFixed(1) : '无法计算'}`);
+  const capC = chroma(th.capFill);
+  const hotC = chroma(th.hot);
+  if (capC < NEUTRAL_C && !(hotC >= HOT_CHROMA)) {
+    issues.push(`正文接近中性（C ${Number.isFinite(capC) ? capC.toFixed(1) : '无法计算'}），重点 ${th.hot} 彩度 C ${Number.isFinite(hotC) ? hotC.toFixed(1) : '无法计算'} < ${HOT_CHROMA}`);
+  }
   if (String(th.hot).toLowerCase() === String(th.capFill).toLowerCase()) issues.push('字幕重点色和正文字颜色相同');
   const onHot = th.onHot || inkOn(th.hot);
   const hotInk = contrastRatio(onHot, th.hot);
