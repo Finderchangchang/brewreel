@@ -74,7 +74,7 @@ export const RemotionRoot: React.FC = () => (
       width={1080}
       height={1920}
       durationInFrames={30}
-      defaultProps={{talkSrc: '', width: 1080, height: 1920, fps: 30, durationSec: 1, captions: 'none', cues: [], clips: []} as TalkProps}
+      defaultProps={{talkSrc: '', width: 1080, height: 1920, fps: 30, durationSec: 1, captions: 'none', cues: [], clips: [], draft: false} as TalkProps}
       calculateMetadata={({props}) => {
         const p = props as unknown as TalkProps;
         const fps = p.fps > 0 ? p.fps : 30;

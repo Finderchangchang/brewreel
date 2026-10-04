@@ -13,5 +13,9 @@
     "orbit": "镜头缓缓环绕主体",
     "top-down": "镜头从正上方俯拍"
   },
-  "references": []
+  "references": [
+    "ref-1.jpg",
+    "ref-2.jpg",
+    "ref-3.jpg"
+  ]
 }

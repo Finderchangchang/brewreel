@@ -3,6 +3,7 @@ import path from 'node:path';
 import {sha256File, sha256Text, stableString} from './hash.mjs';
 import {buildPrompt} from './prompt.mjs';
 import {clipCost, rateOf} from './prices.mjs';
+import {ROOT} from './root.mjs';
 import {aspectOf, framesFor, genSecOf, secText, windowOf} from './time.mjs';
 
 const cueNo = (id) => Number(String(id).slice(1));
@@ -29,6 +30,11 @@ export const buildPlan = ({doc, cues, media, style, projectDir}) => {
       const abs = path.resolve(projectDir, clip.file);
       if (fs.existsSync(abs)) sourceSha256 = sha256File(abs);
     }
+    const styleDir = path.join(ROOT, 'broll', 'styles', doc.style);
+    const referenceSha256 = (Array.isArray(style?.references) ? style.references : []).map((rel) => {
+      const abs = path.join(styleDir, rel);
+      return fs.existsSync(abs) ? sha256File(abs) : `missing:${rel}`;
+    });
     const request = {
       style: doc.style,
       provider: doc.provider,
@@ -39,6 +45,7 @@ export const buildPlan = ({doc, cues, media, style, projectDir}) => {
       genSec,
       prompt,
       sourceSha256,
+      referenceSha256,
     };
     return {
       id: clip.id,

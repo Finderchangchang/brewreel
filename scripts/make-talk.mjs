@@ -1,29 +1,27 @@
 #!/usr/bin/env node
-// 口播配 B-roll：校验 → 计划 → 估价闸门 → 生成 → 检查 → 合成 → 交付。
-//   node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local] [--yes]
-// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里 / 3 超预算或没加 --yes / 4 生成、检查或渲染失败
+// 口播配 B-roll：校验 → 计划 → 估价闸门 → 生成 → 审片（minimax-h3）→ 合成 → 交付。
+//   node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3] [--force-redo]
+// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查或渲染失败 / 5 还没审片
 // --out 不许落在仓库里（promo/ 除外，或人手动加 --allow-in-repo）。--dry-run 只校验、写计划和估价，不生成。
-// 本版只做 placeholder 和 local。minimax-h3 会在校验里报「下一版才支持」。
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {checkClip} from './broll/check-clip.mjs';
+import {extractDeliveryFrames} from './broll/frames.mjs';
+import {generateClips} from './broll/generate.mjs';
 import {sha256File} from './broll/hash.mjs';
-import {loadLedger, markApproved, resumeClip, saveLedger} from './broll/ledger.mjs';
+import {markApproved, saveLedger} from './broll/ledger.mjs';
 import {ffmpeg} from './broll/media.mjs';
 import {buildPlan, writePlan} from './broll/plan.mjs';
-import {prepareLocal} from './broll/providers/local.mjs';
-import {renderPlaceholder} from './broll/providers/placeholder.mjs';
+import {checkReview} from './broll/review.mjs';
 import {ROOT, TEMPLATE} from './broll/root.mjs';
-import {framesFor} from './broll/time.mjs';
 import {formatReport, loadBanned, loadProject, loadStyles, validateBroll} from './broll/validate.mjs';
 import {QueueTimeoutError, acquireRenderLock} from './lib/render-lock.mjs';
 
 const REMOTION = path.join(TEMPLATE, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
 const LOCK = path.join(TEMPLATE, '.render.lock');
-const KNOWN = new Set(['--out', '--provider', '--dry-run', '--yes', '--keep', '--allow-in-repo']);
-const TAKES = new Set(['--out', '--provider']);
+const KNOWN = new Set(['--out', '--provider', '--dry-run', '--yes', '--keep', '--allow-in-repo', '--only', '--concurrency', '--draft', '--force-redo']);
+const TAKES = new Set(['--out', '--provider', '--only', '--concurrency']);
 
 const fail = (code, message) => {
   console.log(message);
@@ -32,7 +30,7 @@ const fail = (code, message) => {
 
 const argv = process.argv.slice(2);
 for (const a of argv) {
-  if (a.startsWith('--') && !KNOWN.has(a)) fail(2, `不认识的参数 ${a}\n用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local] [--yes]`);
+  if (a.startsWith('--') && !KNOWN.has(a)) fail(2, `不认识的参数 ${a}\n用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3]`);
 }
 const positionals = [];
 for (let i = 0; i < argv.length; i++) {
@@ -49,7 +47,7 @@ const opt = (name) => {
 const has = (name) => argv.includes(name);
 
 if (positionals.length !== 1 || !opt('--out')) {
-  fail(2, '用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local] [--yes]');
+  fail(2, '用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3]');
 }
 
 const projectDir = path.resolve(positionals[0]);
@@ -57,6 +55,12 @@ const outDir = path.resolve(opt('--out'));
 const dryRun = has('--dry-run');
 const yes = has('--yes');
 const keep = has('--keep');
+const draft = has('--draft');
+const forceRedo = has('--force-redo');
+const only = opt('--only');
+const concurrency = opt('--concurrency') == null ? 3 : Number(opt('--concurrency'));
+if (only && !/^b[0-9]{2}$/.test(only)) fail(2, `--only 要写成 b01 这样的段号，现在是 ${only}`);
+if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > 12) fail(2, '--concurrency 要是 1 到 12 的整数');
 
 {
   const rel = path.relative(ROOT, outDir);
@@ -93,84 +97,58 @@ const plan = buildPlan({doc, cues: loaded.cues, media: loaded.media, style, proj
 fs.mkdirSync(outDir, {recursive: true});
 const planPath = writePlan(path.join(outDir, 'broll.plan.json'), plan);
 console.log(`计划：${planPath}`);
-console.log(`估价：${plan.totalYuan} 元（预算 ${doc.budgetYuan} 元）`);
+if (doc.provider === 'minimax-h3' || plan.totalYuan > 0) {
+  console.log('估价明细：');
+  for (const c of plan.clips) console.log(`  ${c.id}  ${c.genSec} 秒 × ${plan.priceYuanPerSec} 元/秒 = ${c.costYuan} 元`);
+  console.log(`  合计 ${plan.totalYuan} 元（预算 ${doc.budgetYuan} 元）`);
+} else {
+  console.log(`估价：${plan.totalYuan} 元（预算 ${doc.budgetYuan} 元）`);
+}
 if (report.budgetExceeded) process.exit(3);
 if (dryRun) {
   console.log('dry-run：只出计划，不生成。');
   process.exit(0);
 }
+if (doc.provider === 'minimax-h3' && !yes) fail(3, '还没生成。确认后加 --yes 再跑同一条命令。');
 if (plan.totalYuan > 0 && !yes) fail(3, `估价 ${plan.totalYuan} 元。加 --yes 才会真正生成。`);
 
+const styleDir = path.join(ROOT, 'broll', 'styles', doc.style);
+const references = (Array.isArray(style?.references) ? style.references : [])
+  .map((rel) => path.join(styleDir, rel))
+  .filter((abs) => fs.existsSync(abs));
+
+let ledger;
+try {
+  ledger = await generateClips({
+    doc,
+    plan,
+    outDir,
+    projectDir,
+    only,
+    forceRedo,
+    concurrency: doc.provider === 'minimax-h3' ? concurrency : 1,
+    references,
+    log: console.log,
+  });
+} catch (e) {
+  fail(e.exitCode || 4, e.message);
+}
+
 const ledgerPath = path.join(outDir, 'ledger.json');
-const ledger = loadLedger(ledgerPath);
-const clipDir = path.join(outDir, 'clips');
-const rawDir = path.join(outDir, 'raw');
-const checkDir = path.join(outDir, 'check');
-fs.mkdirSync(clipDir, {recursive: true});
-fs.mkdirSync(rawDir, {recursive: true});
-fs.mkdirSync(checkDir, {recursive: true});
+const missing = plan.clips.filter((c) => !ledger.clips[c.id] || !['checked', 'approved'].includes(ledger.clips[c.id].status));
+if (missing.length) {
+  fail(only ? 0 : 4, only ? `只处理了 ${only}。还有 ${missing.map((c) => c.id).join('、')} 没准备好，这次不出片。` : `还有片段没准备好：${missing.map((c) => c.id).join('、')}`);
+}
 
-const presetOf = doc.provider === 'placeholder' ? 'ultrafast' : 'veryfast';
-
-for (const clip of plan.clips) {
-  const ops = {
-    submit() {
-      const taskId = `${doc.provider}-${clip.id}-${clip.requestHash.slice(0, 8)}`;
-      if (doc.provider === 'placeholder') {
-        const dest = path.join(rawDir, `${clip.id}.mp4`);
-        renderPlaceholder({
-          id: clip.id,
-          plain: clip.plain,
-          sentence: clip.sentence,
-          width: plan.width,
-          height: plan.height,
-          frames: framesFor(clip.windowMs[1] - clip.windowMs[0], 30),
-          dest,
-        });
-        console.log(`生成 ${clip.id}（占位片，${clip.genSec} 秒）`);
-        return {taskId, provider: doc.provider, file: path.relative(outDir, dest)};
-      }
-      if (doc.provider === 'local') {
-        const got = prepareLocal({file: clip.file, projectDir, windowSec: clip.windowSec});
-        console.log(`采用本地文件 ${clip.id}`);
-        return {taskId, provider: doc.provider, file: got.abs};
-      }
-      throw new Error(`${doc.provider} 这一版不能生成。`);
-    },
-    query(entry) {
-      const abs = path.isAbsolute(entry.file || '') ? entry.file : path.resolve(outDir, entry.file || '');
-      if (entry.file && fs.existsSync(abs)) return {status: 'downloaded', file: entry.file};
-      return {status: 'submitted'};
-    },
-    check(entry) {
-      const src = path.isAbsolute(entry.file || '') ? entry.file : path.resolve(outDir, entry.file || '');
-      const dest = path.join(clipDir, `${clip.id}.mp4`);
-      const done = checkClip({
-        src,
-        dest,
-        frames: framesFor(clip.windowMs[1] - clip.windowMs[0], 30),
-        width: plan.width,
-        height: plan.height,
-        frameDir: checkDir,
-        id: clip.id,
-        preset: presetOf,
-        crf: 18,
-      });
-      if (done.meta.black > 0) throw new Error(`${clip.id} 有黑帧（${done.meta.black} 段）。换一段画面，或检查源文件是不是黑的。`);
-      if (done.meta.freeze > 0) throw new Error(`${clip.id} 有静帧（${done.meta.freeze} 段）。画面要有变化。`);
-      console.log(`检查 ${clip.id}：${done.meta.durationSec.toFixed(2)} 秒，黑帧 0，静帧 0`);
-      return {file: path.relative(outDir, dest), meta: {black: done.meta.black, freeze: done.meta.freeze, durationSec: done.meta.durationSec}};
-    },
-  };
-  try {
-    const step = resumeClip(ledger.clips[clip.id], clip.requestHash, ops);
-    if (!step.entry.generatedAt) step.entry.generatedAt = step.entry.updatedAt;
-    ledger.clips[clip.id] = step.entry;
-    saveLedger(ledgerPath, ledger);
-    if (step.action === 'reuse') console.log(`复用 ${clip.id}（请求没变，不重新生成）`);
-  } catch (e) {
-    saveLedger(ledgerPath, ledger);
-    fail(4, e.message);
+if (doc.provider === 'minimax-h3' && !draft) {
+  const gate = checkReview({projectDir, outDir, clipIds: plan.clips.map((c) => c.id)});
+  if (!gate.ok) {
+    console.log(`未审片：${gate.reason}`);
+    console.log('先跑 node scripts/broll/review-sheet.mjs <项目目录> --out <输出目录>');
+    console.log('人看完后自己跑 node scripts/broll/approve.mjs <项目目录> --out <输出目录>');
+    console.log('AI 助手不许替人运行 approve。');
+    console.log('要出带「B-roll 未审」标记的草稿，加 --draft。');
+    process.exit(5);
   }
 }
 
@@ -178,6 +156,7 @@ const runRel = `_run/talk-${process.pid}-${Date.now()}`;
 const runDir = path.join(TEMPLATE, 'public', runRel);
 const propsPath = path.join(outDir, 'talk-props.json');
 const videoPath = path.join(outDir, 'video.mp4');
+const checkDir = path.join(outDir, 'check');
 let lock;
 let exitCode = 0;
 let exitMsg = '';
@@ -219,6 +198,7 @@ try {
     captions: doc.captions,
     cues: loaded.cues.map((c) => ({id: c.id, startMs: c.startMs, endMs: c.endMs, text: c.text})),
     clips: propsClips,
+    draft: doc.provider === 'minimax-h3' && draft,
   };
   fs.writeFileSync(propsPath, JSON.stringify(props, null, 2) + '\n', 'utf8');
 
@@ -247,20 +227,10 @@ try {
     stop(4, `渲染失败。\n${tail}`);
   }
 
-  const fps = plan.fps;
-  for (const clip of plan.clips) {
-    const start = clip.windowMs[0] / 1000;
-    const end = clip.windowMs[1] / 1000;
-    const before = Math.max(0, start - 1 / fps);
-    const after = Math.min(Math.max(0, loaded.media.durationSec - 1 / fps), end + 1 / fps);
-    for (const [tag, sec] of [
-      ['before', before],
-      ['after', after],
-    ]) {
-      const png = path.join(checkDir, `${clip.id}-${tag}.png`);
-      const shot = ffmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', videoPath, '-ss', sec.toFixed(3), '-frames:v', '1', png]);
-      if (shot.status !== 0 || !fs.existsSync(png)) stop(4, `成片抽帧失败（${clip.id} ${tag}）`);
-    }
+  try {
+    extractDeliveryFrames({video: videoPath, clips: plan.clips, durationSec: loaded.media.durationSec, fps: plan.fps, checkDir});
+  } catch (e) {
+    stop(4, e.message);
   }
   const pngs = [];
   for (const clip of plan.clips) {
@@ -295,7 +265,8 @@ try {
     height: plan.height,
     fps: plan.fps,
     durationSec: Number(loaded.media.durationSec.toFixed(3)),
-    totalYuan: plan.totalYuan,
+    totalYuan: Math.round(plan.clips.reduce((sum, c) => sum + (Number(ledger.clips[c.id]?.costYuan) || Number(c.costYuan) || 0), 0) * 100) / 100,
+    draft: doc.provider === 'minimax-h3' && draft,
     inputs: {
       'talk.mp4': sha256File(loaded.talk),
       'talk.srt': sha256File(loaded.srtPath),
@@ -308,7 +279,8 @@ try {
       mode: c.mode,
       windowMs: c.windowMs,
       provider: doc.provider,
-      costYuan: c.costYuan,
+      costYuan: ledger.clips[c.id]?.costYuan ?? c.costYuan,
+      outputSeconds: ledger.clips[c.id]?.outputSeconds ?? null,
       promptHash: c.promptHash,
       requestHash: c.requestHash,
       generatedAt: ledger.clips[c.id].generatedAt ?? null,

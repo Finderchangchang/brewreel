@@ -16,7 +16,52 @@ export const loadLedger = (file) => {
 
 export const saveLedger = (file, ledger) => {
   fs.mkdirSync(path.dirname(file), {recursive: true});
-  fs.writeFileSync(file, JSON.stringify(ledger, null, 2) + '\n', 'utf8');
+  const tmp = `${file}.${process.pid}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(ledger, null, 2) + '\n', 'utf8');
+  try {
+    fs.renameSync(tmp, file);
+  } catch {
+    fs.rmSync(file, {force: true});
+    fs.renameSync(tmp, file);
+  }
+};
+
+/** 付费来源每段最多重做这么多次。再重做要 --force-redo。第一次生成不算重做。 */
+export const REDO_LIMIT = 2;
+
+const IN_FLIGHT = new Set(['submitted', 'succeeded', 'timeout']);
+const HOLD = new Set(['failed', 'submit_failed', 'moderation', 'cancelled', 'auth', 'balance']);
+
+/**
+ * minimax-h3 用这一份。有 task id 且还在排队、生成、下载或超时：只查不重提。
+ * 上次提交结果不明：stuck，不重提。失败过：hold，除非这次明确要重做。
+ */
+export const decidePaid = (entry, requestHash, opt = {}) => {
+  const redo = !!opt.redo;
+  if (entry && (entry.status === 'submitting' || entry.status === 'submit_unknown')) return 'stuck';
+  if (entry?.taskId && IN_FLIGHT.has(entry.status)) return 'query';
+  const spent = entry && (entry.taskId || entry.redoCount || entry.status === 'checked' || entry.status === 'approved' || entry.status === 'downloaded' || HOLD.has(entry.status));
+  if (!entry || entry.requestHash !== requestHash) return spent ? 'redo' : 'submit';
+  if (entry.status === 'checked' || entry.status === 'approved') return redo ? 'redo' : 'reuse';
+  if (entry.status === 'downloaded') return redo ? 'redo' : 'check';
+  if (HOLD.has(entry.status)) return redo ? 'redo' : 'hold';
+  if (entry.taskId) return 'query';
+  return 'submit';
+};
+
+/** 重做次数 +1。超过 REDO_LIMIT 且没 force 就抛错，退出码 3。 */
+export const nextRedoCount = (entry, {force = false, id = '这段', log = () => {}} = {}) => {
+  const done = Number(entry?.redoCount) || 0;
+  const next = done + 1;
+  if (next > REDO_LIMIT && !force) {
+    const err = new Error(`${id} 已经重做 ${done} 次。第 ${next} 次要加 --force-redo。`);
+    err.code = 'REDO_LIMIT';
+    err.exitCode = 3;
+    throw err;
+  }
+  if (next > REDO_LIMIT && force) log(`${id} 第 ${next} 次重做，已加 --force-redo`);
+  else log(`${id} 第 ${next} 次重做`);
+  return next;
 };
 
 /**

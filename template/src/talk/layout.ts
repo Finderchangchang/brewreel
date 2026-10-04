@@ -16,21 +16,30 @@ export type TalkLayout = {
   caption: CaptionBox;
 };
 
-const captionOf = (width: number, height: number): CaptionBox => {
+/** full / pip：字幕在画面下方 1/4。split：贴在分界线上方，落在 B-roll 底部，不进下半脸部。 */
+const captionOf = (mode: 'full' | 'pip' | 'split', width: number, height: number): CaptionBox => {
   const fontSize = Math.max(36, Math.round((height * 72) / 1920));
-  return {
-    x: Math.round((width * 150) / 1080),
-    y: Math.round((height * 260) / 1920),
-    width: Math.round((width * 780) / 1080),
-    fontSize,
-    stroke: Math.round(fontSize * 0.15),
-  };
+  const x = Math.round((width * 150) / 1080);
+  let boxW = Math.round((width * 780) / 1080);
+  const stroke = Math.max(4, Math.round(fontSize * 0.15));
+  const block = Math.round(fontSize * 1.2);
+  if (mode === 'split') {
+    const line = Math.round(height * SPLIT_TOP);
+    return {x, y: line - block - Math.round(height * 0.012), width: boxW, fontSize, stroke};
+  }
+  const y = Math.round(height * 0.75);
+  if (mode === 'pip') {
+    const d = height > width ? PIP_DIAMETER_V : PIP_DIAMETER_H;
+    const faceLeft = width - PIP_MARGIN - d;
+    boxW = Math.min(boxW, Math.max(120, faceLeft - 16 - x));
+  }
+  return {x, y, width: boxW, fontSize, stroke};
 };
 
 /** full 盖满；pip 右下角圆形小窗；split 上 60% 是 B-roll、下 40% 是口播。 */
 export const layoutOf = (mode: 'full' | 'pip' | 'split', width: number, height: number): TalkLayout => {
   const badge = {x: 36, y: 36};
-  const caption = captionOf(width, height);
+  const caption = captionOf(mode, width, height);
   if (mode === 'split') {
     const bh = Math.round(height * SPLIT_TOP);
     return {

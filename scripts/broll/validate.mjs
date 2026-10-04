@@ -103,7 +103,6 @@ export const validateBroll = (doc, ctx) => {
   if (doc.version !== 1) err('version', `必须是 1，现在是 ${JSON.stringify(doc.version)}`, '改成 1');
   if (!styles[doc.style]) err('style', `没有叫「${doc.style ?? ''}」的风格预设`, `改成 ${Object.keys(styles).join('、') || 'brick-diorama'}`);
   if (!PROVIDERS.includes(doc.provider)) err('provider', `「${doc.provider ?? ''}」不在可选值里`, '改成 placeholder、local 或 minimax-h3');
-  else if (doc.provider === 'minimax-h3') err('provider', 'minimax-h3 下一版才支持', '这一版先写 placeholder（占位片）或 local（自带视频）');
   if (!QUALITIES.includes(doc.quality)) err('quality', `「${doc.quality ?? ''}」不在可选值里`, '改成 768P 或 2K');
   if (typeof doc.budgetYuan !== 'number' || !Number.isFinite(doc.budgetYuan) || doc.budgetYuan < 0) err('budgetYuan', '要写一个不小于 0 的数字，单位是元', '比如 20');
   if (!CAPTIONS.includes(doc.captions)) err('captions', `「${doc.captions ?? ''}」不在可选值里`, 'burned = 原片已经烧了字幕；add = 按 SRT 另画一层；none = 不要字幕');
