@@ -6,6 +6,7 @@ import {FPS, H, W} from './core/safe';
 import {LabProps, Promo, ShotLab, ShotScreen, framesOf, labStoryboard, sizeOf} from './Promo';
 import {IllustLab} from './IllustLab';
 import {Sheet, SheetProps, sheetSize} from './Sheet';
+import {Talk, type TalkProps} from './talk/Talk';
 import demo from './demo.json';
 
 ensureFont();
@@ -63,6 +64,27 @@ export const RemotionRoot: React.FC = () => (
         const p = props as unknown as SheetProps;
         const {width, height} = sheetSize(p);
         return {width, height, durationInFrames: framesOf(p.storyboard)};
+      }}
+    />
+    {/* Talk：口播底片 + B-roll。props 走文件，不在命令行拼 JSON。见 talk/Talk.tsx */}
+    <Composition
+      id="Talk"
+      component={Talk as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1080}
+      height={1920}
+      durationInFrames={30}
+      defaultProps={{talkSrc: '', width: 1080, height: 1920, fps: 30, durationSec: 1, captions: 'none', cues: [], clips: []} as TalkProps}
+      calculateMetadata={({props}) => {
+        const p = props as unknown as TalkProps;
+        const fps = p.fps > 0 ? p.fps : 30;
+        const durationSec = p.durationSec > 0 ? p.durationSec : 1;
+        return {
+          fps,
+          width: p.width > 0 ? p.width : 1080,
+          height: p.height > 0 ? p.height : 1920,
+          durationInFrames: Math.max(1, Math.round(durationSec * fps)),
+        };
       }}
     />
     {/* IllustLab：行业插画网格自检（props: {industry?, theme?}），不是正式镜头，见 IllustLab.tsx */}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://brewreel.local/broll.schema.json",
+  "title": "broll.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "style", "provider", "quality", "budgetYuan", "captions", "clips"],
+  "properties": {
+    "version": {"const": 1},
+    "style": {"type": "string", "description": "已有风格预设的 id，目前只有 brick-diorama"},
+    "provider": {"enum": ["placeholder", "local", "minimax-h3"]},
+    "quality": {"enum": ["768P", "2K"]},
+    "budgetYuan": {"type": "number", "minimum": 0},
+    "captions": {"enum": ["burned", "add", "none"]},
+    "keepFace": {
+      "type": "array",
+      "items": {"type": "string", "pattern": "^c[1-9][0-9]*$"},
+      "description": "不许盖住的句子。第一句和最后一句脚本会自动加进去"
+    },
+    "clips": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {"$ref": "#/$defs/clip"}
+    }
+  },
+  "$defs": {
+    "beat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action", "end"],
+      "properties": {
+        "action": {"type": "string", "maxLength": 24},
+        "end": {"type": "string", "maxLength": 16}
+      }
+    },
+    "clip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "mode", "job", "plain", "place", "subject", "camera"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^b[0-9]{2}$"},
+        "from": {"type": "string", "pattern": "^c[1-9][0-9]*$"},
+        "to": {"type": "string", "pattern": "^c[1-9][0-9]*$"},
+        "mode": {"enum": ["full", "pip", "split"]},
+        "job": {"enum": ["demonstrate", "explain", "ground", "compare", "quantify", "evoke", "connect"]},
+        "plain": {"type": "string", "maxLength": 20, "description": "只进审片和日志，不进提示词"},
+        "place": {"type": "string", "maxLength": 12},
+        "subject": {"type": "string", "maxLength": 12},
+        "action": {"type": "string", "maxLength": 24},
+        "end": {"type": "string", "maxLength": 16},
+        "beats": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"$ref": "#/$defs/beat"}},
+        "camera": {"enum": ["static", "slow-push", "pull-back", "pan-left", "pan-right", "orbit", "top-down"]},
+        "file": {"type": "string", "description": "只有 provider 为 local 时写，相对项目目录或绝对路径"}
+      }
+    }
+  }
+}

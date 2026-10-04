@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "style": "brick-diorama",
+  "provider": "placeholder",
+  "quality": "768P",
+  "budgetYuan": 20,
+  "captions": "add",
+  "keepFace": ["c5"],
+  "clips": [
+    {
+      "id": "b01",
+      "from": "c3",
+      "to": "c4",
+      "mode": "full",
+      "job": "explain",
+      "plain": "先列计划再动手",
+      "place": "积木工作台",
+      "subject": "蓝色积木机器人",
+      "beats": [
+        {"action": "把三块方块排成一行", "end": "三块方块整齐排好"},
+        {"action": "在每块方块旁插一面小旗", "end": "三面小旗都立起来"}
+      ],
+      "camera": "static"
+    },
+    {
+      "id": "b02",
+      "from": "c6",
+      "to": "c7",
+      "mode": "split",
+      "job": "demonstrate",
+      "plain": "换上新的方块",
+      "place": "积木小仓库",
+      "subject": "蓝色积木机器人",
+      "action": "从货架取下旧方块换上新方块",
+      "end": "货架变得整整齐齐",
+      "camera": "slow-push"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "words": [
+    {"word": "乐高小人", "suggest": "积木小人"},
+    {"word": "乐高", "suggest": "积木"},
+    {"word": "LEGO", "suggest": "积木"},
+    {"word": "Lego", "suggest": "积木"},
+    {"word": "lego", "suggest": "积木"},
+    {"word": "人仔", "suggest": "积木机器人"},
+    {"word": "minifigure", "suggest": "积木机器人"},
+    {"word": "minifig", "suggest": "积木机器人"},
+    {"word": "得宝", "suggest": "大颗粒积木"},
+    {"word": "Duplo", "suggest": "大颗粒积木"},
+    {"word": "duplo", "suggest": "大颗粒积木"},
+    {"word": "Playmobil", "suggest": "积木人"},
+    {"word": "playmobil", "suggest": "积木人"},
+    {"word": "摩比世界", "suggest": "积木场景"},
+    {"word": "迪士尼", "suggest": "删掉品牌，改成原创角色"},
+    {"word": "Disney", "suggest": "删掉品牌，改成原创角色"},
+    {"word": "漫威", "suggest": "删掉品牌，改成原创角色"},
+    {"word": "Marvel", "suggest": "删掉品牌，改成原创角色"},
+    {"word": "宝可梦", "suggest": "删掉品牌，改成原创角色"},
+    {"word": "Pokemon", "suggest": "删掉品牌，改成原创角色"},
+    {"word": "芭比", "suggest": "积木人"},
+    {"word": "Barbie", "suggest": "积木人"},
+    {"word": "高达", "suggest": "删掉品牌，改成原创机体"},
+    {"word": "万代", "suggest": "删掉品牌"},
+    {"word": "色情", "suggest": "删掉这个词"},
+    {"word": "裸体", "suggest": "删掉这个词"},
+    {"word": "血腥", "suggest": "删掉这个词"},
+    {"word": "赌博", "suggest": "删掉这个词"}
+  ]
+}
