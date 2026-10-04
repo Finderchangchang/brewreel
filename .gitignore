@@ -24,6 +24,7 @@ tests/*
 !tests/rules/
 !tests/validate/
 !tests/originality/
+!tests/broll/
 tests/**/video.mp4
 tests/**/*.log
 *.rejected.mp4
