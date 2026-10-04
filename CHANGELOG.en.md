@@ -2,6 +2,13 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## Unreleased
+
+### Talking-head B-roll
+- The brick look now uses smooth-top blocks. Every shot uses one light blue-grey block robot: round head, ball hands, no prints.
+- New `scripts/broll/llm_broll.mjs`: a cheap model writes `broll.json`. Validation errors are fed back as-is, at most 3 rounds.
+- See `docs/broll.en.md`. The line-picking method refers to vidmuse-video-creator (MIT). This is a rewrite. No text or assets were copied.
+
 ## v0.7.0 · 2026-10-03 · Data-chart shot and 12 optional palettes
 
 Old storyboards need no changes and render the same (pixel-identical when there is no brand color, or when the brand color is already clear enough). The chart shot and the new palettes come from PR #2 by @opc8838-hub. Thank you.

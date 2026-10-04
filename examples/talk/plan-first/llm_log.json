@@ -1,0 +1,23 @@
+{
+  "model": "deepseek-flash",
+  "entries": [
+    {
+      "round": 1,
+      "usage": {
+        "prompt_tokens": 3810,
+        "completion_tokens": 2100,
+        "total_tokens": 5910,
+        "prompt_tokens_details": {
+          "cached_tokens": 3584
+        },
+        "completion_tokens_details": {
+          "reasoning_tokens": 1589
+        },
+        "prompt_cache_hit_tokens": 3584,
+        "prompt_cache_miss_tokens": 226
+      },
+      "exitCode": 0,
+      "report": "校验通过：估价 0 元（预算 20 元）"
+    }
+  ]
+}

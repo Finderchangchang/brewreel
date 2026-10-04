@@ -1,9 +1,9 @@
 {
   "id": "brick-diorama",
   "name": "积木微缩",
-  "look": "微缩积木场景。塑料积木拼成的微缩世界，哑光塑料，柔和侧光，浅景深，微距实拍质感。低饱和的蓝灰、暖棕，点缀少量橙、青绿。积木方块可以有凸点。同一个圆头、圆球手、头顶平滑没有凸点的无品牌积木机器人，浅蓝灰色哑光积木拼成，两只圆眼睛柔和发光。全片只用这一个机器人，造型保持不变。",
-  "negative": "不要任何文字、字母、数字、商标、品牌标志、真实人物和人声对白。",
-  "forbid": "画面里不要出现任何文字、字母、数字、商标、品牌标志或真实人物，没有人声对白。",
+  "look": "微缩积木场景。积木一律顶面光滑、没有凸点（smooth-top blocks / studless tiles）。积木感靠方块造型、拼搭结构、鲜艳哑光塑料、微距浅景深来撑。柔和侧光。低饱和的蓝灰、暖棕，点缀少量橙、青绿。全片只有一个角色：圆头、圆球手、头顶光滑、身上没有任何图案的浅蓝灰积木机器人，哑光塑料拼成，两只圆眼睛柔和发光。造型保持不变。",
+  "negative": "no studs, no logos or lettering on any surface, no minifigure, no C-shaped hands, no yellow skin.",
+  "forbid": "画面里不要出现凸点、文字、字母、数字、商标、品牌标志或真实人物，不要开口夹手，不要黄色皮肤，没有人声对白。no studs, no logos or lettering on any surface, no minifigure, no C-shaped hands, no yellow skin.",
   "camera": {
     "static": "镜头固定不动",
     "slow-push": "镜头缓慢推近",

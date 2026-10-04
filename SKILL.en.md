@@ -360,3 +360,7 @@ All 9 examples pass validation and render as-is; the products and numbers are fi
   ]
 }
 ```
+
+## Talking-head B-roll
+
+When the user already has a talking-head video (`talk.mp4` + `talk.srt`) and wants explanatory pictures on the lines that need them, do not write a promo storyboard. Read `<SKILL>/broll/SKILL-broll.en.md` and write only `broll.json`. Scripts handle timing, cost and the cut. One look for now: the brick diorama.

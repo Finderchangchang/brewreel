@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// 按积木风预设出 3 张参考图（image-01）。已有的图默认不覆盖，可以重复跑。
-//   node scripts/broll/make-style-refs.mjs [--yes]
-// 没加 --yes 且还有图要生成：退出码 3。密钥只从 MINIMAX_API_KEY 读。
+// 按积木风预设出参考图（image-01）。已有的图默认不覆盖，可以重复跑。
+// 第 1 张是角色。后面的场景图用它做主体参考（subject_reference，type=character）。
+//   node scripts/broll/make-style-refs.mjs [--yes] [--only ref-1.jpg]
+// 没加 --yes 且还有图要生成：退出码 3。密钥只从 MINIMAX_API_KEY 读。参考图提交不重试。
 import fs from 'node:fs';
 import path from 'node:path';
 import {ffmpeg} from './media.mjs';
@@ -12,37 +13,56 @@ import {ROOT} from './root.mjs';
 const STYLE_DIR = path.join(ROOT, 'broll', 'styles', 'brick-diorama');
 const STYLE_FILE = path.join(STYLE_DIR, 'style.json');
 const MAX_IMAGES = 4;
+const NEGATIVE = 'no studs, no logos or lettering on any surface, no minifigure, no C-shaped hands, no yellow skin.';
+const ROBOT =
+  'The same original light blue-grey toy robot: round smooth dome head with nothing on the crown, two round softly glowing eyes. Each hand is one solid closed ball, a smooth sphere stuck on the wrist, with no gap, no fingers and no opening. The chest is a plain blank square tile. Smooth-top matte plastic blocks, no prints and no patterns anywhere on the body.';
 const yes = process.argv.includes('--yes');
+const onlyIdx = process.argv.indexOf('--only');
+const only = onlyIdx >= 0 ? process.argv[onlyIdx + 1] : '';
 
 const SPECS = [
   {
     file: 'ref-1.jpg',
-    aspect: '16:9',
-    prompt:
-      'Macro photograph of a miniature tabletop diorama built entirely from matte plastic toy bricks. A tiny brick workshop, desk and shelves of colorful square blocks. One small boxy toy robot made of light blue-grey matte bricks stands at the desk: rounded head with a smooth top and no studs on the head, two round softly glowing eyes, rounded ball-like hands. The brick scenery may show studs. The robot is unbranded. Soft warm side light, shallow depth of field. No text, letters, numbers, logos or real people.',
+    aspect: '1:1',
+    prompt: `Macro photograph, front view, full body, of one original toy robot made of smooth-top matte plastic blocks. Every block top is a flat tile. ${ROBOT} Standing on a plain warm brown table. Soft side light, shallow depth of field, photoreal plastic. ${NEGATIVE}`,
   },
   {
     file: 'ref-2.jpg',
-    aspect: '3:4',
-    prompt:
-      'Close-up macro photograph of one small boxy toy robot built from light blue-grey matte plastic bricks. Rounded head, smooth top with no studs on the head, two round softly glowing eyes, short rounded ball-like hands, standing on a brown brick base and holding one small orange square block. The baseplate may show studs. Unbranded. Soft side light, shallow depth of field. No text, letters, numbers, logos or real people.',
+    aspect: '16:9',
+    subjectFrom: 'ref-1.jpg',
+    prompt: `Macro photograph of a miniature workshop built only from smooth-top matte plastic blocks with flat tile tops. A small desk and shelves of colorful square blocks. ${ROBOT} stands at the desk. Soft warm side light, shallow depth of field, photoreal plastic. ${NEGATIVE}`,
   },
   {
     file: 'ref-3.jpg',
     aspect: '9:16',
-    prompt:
-      'Vertical macro photograph of a miniature brick warehouse. Shelves of colorful square blocks line both sides. The same unbranded light blue-grey toy robot, rounded head with a smooth top and no studs on the head, round glowing eyes, ball-like hands, pushes a tiny brick cart. Brick scenery may show studs. Soft side light, shallow depth of field. No text, letters, numbers, logos or real people.',
+    subjectFrom: 'ref-1.jpg',
+    prompt: `Vertical macro photograph of a miniature warehouse built only from smooth-top matte plastic blocks with flat tile tops. Shelves of colorful square blocks line both sides. ${ROBOT} pushes a tiny block cart. Soft side light, shallow depth of field, photoreal plastic. ${NEGATIVE}`,
   },
 ];
 
-if (SPECS.length > MAX_IMAGES) {
+if (onlyIdx >= 0 && (!only || only.startsWith('--'))) {
+  console.log('用法：node scripts/broll/make-style-refs.mjs [--yes] [--only ref-1.jpg]');
+  process.exit(2);
+}
+const selected = only ? SPECS.filter((spec) => spec.file === only) : SPECS;
+if (only && !selected.length) {
+  console.log(`没有叫 ${only} 的参考图。只能是 ${SPECS.map((spec) => spec.file).join('、')}。`);
+  process.exit(2);
+}
+if (selected.length > MAX_IMAGES) {
   console.log(`参考图最多 ${MAX_IMAGES} 张。`);
   process.exit(2);
 }
+for (const spec of selected) {
+  if (spec.prompt.length > 1500) {
+    console.log(`${spec.file} 的提示词有 ${spec.prompt.length} 字，image-01 上限 1500。`);
+    process.exit(2);
+  }
+}
 
 const style = JSON.parse(fs.readFileSync(STYLE_FILE, 'utf8').replace(/^\uFEFF/, ''));
-const missing = SPECS.filter((spec) => !fs.existsSync(path.join(STYLE_DIR, spec.file)));
-for (const spec of SPECS) {
+const missing = selected.filter((spec) => !fs.existsSync(path.join(STYLE_DIR, spec.file)));
+for (const spec of selected) {
   if (!missing.includes(spec)) console.log(`${spec.file} 已有，跳过`);
 }
 
@@ -67,10 +87,16 @@ if (!yes) {
 const client = createH3Client({log: console.log});
 let spent = 0;
 for (const spec of missing) {
-  console.log(`生成 ${spec.file}（${spec.aspect}）`);
+  const subjectPath = spec.subjectFrom ? path.join(STYLE_DIR, spec.subjectFrom) : '';
+  if (spec.subjectFrom && !fs.existsSync(subjectPath)) {
+    writeStyle();
+    console.log(`停：${spec.file} 要用 ${spec.subjectFrom} 做主体参考，可是那张图还没有。不提交。`);
+    process.exit(2);
+  }
+  console.log(spec.subjectFrom ? `生成 ${spec.file}（${spec.aspect}，主体参考 ${spec.subjectFrom}）` : `生成 ${spec.file}（${spec.aspect}，角色图）`);
   let url;
   try {
-    url = await client.image({prompt: spec.prompt, aspect: spec.aspect});
+    url = await client.image({prompt: spec.prompt, aspect: spec.aspect, subjectPath: subjectPath || undefined});
   } catch (e) {
     writeStyle();
     console.log(`停：${spec.file} 失败。${e.message}`);

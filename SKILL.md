@@ -386,3 +386,7 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
   ]
 }
 ```
+
+## 口播配画面
+
+用户给的是一段真人口播（`talk.mp4` + `talk.srt`），要在讲解的句子上加解释画面时，不要写宣传片分镜。改读 `<SKILL>/broll/SKILL-broll.md`，只写 `broll.json`。时间、费用和合成由脚本做。现在只有积木风一种。

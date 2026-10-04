@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // 口播配 B-roll 的测试。一个入口跑完：解析、校验、时间、费用、账本、占位片、几何、示例成片。
 //   node tests/broll/run.mjs
-import {spawnSync} from 'node:child_process';
+import {spawn, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -13,6 +14,7 @@ import {ffmpeg, ffmpegPath, probeMedia} from '../../scripts/broll/media.mjs';
 import {buildPlan} from '../../scripts/broll/plan.mjs';
 import {clipCost} from '../../scripts/broll/prices.mjs';
 import {buildPrompt} from '../../scripts/broll/prompt.mjs';
+import {createH3Client} from '../../scripts/broll/providers/minimax-h3.mjs';
 import {prepareLocal} from '../../scripts/broll/providers/local.mjs';
 import {colorOf, renderPlaceholder} from '../../scripts/broll/providers/placeholder.mjs';
 import {ROOT} from '../../scripts/broll/root.mjs';
@@ -103,10 +105,10 @@ const timeTests = () => {
   const plan = buildPlan({doc: demoDoc(), cues, media: {width: 1080, height: 1920, fps: 30, durationMs: 20000}, style: loadStyles()['brick-diorama'], projectDir: DEMO});
   check('计划费用为 0', plan.totalYuan === 0 && plan.clips[0].genSec === 5 && plan.clips[0].costYuan === 0 && plan.aspect === '9:16');
   const prompt = plan.clips[0].prompt;
-  const forbid = '画面里不要出现任何文字、字母、数字、商标、品牌标志或真实人物，没有人声对白。';
+  const forbid = '画面里不要出现凸点、文字、字母、数字、商标、品牌标志或真实人物，不要开口夹手，不要黄色皮肤，没有人声对白。no studs, no logos or lettering on any surface, no minifigure, no C-shaped hands, no yellow skin.';
   check(
     '提示词',
-    prompt.includes('圆头') && prompt.includes('圆球手') && prompt.includes('没有凸点') && prompt.includes('可以有凸点') && prompt.includes('0–2.5 秒') && prompt.includes('2.5–5 秒') && prompt.includes('镜头固定不动') && prompt.includes(forbid) && !prompt.includes('先列计划再动手') && !prompt.includes('人仔') && !prompt.includes('C形') && !prompt.includes('乐高') && !prompt.includes('minifig'),
+    prompt.includes('圆头') && prompt.includes('圆球手') && prompt.includes('没有凸点') && prompt.includes('smooth-top') && !prompt.includes('可以有凸点') && prompt.includes('no studs') && prompt.includes('no minifigure') && prompt.includes('no C-shaped hands') && prompt.includes('no yellow skin') && prompt.includes('0–2.5 秒') && prompt.includes('2.5–5 秒') && prompt.includes('镜头固定不动') && prompt.includes(forbid) && !prompt.includes('先列计划再动手') && !prompt.includes('人仔') && !prompt.includes('C形') && !prompt.includes('乐高'),
     prompt,
   );
   check('单拍提示词', buildPrompt({style: loadStyles()['brick-diorama'], clip: demoDoc().clips[1], genSec: 5}).includes('镜头缓慢推近') && buildPrompt({style: loadStyles()['brick-diorama'], clip: demoDoc().clips[1], genSec: 5}).includes('从货架取下旧方块换上新方块'));
@@ -171,6 +173,11 @@ const ruleTests = () => {
   expectOk('正例：竖版 burned 配 split', {...doc, captions: 'burned', clips: doc.clips.map((c) => ({...c, mode: 'split'}))});
   expectError('横版不能 split', {...doc, clips: doc.clips.map((c) => ({...c, mode: 'split'}))}, {width: 1920, height: 1080}, ['竖版']);
   expectError('禁用词', {...doc, clips: [clip({subject: '乐高小人'})]}, {}, ['乐高小人', '积木小人']);
+  expectError('禁用词凸点', {...doc, clips: [clip({action: '桌上有凸点'})]}, {}, ['凸点', '顶面光滑']);
+  expectError('禁用词颗粒', {...doc, clips: [clip({place: '颗粒货架'})]}, {}, ['颗粒', '方块']);
+  expectError('禁用词 stud', {...doc, clips: [clip({end: 'stud 方块'})]}, {}, ['stud']);
+  expectError('禁用词 studs', {...doc, clips: [clip({end: 'studs方块'})]}, {}, ['studs']);
+  expectError('禁用词 minifigure', {...doc, clips: [clip({subject: 'minifigure'})]}, {}, ['minifigure', '积木机器人']);
   expectError('引号', {...doc, clips: [clip({place: '「工位」'})]}, {}, ['引号']);
   expectError('画面写字', {...doc, clips: [clip({action: '牌子上写着欢迎'})]}, {}, ['写着']);
   expectError('阿拉伯数字', {...doc, clips: [clip({action: '摆好3块方块'})]}, {}, ['数字']);
@@ -421,6 +428,154 @@ const renderTest = () => {
   check('成片账本不重提', submits === 0);
 };
 
+const listen = (handler) =>
+  new Promise((resolve) => {
+    const state = {posts: 0, bodies: []};
+    const server = http.createServer(async (req, res) => {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const raw = Buffer.concat(chunks).toString('utf8');
+      state.posts += 1;
+      state.bodies.push(raw);
+      handler(req, res, state, raw);
+    });
+    server.listen(0, '127.0.0.1', () => resolve({state, base: `http://127.0.0.1:${server.address().port}`, close: () => new Promise((done) => server.close(done))}));
+  });
+
+const llmEnv = (base, extra = {}) => ({
+  ...process.env,
+  LLM_API_KEY: 'unit-test-key',
+  DEEPSEEK_API_KEY: '',
+  LLM_BASE_URL: base,
+  LLM_MODEL: 'fake-model',
+  ...extra,
+});
+
+const copyDemo = () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'broll-llm-'));
+  fs.copyFileSync(path.join(DEMO, 'talk.mp4'), path.join(dir, 'talk.mp4'));
+  fs.copyFileSync(path.join(DEMO, 'talk.srt'), path.join(dir, 'talk.srt'));
+  return dir;
+};
+
+const llmTests = async () => {
+  const src = fs.readFileSync(path.join(ROOT, 'scripts', 'broll', 'llm_broll.mjs'), 'utf8');
+  const dryAt = src.indexOf('未调用任何接口');
+  const readAt = src.indexOf('readLlmEnv()');
+  check('dry-run 源码在读密钥之前返回', dryAt > 0 && readAt > dryAt, `dry ${dryAt} read ${readAt}`);
+
+  const quiet = await listen((req, res) => {
+    res.writeHead(500);
+    res.end('should-not-be-called');
+  });
+  try {
+    const canary = 'CANARYDO_NOT_LEAK_12345678';
+    const dry = await runNodeEnv(
+      ['scripts/broll/llm_broll.mjs', DEMO, '--dry-run', '--style', 'brick-diorama', '--budget', '20', '--captions', 'add'],
+      llmEnv(quiet.base, {LLM_API_KEY: canary, DEEPSEEK_API_KEY: canary}),
+    );
+    const out = `${dry.stdout || ''}${dry.stderr || ''}`;
+    check('dry-run 退出码 0', dry.status === 0, out.slice(-500));
+    check('dry-run 打印提示和 token', out.includes('估算约') && out.includes('输入 token') && out.includes('未调用任何接口') && out.includes('正确示例') && out.includes('先看这一段口播'), out.slice(0, 200));
+    check('dry-run 不读密钥', quiet.state.posts === 0 && !out.includes(canary) && !out.includes('CANARY') && !/sk-[A-Za-z0-9]/.test(out), `posts ${quiet.state.posts}`);
+  } finally {
+    await quiet.close();
+  }
+
+  const nokey = await runNodeEnv(['scripts/broll/llm_broll.mjs', DEMO], llmEnv('http://127.0.0.1:9', {LLM_API_KEY: '', DEEPSEEK_API_KEY: ''}));
+  check('没有密钥就停', nokey.status === 2 && `${nokey.stdout}`.includes('DEEPSEEK_API_KEY') && !`${nokey.stdout}${nokey.stderr}`.includes('unit-test-key'));
+
+  const badDir = copyDemo();
+  const goodDir = copyDemo();
+  const bad = demoDoc();
+  bad.clips[0] = {...bad.clips[0], subject: '凸点机器人'};
+  const badJson = JSON.stringify(bad);
+  const goodJson = JSON.stringify(demoDoc());
+  const chat = await listen((req, res, state) => {
+    const content = state.posts === 1 ? badJson : goodJson;
+    const payload = Buffer.from(JSON.stringify({choices: [{message: {content}}], usage: {prompt_tokens: 3, completion_tokens: 4}}));
+    res.writeHead(200, {'Content-Type': 'application/json', 'Content-Length': payload.length});
+    res.end(payload);
+  });
+  try {
+    const fixed = await runNodeEnv(['scripts/broll/llm_broll.mjs', goodDir, '--style', 'brick-diorama'], llmEnv(chat.base));
+    const fixedOut = `${fixed.stdout || ''}${fixed.stderr || ''}`;
+    check('回喂后通过', fixed.status === 0 && chat.state.posts === 2 && chat.state.bodies[1].includes('凸点') && chat.state.bodies[1].includes('怎么改'), fixedOut.slice(-800));
+    check('通过后不留报错文件', !fs.existsSync(path.join(goodDir, 'broll.llm-error.txt')) && fs.existsSync(path.join(goodDir, 'broll.json')));
+    const passedDoc = readJson(path.join(goodDir, 'broll.json'));
+    check('回喂后是合法示例', passedDoc.clips?.[0]?.subject === '蓝色积木机器人' && passedDoc.provider === 'placeholder');
+  } finally {
+    await chat.close();
+  }
+
+  const stuck = await listen((req, res) => {
+    const payload = Buffer.from(JSON.stringify({choices: [{message: {content: '{"version":1}'}}], usage: {}}));
+    res.writeHead(200, {'Content-Type': 'application/json', 'Content-Length': payload.length});
+    res.end(payload);
+  });
+  try {
+    const failed = await runNodeEnv(['scripts/broll/llm_broll.mjs', badDir], llmEnv(stuck.base));
+    const failedOut = `${failed.stdout || ''}${failed.stderr || ''}`;
+    const errFile = path.join(badDir, 'broll.llm-error.txt');
+    check('最多 3 轮后停', failed.status === 1 && stuck.state.posts === 3 && fs.existsSync(path.join(badDir, 'broll.json')) && fs.existsSync(errFile), `status ${failed.status} posts ${stuck.state.posts} ${failedOut.slice(-400)}`);
+    check('报错原文留在项目目录', fs.readFileSync(errFile, 'utf8').includes('怎么改'));
+  } finally {
+    await stuck.close();
+    fs.rmSync(badDir, {recursive: true, force: true});
+    fs.rmSync(goodDir, {recursive: true, force: true});
+  }
+
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  const imgDir = fs.mkdtempSync(path.join(os.tmpdir(), 'broll-img-'));
+  const ref = path.join(imgDir, 'ref.png');
+  fs.writeFileSync(ref, png);
+  const img = await listen((req, res, state, raw) => {
+    const url = new URL(req.url, 'http://127.0.0.1');
+    if (req.method === 'POST' && url.pathname === '/v1/image_generation') {
+      state.last = JSON.parse(raw);
+      if (state.fail) {
+        res.writeHead(500, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({base_resp: {status_code: 1000, status_msg: 'down'}}));
+        return;
+      }
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({data: {image_urls: ['http://127.0.0.1/dl/a.jpg']}, base_resp: {status_code: 0, status_msg: 'success'}}));
+      return;
+    }
+    res.writeHead(404);
+    res.end();
+  });
+  try {
+    const client = createH3Client({baseUrl: img.base, env: {MINIMAX_API_KEY: 'unit-test-key', MINIMAX_BASE_URL: img.base}, log: () => {}});
+    await client.image({prompt: 'robot', aspect: '1:1', subjectPath: ref});
+    const refBody = img.state.last?.subject_reference?.[0];
+    check('主体参考进请求', img.state.posts === 1 && refBody?.type === 'character' && String(refBody?.image_file || '').startsWith('data:image/png;base64,'));
+    img.state.fail = true;
+    const before = img.state.posts;
+    let threw = false;
+    try {
+      await client.image({prompt: 'robot', aspect: '1:1'});
+    } catch {
+      threw = true;
+    }
+    check('参考图失败不重试', threw && img.state.posts === before + 1);
+  } finally {
+    await img.close();
+    fs.rmSync(imgDir, {recursive: true, force: true});
+  }
+};
+
+// 假接口和被测进程在同一个事件循环里。spawnSync 会卡住循环，请求一直等不到回应。
+const runNodeEnv = (args, env) => new Promise((resolve, reject) => {
+  const child = spawn(process.execPath, args, {cwd: ROOT, windowsHide: true, env});
+  const out = [];
+  const err = [];
+  child.stdout.on('data', (d) => out.push(d));
+  child.stderr.on('data', (d) => err.push(d));
+  child.on('error', reject);
+  child.on('close', (status) => resolve({status, stdout: Buffer.concat(out).toString('utf8'), stderr: Buffer.concat(err).toString('utf8')}));
+});
+
 const main = async () => {
   ensureDemo();
   srtTests();
@@ -430,6 +585,7 @@ const main = async () => {
   ledgerTests();
   mediaTests();
   cliTests();
+  await llmTests();
   await h3Tests({check, runNode, ROOT, DEMO});
   if (failures.length) {
     console.log(`失败 ${failures.length}，通过 ${passed}`);

@@ -81,6 +81,14 @@ Copy an existing industry folder and rename it, fill in `rules.json` following t
 
 </details>
 
+## Talking-head B-roll
+
+Use this when a real talking-head video needs explanatory pictures on the lines that describe a step or an object. The model only writes `broll.json`. Scripts compute timing, price, generation and the final cut. One look for now: smooth-top blocks, and the same light blue-grey block robot in every shot.
+
+Three placements: `full` covers the frame, `pip` keeps the face in a circle at the bottom right, `split` puts the picture on the top 60% and the face on the bottom 40% (vertical only). Captions can be added, omitted, or already burned into the talk (burned captions require `split`).
+
+A cheap model can write the file: `node scripts/broll/llm_broll.mjs <project>`. If validation fails, the error text goes back to the model, at most 3 rounds. Real generation waits until a person has watched the review page and approved it. Steps, price and limits: [`docs/broll.en.md`](broll.en.md).
+
 ## Validation and compliance
 
 The rules in `scripts/validate.mjs` are compiled from publicly available advertising-law superlative-word lists and public platform rules, in three tiers:

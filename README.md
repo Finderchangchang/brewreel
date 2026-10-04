@@ -73,6 +73,7 @@ dsh web
 - **18 套主题**：cards 默认 6 套，另有 12 套可选配色，不选时老分镜出片不变，见 [`styles/cards/THEMES.md`](styles/cards/THEMES.md)。
 - **校验与合规**：《广告法》极限词、行业规则、断词换行、安全区、数字出处等几十条校验，自查有 ✗ 的片子不交付。
 - **配乐和字幕**：配乐现场合成、卡着镜头切点，没有版权问题；字幕可选中文或英文。
+- **口播配画面**：真人口播上加积木风解释画面。见 [口播配画面](docs/broll.md)。
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="数据图表镜头" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 套可选配色" /></p>

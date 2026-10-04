@@ -73,6 +73,7 @@ The plugin has not yet been tested against a real DeepSeek model. The 7 tools, s
 - **18 themes**: 6 default themes for cards plus 12 optional palettes; existing storyboards render unchanged unless you pick one. See [`styles/cards/THEMES.md`](styles/cards/THEMES.md).
 - **Validation and compliance**: dozens of checks for ad-law superlatives, industry rules, line wrapping, safe areas and number sources. A video with a ✗ in its self-check is not delivered.
 - **Music and captions**: music is synthesized on the spot and hits the shot cuts, so there are no copyright issues; captions can be Chinese or English.
+- **Talking-head B-roll**: brick-style explainers on a real talking-head video. See [Talking-head B-roll](docs/broll.en.md).
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="Data chart shot" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 optional palettes" /></p>

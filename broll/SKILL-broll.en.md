@@ -126,7 +126,7 @@ Each clip:
 | beats | 2 to 4 beats. Each beat has `action` and `end`. Do not also set `action` |
 | file | Only for `local`. A video inside the project |
 
-Do not write: milliseconds, generated seconds, aspect ratio, resolution, the long style description, a full prompt, reference images, a model name, digits, quotes, or brand words.
+Do not write: milliseconds, generated seconds, aspect ratio, resolution, the long style description, a full prompt, reference images, a model name, digits, quotes, brand words, studs, or minifigure. Block tops are smooth. Do not mention studs in the copy.
 
 When `captions` is `burned`, the only legal mode is `split`. `full` and `pip` would cover captions already burned into the talk.
 

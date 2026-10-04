@@ -9,7 +9,7 @@
 | 路径 | 做什么 |
 |---|---|
 | `schema/broll.schema.json` | `broll.json` 的字段定义 |
-| `styles/brick-diorama/style.json` | 积木风：固定画面描述、运镜词、参考图文件名 |
+| `styles/brick-diorama/style.json` | 积木风：顶面光滑的方块、固定画面描述、运镜词、参考图文件名 |
 | `SKILL-broll.md` | 给助手的步骤。英文对照是 `SKILL-broll.en.md` |
 | `banned-words.json` | 品牌和敏感词。出现在文案里就报错，并给替换说法 |
 
@@ -19,6 +19,7 @@
 
 ```
 node scripts/broll/list-cues.mjs <项目目录>
+node scripts/broll/llm_broll.mjs <项目目录> [--style brick-diorama] [--budget 20] [--captions add|none|burned] [--dry-run]
 node scripts/broll/validate.mjs <项目目录>
 node scripts/broll/make-style-refs.mjs [--yes]
 node scripts/make-talk.mjs <项目目录> --out <仓库外目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3] [--force-redo]

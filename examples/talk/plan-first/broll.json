@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "style": "brick-diorama",
+  "provider": "placeholder",
+  "quality": "768P",
+  "budgetYuan": 20,
+  "captions": "add",
+  "keepFace": [
+    "c1",
+    "c6",
+    "c11",
+    "c17"
+  ],
+  "clips": [
+    {
+      "id": "b01",
+      "from": "c2",
+      "to": "c3",
+      "mode": "split",
+      "job": "explain",
+      "plain": "先把要改的清单摊开",
+      "place": "积木工作台",
+      "subject": "浅蓝灰积木机器人",
+      "camera": "static",
+      "beats": [
+        {
+          "action": "拿起方块在桌面排成一列",
+          "end": "方块排成整齐一列"
+        },
+        {
+          "action": "用指尖点过每一块方块",
+          "end": "机器人停在方阵前"
+        }
+      ]
+    },
+    {
+      "id": "b02",
+      "from": "c5",
+      "to": "c5",
+      "mode": "full",
+      "job": "compare",
+      "plain": "离开计划就走到旁边去",
+      "place": "两张积木桌",
+      "subject": "浅蓝灰积木机器人",
+      "camera": "pan-right",
+      "action": "从整齐方阵走向散开的方块",
+      "end": "机器人停在散落的方块旁"
+    },
+    {
+      "id": "b03",
+      "from": "c7",
+      "to": "c8",
+      "mode": "pip",
+      "job": "demonstrate",
+      "plain": "照计划一块块改过去",
+      "place": "积木工作台",
+      "subject": "浅蓝灰积木机器人",
+      "camera": "slow-push",
+      "beats": [
+        {
+          "action": "取下一块方块换成新的一块",
+          "end": "新方块对在原位"
+        },
+        {
+          "action": "再把旁边一块也换掉",
+          "end": "两处都换好了"
+        },
+        {
+          "action": "停手看向排好的方块",
+          "end": "方块与图纸一致"
+        }
+      ]
+    },
+    {
+      "id": "b04",
+      "from": "c12",
+      "to": "c13",
+      "mode": "full",
+      "job": "demonstrate",
+      "plain": "跑一遍检查看能不能过",
+      "place": "积木检查台",
+      "subject": "浅蓝灰积木机器人",
+      "camera": "static",
+      "beats": [
+        {
+          "action": "把方块逐个推过窄门",
+          "end": "方块都顺利通过"
+        },
+        {
+          "action": "抬手示意检查结束",
+          "end": "机器人站在门口"
+        }
+      ]
+    },
+    {
+      "id": "b05",
+      "from": "c15",
+      "to": "c16",
+      "mode": "split",
+      "job": "explain",
+      "plain": "把结果和计划摆一起对",
+      "place": "两张积木桌",
+      "subject": "浅蓝灰积木机器人",
+      "camera": "orbit",
+      "action": "把偏出去的方块挪回计划位置",
+      "end": "两块场地重新对上"
+    }
+  ]
+}

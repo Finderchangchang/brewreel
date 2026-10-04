@@ -2,6 +2,13 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
+## Unreleased
+
+### 口播配画面
+- 积木风改为顶面光滑的方块。全片只用一个圆头、圆球手、身上没有图案的浅蓝灰积木机器人。
+- 新增 `scripts/broll/llm_broll.mjs`：便宜模型写 `broll.json`，校验报错原文回喂，最多 3 轮。
+- 说明见 `docs/broll.md`。选段方法参考了 vidmuse-video-creator（MIT），是改写，没有拷贝它的文字和素材。
+
 ## v0.7.0 · 2026-10-03 · 数据图表镜头、12 套可选配色
 
 老分镜不用改，出来的画面也不变（没写品牌色、或品牌色本来就够清楚时逐像素相同）。本版图表镜头和新配色来自 @opc8838-hub 的 PR #2，谢谢。

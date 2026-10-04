@@ -37,3 +37,17 @@ does not change Remotion's own license terms.
 - 字体文件未做子集化。
 
 两款字体均通过 `template/src/core/font.ts` 用原生 `FontFace` + `staticFile` 在本地加载，渲染时不需要联网下载字体。
+
+## vidmuse-video-creator
+
+口播里「哪几句该配解释画面」的选段方法，参考了 [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator)。
+
+- 许可证：MIT License
+- 版权声明：Copyright (c) 2026 Erduo (Liu Ran)
+- 我们按自己的字段、校验和积木风重写了这一步。没有拷贝它的文字，也没有使用它的素材。
+
+English: The method for choosing which spoken lines need explanatory B-roll
+refers to [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator)
+(MIT License, Copyright (c) 2026 Erduo (Liu Ran)). This project rewrote that
+step with its own fields, checks and brick look. It does not copy that
+project's text or assets.

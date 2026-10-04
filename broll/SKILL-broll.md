@@ -126,7 +126,7 @@ node scripts/broll/make-style-refs.mjs --yes
 | beats | 2 到 4 拍，每拍有 `action` 和 `end`。和上面的 `action` 二选一 |
 | file | 只有 `local` 才写，指向项目目录里的视频 |
 
-不要写：毫秒、生成秒数、比例、分辨率、风格长描述、提示词全文、参考图、模型名、数字、引号、品牌词。
+不要写：毫秒、生成秒数、比例、分辨率、风格长描述、提示词全文、参考图、模型名、数字、引号、品牌词、凸点、颗粒、stud、minifigure。积木顶面是光滑的，不要在文案里提凸点。
 
 `captions` 为 `burned` 时只能用 `split`。`full` 和 `pip` 会盖住已经烧进原片的字幕。
 

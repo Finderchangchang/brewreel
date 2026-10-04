@@ -264,16 +264,19 @@ export const createH3Client = (opts = {}) => {
       }
       return withRetry('下载', () => once(task.url));
     },
-    /** image-01，同步返回图片 URL。不重试。 */
-    async image({prompt, aspect}) {
+    /**
+     * image-01，同步返回图片 URL。不重试。
+     * subjectPath 有值时带主体参考（官方 subject_reference，type=character，Data URL）。
+     */
+    async image({prompt, aspect, subjectPath}) {
+      const body = {model: IMAGE_MODEL, prompt, aspect_ratio: aspect, response_format: 'url', n: 1, prompt_optimizer: false};
+      if (subjectPath) {
+        const buf = fs.readFileSync(subjectPath);
+        body.subject_reference = [{type: 'character', image_file: `data:${mimeOf(buf)};base64,${buf.toString('base64')}`}];
+      }
       let json;
       try {
-        json = await request(
-          'POST',
-          '/v1/image_generation',
-          {model: IMAGE_MODEL, prompt, aspect_ratio: aspect, response_format: 'url', n: 1, prompt_optimizer: false},
-          120_000,
-        );
+        json = await request('POST', '/v1/image_generation', body, 120_000);
       } catch (e) {
         if (e instanceof H3Error && e.retryable) {
           throw new H3Error(e.code, `${e.message}。参考图提交不重试。`, {http: e.http, apiCode: e.apiCode, retryable: false});
