@@ -2,12 +2,26 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
-## Unreleased
+## v0.8.0 · 2026-10-05 · Talking-head B-roll (experimental)
 
-### Talking-head B-roll
-- The brick look now uses smooth-top blocks. Every shot uses one light blue-grey block robot: round head, ball hands, no prints.
-- New `scripts/broll/llm_broll.mjs`: a cheap model writes `broll.json`. Validation errors are fed back as-is, at most 3 rounds.
-- See `docs/broll.en.md`. The line-picking method refers to vidmuse-video-creator (MIT). This is a rewrite. No text or assets were copied.
+Adds brick-style explainer shots on top of an existing talking-head video. Promo videos work and look exactly as before.
+
+### New: talking-head B-roll (experimental)
+- Put the talking-head `talk.mp4` and its `talk.srt` in a project folder. The model only writes `broll.json`: which lines get a shot, what is in it, the action and the end frame. Timing, prompts and cost are computed by scripts.
+- Three layouts: `full` covers the frame, `pip` shrinks the speaker into a round window at the bottom right, `split` stacks shot over speaker in vertical videos. Captions: already burned in (`burned`), added by us (`add`), or none (`none`).
+- Shot sources: `placeholder` (free, for checking pacing), `local` (your own screen recordings or footage), `minimax-h3` (generated with MiniMax H3, about CNY 0.5 per second at 768P; check MiniMax's site for current prices).
+- Cost is estimated before anything is spent; it stops if over budget or without `--yes`. Re-running after an interruption only queries, never resubmits; each shot can be redone at most twice.
+- Generated shots must be reviewed on the review page and approved with `approve.mjs` before a final render; AI assistants must not approve on a person's behalf. An "AI-generated" tag shows while a shot is on screen.
+- Cheap models can write it directly: `node scripts/broll/llm_broll.mjs <project>` feeds validation errors back verbatim, up to 3 rounds. Tested 3 times with deepseek-flash: 2 passed in one round, 1 in the third.
+- One style for now: brick diorama with smooth-top blocks and a single round-headed, round-handed light blue-grey brick robot. Brand and trademark words in any field are blocked by validation.
+- See `docs/broll.en.md`; instructions for AI assistants are in `broll/SKILL-broll.en.md`. The shot-selection method is adapted from vidmuse-video-creator (MIT), rewritten without copying its text or assets.
+
+### Known limitations
+- Experimental: tested on a synthetic talking-head clip and a few real generated shots; no full sample with a real speaker yet.
+- Each shot is generated independently, so the character's look and colors can drift; generated shots occasionally still show studded or lettered bricks. Always check the review page before publishing.
+- Text inside generated shots is unreliable; use the promo layout shots for exact text.
+- No automatic transcription; export captions yourself from an editor such as CapCut.
+- The DeepSeek Harness plugin does not include this feature yet; npm stays at `dsh-brewreel@0.5.0`.
 
 ## v0.7.0 · 2026-10-03 · Data-chart shot and 12 optional palettes
 

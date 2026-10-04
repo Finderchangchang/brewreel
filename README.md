@@ -6,7 +6,7 @@
 
 **便宜模型，也能酿出好片：写一份产品简报，AI 挑镜头、写文案，一条命令出一支竖版宣传片。**
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.7.0-1f6feb?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.8.0-1f6feb?style=flat-square)](CHANGELOG.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
@@ -73,7 +73,7 @@ dsh web
 - **18 套主题**：cards 默认 6 套，另有 12 套可选配色，不选时老分镜出片不变，见 [`styles/cards/THEMES.md`](styles/cards/THEMES.md)。
 - **校验与合规**：《广告法》极限词、行业规则、断词换行、安全区、数字出处等几十条校验，自查有 ✗ 的片子不交付。
 - **配乐和字幕**：配乐现场合成、卡着镜头切点，没有版权问题；字幕可选中文或英文。
-- **口播配画面**：真人口播上加积木风解释画面。见 [口播配画面](docs/broll.md)。
+- **口播配画面（实验）**：真人口播上加积木风解释画面。见 [口播配画面](docs/broll.md)。
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="数据图表镜头" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 套可选配色" /></p>

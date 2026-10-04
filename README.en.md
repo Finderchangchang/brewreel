@@ -6,7 +6,7 @@
 
 **Brew great promo reels with low-cost models: write a product brief, let the AI pick the shots and write the copy, and render a vertical promo video with one command.**
 
-[![Version](https://img.shields.io/badge/version-v0.7.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.8.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
@@ -73,7 +73,7 @@ The plugin has not yet been tested against a real DeepSeek model. The 7 tools, s
 - **18 themes**: 6 default themes for cards plus 12 optional palettes; existing storyboards render unchanged unless you pick one. See [`styles/cards/THEMES.md`](styles/cards/THEMES.md).
 - **Validation and compliance**: dozens of checks for ad-law superlatives, industry rules, line wrapping, safe areas and number sources. A video with a ✗ in its self-check is not delivered.
 - **Music and captions**: music is synthesized on the spot and hits the shot cuts, so there are no copyright issues; captions can be Chinese or English.
-- **Talking-head B-roll**: brick-style explainers on a real talking-head video. See [Talking-head B-roll](docs/broll.en.md).
+- **Talking-head B-roll (experimental)**: brick-style explainers on a real talking-head video. See [Talking-head B-roll](docs/broll.en.md).
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="Data chart shot" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 optional palettes" /></p>
