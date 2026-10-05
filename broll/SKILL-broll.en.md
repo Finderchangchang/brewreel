@@ -371,6 +371,7 @@ Errors while generating and rendering:
 - Insufficient balance (for a subscription key, not enough credits): stop. Do not submit again. Write it in the report.
 - Content moderation: stop. Tell the user the reason. Change the copy only after they decide to redo. Do not retry on your own.
 - Submit result unknown: stop. Do not submit again. Ask the user to check.
+- Submission rejected by the API (a bad parameter or similar; the ledger says `submit_failed`): stop (exit code 4). Nothing was generated and nothing was charged, and the message says so. Running the same command again does not redo it on its own; the last line of the message is the full command that redoes only this clip (with `--only`). Tell the user the reason, fix it, then run that command. Do not keep retrying on your own.
 - A task id already exists: run the same command again. The script queries and does not resubmit.
 - Download failed: run the same command again. The script fetches a new URL. It does not regenerate.
 - Over 30 minutes: the task id is kept. Run the same command again. Query only.

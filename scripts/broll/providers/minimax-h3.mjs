@@ -3,14 +3,14 @@
 // 域名默认 https://api.minimaxi.com，可用 MINIMAX_BASE_URL 改。只收 https；
 // 本机 127.0.0.1 / localhost 的 http 只给测试假服务器用。
 // 提交不重试。查询和下载遇到 429 / 5xx 才指数退避，最多 3 次。
-// 每段送自己的参考图（最多 5 张，5 张以内免费）；风格包可以写 extra.prompt_expansion_mode。
+// 每段送自己的参考图（最多 5 张，5 张以内免费）。H3 不收 extra，风格包的 promptExpansion 不进请求体。
 import fs from 'node:fs';
 import path from 'node:path';
 
 export const DEFAULT_BASE = 'https://api.minimaxi.com';
 export const VIDEO_MODEL = 'MiniMax-H3';
 export const IMAGE_MODEL = 'image-01';
-/** H3 的 extra.prompt_expansion_mode 可选值。不传 = 官方默认 balanced。 */
+/** 风格包 promptExpansion 的合法写法，只用来校验。H3 不收 extra（2026-10-05 真接口 400 / 2013），目前不发送。 */
 export const EXPANSION_MODES = ['disabled', 'balanced', 'quality'];
 /** 每段参考图 5 张以内免费，超过每张另收 0.2 元；接口上限 9 张。脚本只送免费的量。 */
 export const FREE_REFS = 5;
@@ -114,7 +114,7 @@ const dataUrl = (buf) => `data:${mimeOf(buf)};base64,${buf.toString('base64')}`;
 
 /**
  * H3 提交的请求体。每段带自己的参考图（按顺序就是提示词里的图1、图2）；
- * promptExpansion 有值才写 extra.prompt_expansion_mode，不传时和 v0.8 的请求体一模一样。
+ * 请求体和 v0.8 一样（H3 不收 extra，promptExpansion 只校验写法，不发送）。
  * 不发请求，先把会花冤枉钱或必然失败的情况拦下：没有参考图、参考图文件不在、超过 5 张、扩写模式写错。
  * @param {{prompt: string, refs: string[], resolution: string, duration: number, ratio: string,
  *   promptExpansion?: string|null, styleId?: string, readFile?: (p: string) => Buffer, exists?: (p: string) => boolean}} p
@@ -137,7 +137,8 @@ export const buildVideoBody = ({prompt, refs, resolution, duration, ratio, promp
   const content = [{type: 'text', text: prompt}];
   for (const ref of list) content.push({type: 'image_url', image_url: {url: dataUrl(readFile(ref))}, role: 'reference_image'});
   const body = {model: VIDEO_MODEL, content, resolution, duration, ratio};
-  if (promptExpansion != null) body.extra = {prompt_expansion_mode: promptExpansion};
+  // 2026-10-05 真接口实测：MiniMax-H3 不收 extra（400，2013「param 'extra' incompatible with model MiniMax-H3」）。
+  // 风格包里的 promptExpansion 只做校验，不进请求体；请求体和 v0.8 一样。
   return body;
 };
 
@@ -242,7 +243,7 @@ export const createH3Client = (opts = {}) => {
     /**
      * 提交一段。不重试。成功返回 task id 字符串。
      * refs 是这一段自己的参考图路径（v2 按 look 选风格，每段可以不同）；
-     * promptExpansion 来自风格包（disabled / balanced / quality），不传就不写 extra。
+     * promptExpansion 来自风格包（disabled / balanced / quality），只校验写法，不发送（H3 不收 extra）。
      * styleId 只用来让缺图的报错说清是哪个风格。
      */
     async submit({prompt, refs, resolution, duration, ratio, promptExpansion = null, styleId = ''}) {

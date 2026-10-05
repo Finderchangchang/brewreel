@@ -13,7 +13,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {parseSilences, planChunks} from '../../scripts/broll/asr/audio.mjs';
 import {buildCues, cuesFromAsr, groupWords, layoutText, toSrt, toWords, twoLines, unitsOf, widthOf} from '../../scripts/broll/asr/cues.mjs';
-import {applyFixes, formatFixesTxt, judgeFix, parseFixReply, runFix} from '../../scripts/broll/asr/fix.mjs';
+import {applyFixes, buildFixMessages, formatFixesTxt, judgeFix, parseFixReply, pronounDiffs, pronounSlots, runFix} from '../../scripts/broll/asr/fix.mjs';
 import {compareCuesLock, cuesLockOf} from '../../scripts/broll/asr/lock.mjs';
 import {AsrModelError, asrCacheRoot, downloadOne, ensureModel, modelDirOf} from '../../scripts/broll/asr/models.mjs';
 import {callLlm, extractJson, hasLlmKey, readLlmEnv, redact} from '../../scripts/broll/llm-client.mjs';
@@ -198,7 +198,12 @@ const zhOut = cuesFromAsr(zh, {lang: 'auto'});
   check('落地：不改原数组', cues[1].text === '在差一段话里拍一下');
 
   const pr = parseFixReply('```json\n{"fixes":[{"cue":"c1","from":"他","to":"它"},{"cue":"x","from":"a","to":"b"},{"cue":"c2"}],"doubt":"bad"}\n```');
-  eq('解析回复：去掉代码块、丢掉格式不对的条目', pr, {fixes: [{cue: 'c1', from: '他', to: '它'}], doubt: []});
+  eq('解析回复：去掉代码块、丢掉格式不对的条目', pr, {fixes: [{cue: 'c1', from: '他', to: '它'}], pronouns: [], doubt: []});
+  const pp = parseFixReply('{"fixes":[],"pronouns":[{"id":"c3#1","refers":" 这个软件 ","person":false},{"id":"c4#1","refers":"我同事","person":"true"},{"id":"c5","person":false},{"id":"c6#1","refers":"x","person":"maybe"}],"doubt":[]}');
+  eq('解析回复：代词清单（id 要带 #，person 认布尔和 "true"/"false"）', pp.pronouns, [
+    {id: 'c3#1', refers: '这个软件', person: false},
+    {id: 'c4#1', refers: '我同事', person: true},
+  ]);
   let threw = false;
   try {
     parseFixReply('不是 JSON');
@@ -209,6 +214,110 @@ const zhOut = cuesFromAsr(zh, {lang: 'auto'});
 
   const txt = formatFixesTxt({fix: {status: 'done', model: 'm', applied: r.applied, hints: r.hints}, notes: ['字幕里有阿拉伯数字']});
   check('talk.fixes.txt 有两栏和注意事项', txt.includes('已自动改（2 处）') && txt.includes('只提示，没改') && txt.includes('差 → 插') && txt.includes('「之后」拿不准') && txt.includes('阿拉伯数字'), txt);
+}
+
+// ---------- 代词（他/她 → 它）----------
+{
+  // 守门：fixes 里的代词补丁只认「他/她 → 它」
+  const cases = [
+    ['他会自己挑出哪几句', {from: '他', to: '它'}, true],
+    ['他会自己挑出哪几句', {from: '他会', to: '它会'}, true],
+    ['她每天提醒我喝水', {from: '她', to: '它'}, true],
+    ['它说明天再来', {from: '它', to: '他'}, false],
+    ['他说明天再来', {from: '他', to: '她'}, false],
+    ['他不会自己花钱', {from: '他不会', to: '它不会'}, false],
+    ['他花了三块钱', {from: '他花了三', to: '它花了三'}, false],
+    ['他会自己挑出哪几句', {from: '他会', to: '它要'}, false],
+  ];
+  for (const [text, fix, want] of cases) {
+    const r = judgeFix(text, fix);
+    check(`代词守门：${text} ${fix.from} → ${fix.to} ${want ? '自动改' : '只提示'}`, r.apply === want, r.why);
+  }
+  check('代词守门：自动改的理由写明是代词', /代词/.test(judgeFix('他会自己挑出', {from: '他', to: '它'}).why));
+  check('代词守门：两个「他」只给一个字还是不改', !judgeFix('他说他会来', {from: '他', to: '它'}).apply);
+  eq('代词判断：pronounDiffs', [pronounDiffs('他会', '它会'), pronounDiffs('他说他', '它说它'), pronounDiffs('他会', '它要'), pronounDiffs('他', '他们')], [[0], [0, 2], null, null]);
+
+  // 编号：每句里的「他」「她」按先后从 1 编，「它」不列
+  const cues = [
+    {id: 'c1', text: '最近我在做一个开源项目叫精酿'},
+    {id: 'c2', text: '你录一段口播'},
+    {id: 'c3', text: '他会自己挑出哪几句适合配画面'},
+    {id: 'c4', text: '我同事说他和她都在用它'},
+    {id: 'c5', text: '花钱之后，他先报价'},
+  ];
+  eq(
+    '代词清单：编号和位置',
+    pronounSlots(cues).map((s) => `${s.id}@${s.at}${s.ch}`),
+    ['c3#1@0他', 'c4#1@4他', 'c4#2@6她', 'c5#1@5他'],
+  );
+  const [sys, user] = buildFixMessages(cues, ['精酿']).map((m) => m.content);
+  check('提示词：单独点名代词这一类', sys.includes('他') && user.includes('二、代词') && user.includes('每一个都要回答'), user);
+  check('提示词：代词清单逐个标出位置', user.includes('c3#1 〔他〕会自己挑出哪几句适合配画面') && user.includes('c4#2 我同事说他和〔她〕都在用它') && user.includes('c5#1 花钱之后，〔他〕先报价'), user);
+  check('提示词：示例不和真实口播重样', !user.includes('"from":"他"') && !user.includes('"text":"之后"'), user);
+  check('提示词：没有代词时写「（没有）」', buildFixMessages([{id: 'c1', text: '你好'}])[1].content.includes('代词清单：\n（没有）'));
+
+  // 落地：指东西的改成「它」，指人的不动，说不清的只提示
+  const reply = {
+    fixes: [
+      {cue: 'c3', from: '他会', to: '它会'}, // 清单里判断过：以清单为准，不重复改
+      {cue: 'c4', from: '说他', to: '说它'}, // 清单说指人：不改
+      {cue: 'c2', from: '录', to: '做'}, // 不同音：照旧只提示
+    ],
+    pronouns: [
+      {id: 'c3#1', refers: '精酿这个开源项目', person: false},
+      {id: 'c3#1', refers: '我', person: true}, // 同一个位置的第二条回答不认
+      {id: 'c4#1', refers: '我同事', person: true},
+      {id: 'c4#2', refers: '', person: false},
+      {id: 'c5#1', refers: '精酿', person: false},
+      {id: 'c9#1', refers: '不存在', person: false},
+    ],
+    doubt: [],
+  };
+  const r = applyFixes(cues, reply, ['精酿']);
+  eq('代词落地：改后的文字', r.cues.map((c) => c.text).slice(2), ['它会自己挑出哪几句适合配画面', '我同事说他和她都在用它', '花钱之后，它先报价']);
+  eq('代词落地：自动改的', r.applied.map((a) => `${a.cue} ${a.from}→${a.to} ${a.refers}`), ['c3 他→它 精酿这个开源项目', 'c5 他→它 精酿']);
+  check('代词落地：理由带指代对象', r.applied[0].why.includes('精酿这个开源项目') && r.applied[0].why.includes('代词'), r.applied[0].why);
+  check('代词落地：没说指什么的只提示', r.hints.some((h) => h.cue === 'c4' && h.from === '她' && h.to === '它' && /没说清/.test(h.why)), JSON.stringify(r.hints));
+  check('代词落地：清单判断过的位置，fixes 里的同一处不再提示', !r.hints.some((h) => h.cue === 'c3' || (h.cue === 'c4' && h.from === '说他')), JSON.stringify(r.hints));
+  eq('代词落地：提示只有两条（说不清的代词 + 不同音的字）', r.hints.map((h) => `${h.cue}${h.from}`), ['c4她', 'c2录']);
+  check('代词落地：指代对象是「我」「你」这类的不改', !applyFixes([{id: 'c1', text: '他会来'}], {fixes: [], pronouns: [{id: 'c1#1', refers: '你', person: false}], doubt: []}).applied.length);
+
+  // 清单漏了的位置：fixes 里的「他 → 它」照旧能落地；代词不占每句 2 处的名额
+  const two = [{id: 'c1', text: '他在差一段话里拍他'}];
+  const r2 = applyFixes(
+    two,
+    {
+      fixes: [
+        {cue: 'c1', from: '差', to: '插'},
+        {cue: 'c1', from: '话', to: '画'},
+        {cue: 'c1', from: '拍他', to: '拍它'},
+      ],
+      pronouns: [{id: 'c1#1', refers: '那台扫地机器人', person: false}],
+      doubt: [],
+    },
+    [],
+  );
+  eq('代词：清单改的不占名额，fixes 的照旧最多 2 处', r2.cues[0].text, '它在插一段画里拍他');
+  check('代词：清单漏掉的位置，fixes 里的代词补丁按普通补丁算名额', r2.hints.some((h) => h.from === '拍他' && /2 处/.test(h.why)), JSON.stringify(r2.hints));
+  const r3 = applyFixes([{id: 'c1', text: '他会自己挑出哪几句'}], {fixes: [{cue: 'c1', from: '他', to: '它'}], pronouns: [], doubt: []});
+  check('代词：清单没回答时，fixes 里的「他 → 它」照旧自动改', r3.cues[0].text === '它会自己挑出哪几句' && r3.applied.length === 1);
+
+  // runFix：同一次请求里拿到代词判断，缓存里也留着
+  const dir = tmpDir('pronoun');
+  let calls = 0;
+  const llm = async (messages) => {
+    calls += 1;
+    check('代词：只发一次请求，清单在请求里', messages.length === 2 && messages[1].content.includes('c1#1 〔他〕会自己挑出哪几句'));
+    return {content: JSON.stringify({fixes: [], pronouns: [{id: 'c1#1', refers: '精酿', person: false}], doubt: []})};
+  };
+  const one = [{id: 'c1', text: '他会自己挑出哪几句'}, {id: 'c2', text: '我朋友说他也想试试'}];
+  const f1 = await runFix({cues: one, cacheDir: dir, llm, model: 'fake', log: quiet});
+  const f2 = await runFix({cues: one, cacheDir: dir, llm, model: 'fake', log: quiet});
+  check('代词：runFix 改对、指人的没回答也不动', f1.status === 'done' && f1.cues[0].text === '它会自己挑出哪几句' && f1.cues[1].text === '我朋友说他也想试试', JSON.stringify(f1.cues));
+  check('代词：复跑用缓存，结果一样', f2.status === 'cached' && calls === 1 && f2.cues[0].text === '它会自己挑出哪几句');
+  const txt = formatFixesTxt({fix: {...f1, model: 'fake'}});
+  check('代词：talk.fixes.txt 写明改了哪个、指的是什么', txt.includes('c1  他 → 它（代词：指「精酿」，不是人）'), txt);
+  fs.rmSync(dir, {recursive: true, force: true});
 }
 
 // ---------- 校对调用（假模型，不联网）----------
@@ -415,6 +524,7 @@ const makeProject = (withCache = true) => {
   const llm = async (messages) => {
     calls += 1;
     check('校对提示里有句子清单和名词表', messages[1].content.includes('c3 他会自己挑出哪几句适合配画面') && messages[1].content.includes('精酿'));
+    check('校对提示里有代词清单（这段口播的两个「他」）', messages[1].content.includes('c3#1 〔他〕会自己挑出哪几句适合配画面') && messages[1].content.includes('c6#1 花钱之后，〔他〕先报价'), messages[1].content);
     return {content: JSON.stringify({fixes: [{cue: 'c3', from: '他', to: '它'}, {cue: 'c6', from: '之后', to: '之前'}], doubt: [{cue: 'c6', text: '之后', why: '上下文像之前'}]})};
   };
   const f = await transcribeProject(dir, {force: true, llm, llmModel: 'fake-model', now: () => new Date(2026, 9, 5, 9, 30, 0), log: quiet});

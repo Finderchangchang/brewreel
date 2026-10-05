@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {sha256Stream} from './broll/asr/audio.mjs';
 import {extractDeliveryFrames} from './broll/frames.mjs';
-import {generateClips} from './broll/generate.mjs';
+import {generateClips, redoCommandOf} from './broll/generate.mjs';
 import {sha256File, sha256Text, stableString} from './broll/hash.mjs';
 import {loadLedger, markApproved, saveLedger} from './broll/ledger.mjs';
 import {ffmpeg, ffmpegCheck, ffmpegHelp} from './broll/media.mjs';
@@ -172,6 +172,8 @@ try {
         forceRedo,
         concurrency: doc.provider === 'minimax-h3' ? concurrency : 1,
         log: console.log,
+        // 上次失败、要手动重做时印出的完整命令：从 talk.mjs 来的用 talk.mjs 那一条，直接跑的按这次参数拼
+        redoCommand: (id) => redoCommandOf({argv, projectDir, outDir, id, talkCmd: process.env.BREWREEL_TALK_CMD}),
       })
     : loadLedger(path.join(outDir, 'ledger.json'));
 } catch (e) {

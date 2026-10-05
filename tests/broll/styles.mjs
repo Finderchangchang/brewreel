@@ -340,7 +340,7 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   const body = buildVideoBody({...args, promptExpansion: 'disabled'});
   check('请求体：一段文字 + 两张参考图', body.content.length === 3 && body.content[0].type === 'text' && body.content.slice(1).every((x) => x.role === 'reference_image'));
   check('请求体：参考图按顺序', body.content[1].image_url.url.startsWith('data:image/jpeg;base64,') && body.content[2].image_url.url.startsWith('data:image/png;base64,'));
-  check('请求体：带扩写模式', body.extra?.prompt_expansion_mode === 'disabled');
+  check('请求体：不带 extra（H3 不收）', body.extra === undefined);
   const plain = buildVideoBody(args);
   check('请求体：不传扩写模式就和 v0.8 一样', !('extra' in plain) && Object.keys(plain).sort().join(',') === 'content,duration,model,ratio,resolution', Object.keys(plain).join(','));
   const fail = (fn) => {
@@ -360,7 +360,7 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   const e4 = fail(() => buildVideoBody({...args, refs: [r1, r1, r1, r2, r2, r2]}));
   check('超过 5 张参考图就拦', e4 instanceof H3Error && e4.code === 'BAD_REQUEST' && e4.message.includes('5 张'));
   const red = JSON.stringify(redactBody(body));
-  check('打印请求体时不带图片原文', !red.includes(png1.toString('base64')) && red.includes('字节') && red.includes('prompt_expansion_mode'));
+  check('打印请求体时不带图片原文', !red.includes(png1.toString('base64')) && red.includes('字节'));
 
   // submit：假 fetch，不联网
   const calls = [];
@@ -370,7 +370,7 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   };
   const client = createH3Client({env: {MINIMAX_API_KEY: 'test-key-123'}, baseUrl: 'http://127.0.0.1:9', fetchImpl});
   const taskId = await client.submit({...args, promptExpansion: 'disabled', styleId: 'wood-blocks'});
-  check('submit 带每段参考图和扩写模式', taskId === 'task-1' && calls.length === 1 && calls[0].body.extra?.prompt_expansion_mode === 'disabled' && calls[0].body.content.length === 3 && calls[0].url.endsWith('/v2/video_generation'), show(calls.map((x) => x.url)));
+  check('submit 带每段参考图，不带 extra', taskId === 'task-1' && calls.length === 1 && calls[0].body.extra === undefined && calls[0].body.content.length === 3 && calls[0].url.endsWith('/v2/video_generation'), show(calls.map((x) => x.url)));
   const before = calls.length;
   const e5 = await client.submit({...args, refs: [path.join(tmp, 'nope.jpg')], styleId: 'wood-blocks'}).then(() => null, (e) => e);
   check('submit 缺图不发请求', e5?.code === 'NO_REFS' && calls.length === before);

@@ -49,7 +49,7 @@ broll/styles/<id>/
 | `pairsWith` | 能当副风格的 id 白名单 |
 | `materialWords` | 本风格的材质词。`place`、`subject` 里一个都不许出现；别的风格的段的动作里也不许出现 |
 | `refs` | 参考图清单，顺序就是提示词里的图1、图2：`file`、`role`、`aspect`、`prompt`（英文出图提示，`{character}` 会换成本风格的机器人 + 共用形状和色号），可选 `subjectFrom` |
-| `promptExpansion` | H3 的 `extra.prompt_expansion_mode`：`disabled`、`balanced`、`quality`。不写就不带，走官方默认 |
+| `promptExpansion` | 提示词扩写模式：`disabled`、`balanced`、`quality`，或不写。H3 不收 `extra`（2026-10-05 真接口实测，带上就 400），所以目前只校验写法，不发送 |
 | `freezeNoise` | 静帧检测的噪声容差。白底、纯色底的风格要小一点（`0.0005`），默认 `0.003` |
 | `motionTheme` | 同一条片子里动效画面的配色和质感：`{"look": "wood", "bg": "#F3E8D6", …}`。`look` 选 `wood`（木纹桌面 + 刷漆木积木）、`clay`（细颗粒 + 黏土团）、`paper`（纸纤维 + 叠层彩纸）、`ink`（点格白纸 + 墨线涂鸦），决定背景纹理、装饰形状和卡片质感；色号可选，键是 `bg` `bg2` `card` `edge` `ink` `sub` `accent` `cool` `warm` `good` `muted`（`#RRGGBB`），不写用这个 look 的默认色。画面上只有形状和纹理，字仍然只来自原话 |
 

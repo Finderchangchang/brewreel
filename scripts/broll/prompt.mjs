@@ -145,7 +145,7 @@ export const clipRefs = ({doc, clip, styles, root = ROOT}) => {
   return styleRefs(id, styles?.[id], root);
 };
 
-/** 风格里写的提示词扩写模式；没写或写错返回 null（provider 就不带 extra，走官方默认）。 */
+/** 风格里写的提示词扩写模式；没写或写错返回 null。只进校验和请求哈希；H3 不收 extra，目前不发送。 */
 export const promptExpansionOf = (style) => (EXPANSION_MODES.includes(style?.promptExpansion) ? style.promptExpansion : null);
 
 /** 拼好的文字里出现了哪些泄漏词（去重，按 LEAK_WORDS 的顺序）。 */

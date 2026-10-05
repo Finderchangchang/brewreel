@@ -61,6 +61,50 @@ const statusOf = (e) => {
   return 'submit_failed';
 };
 
+/** 命令行参数：有空白或引号才加双引号（和 talk.mjs 印下一条命令的写法一样）。 */
+export const shellArg = (s) => (/[\s"]/.test(String(s)) || String(s) === '' ? `"${String(s).replace(/"/g, '\\"')}"` : String(s));
+
+/**
+ * 只重做一段的完整命令。
+ * talkCmd 有值（从 talk.mjs 调进来，环境变量 BREWREEL_TALK_CMD，已经去掉一次性参数）：在它后面加 --only。
+ * 没有：按这次 make-talk 的参数拼，去掉 --only、--force-redo，项目目录和 --out 换成绝对路径，补上 --yes。
+ * @param {{argv?: string[], projectDir: string, outDir: string, id: string, talkCmd?: string, provider?: string}} p
+ */
+export const redoCommandOf = ({argv = null, projectDir, outDir, id, talkCmd = '', provider = ''}) => {
+  const base = String(talkCmd ?? '').trim();
+  if (base) return `${base} --only ${id}`;
+  // 项目目录、--out 用绝对路径放最前面；其余参数按原来的顺序照抄
+  const rest = [];
+  if (Array.isArray(argv)) {
+    for (let i = 0; i < argv.length; i++) {
+      const a = argv[i];
+      if (a === '--only' || a === '--out') i += 1;
+      else if (a === '--provider' || a === '--concurrency') {
+        rest.push(a, argv[i + 1]);
+        i += 1;
+      } else if (a.startsWith('--') && a !== '--force-redo') rest.push(a);
+    }
+  } else if (provider) rest.push('--provider', provider);
+  if (!rest.includes('--yes')) rest.push('--yes');
+  return ['node', 'scripts/make-talk.mjs', projectDir, '--out', outDir, ...rest, '--only', id].map(shellArg).join(' ');
+};
+
+/**
+ * 上次失败、这次不自动重做的说明。
+ * 没有 task id、也不是接口 5xx = 接口没接下这个任务（提交前被拒、或脚本自己拦下）：没生成、没扣费。
+ * 没有 task id 但是 5xx：多半没生成，但说不准，不打包票。有 task id = 已经生成过：重做会重新计费。
+ */
+export const holdMessage = (id, prev, command) => {
+  const why = String(prev?.error?.message || prev?.status || '原因不明').replace(/[。.\s]+$/, '').replace(/。?不自动重做$/, '');
+  if (!prev?.taskId && prev?.error?.code !== 'SERVER') {
+    return `${id} 上次没提交成功（${prev?.status}）：${why}。\n这次没有生成、没有扣费（没有拿到 task id，接口没接下这个任务）。不自动重做：先按上面的原因改好，再跑下面这条，只重做这一段：\n  ${command}`;
+  }
+  if (!prev?.taskId) {
+    return `${id} 上次没提交成功（${prev?.status}）：${why}。没有拿到 task id，多半没有生成；拿不准就先去 MiniMax 后台看一眼。不自动重做。要重做这一段，跑：\n  ${command}`;
+  }
+  return `${id} 上次是 ${prev.status}：${why}。不自动重做。要重做这一段（会重新生成、重新计费），跑：\n  ${command}`;
+};
+
 /**
  * 按账本把计划里的片段生成到 outDir/clips。
  * placeholder / local 走原来的同步状态机。minimax-h3 提交成功立刻落盘 task id。
@@ -80,7 +124,10 @@ export const generateClips = async ({
   pollMs,
   timeoutMs,
   sleep,
+  redoCommand = null,
 }) => {
+  /** 只重做这一段的完整命令（make-talk 传它自己那一条；测试和其他调用方用默认拼法）。 */
+  const redoCmd = (id) => (typeof redoCommand === 'function' ? redoCommand(id) : redoCommandOf({projectDir, outDir, id, provider: doc.provider}));
   const ledgerPath = path.join(outDir, 'ledger.json');
   const ledger = loadLedger(ledgerPath);
   let writeChain = Promise.resolve();
@@ -175,8 +222,7 @@ export const generateClips = async ({
       throw err;
     }
     if (action === 'hold') {
-      const why = prev.error?.message || prev.status;
-      const err = new Error(`${clip.id} 上次是 ${prev.status}：${why}。不自动重做。要重做这一段，加 --only ${clip.id}`);
+      const err = new Error(holdMessage(clip.id, prev, redoCmd(clip.id)));
       err.exitCode = 4;
       throw err;
     }
@@ -287,6 +333,11 @@ export const generateClips = async ({
       ledger.clips[clip.id] = entry;
       await persist();
       if (!e.exitCode) e.exitCode = 4;
+      // 提交前就被拒（参数错误这类）：当场说清没花钱，以及改好后怎么只重做这一段
+      if (entry.status === 'submit_failed' && e.code !== 'SERVER') {
+        const again = only === clip.id ? '' : '再跑同一条命令不会自动重做这一段；';
+        e.message = `${clip.id} 没提交成功：${String(e.message).replace(/[。.\s]+$/, '')}。\n这次没有生成、没有扣费（没有拿到 task id）。${again}先按上面的原因改好，再跑下面这条，只重做这一段：\n  ${redoCmd(clip.id)}`;
+      }
       throw e;
     }
     entry.taskId = taskId;

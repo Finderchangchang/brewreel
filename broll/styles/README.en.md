@@ -49,7 +49,7 @@ Styles without references can still be laid out and previewed with `provider: pl
 | `pairsWith` | ids allowed as the second style |
 | `materialWords` | this style's material words. None may appear in `place` or `subject`, and none may appear in the actions of a clip in another style |
 | `refs` | reference list, in the order of image 1, image 2: `file`, `role`, `aspect`, `prompt` (English image prompt; `{character}` becomes this style's robot plus the shared shape and colours), optional `subjectFrom` |
-| `promptExpansion` | H3 `extra.prompt_expansion_mode`: `disabled`, `balanced`, `quality`. Omit to send nothing (provider default) |
+| `promptExpansion` | Prompt expansion mode: `disabled`, `balanced`, `quality`, or omit it. H3 does not accept `extra` (tested against the real API on 2026-10-05: sending it gets a 400), so for now the value is only checked, never sent |
 | `freezeNoise` | noise tolerance of the freeze check. White or flat backgrounds need a smaller value (`0.0005`); default `0.003` |
 | `motionTheme` | colours and finish of motion clips in the same video: `{"look": "wood", "bg": "#F3E8D6", …}`. `look` is `wood` (wood-grain table + painted wooden blocks), `clay` (fine grain + clay lumps), `paper` (paper fibre + layered coloured paper) or `ink` (dot-grid paper + ink doodles) and sets the background texture, decorative shapes and card finish; colours are optional, keys `bg` `bg2` `card` `edge` `ink` `sub` `accent` `cool` `warm` `good` `muted` (`#RRGGBB`), defaults come from the look. Only shapes and textures are added; every word still comes from the speech |
 

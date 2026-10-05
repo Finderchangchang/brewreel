@@ -124,8 +124,8 @@ const inRepo = (p) => {
   return inside && !promo;
 };
 
-const runStep = (script, args) => {
-  const r = spawnSync(process.execPath, [script, ...args], {cwd: ROOT, stdio: 'inherit', windowsHide: true});
+const runStep = (script, args, env = {}) => {
+  const r = spawnSync(process.execPath, [script, ...args], {cwd: ROOT, stdio: 'inherit', windowsHide: true, env: {...process.env, ...env}});
   return r.status ?? 1;
 };
 
@@ -221,7 +221,8 @@ const main = async () => {
 
   // 第 3/3 步：make-talk
   console.log('第 3/3 步 出片（make-talk）…');
-  const code = runStep(MAKE_TALK, p.makeArgs);
+  // make-talk 遇到上次失败、不自动重做的段时，印出「这条命令 + --only」：告诉它用户跑的是哪一条（已去掉一次性参数）
+  const code = runStep(MAKE_TALK, p.makeArgs, {BREWREEL_TALK_CMD: nextCommand(argv)});
   if (code === 1) {
     console.log('broll.json 没通过校验（常见原因：改过 talk.srt 的字以后，动效卡片上的字和字幕对不上了）。照上面「怎么改」改 broll.json 再跑同一条命令；');
     console.log(`不想手改，就让模型按现在的字幕重写（重写后先看估价，别带 --yes）：${nextCommand(argv, {drop: ['--yes']})} --rewrite-broll`);

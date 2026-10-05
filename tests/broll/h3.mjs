@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {extractDeliveryFrames} from '../../scripts/broll/frames.mjs';
-import {generateClips, mapPool} from '../../scripts/broll/generate.mjs';
+import {generateClips, holdMessage, mapPool, redoCommandOf, shellArg} from '../../scripts/broll/generate.mjs';
 import {decidePaid, nextRedoCount, REDO_LIMIT} from '../../scripts/broll/ledger.mjs';
 import {ffmpeg, ffmpegPath} from '../../scripts/broll/media.mjs';
 import {createH3Client, resolveBase} from '../../scripts/broll/providers/minimax-h3.mjs';
@@ -255,6 +255,62 @@ export const h3Tests = async ({check, runNode, ROOT, DEMO}) => {
     const second = await runGen(srv, planOf(['b01']), outDir);
     check('失败不自动重做', first.error && srv.state.posts === 1 && second.error && /不自动重做/.test(second.error.message) && srv.state.posts === 1, scrub(`${first.error?.message} / ${second.error?.message}`));
     await srv.close();
+  }
+
+  // 提交前就被接口 4xx 拒绝（参数错误，2026-10-05 真接口遇到过 2013 extra）：没生成、没扣费；重跑不自动重做，给出完整的重跑命令
+  {
+    const srv = await startServer({
+      onSubmit(_req, res, state) {
+        if (state.posts === 1) send(res, 400, {base_resp: {status_code: 2013, status_msg: "invalid params, param 'extra' incompatible with model MiniMax-H3"}});
+        else send(res, 200, {task_id: `p-${state.posts}`});
+      },
+      onQuery(_req, res, id) {
+        send(res, 200, succeeded(`${srv.base}/dl/${id}`));
+      },
+      onDownload(_req, res) {
+        res.writeHead(200, {'Content-Type': 'video/mp4', 'Content-Length': mp4.length});
+        res.end(mp4);
+      },
+    });
+    srv.state.base = srv.base;
+    const outDir = path.join(tmp, 'param');
+    const want = redoCommandOf({projectDir: outDir, outDir, id: 'b01', provider: 'minimax-h3'});
+    const first = await runGen(srv, planOf(['b01']), outDir);
+    const led1 = JSON.parse(fs.readFileSync(path.join(outDir, 'ledger.json'), 'utf8')).clips.b01;
+    check('参数错误：账本记成 submit_failed，没有 task id', first.error && led1.status === 'submit_failed' && !led1.taskId && led1.error?.code === 'API' && srv.state.posts === 1, scrub(JSON.stringify(led1)));
+    check('参数错误：当场说清没生成、没扣费，并给出重跑命令', /这次没有生成、没有扣费/.test(first.error?.message) && first.error.message.includes('2013') && first.error.message.trim().endsWith(want), scrub(first.error?.message));
+    const second = await runGen(srv, planOf(['b01']), outDir);
+    const msg = second.error?.message || '';
+    check('参数错误：重跑不自动重做、不再提交', second.error && /不自动重做/.test(msg) && srv.state.posts === 1, scrub(msg));
+    check('参数错误：重跑提示写清这次没有生成、没有扣费', msg.includes('这次没有生成、没有扣费') && msg.includes('2013'), scrub(msg));
+    const cmd = msg.split(/\r?\n/).pop().trim();
+    check(
+      '参数错误：最后一行是可复制的完整命令',
+      cmd === want && cmd.startsWith('node scripts/make-talk.mjs ') && cmd.includes(`--out ${shellArg(outDir)}`) && cmd.includes('--provider minimax-h3') && cmd.endsWith('--yes --only b01'),
+      scrub(cmd),
+    );
+    const third = await runGen(srv, planOf(['b01']), outDir, {only: 'b01'});
+    check('参数错误：照命令加 --only 才重新提交', !third.error && srv.state.posts === 2 && third.ledger.clips.b01.status === 'checked' && third.ledger.clips.b01.taskId === 'p-2', scrub(third.error?.message));
+    await srv.close();
+  }
+
+  // 重跑命令的拼法和说明的分支（不联网）
+  {
+    const talkCmd = 'node scripts/talk.mjs "D:/my proj" --out D:/out --provider minimax-h3 --yes';
+    check('重跑命令：从 talk.mjs 来的就在那条后面加 --only', redoCommandOf({talkCmd, projectDir: 'x', outDir: 'y', id: 'b02'}) === `${talkCmd} --only b02`);
+    const absProj = path.join(tmp, 'my proj');
+    const absOut = path.join(tmp, 'out');
+    const got = redoCommandOf({argv: ['rel', '--out', 'o', '--provider', 'minimax-h3', '--yes', '--only', 'b01', '--force-redo', '--concurrency', '2'], projectDir: absProj, outDir: absOut, id: 'b03'});
+    check(
+      '重跑命令：直接跑 make-talk 的按这次参数拼，路径换成绝对路径，去掉 --only / --force-redo',
+      got === `node scripts/make-talk.mjs "${absProj}" --out ${shellArg(absOut)} --provider minimax-h3 --yes --concurrency 2 --only b03`,
+      got,
+    );
+    check('重跑命令：原来没写 --yes 的补上', redoCommandOf({argv: ['p', '--out', 'o'], projectDir: 'P', outDir: 'O', id: 'b01'}) === 'node scripts/make-talk.mjs P --out O --yes --only b01');
+    const server = holdMessage('b01', {status: 'submit_failed', taskId: null, error: {code: 'SERVER', message: '服务暂时出错（500）：x'}}, 'CMD');
+    check('说明：5xx 不打「没扣费」的包票', !server.includes('没有扣费') && server.includes('MiniMax 后台') && server.endsWith('CMD'), server);
+    const paid = holdMessage('b01', {status: 'failed', taskId: 't-1', error: {code: 'FAILED', message: '生成失败：decode failed。不自动重做。'}}, 'CMD');
+    check('说明：生成过的段写明重做会重新计费', !paid.includes('没有扣费') && paid.includes('重新计费') && paid.endsWith('CMD'), paid);
   }
 
   // 审核拦截
