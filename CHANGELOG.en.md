@@ -2,7 +2,7 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
-## Unreleased
+## v0.9.0 · 2026-10-05 · Drop in one talking-head video, get explainer shots
 
 A big update to talking-head B-roll (experimental): a talk video alone is now enough, with free motion clips and several AI clip styles. Promo videos work and look exactly as before. `broll.json` files written for v0.8 still run as version 1, and clips already generated are not paid for again; changing a file to version 2 changes the prompt and the request, so AI clips already generated are generated and paid for again.
 
@@ -56,11 +56,10 @@ A big update to talking-head B-roll (experimental): a talk video alone is now en
 
 ### Known limitations
 - The ink sketch style `ink-sketch` is experimental and has no reference images yet: it only works as a `placeholder` preview, and real generation with it stops before submitting.
-- The new prompts never mention studs, but generated pictures may still occasionally show bricks with round studs; check the review page before publishing.
+- One wood-blocks clip was generated through the real API and none of its 8 sampled frames shows studs; clay stop-motion and layered paper have not been generated for real yet. Generated pictures may still occasionally show bricks with round studs; check the review page before publishing.
 - Each AI clip is generated on its own; the shared character and `link` keep clips closer but do not guarantee a match.
 - Motion cards copy the transcript, so transcription mistakes show up on screen.
 - English transcription was tested only with synthetic speech; transcription on macOS is not tested.
-- Cheap models writing v2 `broll.json` and the proofreading pass have not yet been tested at scale with DeepSeek.
 - The DeepSeek Harness plugin still does not include talking-head B-roll.
 
 ## v0.8.0 · 2026-10-05 · Talking-head B-roll (experimental)

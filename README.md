@@ -6,7 +6,7 @@
 
 **便宜模型，也能酿出好片：写一份产品简报，AI 挑镜头、写文案，一条命令出一支竖版宣传片。**
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.8.0-1f6feb?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.9.0-1f6feb?style=flat-square)](CHANGELOG.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
@@ -152,3 +152,10 @@ Copyright © 2026 Finderchangchang。代码以 [Apache-2.0](LICENSE) 协议开�
 </p>
 
 <p align="center"><sub>量力而行，不用有压力；点个 Star、提个 issue，或者给我看看你酿的片子，我一样开心。</sub></p>
+
+## 致谢
+
+- 口播配画面的思路来自 [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator)（抖音「耳朵」）：「读字幕、挑哪几句配解释画面」的方法参考了它，代码是重写的。
+- 本地转写用 [SenseVoice](https://github.com/FunAudioLLM/SenseVoice)（FunAudioLLM / 阿里通义实验室），由 [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 运行。
+- 视频合成基于 [Remotion](https://www.remotion.dev/)。
+- 各自的许可见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。

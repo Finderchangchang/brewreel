@@ -355,11 +355,12 @@ export const validateStyles = (doc, styles = {}, opts = {}) => {
 
   // 规则 3 / 12：副风格
   const pairText = main ? (main.pairsWith ?? []).join('、') || '（这个主风格不搭副风格）' : stableText;
+  const pairPick = main && (main.pairsWith ?? []).length === 1 ? pairText : `${pairText} 之一`;
   if (doc.styleAlt != null) {
-    if (typeof doc.styleAlt !== 'string' || !styles[doc.styleAlt]) err('styleAlt', `没有叫「${doc.styleAlt}」的风格`, `改成 ${pairText} 之一，或删掉 styleAlt`);
+    if (typeof doc.styleAlt !== 'string' || !styles[doc.styleAlt]) err('styleAlt', `没有叫「${doc.styleAlt}」的风格`, `改成 ${pairPick}，或删掉 styleAlt`);
     else if (doc.styleAlt === doc.style) err('styleAlt', 'styleAlt 和 style 一样', `删掉 styleAlt；要副风格就换一个不同的：${pairText}`);
     else if (main && !(main.pairsWith ?? []).includes(doc.styleAlt)) {
-      err('styleAlt', `${styleLabel(main, doc.style)}不搭配${styleLabel(styles[doc.styleAlt], doc.styleAlt)}`, `副风格改成 ${pairText} 之一，或删掉 styleAlt`);
+      err('styleAlt', `${styleLabel(main, doc.style)}不搭配${styleLabel(styles[doc.styleAlt], doc.styleAlt)}`, `副风格改成 ${pairPick}，或删掉 styleAlt`);
     }
   }
 

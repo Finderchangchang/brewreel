@@ -6,7 +6,7 @@
 
 **Brew great promo reels with low-cost models: write a product brief, let the AI pick the shots and write the copy, and render a vertical promo video with one command.**
 
-[![Version](https://img.shields.io/badge/version-v0.8.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.9.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
@@ -152,3 +152,10 @@ If BrewReel saved you an evening of video editing, feel free to buy me a coffee.
 </p>
 
 <p align="center"><sub>Only if it's easy for you, no pressure. A Star, an issue, or showing me a video you brewed makes me just as happy.</sub></p>
+
+## Acknowledgements
+
+- The talking-head B-roll idea comes from [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator): our way of reading the captions and picking lines for explainer shots is a rewrite of its method.
+- Local transcription uses [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) (FunAudioLLM / Alibaba Tongyi Lab), run with [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx).
+- Videos are composed with [Remotion](https://www.remotion.dev/).
+- Licenses: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).
