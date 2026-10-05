@@ -4,7 +4,7 @@
 
 ## Unreleased
 
-A big update to talking-head B-roll (experimental): a talk video alone is now enough, with free motion clips and several AI clip styles. Promo videos work and look exactly as before. `broll.json` files written for v0.8 (version 1) still run, and clips already generated are not paid for again.
+A big update to talking-head B-roll (experimental): a talk video alone is now enough, with free motion clips and several AI clip styles. Promo videos work and look exactly as before. `broll.json` files written for v0.8 still run as version 1, and clips already generated are not paid for again; changing a file to version 2 changes the prompt and the request, so AI clips already generated are generated and paid for again.
 
 ### New: one command
 - `node scripts/talk.mjs <project> --out <dir-outside-the-repo>`: transcribe → a cheap model writes `broll.json` → render. Steps already done are skipped, so you can keep running the same command. It never runs `approve.mjs`.
@@ -35,11 +35,16 @@ A big update to talking-head B-roll (experimental): a talk video alone is now en
 - Price display: the estimate also gives the total seconds of AI video. MiniMax subscription keys (starting with `sk-cp-`) cannot pay as you go; H3 video is paid in credits, so the estimate adds 「约 N 积分」 (about N credits; 768P estimated at about 70 credits per second, the MiniMax console is the authority). The budget gate still works in yuan.
 - Review page: one row per motion clip listing its on-screen text; AI clips show the style name; the top strip puts each AI clip's middle frame side by side. The approval binds only the AI part, so editing motion clips needs no new review, and v0.8 approvals are still accepted.
 - `manifest.json` records where the captions came from (transcribed / edited / supplied), the transcription model, whether the talk was converted, and each clip's source and style.
-- Dependencies: `template` adds `sherpa-onnx-node` 1.13.8 and `pinyin-pro`. When upgrading from v0.8, run `npm install` in `template` again.
+- Dependencies: `template` adds `sherpa-onnx-node` 1.13.8 and `pinyin-pro`. When upgrading from v0.8, run `npm install` in `template` again. Talking-head B-roll needs a full ffmpeg: the install command now includes `pip install imageio-ffmpeg` (the slim build bundled with Remotion lacks filters); `talk.mjs` and `make-talk` check it at the start and stop with exit code 2.
+- `talk.mjs`: when it stops it prints the full next command, without the one-time flags `--rewrite-broll`, `--only` and `--force-redo`; `--rewrite-broll` cannot be combined with `--yes`. `--rewrite-broll` replaces `broll.json` only after it validates and keeps the old one as `broll.json.bak-<time>`. A failed call to the cheap model's API (offline, wrong key, no balance) gets its own exit code 4 and a plain explanation.
+- Rendering: when the talk, captions, plan, generated clips and render code are unchanged, the video is not rendered again.
+- Words the proofreading pass was unsure about and nobody has checked are never put on a motion card; the command reminds you at the end.
 
 ### Fixed
 - The `pip` circle's diameter and margin were fixed pixel values, so the circle looked too big in smaller videos; they now scale with the frame size.
 - `split` captions only reserved one line, so two-line captions pushed down onto the face; the space now grows with the number of lines.
+- `pip` captions that did not fit left of the circle left a single character on its own line; slightly long lines now shrink the font a little, and if that is not enough the whole clip moves its captions above the circle.
+- Stand-ins first, then real generation in the same output folder: stand-in ledger entries no longer count as paid, so the first real generation does not use up a redo; running again without `--provider minimax-h3` no longer replaces paid clips with stand-ins (it stops with exit code 2).
 
 ### Known limitations
 - The four new styles (including the default `wood-blocks`) have no reference images yet: they only work as `placeholder` previews for now, and real generation stops before submitting.

@@ -26,7 +26,7 @@ Output is 1080×1920 (journey defaults to 1080×1350), 30 fps, with music and so
 ```bash
 git clone https://github.com/Finderchangchang/brewreel.git
 cd brewreel/template && npm install && npx remotion browser ensure
-cd .. && pip install numpy scipy
+cd .. && pip install numpy scipy imageio-ffmpeg
 ```
 
 `npm install` installs the rendering engine (the lockfile includes Remotion compositor packages for 7 platforms, so switching platforms just works); `npx remotion browser ensure` downloads Chrome Headless Shell once, for headless rendering.
@@ -72,7 +72,7 @@ Use this when you already have a talking-head video and want explanatory picture
 node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 ```
 
-It transcribes the talk on your machine, asks DeepSeek to pick the lines and write `broll.json` (set `DEEPSEEK_API_KEY`), and renders: free motion clips are drawn for real, and AI clips start as solid-color stand-ins at no cost. The first transcription downloads a speech model of about 240 MB. If you are upgrading from v0.8, run `npm install` in `template` again first. Real AI clips, price and review: [Talking-head B-roll](broll.en.md).
+It transcribes the talk on your machine, asks DeepSeek to pick the lines and write `broll.json` (set `DEEPSEEK_API_KEY`), and renders: free motion clips are drawn for real, and AI clips start as solid-color stand-ins at no cost. The first transcription downloads a speech model of about 240 MB. If you are upgrading from v0.8, run `npm install` in `template` again first. Talking-head B-roll needs a full ffmpeg; the `imageio-ffmpeg` in the install step above is for it (the slim build bundled with Remotion is not enough). In this release the four AI clip styles have no reference images yet, so AI clips are stand-in previews only, while motion clips render normally. Real AI clips, price and review: [Talking-head B-roll](broll.en.md).
 
 ### Use it in DeepSeek Harness
 

@@ -15,7 +15,9 @@ Authors who already have a talking-head video and want a picture on the lines th
 
 ## One command
 
-Install the dependencies first ([Install and get started](quickstart.en.md); `npm install` in `template`). If you are upgrading from v0.8, run `npm install` in `template` again to get the transcription component.
+Install the dependencies first ([Install and get started](quickstart.en.md); `npm install` in `template`, then `pip install numpy scipy imageio-ffmpeg`). If you are upgrading from v0.8, run `npm install` in `template` again to get the transcription component.
+
+Talking-head B-roll needs a **full ffmpeg** (talk conversion, stand-in clips, clip checks and the contact sheet all use it). The copy bundled with Remotion is a slim build that lacks many filters. `pip install imageio-ffmpeg` is the easiest; you can also put your own ffmpeg on PATH, or point the `FFMPEG` environment variable at it. Without it the command stops at the start and says so, instead of failing after transcription.
 
 Make a project folder, rename the talk to `talk.mp4`, put it in, then:
 
@@ -23,13 +25,17 @@ Make a project folder, rename the talk to `talk.mp4`, put it in, then:
 node scripts/talk.mjs <project> --out <dir-outside-the-repo>
 ```
 
-It runs three steps and skips the ones already done, so you can keep running the same command:
+It runs three steps. The first two are skipped once done; rendering runs every time, but when the talk, captions, `broll.json`, generated clips and render code are all unchanged it reuses the last video. So you can keep running the same command:
 
 1. **Transcribe**: without `talk.srt`, it transcribes the talk on your machine. The first run downloads a speech model of about 240 MB, once. An existing `talk.srt` is never overwritten.
 2. **Write `broll.json`**: a cheap model writes it; set `DEEPSEEK_API_KEY` (or `LLM_API_KEY`) first. If validation fails, the error text goes back to the model, at most 3 rounds. An existing `broll.json` is kept; `--rewrite-broll` rewrites it.
 3. **Render**: motion clips are drawn for real; AI clips start as solid-color stand-ins, at no cost.
 
-After the first run, open `video.mp4` and the contact sheet `sheet.png` in the output folder and check the pacing. By default there are at most 2 AI clips; the other lines that need a picture get motion clips or keep the face. To change the cap, add something like `--max-ai 1` together with `--rewrite-broll`.
+After the first run, open `video.mp4` and the contact sheet `sheet.png` in the output folder and check the pacing. By default there are at most 2 AI clips; the other lines that need a picture get motion clips or keep the face. To change the cap, add something like `--max-ai 1` together with `--rewrite-broll` (without `--yes`: price the new plan first).
+
+`--rewrite-broll`, `--only` and `--force-redo` should take effect once. When the script stops it prints the full next command with them removed; copy that one.
+
+Words the proofreading pass was unsure about and nobody has checked yet (the "suggested only" ones in `talk.fixes.txt`) are never put on a motion card, and the command reminds you at the end. Listen to the talk; if a word is wrong, fix `talk.srt`, and add `--rewrite-broll` if `broll.json` should be rewritten for the new words.
 
 To fix the captions before going further, run only the transcription, edit `talk.srt`, then run the command above.
 
@@ -37,9 +43,11 @@ To fix the captions before going further, run only the transcription, edit `talk
 node scripts/broll/transcribe.mjs <project>
 ```
 
-No DeepSeek key? Ask an AI coding assistant to write `broll.json` by [`broll/SKILL-broll.en.md`](../broll/SKILL-broll.en.md), put it in the project folder, and run the same command. A full v2 example is [`examples/talk/motion/broll.json`](../examples/talk/motion/broll.json).
+No DeepSeek key? Ask an AI coding assistant to write `broll.json` by [`broll/SKILL-broll.en.md`](../broll/SKILL-broll.en.md), put it in the project folder, and run the same command. A full v2 example is [`examples/talk/motion/broll.json`](../examples/talk/motion/broll.json), as a reference for the format; the repo has no example talk video, so to run it as is, first run `node tests/broll/demo.mjs` to generate a 20-second test talk.
 
 ### Really generating AI clips
+
+> **This release cannot generate AI clips yet.** The four regular styles have no reference images yet; real generation with them stops before submitting (exit code 2, nothing spent). For now AI clips are stand-in previews only, and motion clips render normally. The commands below work once the maintainer ships the reference images in a new release.
 
 When the stand-in version looks right, switch to MiniMax H3. Set `MINIMAX_API_KEY` first.
 
@@ -49,6 +57,8 @@ node scripts/talk.mjs <project> --out <dir-outside-the-repo> --provider minimax-
 ```
 
 The first command only prints the estimate and spends nothing. Run the second after you agree. A person must watch the review page and approve it before the final render (see "Review gate" below). `--dry-run` and `--yes` only affect the render step; the first two steps are skipped when done.
+
+Once clips are really generated, every command on the same `--out` needs `--provider minimax-h3`. If you leave it out, the script stops (exit code 2) instead of replacing paid clips with stand-ins; to look at a stand-in layout, use another `--out`.
 
 ### Common options
 
@@ -66,8 +76,8 @@ The first command only prints the estimate and spends nothing. Run the second af
 | `--lang auto\|zh\|en\|yue\|ja\|ko` | Transcription language, default `auto` |
 | `--terms "word1,word2"` | Proper nouns, to help the proofreading pass |
 | `--no-fix` | Skip the DeepSeek proofreading pass after transcription |
-| `--rewrite-broll` | Rewrite `broll.json` even if it exists |
-| `--only b03` | Redo only this AI clip |
+| `--rewrite-broll` | Rewrite `broll.json` even if it exists. Replaced only after it validates; the old one is kept as `broll.json.bak-<time>`. Cannot be combined with `--yes` |
+| `--only b03` | Redo only this AI clip (every run with it redoes and pays again; drop it once done) |
 | `--concurrency <1–12>` | How many clips to submit at once, default 3 |
 | `--force-redo` | Needed for the third redo of the same clip |
 
@@ -108,9 +118,9 @@ node scripts/broll/approve.mjs <project> --out <dir-outside-the-repo>
 | `checklist` | Two to four things | A list; each item appears and gets a tick as it is said |
 | `steps` | An order of steps | A step flow; each step lights up as it is said |
 | `counter` | One exact number | A rolling number that lands when the number is said |
-| `compare` | Before and after, or two ways | Two columns; the side said later wins |
+| `compare` | Before and after, or two ways, old way said first | Two columns; the side said later wins. Do not use it when the new way is said first |
 
-The words on a card must be consecutive words from the speech, not reworded; a number to show goes in `counter`, and only if the speaker really said it. So **transcription mistakes show up on screen as is**: check `talk.srt` before rendering and fix typos there. Card colors follow the main style.
+The words on a card must be consecutive words from the speech, not reworded; a negation before the quote (不用, 不要, 不会, "don't"...) must be included; a number to show goes in `counter`, only if the speaker really said it, and two numbers separated by a space, line break or sentence break are never joined into one. So **transcription mistakes show up on screen as is**: check `talk.srt` before rendering and fix typos there. Card colors follow the main style. After the last word, a card holds a little longer when silence follows.
 
 ### AI clip styles
 
@@ -124,7 +134,7 @@ The words on a card must be consecutive words from the speech, not reworded; a n
 
 The AI clips of one film use at most two styles: the main `style` and an optional second `styleAlt` (only one the main style pairs with). The robot's shape and colors live in `broll/character.json` and are shared by every style; a style only decides what the robot is made of. Which jobs and cameras each style allows, and whether its reference images exist yet: [`broll/styles/README.en.md`](../broll/styles/README.en.md).
 
-If a style has no reference images yet, real generation with it stops before submitting (exit code 2, nothing spent) and says which style to switch to, or to use motion clips instead. Previews with `placeholder` are not affected.
+If a style has no reference images yet, real generation with it stops before submitting (exit code 2, nothing spent) and says which style to switch to, or to use motion clips instead. Previews with `placeholder` are not affected. In this release none of the four regular styles has reference images yet.
 
 ## Three placements
 
@@ -140,9 +150,9 @@ If a style has no reference images yet, real generation with it stops before sub
 |---|---|
 | add | Draw `talk.srt` onto the finished video |
 | none | No captions |
-| burned | The talk already has burned-in captions. Only `split`, so they are not covered again |
+| burned | The talk already has burned-in captions. Only `split`, so they are not covered again. A landscape talk with `burned` is not supported in this release (`split` is portrait only); use `none` |
 
-With `full` and `pip`, captions sit in the lower quarter of the frame. With `split`, they sit just above the divider, and two-line captions move up as a block so they never cover the face.
+With `full` and `pip`, captions sit in the lower quarter of the frame; when a `pip` clip's captions do not fit left of the circle, the whole clip moves them above the circle at full width. With `split`, they sit just above the divider, and two-line captions move up as a block so they never cover the face. When a line is slightly too long, the font shrinks a little so one or two characters are not left alone on a line.
 
 ## Transcription
 
@@ -150,7 +160,8 @@ With `full` and `pip`, captions sit in the lower quarter of the frame. With `spl
 - The model sits in a global cache shared by all projects: `%LOCALAPPDATA%\brewreel\asr` on Windows, `~/.cache/brewreel/asr` on macOS / Linux. `BREWREEL_ASR_DIR` changes the cache folder; `BREWREEL_ASR_MODEL_DIR` points to a folder you downloaded yourself (with `model.int8.onnx` and `tokens.txt`), and nothing is downloaded.
 - On Windows, the first load after the download takes about 30 seconds longer.
 - The language is detected automatically. If Mandarin is detected as Cantonese or Japanese, re-run with `node scripts/broll/transcribe.mjs <project> --lang zh --force`.
-- With `DEEPSEEK_API_KEY` (or `LLM_API_KEY`), a cheap model proofreads the transcript: it only returns "change this character to that one" patches, and the script decides from the pronunciation whether to apply each one. Changes that touch numbers, negations or opposites are only suggested, never applied. What changed and which lines you should listen to again are in `talk.fixes.txt`. `--no-fix` skips this pass.
+- With `DEEPSEEK_API_KEY` (or `LLM_API_KEY`), a cheap model proofreads the transcript: it only returns "change this character to that one" patches, and the script decides from the pronunciation whether to apply each one. Changes that touch numbers, negations or opposites are only suggested, never applied; a change to a proper noun also needs a similar pronunciation. What changed and which lines you should listen to again are in `talk.fixes.txt`. The suggested-only words are never put on a motion card; editing that line counts as checked. `--no-fix` skips this pass.
+- The same video transcribed in two projects can get different proofreading results (the model's answers vary); re-running one project uses the cache and gives the same result.
 - Proper nouns (product names, people's names) go in `talk.terms.txt` in the project folder, one per line, or in `--terms "word1,word2"`.
 - An existing `talk.srt` is never overwritten. `--force` re-transcribes: the old file is renamed to `talk.srt.bak-<time>`, and the same video is not recognized again.
 - Fix typos in `talk.srt` freely, but once `broll.json` is written **do not split or merge cues**: the cue ids would shift. The script records the cues at that point; if they change, validation stops you and asks you to rewrite `broll.json`.
@@ -192,7 +203,7 @@ An AI assistant must not run approve for the person, and `talk.mjs` never runs i
 
 `placeholder` and `local` are free and skip review.
 
-If a run is interrupted, run it again with the same `--out`: clips already submitted are only queried, never submitted or paid for twice.
+If a run is interrupted, run it again with the same `--out`: clips already submitted are only queried, never submitted or paid for twice. When you "run the same command again", drop `--only`, `--rewrite-broll` and `--force-redo` (the next command the script prints already has them removed).
 
 ## What the output folder holds
 
@@ -206,11 +217,24 @@ If a run is interrupted, run it again with the same `--out`: clips already submi
 | `ledger.json` | Ledger (AI clips only): task id, actual seconds, cost |
 | `review.html` / `broll.review.json` | Review page and approval record |
 
+## Extra files in the project folder
+
+| File | Contents | Safe to delete? |
+|---|---|---|
+| `talk.srt` | The transcribed captions | Keep it; deleting re-transcribes and cue ids may change |
+| `talk.fixes.txt` | What the proofreading pass changed and what it only suggested | Yes, it is for people only |
+| `llm_log.json` | Token usage and validation report of each round when the cheap model wrote `broll.json` | Yes, for troubleshooting |
+| `broll.llm-error.txt` | The last error when writing `broll.json` failed | Yes |
+| `broll.llm-draft.json` | The model's last attempt when `--rewrite-broll` failed validation (the old `broll.json` is untouched) | Yes |
+| `broll.json.bak-<time>` | The old `broll.json` before `--rewrite-broll` replaced it | Yes; rename it back to return to the old plan |
+| `.brewreel/` | Transcription cache, cue record, converted talk, unsure words | Yes; motion cards then estimate word timings, and the cue check and unsure-word reminders go away |
+
 ## Known limits
 
 - **Experimental**: not yet used on many real talking-head videos. Treat the result as a first cut and watch the whole video before publishing.
 - **Studs may still show up now and then**: the new styles' prompts describe only what should be seen and never mention studs, but the video model occasionally still draws bricks with round studs. Check frame by frame on the review page. `brick-diorama` shows studs reliably and is kept only for old projects.
-- **The four new styles have no reference images yet**: a style without them cannot really generate and only works with `placeholder`. The maintainer makes them and ships them in the repo.
+- **The four new styles have no reference images yet**: AI clips cannot really be generated in this release and only work with `placeholder`. The maintainer makes them and ships them in the repo.
+- **Changing a v0.8 file to version 2 costs money again**: v2 changes the prompt and the request, so AI clips already generated are generated again. Old files still run as version 1.
 - **Each AI clip is generated on its own**: the shared character, reference images and `link: continue` keep clips closer, but shape and colors can still differ; clips are not guaranteed to match.
 - **At most two styles of AI clip per film**: one main style plus one second style, not a different style per clip.
 - **Text inside generated pictures is unreliable**: for exact words, use a motion clip.

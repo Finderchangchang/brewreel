@@ -26,7 +26,7 @@
 ```bash
 git clone https://github.com/Finderchangchang/brewreel.git
 cd brewreel/template && npm install && npx remotion browser ensure
-cd .. && pip install numpy scipy
+cd .. && pip install numpy scipy imageio-ffmpeg
 ```
 
 `npm install` 装渲染引擎（lock 文件里带 7 个平台的 Remotion compositor，换平台不用重新生成）；`npx remotion browser ensure` 下载一次 Chrome Headless Shell，供无头渲染用。
@@ -72,7 +72,7 @@ Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上都是�
 node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 ```
 
-它先在本机转写出字幕，再请 DeepSeek 挑句子写 `broll.json`（要设 `DEEPSEEK_API_KEY`），最后出片：免费的动效画面直接画，AI 画面先用纯色占位，不花钱。第一次转写会下载约 240 MB 的识别模型。从 v0.8 升级的，先在 `template` 目录重新 `npm install`。真生成 AI 画面、费用和审片见 [口播配画面](broll.md)。
+它先在本机转写出字幕，再请 DeepSeek 挑句子写 `broll.json`（要设 `DEEPSEEK_API_KEY`），最后出片：免费的动效画面直接画，AI 画面先用纯色占位，不花钱。第一次转写会下载约 240 MB 的识别模型。从 v0.8 升级的，先在 `template` 目录重新 `npm install`。口播配画面要完整版 ffmpeg，上面装依赖时的 `imageio-ffmpeg` 就是给它用的（Remotion 自带的精简版不够）。这一版四种 AI 画面风格的参考图还没出，AI 画面只能用占位预览，动效画面可以正常出。真生成 AI 画面、费用和审片见 [口播配画面](broll.md)。
 
 ### 在 DeepSeek Harness 里用
 

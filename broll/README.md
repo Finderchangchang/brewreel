@@ -38,7 +38,9 @@ node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>
 node scripts/broll/make-style-refs.mjs --style <风格 id> [--only refs/character.jpg] [--n 1-4] [--dry-run] [--yes]
 ```
 
-- `talk.mjs` 把转写、`llm_broll`、`make-talk` 串成一条：已有 `talk.srt` 就不转写，已有 `broll.json` 就不重写（`--rewrite-broll` 才重写），出片的参数原样交给 `make-talk`。它永远不跑 `approve.mjs`。
+- `talk.mjs` 把转写、`llm_broll`、`make-talk` 串成一条：已有 `talk.srt` 就不转写，已有 `broll.json` 就不重写（`--rewrite-broll` 才重写，不能和 `--yes` 一起用），出片的参数原样交给 `make-talk`。它永远不跑 `approve.mjs`。停下时印出的下一条命令已经去掉 `--rewrite-broll`、`--only`、`--force-redo`。
+- 口播配画面要完整版 ffmpeg（`pip install imageio-ffmpeg`，或系统 ffmpeg，或环境变量 `FFMPEG`）；`talk.mjs` 和 `make-talk` 一开头就查，缺了退出码 2。
+- `llm_broll` 每一轮先写 `broll.llm-draft.json` 再校验，通过了才换成 `broll.json`（旧的备份成 `broll.json.bak-<时间>`）；每轮的 token 用量和校验报告写进项目目录的 `llm_log.json`（排查用，可以删），失败时的报错在 `broll.llm-error.txt`。接口调用失败退出码 4。
 - `motion.mjs` 只查动效段，打印每段的时间窗、上屏的字和每个字出现的时刻。
 - `make-style-refs.mjs` 给维护者出风格参考图（image-01，花钱），普通用户不用跑。
 - 项目目录里要有 `talk.mp4`；`make-talk` 还要 `talk.srt` 和 `broll.json`。`--out` 不能写在仓库里面。`--dry-run` 只校验、写 `broll.plan.json` 和估价，不生成。`minimax-h3` 即使没超预算，也要先看估价，再加 `--yes` 才生成。`placeholder` 和 `local` 估价为 0 时不用 `--yes`。
@@ -59,13 +61,14 @@ node scripts/broll/make-style-refs.mjs --style <风格 id> [--only refs/characte
 
 - 窗口 = 起句开始前 120 毫秒到止句结束后 200 毫秒。AI 段生成秒数向上取整，夹在 4–15 秒。
 - 动效段 1.8–12 秒，AI 段 2.5–12 秒；段与段之间至少 1 秒真人；所有画面总长不超过全片 60%。第一句、最后一句、`keepFace` 不能盖。
-- 动效段：上屏的字按位置从字幕原文里拷出来，不在原句里就报错；摘词前面的否定字要一起摘；数字只经 counter 的 `say` / `from`，由脚本换算；同一模板全片最多 2 次，相邻动效段不同模板。有转写缓存时用逐字时刻，没有就按字数估。
+- 动效段：上屏的字按位置从字幕原文里拷出来，不在原句里就报错；摘词前面的否定（「不用」「不要」「don't」这类）要一起摘；数字只经 counter 的 `say` / `from`，由脚本换算，隔着空格、换行或分句的两个数不拼；转写拿不准、还没人核对的字不上卡片（`llm_broll` 拦下，人跑时提醒）；同一模板全片最多 2 次，相邻动效段不同模板。有转写缓存时用逐字时刻，没有就按字数估。说完最后一个字后面是静音时，窗口往后延到下一句开口前（不挤掉段间 1 秒，不超 60%）。
 - AI 段：按 `look` 选风格和参考图，拼提示词（共用机器人规格、材质、地面、镜头），拼好后查泄漏词；风格最多两种，副风格不超过 AI 段一半，第一段用主风格，来回切不超过 2 次。
-- `captions` 为 `burned` 时不能用 `full` / `pip`（会盖住烧进去的字幕）。`split` 只给竖版。
+- `captions` 为 `burned` 时不能用 `full` / `pip`（会盖住烧进去的字幕）。`split` 只给竖版，所以横版原片加 `burned` 不支持。
 - 原片是 HEVC、可变帧率、单声道、带旋转标记、奇数宽高或非整数帧率时，先转成 H.264 恒定帧率存在 `<项目目录>/.brewreel/`，原片不动。
 - 单价：768P 0.5 元/秒，2K 0.8 元/秒。参考图 image-01 每张 0.025 元。动效段、占位片和本地文件按 0 元。接口回执没有金额，账本按价目表乘实际秒数。超过 `budgetYuan` 就停，退出码 3。`MINIMAX_API_KEY` 以 `sk-cp-` 开头（订阅 key）时，估价另印积分（768P 约 70 积分/秒，以 MiniMax 后台为准），预算闸门仍按元。
-- 已有 task id 时只查询，不重新提交。下载链接过期就重新查询拿新链接，不重新生成。同一段最多重做 2 次，第 3 次要加 `--force-redo`。缺参考图时在写账本之前停下，退出码 2，没花钱。
-- 退出码：0 交付，1 校验没过，2 参数或目录或密钥或缺参考图，3 超预算、没加 `--yes`、或重做次数到顶，4 转写、转码、生成、检查或渲染失败，5 还没审片。
+- 已有 task id 时只查询，不重新提交。下载链接过期就重新查询拿新链接，不重新生成。同一段最多重做 2 次，第 3 次要加 `--force-redo`。缺参考图时在写账本之前停下，退出码 2，没花钱。同一个 `--out` 里已有付费片段时，`placeholder` / `local` 不会覆盖它们（退出码 2）；占位片的账本条目不算花过钱，换成 `minimax-h3` 后第一次生成不占重做次数。
+- 合成的输入（原片、字幕、计划、生成片、合成代码）和上次交付时一样，就不重新渲染。
+- 退出码：0 交付，1 校验没过，2 参数或目录或密钥或缺参考图或缺完整版 ffmpeg，3 超预算、没加 `--yes`、或重做次数到顶，4 转写、转码、生成、检查或渲染失败（`llm_broll` 的接口调用失败也是 4），5 还没审片。
 
 ## 环境变量
 

@@ -62,7 +62,9 @@ Remotion 是源码可见、非开源的软件：个人、3 人及以下的营利
 <details>
 <summary><b>需要装系统 ffmpeg 吗？</b></summary>
 
-不需要。拼图 `sheet.png` 由 Remotion 的 `Sheet` 合成直接出图（整片每秒一帧，缩略排成网格，每格下面标时间和镜号），检查帧 `check/*.png` 用 Remotion 自带的 ffmpeg 从成片里抽，抽不出来会改用 Remotion 单帧补。设了环境变量 `FFMPEG=/path/to/ffmpeg` 时，拼图会先用它的 `tile` 滤镜拼，失败再退回 `Sheet` 合成。拼图没生成不影响成片 `video.mp4`，终端会打印原因。
+做宣传片不需要（下面这段说的是宣传片）。**口播配画面要完整版 ffmpeg**：`pip install imageio-ffmpeg` 最省事，或者自己装 ffmpeg 放进 PATH、设环境变量 `FFMPEG` 指向它；Remotion 自带的精简版缺滤镜，不够用，缺的话命令一开头就会说。
+
+宣传片这边：拼图 `sheet.png` 由 Remotion 的 `Sheet` 合成直接出图（整片每秒一帧，缩略排成网格，每格下面标时间和镜号），检查帧 `check/*.png` 用 Remotion 自带的 ffmpeg 从成片里抽，抽不出来会改用 Remotion 单帧补。设了环境变量 `FFMPEG=/path/to/ffmpeg` 时，拼图会先用它的 `tile` 滤镜拼，失败再退回 `Sheet` 合成。拼图没生成不影响成片 `video.mp4`，终端会打印原因。
 
 </details>
 

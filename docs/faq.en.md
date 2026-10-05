@@ -62,7 +62,9 @@ This repo pins `remotion` / `@remotion/cli` to `4.0.529`. After upgrading to 5.0
 <details>
 <summary><b>Do I need a system ffmpeg?</b></summary>
 
-No. The contact sheet `sheet.png` is rendered by Remotion's `Sheet` composition (one frame per second of the video, tiled as thumbnails, each labelled with its time and shot number). The check frames `check/*.png` are extracted from the video with Remotion's bundled ffmpeg, and any frame that can't be extracted is rendered as a Remotion still instead. If you set `FFMPEG=/path/to/ffmpeg`, the sheet is tiled with its `tile` filter first and falls back to the `Sheet` composition if that fails. A missing sheet never affects `video.mp4`; the terminal prints the reason.
+Not for promo videos (the paragraph below is about them). **Talking-head B-roll needs a full ffmpeg**: `pip install imageio-ffmpeg` is the easiest, or put your own ffmpeg on PATH or point the `FFMPEG` environment variable at it; the slim build bundled with Remotion lacks filters, and the command says so at the start.
+
+For promo videos, the contact sheet `sheet.png` is rendered by Remotion's `Sheet` composition (one frame per second of the video, tiled as thumbnails, each labelled with its time and shot number). The check frames `check/*.png` are extracted from the video with Remotion's bundled ffmpeg, and any frame that can't be extracted is rendered as a Remotion still instead. If you set `FFMPEG=/path/to/ffmpeg`, the sheet is tiled with its `tile` filter first and falls back to the `Sheet` composition if that fails. A missing sheet never affects `video.mp4`; the terminal prints the reason.
 
 </details>
 

@@ -15,7 +15,9 @@
 
 ## 一条命令上手
 
-先按 [安装与上手](quickstart.md) 装好依赖（`template` 目录里 `npm install`）。从 v0.8 升级的，要在 `template` 目录重新跑一次 `npm install`，装上转写组件。
+先按 [安装与上手](quickstart.md) 装好依赖（`template` 目录里 `npm install`，再 `pip install numpy scipy imageio-ffmpeg`）。从 v0.8 升级的，要在 `template` 目录重新跑一次 `npm install`，装上转写组件。
+
+口播配画面要**完整版 ffmpeg**（转码、占位画面、片段检查、拼图都要用）。Remotion 自带的那份是精简版，缺很多滤镜，不够用。`pip install imageio-ffmpeg` 最省事；也可以自己装 ffmpeg 放进 PATH，或者设环境变量 `FFMPEG` 指向它。没装的话，命令一开头就会停下告诉你，不会等转写完才失败。
 
 新建一个项目目录，把口播视频改名为 `talk.mp4` 放进去，然后：
 
@@ -23,13 +25,17 @@
 node scripts/talk.mjs <项目目录> --out <仓库外目录>
 ```
 
-它做三步，做过的步骤下次自动跳过，所以可以一直重复跑同一条命令：
+它做三步。前两步做过就跳过；出片每次重做，但原片、字幕、`broll.json`、生成片和合成代码都没变时，直接用上次的成片。所以可以一直重复跑同一条命令：
 
 1. **转写**：没有 `talk.srt` 就在本机转写出一份。第一次要下载约 240MB 的识别模型，之后不再下载。已有 `talk.srt` 永远不会被覆盖。
 2. **写 `broll.json`**：交给便宜模型写，要先设好 `DEEPSEEK_API_KEY`（或 `LLM_API_KEY`）。校验没过，会把报错原文交回模型再写，最多 3 轮。已有 `broll.json` 就跳过，加 `--rewrite-broll` 才重写。
 3. **出片**：动效画面直接画出来；AI 画面先用纯色占位，不花钱。
 
-第一次跑完，打开输出目录里的 `video.mp4` 和拼图 `sheet.png` 看节奏。默认 AI 画面最多 2 段，其余要配画面的句子用动效画面或留脸；想改上限加 `--max-ai 1` 之类，再加 `--rewrite-broll` 重写。
+第一次跑完，打开输出目录里的 `video.mp4` 和拼图 `sheet.png` 看节奏。默认 AI 画面最多 2 段，其余要配画面的句子用动效画面或留脸；想改上限加 `--max-ai 1` 之类，再加 `--rewrite-broll` 重写（重写时不要带 `--yes`：新方案先看估价）。
+
+`--rewrite-broll`、`--only`、`--force-redo` 只该生效一次。脚本停下时会把下一条命令完整印出来（已经去掉这几个），照抄那一条就行。
+
+转写校对时拿不准、还没人核对的字（`talk.fixes.txt` 里「只提示」的那些），不会被做成动效卡片；命令跑完也会再提醒一次。听一下原片，错了就改 `talk.srt`；改完要按新字重写 `broll.json` 就加 `--rewrite-broll`。
 
 想先改字幕再往下走：先只跑转写，改好 `talk.srt`，再跑上面那条命令。
 
@@ -37,9 +43,11 @@ node scripts/talk.mjs <项目目录> --out <仓库外目录>
 node scripts/broll/transcribe.mjs <项目目录>
 ```
 
-没有 DeepSeek key 也能用：让 AI 编程助手照 [`broll/SKILL-broll.md`](../broll/SKILL-broll.md) 写 `broll.json` 放进项目目录，再跑同一条命令。v2 写法的完整示例在 [`examples/talk/motion/broll.json`](../examples/talk/motion/broll.json)。
+没有 DeepSeek key 也能用：让 AI 编程助手照 [`broll/SKILL-broll.md`](../broll/SKILL-broll.md) 写 `broll.json` 放进项目目录，再跑同一条命令。v2 写法的完整示例在 [`examples/talk/motion/broll.json`](../examples/talk/motion/broll.json)，用来参考写法；仓库里没有示例口播视频，想直接拿它试跑，先跑 `node tests/broll/demo.mjs` 生成一段 20 秒的测试口播。
 
 ### 真生成 AI 画面
+
+> **这一版还不能真生成。** 四个正式风格的参考图还没出，用它们真生成会在提交前停下（退出码 2，没花钱）。现在 AI 画面只能用占位预览，动效画面照常出。参考图由维护者出好、随新版本发布后，下面的命令才能用。
 
 占位版看着没问题，再换成 MiniMax H3 真生成。先设好 `MINIMAX_API_KEY`。
 
@@ -49,6 +57,8 @@ node scripts/talk.mjs <项目目录> --out <仓库外目录> --provider minimax-
 ```
 
 第一条只印估价，不花钱。确认后跑第二条。生成完要人看过审片页、自己批准，才能出正式片（见下面的「审片关卡」）。`--dry-run`、`--yes` 只作用于出片这一步，前两步做过就跳过。
+
+真生成以后，同一个 `--out` 的每条命令都要带 `--provider minimax-h3`。漏写了，脚本会停下（退出码 2），不会把付费片段换成占位片；只想看占位排版就换一个 `--out`。
 
 ### 常用参数
 
@@ -66,8 +76,8 @@ node scripts/talk.mjs <项目目录> --out <仓库外目录> --provider minimax-
 | `--lang auto\|zh\|en\|yue\|ja\|ko` | 转写语种，默认 `auto` |
 | `--terms "词1,词2"` | 专有名词，帮转写校对认对 |
 | `--no-fix` | 转写后不让 DeepSeek 校对 |
-| `--rewrite-broll` | 已有 `broll.json` 也重写 |
-| `--only b03` | 只重做这一段 AI 画面 |
+| `--rewrite-broll` | 已有 `broll.json` 也重写。通过校验才替换，旧的备份成 `broll.json.bak-<时间>`；不能和 `--yes` 一起用 |
+| `--only b03` | 只重做这一段 AI 画面（每带一次就重做一次、花一次钱，重做完就去掉） |
 | `--concurrency <1–12>` | 同时提交几段，默认 3 |
 | `--force-redo` | 同一段第 3 次重做时要加 |
 
@@ -108,9 +118,9 @@ node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>
 | `checklist` | 列两到四样东西 | 清单，说到哪条哪条出来打勾 |
 | `steps` | 讲先后 | 步骤流，说到第几步亮第几步 |
 | `counter` | 报一个确定的数 | 数字滚动，说完这个数时落定 |
-| `compare` | 前后、两种做法对比 | 左右两栏，后说的一边胜出 |
+| `compare` | 前后、两种做法对比，先说旧的、后说新的 | 左右两栏，后说的一边胜出。先说新做法的句子别用它 |
 
-卡片上的字必须是原话里连着的几个字，不能改写；要显示的数字用 `counter`，而且要原话里真说了。所以**转写错的字会照样上屏**：出片前看一眼 `talk.srt`，错字直接改。配色跟着主风格走。
+卡片上的字必须是原话里连着的几个字，不能改写；摘词前面的否定（不用、不要、不会、don't……）要一起摘；要显示的数字用 `counter`，而且要原话里真说了，隔着空格、换行或分句的两个数不会被拼成一个。所以**转写错的字会照样上屏**：出片前看一眼 `talk.srt`，错字直接改。配色跟着主风格走。卡片说完最后一个字后，后面是静音的话会多停一会儿再收。
 
 ### AI 画面的风格
 
@@ -124,7 +134,7 @@ node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>
 
 一部片的 AI 画面最多用两种风格：主风格 `style`，加一个可选的副风格 `styleAlt`（只能选主风格搭得上的）。机器人的形状和颜色写在 `broll/character.json`，所有风格共用；风格只决定它用什么材质做。每种风格能做哪些事、能用哪些镜头、参考图出了没有，见 [`broll/styles/README.md`](../broll/styles/README.md)。
 
-某个风格还没有参考图时，用它真生成会在提交前停下（退出码 2，没花钱），并告诉你换哪个风格、或改成动效画面。用 `placeholder` 预览不受影响。
+某个风格还没有参考图时，用它真生成会在提交前停下（退出码 2，没花钱），并告诉你换哪个风格、或改成动效画面。用 `placeholder` 预览不受影响。这一版四个正式风格都还没有参考图。
 
 ## 三种放法
 
@@ -140,9 +150,9 @@ node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>
 |---|---|
 | add | 按 `talk.srt` 把字幕加到成片上 |
 | none | 不加字幕 |
-| burned | 口播里已经烧了字幕。只能用 `split`，免得再盖住 |
+| burned | 口播里已经烧了字幕。只能用 `split`，免得再盖住。横版原片加 `burned` 这一版不支持（`split` 只给竖版），改用 `none` |
 
-`full` 和 `pip` 的字幕在画面下方 1/4；`split` 的字幕贴在分界线上方，两行字幕会整体往上挪，不压脸。
+`full` 和 `pip` 的字幕在画面下方 1/4；`pip` 段的字幕在圆窗左边放不下时，整段挪到圆窗上方、用满宽度。`split` 的字幕贴在分界线上方，两行字幕会整体往上挪，不压脸。一行字稍长放不下时，字号会缩一点，不让末尾剩一两个字单独成行。
 
 ## 转写
 
@@ -150,7 +160,8 @@ node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>
 - 模型放在全局缓存里，所有项目共用：Windows 是 `%LOCALAPPDATA%\brewreel\asr`，macOS / Linux 是 `~/.cache/brewreel/asr`。环境变量 `BREWREEL_ASR_DIR` 改缓存目录；`BREWREEL_ASR_MODEL_DIR` 指向你手动下载好的目录（里面放 `model.int8.onnx` 和 `tokens.txt`），就不再下载。
 - Windows 上下完模型后，第一次加载会多等约 30 秒。
 - 语种默认自动识别。普通话被认成粤语、日语时，用 `node scripts/broll/transcribe.mjs <项目目录> --lang zh --force` 重转。
-- 有 `DEEPSEEK_API_KEY`（或 `LLM_API_KEY`）时，转写完会请便宜模型校对：模型只交「哪个字改成哪个字」的补丁，脚本按读音规则决定改不改。涉及数字、否定、反义的改动只提示、不改。改了什么、哪几句请你听一下原片，都写在 `talk.fixes.txt`。不要校对加 `--no-fix`。
+- 有 `DEEPSEEK_API_KEY`（或 `LLM_API_KEY`）时，转写完会请便宜模型校对：模型只交「哪个字改成哪个字」的补丁，脚本按读音规则决定改不改。涉及数字、否定、反义的改动只提示、不改；改成专有名词也要读音接近才改。改了什么、哪几句请你听一下原片，都写在 `talk.fixes.txt`。只提示的那几处字不会被做成动效卡片，改过那一句就算核对过。不要校对加 `--no-fix`。
+- 同一个视频放进两个项目各转写一次，校对结果可能不一样（模型每次回答会有出入）；同一个项目重跑用的是缓存，结果不变。
 - 专有名词（产品名、人名）可以写进项目目录的 `talk.terms.txt`，一行一个；或者用 `--terms "词1,词2"`。
 - 已有 `talk.srt` 永远不覆盖。要重转加 `--force`：旧字幕先改名为 `talk.srt.bak-<时间>`，同一个视频不重新识别。
 - `talk.srt` 可以随便改错字，但写好 `broll.json` 之后**不要拆句、并句**：句子号会错位。脚本记下了当时的分句，分句一变校验就会拦下，让你重写 `broll.json`。
@@ -192,7 +203,7 @@ AI 助手不许替人运行 approve，`talk.mjs` 也永远不跑它。批准记�
 
 `placeholder` 和 `local` 不花钱，不用审。
 
-中断了用同一个 `--out` 再跑：已经提交过的段只查询，不重新提交、不重复花钱。
+中断了用同一个 `--out` 再跑：已经提交过的段只查询，不重新提交、不重复花钱。「再跑同一条命令」时去掉 `--only`、`--rewrite-broll`、`--force-redo`（脚本印出的下一条命令已经去掉了）。
 
 ## 输出目录里有什么
 
@@ -206,11 +217,24 @@ AI 助手不许替人运行 approve，`talk.mjs` 也永远不跑它。批准记�
 | `ledger.json` | 账本（只有 AI 画面）：task id、实际秒数、费用 |
 | `review.html` / `broll.review.json` | 审片页和批准记录 |
 
+## 项目目录里多出来的文件
+
+| 文件 | 内容 | 能不能删 |
+|---|---|---|
+| `talk.srt` | 自动转写出来的字幕 | 别删，删了会重新转写，句子号可能变 |
+| `talk.fixes.txt` | 转写校对改了什么、哪几处只提示 | 能删，只给人看 |
+| `llm_log.json` | 便宜模型写 `broll.json` 时每一轮的 token 用量和校验报告 | 能删，排查用 |
+| `broll.llm-error.txt` | 写 `broll.json` 没成功时的最后一份报错 | 能删 |
+| `broll.llm-draft.json` | `--rewrite-broll` 没通过校验时，模型的最后一版（原来的 `broll.json` 没动） | 能删 |
+| `broll.json.bak-<时间>` | `--rewrite-broll` 替换前的旧 `broll.json` | 能删，想回到旧方案就改名回来 |
+| `.brewreel/` | 转写缓存、分句记录、转码后的原片、拿不准的字 | 能删，删了动效卡片的逐字时刻改用估算，分句检查和拿不准提醒也跟着没了 |
+
 ## 已知限制
 
 - **实验功能**：还没有用大量真人口播出过完整样片。成片当初稿，发布前整片看一遍。
 - **凸点可能仍会偶发**：新风格的提示词只写想看到的东西，不提凸点，但生成模型偶尔还是会画出带圆点的积木，发布前在审片页逐帧看。`brick-diorama` 会稳定出凸点，只为老项目保留。
-- **四个新风格的参考图还没出**：没有参考图的风格不能真生成，只能用 `placeholder` 排版；参考图由维护者出好随仓库发。
+- **四个新风格的参考图还没出**：这一版 AI 画面不能真生成，只能用 `placeholder` 排版；参考图由维护者出好随仓库发。
+- **v0.8 的老文件改成 version 2 要重新花钱**：v2 的提示词和请求都变了，已经生成过的 AI 段会重新生成。老文件留 version 1 照常能跑。
 - **每段 AI 画面单独生成**：共用的角色规格、参考图和 `link: continue` 能让几段看着更接近，但造型和颜色仍可能有出入，不保证段与段完全连贯。
 - **AI 画面最多两种风格**：一个主风格加一个副风格；不能每段换一种。
 - **生成画面里的文字不可靠**：要准确的字请用动效画面。

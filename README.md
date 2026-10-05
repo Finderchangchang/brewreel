@@ -28,7 +28,7 @@
 ```bash
 git clone https://github.com/Finderchangchang/brewreel.git
 cd brewreel/template && npm install && npx remotion browser ensure
-cd .. && pip install numpy scipy
+cd .. && pip install numpy scipy imageio-ffmpeg
 ```
 
 **2. 跑一个样例，确认装好了。**
@@ -73,7 +73,7 @@ dsh web
 - **18 套主题**：cards 默认 6 套，另有 12 套可选配色，不选时老分镜出片不变，见 [`styles/cards/THEMES.md`](styles/cards/THEMES.md)。
 - **校验与合规**：《广告法》极限词、行业规则、断词换行、安全区、数字出处等几十条校验，自查有 ✗ 的片子不交付。
 - **配乐和字幕**：配乐现场合成、卡着镜头切点，没有版权问题；字幕可选中文或英文。
-- **口播配画面（实验）**：只放一段真人口播，一条命令 `node scripts/talk.mjs` 完成本地转写、挑句子、配画面。画面两种：免费的动效卡片（关键词、清单、步骤、数字、对比，字全部照抄原话），和默认最多 2 段 AI 生成画面（积木风等四种风格，花钱前先估价，要人审过）。本地转写用 SenseVoice 模型（FunAudioLLM / 阿里通义实验室）。见 [口播配画面](docs/broll.md)。
+- **口播配画面（实验）**：只放一段真人口播，一条命令 `node scripts/talk.mjs` 完成本地转写、挑句子、配画面。画面两种：免费的动效卡片（关键词、清单、步骤、数字、对比，字全部照抄原话），和默认最多 2 段 AI 生成画面（积木风等四种风格，花钱前先估价，要人审过；这一版四种风格的参考图还没出，AI 画面只能用占位预览，动效画面可以正常出）。本地转写用 SenseVoice 模型（FunAudioLLM / 阿里通义实验室）。见 [口播配画面](docs/broll.md)。
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="数据图表镜头" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 套可选配色" /></p>
