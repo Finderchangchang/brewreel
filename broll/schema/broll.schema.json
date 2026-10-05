@@ -2,13 +2,16 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://brewreel.local/broll.schema.json",
   "title": "broll.json",
+  "description": "version 1 是 v0.8 的写法（只有 AI 画面、一个风格），照常能跑。version 2 加了免费动效画面（source: motion）、副风格（styleAlt + look）和接力（link）。真正的规则（摘词、数字、时间窗、风格搭配）在 scripts/broll/validate.mjs，这份 schema 只管字段形状。",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "style", "provider", "quality", "budgetYuan", "captions", "clips"],
   "properties": {
-    "version": {"const": 1},
-    "style": {"type": "string", "description": "已有风格预设的 id，目前只有 brick-diorama"},
-    "provider": {"enum": ["placeholder", "local", "minimax-h3"]},
+    "version": {"enum": [1, 2]},
+    "style": {"type": "string", "description": "主风格的 id：wood-blocks（默认，积木风）、clay-stopmotion、paper-layers、ink-sketch；brick-diorama 是实验风格"},
+    "styleAlt": {"type": "string", "description": "version 2：副风格，可选。必须在主风格 style.json 的 pairsWith 里"},
+    "thread": {"type": "string", "maxLength": 20, "description": "version 2：一句主线，只进审片页和日志，不进提示词"},
+    "provider": {"enum": ["placeholder", "local", "minimax-h3"], "description": "只管 AI 画面段；动效段不花钱"},
     "quality": {"enum": ["768P", "2K"]},
     "budgetYuan": {"type": "number", "minimum": 0},
     "captions": {"enum": ["burned", "add", "none"]},
@@ -21,10 +24,16 @@
       "type": "array",
       "minItems": 1,
       "maxItems": 12,
-      "items": {"$ref": "#/$defs/clip"}
+      "items": {
+        "if": {"type": "object", "required": ["source"], "properties": {"source": {"const": "motion"}}},
+        "then": {"$ref": "#/$defs/motionClip"},
+        "else": {"$ref": "#/$defs/aiClip"}
+      }
     }
   },
   "$defs": {
+    "cue": {"type": "string", "pattern": "^c[1-9][0-9]*$"},
+    "mode": {"enum": ["full", "pip", "split"]},
     "beat": {
       "type": "object",
       "additionalProperties": false,
@@ -34,24 +43,62 @@
         "end": {"type": "string", "maxLength": 16}
       }
     },
-    "clip": {
+    "aiClip": {
       "type": "object",
+      "description": "AI 生成画面（source 不写或写 ai）。按 look 用主风格或副风格的参考图生成，花钱，要审片",
       "additionalProperties": false,
       "required": ["id", "from", "to", "mode", "job", "plain", "place", "subject", "camera"],
       "properties": {
         "id": {"type": "string", "pattern": "^b[0-9]{2}$"},
-        "from": {"type": "string", "pattern": "^c[1-9][0-9]*$"},
-        "to": {"type": "string", "pattern": "^c[1-9][0-9]*$"},
-        "mode": {"enum": ["full", "pip", "split"]},
+        "from": {"$ref": "#/$defs/cue"},
+        "to": {"$ref": "#/$defs/cue"},
+        "source": {"const": "ai"},
+        "mode": {"$ref": "#/$defs/mode"},
         "job": {"enum": ["demonstrate", "explain", "ground", "compare", "quantify", "evoke", "connect"]},
         "plain": {"type": "string", "maxLength": 20, "description": "只进审片和日志，不进提示词"},
-        "place": {"type": "string", "maxLength": 12},
-        "subject": {"type": "string", "maxLength": 12},
+        "place": {"type": "string", "maxLength": 12, "description": "version 2：只写地点，不写材质"},
+        "subject": {"type": "string", "maxLength": 12, "description": "version 2：只写「机器人」或「机器人和某样东西」，不写颜色和材质"},
         "action": {"type": "string", "maxLength": 24},
         "end": {"type": "string", "maxLength": 16},
         "beats": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"$ref": "#/$defs/beat"}},
         "camera": {"enum": ["static", "slow-push", "pull-back", "pan-left", "pan-right", "orbit", "top-down"]},
+        "look": {"enum": ["main", "alt"], "description": "version 2：main 用主风格（默认），alt 用副风格"},
+        "link": {"enum": ["new", "continue"], "description": "version 2：continue = 开场接上一段 AI 画面的结束画面（两段挨着、look 相同）"},
         "file": {"type": "string", "description": "只有 provider 为 local 时写，相对项目目录或绝对路径"}
+      }
+    },
+    "motionClip": {
+      "type": "object",
+      "description": "version 2：免费动效画面。屏幕上的字全部从原句摘，不花钱、不进账本、不审片、不加「AI 生成画面」标",
+      "additionalProperties": false,
+      "required": ["id", "from", "to", "source", "mode", "job", "template", "plain", "slots"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^b[0-9]{2}$"},
+        "from": {"$ref": "#/$defs/cue"},
+        "to": {"$ref": "#/$defs/cue"},
+        "source": {"const": "motion"},
+        "mode": {"$ref": "#/$defs/mode"},
+        "job": {"enum": ["demonstrate", "explain", "compare", "quantify", "evoke", "list", "stress"]},
+        "template": {"enum": ["keyword", "checklist", "steps", "counter", "compare"]},
+        "plain": {"type": "string", "maxLength": 20},
+        "slots": {
+          "type": "object",
+          "description": "按模板写；每个字串都必须是这一段盖住的原句里连着的字。数字只能写在 counter 的 say / from 里",
+          "additionalProperties": false,
+          "properties": {
+            "text": {"type": "string", "description": "keyword：摘词，≤12 字"},
+            "hot": {"type": "string", "description": "keyword：text 里要强调的一截，≤6 字"},
+            "title": {"type": "string", "description": "checklist：小标题，≤8 字"},
+            "items": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "string"}, "description": "checklist（每条 ≤10 字）/ steps（每条 ≤8 字），按说话先后"},
+            "say": {"type": "string", "description": "counter：原句里带数字的那几个字连同单位，如「二十五秒」"},
+            "from": {"type": "string", "description": "counter：可选的旧值，单位和 say 相同"},
+            "label": {"type": "string", "description": "counter：说明，≤12 字"},
+            "labels": {"enum": ["before-after", "old-new", "manual-auto", "wrong-right"], "description": "compare：栏标题，字由脚本给"},
+            "left": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"type": "string"}, "description": "compare：先说的那一边，每条 ≤10 字"},
+            "right": {"type": "array", "minItems": 1, "maxItems": 2, "items": {"type": "string"}, "description": "compare：后说、胜出的那一边，每条 ≤10 字"},
+            "verdict": {"type": "string", "description": "compare：结论，≤12 字"}
+          }
+        }
       }
     }
   }

@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "style": "wood-blocks",
+  "provider": "placeholder",
+  "quality": "768P",
+  "budgetYuan": 20,
+  "captions": "add",
+  "keepFace": ["c5"],
+  "clips": [
+    {
+      "id": "b01",
+      "from": "c3",
+      "to": "c4",
+      "source": "motion",
+      "mode": "full",
+      "job": "explain",
+      "template": "steps",
+      "plain": "先列再做",
+      "slots": {"items": ["要做的事列出来", "一步一步做完"]}
+    },
+    {
+      "id": "b02",
+      "from": "c6",
+      "to": "c7",
+      "source": "ai",
+      "mode": "split",
+      "job": "demonstrate",
+      "plain": "换上新的方块",
+      "place": "小仓库",
+      "subject": "机器人",
+      "action": "从架子上取下旧方块换上新方块",
+      "end": "架子变得整整齐齐",
+      "camera": "slow-push"
+    }
+  ]
+}

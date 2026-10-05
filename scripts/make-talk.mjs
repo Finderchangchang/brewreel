@@ -1,20 +1,27 @@
 #!/usr/bin/env node
-// 口播配 B-roll：校验 → 计划 → 估价闸门 → 生成 → 审片（minimax-h3）→ 合成 → 交付。
+// 口播配 B-roll：校验 → 计划 → 估价闸门 → 原片归一化 → 生成 AI 画面 → 审片（minimax-h3）→ 合成 → 交付。
 //   node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3] [--force-redo]
-// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查或渲染失败 / 5 还没审片
+// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里、缺参考图 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查、转码或渲染失败 / 5 还没审片
 // --out 不许落在仓库里（promo/ 除外，或人手动加 --allow-in-repo）。--dry-run 只校验、写计划和估价，不生成。
+// 动效画面（source:"motion"）不花钱、不进账本、不审片、不加「AI 生成画面」标，合成时直接画；
+// 只有 AI 画面段才走 --yes、预算、审片这几道关。全片都是动效时不用 --yes。
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {sha256Stream} from './broll/asr/audio.mjs';
 import {extractDeliveryFrames} from './broll/frames.mjs';
 import {generateClips} from './broll/generate.mjs';
 import {sha256File} from './broll/hash.mjs';
-import {markApproved, saveLedger} from './broll/ledger.mjs';
+import {loadLedger, markApproved, saveLedger} from './broll/ledger.mjs';
 import {ffmpeg} from './broll/media.mjs';
-import {buildPlan, writePlan} from './broll/plan.mjs';
+import {toMotionProps} from './broll/motion.mjs';
+import {normalizeTalk, normalizedMediaOf} from './broll/normalize.mjs';
+import {aiClipsOf, buildPlan, writePlan} from './broll/plan.mjs';
+import {costLine, keyKindOf} from './broll/prices.mjs';
+import {missingRefs} from './broll/prompt.mjs';
 import {checkReview} from './broll/review.mjs';
 import {ROOT, TEMPLATE} from './broll/root.mjs';
+import {readTranscribeMeta, srtSourceOf} from './broll/transcribe.mjs';
 import {formatReport, loadBanned, loadProject, loadStyles, validateBroll} from './broll/validate.mjs';
 import {QueueTimeoutError, acquireRenderLock} from './lib/render-lock.mjs';
 
@@ -22,6 +29,7 @@ const REMOTION = path.join(TEMPLATE, 'node_modules', '@remotion', 'cli', 'remoti
 const LOCK = path.join(TEMPLATE, '.render.lock');
 const KNOWN = new Set(['--out', '--provider', '--dry-run', '--yes', '--keep', '--allow-in-repo', '--only', '--concurrency', '--draft', '--force-redo']);
 const TAKES = new Set(['--out', '--provider', '--only', '--concurrency']);
+const USAGE = '用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3]';
 
 const fail = (code, message) => {
   console.log(message);
@@ -30,7 +38,7 @@ const fail = (code, message) => {
 
 const argv = process.argv.slice(2);
 for (const a of argv) {
-  if (a.startsWith('--') && !KNOWN.has(a)) fail(2, `不认识的参数 ${a}\n用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3]`);
+  if (a.startsWith('--') && !KNOWN.has(a)) fail(2, `不认识的参数 ${a}\n${USAGE}`);
 }
 const positionals = [];
 for (let i = 0; i < argv.length; i++) {
@@ -46,9 +54,7 @@ const opt = (name) => {
 };
 const has = (name) => argv.includes(name);
 
-if (positionals.length !== 1 || !opt('--out')) {
-  fail(2, '用法：node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3]');
-}
+if (positionals.length !== 1 || !opt('--out')) fail(2, USAGE);
 
 const projectDir = path.resolve(positionals[0]);
 const outDir = path.resolve(opt('--out'));
@@ -76,72 +82,104 @@ if (!loaded.ok) fail(loaded.exitCode, loaded.message);
 
 const doc = loaded.doc;
 if (opt('--provider')) doc.provider = opt('--provider');
+const styles = loadStyles();
+const keyKind = keyKindOf();
 
 const report = validateBroll(doc, {
   cues: loaded.cues,
   durationMs: loaded.media.durationMs,
   width: loaded.media.width,
   height: loaded.media.height,
-  styles: loadStyles(),
+  styles,
   banned: loadBanned(),
   projectDir,
+  tokens: loaded.tokens,
+  lockProblem: loaded.lockProblem,
+  keyKind,
 });
 console.log(formatReport(report));
 if (report.errors.length && !report.budgetExceeded) process.exit(1);
-if (loaded.media.width % 2 || loaded.media.height % 2) {
-  fail(1, `原片是 ${loaded.media.width}×${loaded.media.height}，有一边是奇数。yuv420 需要偶数宽高，先把口播裁成偶数。`);
-}
 
-const style = loadStyles()[doc.style];
-const plan = buildPlan({doc, cues: loaded.cues, media: loaded.media, style, projectDir});
+// 合成用的画面参数：原片要转码的话（HEVC、可变帧率、奇数宽高…）按转完之后的算
+const renderMedia = normalizedMediaOf(loaded.media);
+let plan;
+try {
+  plan = buildPlan({doc, cues: loaded.cues, media: renderMedia, style: styles[doc.style], styles, projectDir, tokens: loaded.tokens});
+} catch (e) {
+  fail(1, e.message);
+}
+const aiClips = aiClipsOf(plan);
+const motionClips = plan.clips.filter((c) => c.source === 'motion');
 fs.mkdirSync(outDir, {recursive: true});
 const planPath = writePlan(path.join(outDir, 'broll.plan.json'), plan);
 console.log(`计划：${planPath}`);
+if (motionClips.length) console.log(`动效画面 ${motionClips.length} 段（${motionClips.map((c) => `${c.id} ${c.template}`).join('、')}）：不花钱，不用审片`);
 if (doc.provider === 'minimax-h3' || plan.totalYuan > 0) {
-  console.log('估价明细：');
-  for (const c of plan.clips) console.log(`  ${c.id}  ${c.genSec} 秒 × ${plan.priceYuanPerSec} 元/秒 = ${c.costYuan} 元`);
-  console.log(`  合计 ${plan.totalYuan} 元（预算 ${doc.budgetYuan} 元）`);
+  if (aiClips.length) {
+    console.log('估价明细：');
+    for (const c of aiClips) console.log(`  ${c.id}  ${c.genSec} 秒 × ${plan.priceYuanPerSec} 元/秒 = ${c.costYuan} 元`);
+    console.log(`  合计 ${plan.totalYuan} 元（预算 ${doc.budgetYuan} 元）`);
+    console.log(`  ${costLine({provider: doc.provider, quality: doc.quality, genSec: plan.aiGenSec, yuan: plan.totalYuan, kind: keyKind})}`);
+  } else {
+    console.log(`估价：0 元，这一版没有 AI 画面段（预算 ${doc.budgetYuan} 元）`);
+  }
 } else {
   console.log(`估价：${plan.totalYuan} 元（预算 ${doc.budgetYuan} 元）`);
 }
+if (renderMedia.normalized && dryRun) console.log(`原片要先转成标准格式再合成（${renderMedia.reasons.join('；')}）：H.264、${renderMedia.fps} 帧/秒恒定帧率，转好的存在项目目录的 .brewreel/ 下，原片不动。`);
 if (report.budgetExceeded) process.exit(3);
+
+// 参考图：只有真要给 minimax-h3 提交 AI 画面时才拦（dry-run 只提醒）
+const refProblems = doc.provider === 'minimax-h3' && aiClips.length ? missingRefs(doc, styles) : [];
+if (refProblems.length) {
+  const text = refProblems.map((e, k) => `${k + 1}. ${e.where}：${e.problem}\n   → 怎么改：${e.fix}`).join('\n');
+  if (dryRun) console.log(`提醒：真生成时会停在这里（缺参考图）：\n${text}`);
+  else fail(2, `缺参考图，不提交：\n${text}`);
+}
 if (dryRun) {
   console.log('dry-run：只出计划，不生成。');
   process.exit(0);
 }
-if (doc.provider === 'minimax-h3' && !yes) fail(3, '还没生成。确认后加 --yes 再跑同一条命令。');
+if (doc.provider === 'minimax-h3' && aiClips.length && !yes) fail(3, '还没生成。确认后加 --yes 再跑同一条命令。');
 if (plan.totalYuan > 0 && !yes) fail(3, `估价 ${plan.totalYuan} 元。加 --yes 才会真正生成。`);
 
-const styleDir = path.join(ROOT, 'broll', 'styles', doc.style);
-const references = (Array.isArray(style?.references) ? style.references : [])
-  .map((rel) => path.join(styleDir, rel))
-  .filter((abs) => fs.existsSync(abs));
-
-let ledger;
+let talkReady;
 try {
-  ledger = await generateClips({
-    doc,
-    plan,
-    outDir,
-    projectDir,
-    only,
-    forceRedo,
-    concurrency: doc.provider === 'minimax-h3' ? concurrency : 1,
-    references,
-    log: console.log,
-  });
+  talkReady = await normalizeTalk({talk: loaded.talk, projectDir, media: loaded.media, log: console.log});
 } catch (e) {
   fail(e.exitCode || 4, e.message);
 }
+if (talkReady.cached) console.log('原片转码：用上次转好的那份');
+
+let ledger;
+try {
+  ledger = aiClips.length
+    ? await generateClips({
+        doc,
+        plan,
+        outDir,
+        projectDir,
+        only,
+        forceRedo,
+        concurrency: doc.provider === 'minimax-h3' ? concurrency : 1,
+        log: console.log,
+      })
+    : loadLedger(path.join(outDir, 'ledger.json'));
+} catch (e) {
+  fail(e.exitCode || 4, e.message);
+}
+if (only && !aiClips.some((c) => c.id === only)) {
+  fail(2, plan.clips.some((c) => c.id === only) ? `${only} 是动效画面，不用生成。去掉 --only 直接出片。` : `--only ${only} 不在这份计划里。先看 broll.plan.json 里的 id。`);
+}
 
 const ledgerPath = path.join(outDir, 'ledger.json');
-const missing = plan.clips.filter((c) => !ledger.clips[c.id] || !['checked', 'approved'].includes(ledger.clips[c.id].status));
+const missing = aiClips.filter((c) => !ledger.clips[c.id] || !['checked', 'approved'].includes(ledger.clips[c.id].status));
 if (missing.length) {
   fail(only ? 0 : 4, only ? `只处理了 ${only}。还有 ${missing.map((c) => c.id).join('、')} 没准备好，这次不出片。` : `还有片段没准备好：${missing.map((c) => c.id).join('、')}`);
 }
 
-if (doc.provider === 'minimax-h3' && !draft) {
-  const gate = checkReview({projectDir, outDir, clipIds: plan.clips.map((c) => c.id)});
+if (doc.provider === 'minimax-h3' && !draft && aiClips.length) {
+  const gate = checkReview({projectDir, outDir, clipIds: aiClips.map((c) => c.id)});
   if (!gate.ok) {
     console.log(`未审片：${gate.reason}`);
     console.log('先跑 node scripts/broll/review-sheet.mjs <项目目录> --out <输出目录>');
@@ -172,15 +210,22 @@ const cleanup = () => {
   if (!keep) fs.rmSync(runDir, {recursive: true, force: true});
 };
 
+// 动效画面的配色跟着主风格走（积木风配蓝灰底加橙色，和 AI 段接得上）
+const mainStyle = styles[doc.style] ?? {};
+const motionTheme = typeof mainStyle.motionTheme === 'string' ? mainStyle.motionTheme : mainStyle.motionTheme?.shots;
+const motionPaper = typeof mainStyle.motionTheme === 'object' ? mainStyle.motionTheme?.paper : undefined;
+
 try {
   fs.mkdirSync(runDir, {recursive: true});
-  fs.copyFileSync(loaded.talk, path.join(runDir, 'talk.mp4'));
+  fs.copyFileSync(talkReady.file, path.join(runDir, 'talk.mp4'));
   const propsClips = plan.clips.map((clip) => {
+    if (clip.source === 'motion') return toMotionProps(clip.motion, {theme: motionTheme, paper: motionPaper});
     const entry = ledger.clips[clip.id];
     const abs = path.resolve(outDir, entry.file);
     const name = `${clip.id}.mp4`;
     fs.copyFileSync(abs, path.join(runDir, name));
     return {
+      kind: 'video',
       id: clip.id,
       src: `${runRel}/${name}`,
       startMs: clip.windowMs[0],
@@ -198,7 +243,7 @@ try {
     captions: doc.captions,
     cues: loaded.cues.map((c) => ({id: c.id, startMs: c.startMs, endMs: c.endMs, text: c.text})),
     clips: propsClips,
-    draft: doc.provider === 'minimax-h3' && draft,
+    draft: doc.provider === 'minimax-h3' && draft && aiClips.length > 0,
   };
   fs.writeFileSync(propsPath, JSON.stringify(props, null, 2) + '\n', 'utf8');
 
@@ -254,38 +299,53 @@ try {
   }
 
   const finishedAt = new Date().toISOString();
-  for (const clip of plan.clips) ledger.clips[clip.id] = markApproved(ledger.clips[clip.id], finishedAt);
-  saveLedger(ledgerPath, ledger);
+  for (const clip of aiClips) ledger.clips[clip.id] = markApproved(ledger.clips[clip.id], finishedAt);
+  if (aiClips.length) saveLedger(ledgerPath, ledger);
+  const meta = readTranscribeMeta(projectDir);
   const manifest = {
     status: 'delivered',
     provider: doc.provider,
     quality: doc.quality,
     style: doc.style,
+    styleAlt: doc.styleAlt ?? null,
+    thread: doc.thread ?? null,
     width: plan.width,
     height: plan.height,
     fps: plan.fps,
     durationSec: Number(loaded.media.durationSec.toFixed(3)),
-    totalYuan: Math.round(plan.clips.reduce((sum, c) => sum + (Number(ledger.clips[c.id]?.costYuan) || Number(c.costYuan) || 0), 0) * 100) / 100,
-    draft: doc.provider === 'minimax-h3' && draft,
+    totalYuan: Math.round(aiClips.reduce((sum, c) => sum + (Number(ledger.clips[c.id]?.costYuan) || Number(c.costYuan) || 0), 0) * 100) / 100,
+    aiGenSec: plan.aiGenSec,
+    draft: props.draft,
     inputs: {
-      'talk.mp4': sha256File(loaded.talk),
+      'talk.mp4': await sha256Stream(loaded.talk),
       'talk.srt': sha256File(loaded.srtPath),
       'broll.json': sha256File(loaded.jsonPath),
+      srtSource: srtSourceOf(projectDir),
+      asrModel: meta?.model ?? null,
+      talkNormalized: talkReady.normalized ? {reasons: talkReady.reasons, fps: talkReady.media.fps, width: talkReady.media.width, height: talkReady.media.height} : null,
     },
-    clips: plan.clips.map((c) => ({
-      id: c.id,
-      from: c.from,
-      to: c.to,
-      mode: c.mode,
-      windowMs: c.windowMs,
-      provider: doc.provider,
-      costYuan: ledger.clips[c.id]?.costYuan ?? c.costYuan,
-      outputSeconds: ledger.clips[c.id]?.outputSeconds ?? null,
-      promptHash: c.promptHash,
-      requestHash: c.requestHash,
-      generatedAt: ledger.clips[c.id].generatedAt ?? null,
-      taskId: ledger.clips[c.id].taskId ?? null,
-    })),
+    clips: plan.clips.map((c) => {
+      if (c.source === 'motion') {
+        return {id: c.id, from: c.from, to: c.to, mode: c.mode, windowMs: c.windowMs, source: 'motion', template: c.template, screenText: c.motion?.screenText ?? [], costYuan: 0};
+      }
+      return {
+        id: c.id,
+        from: c.from,
+        to: c.to,
+        mode: c.mode,
+        windowMs: c.windowMs,
+        source: 'ai',
+        provider: doc.provider,
+        styleId: c.styleId ?? doc.style,
+        look: c.look ?? 'main',
+        costYuan: ledger.clips[c.id]?.costYuan ?? c.costYuan,
+        outputSeconds: ledger.clips[c.id]?.outputSeconds ?? null,
+        promptHash: c.promptHash,
+        requestHash: c.requestHash,
+        generatedAt: ledger.clips[c.id].generatedAt ?? null,
+        taskId: ledger.clips[c.id].taskId ?? null,
+      };
+    }),
     finishedAt,
   };
   fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');

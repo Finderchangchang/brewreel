@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {checkClip} from './check-clip.mjs';
+import {DEFAULT_FREEZE_NOISE, checkClip} from './check-clip.mjs';
 import {decidePaid, loadLedger, nextRedoCount, resumeClip, saveLedger} from './ledger.mjs';
 import {clipCost} from './prices.mjs';
 import {prepareLocal} from './providers/local.mjs';
@@ -95,15 +95,25 @@ export const generateClips = async ({
   fs.mkdirSync(rawDir, {recursive: true});
   fs.mkdirSync(checkDir, {recursive: true});
   const preset = doc.provider === 'placeholder' ? 'ultrafast' : 'veryfast';
-  const selected = only ? plan.clips.filter((c) => c.id === only) : plan.clips;
+  // 动效段不生成、不进账本：合成时直接画
+  const aiClips = plan.clips.filter((c) => c.source !== 'motion');
+  if (only && plan.clips.some((c) => c.id === only && c.source === 'motion')) {
+    const err = new Error(`${only} 是动效画面，不用生成，也不进账本。改了它的字直接重新出片就行。`);
+    err.exitCode = 2;
+    throw err;
+  }
+  const selected = only ? aiClips.filter((c) => c.id === only) : aiClips;
   if (only && !selected.length) {
     const err = new Error(`--only ${only} 不在这份计划里。先看 broll.plan.json 里的 id。`);
     err.exitCode = 2;
     throw err;
   }
 
-  const h3 = doc.provider === 'minimax-h3' ? client ?? createH3Client({pollMs, timeoutMs, sleep, log}) : null;
+  const h3 = doc.provider === 'minimax-h3' && selected.length ? client ?? createH3Client({pollMs, timeoutMs, sleep, log}) : null;
   const refs = references ?? [];
+  /** 这一段送哪些参考图：计划里按 look 选好的（v2），没有就用调用方给的（v1 / 测试）。 */
+  const refsOf = (clip) => (Array.isArray(clip.refs) && clip.refs.length ? clip.refs : refs);
+  const v2 = doc.version === 2;
 
   let submittedNow = 0;
   const runOne = async (clip) => {
@@ -162,10 +172,17 @@ export const generateClips = async ({
       log(`复用 ${clip.id}（请求没变，不重新生成）`);
       return;
     }
-    if ((action === 'redo' || action === 'submit') && !refs.length) {
-      const err = new Error('风格预设没有参考图。先跑 node scripts/broll/make-style-refs.mjs --yes');
-      err.exitCode = 2;
-      throw err;
+    if (action === 'redo' || action === 'submit') {
+      // 参考图要在写「提交中」账本之前查：不然缺图的失败会被记成 submit_failed（HOLD），补图后还会白占一次重做次数
+      const list = refsOf(clip);
+      const missing = list.filter((p) => !fs.existsSync(p));
+      if (!list.length || missing.length) {
+        const sid = clip.styleId || doc.style;
+        const what = list.length ? `缺参考图 ${missing.map((p) => path.basename(p)).join('、')}` : '没有参考图';
+        const err = new Error(`${clip.id}：风格 ${sid} ${what}。这一段没有提交，也没有花钱。下一步：换一个已经有参考图的风格，或把这几段改成动效画面 / 留脸；参考图由维护者出：node scripts/broll/make-style-refs.mjs --style ${sid} --dry-run，确认后加 --yes`);
+        err.exitCode = 2;
+        throw err;
+      }
     }
     if (action === 'redo') {
       const redoCount = nextRedoCount(prev, {force: forceRedo, id: clip.id, log});
@@ -229,6 +246,7 @@ export const generateClips = async ({
       id: clip.id,
       preset,
       crf: 18,
+      freezeNoise: Number.isFinite(clip.freezeNoise) ? clip.freezeNoise : DEFAULT_FREEZE_NOISE,
     });
     if (done.meta.black > 0) throw Object.assign(new Error(`${clip.id} 有黑帧（${done.meta.black} 段）。换一段画面，或检查源文件是不是黑的。`), {exitCode: 4});
     if (done.meta.freeze > 0) throw Object.assign(new Error(`${clip.id} 有静帧（${done.meta.freeze} 段）。画面要有变化。`), {exitCode: 4});
@@ -240,12 +258,15 @@ export const generateClips = async ({
   const submitPaid = async (clip, entry) => {
     let taskId;
     try {
+      // version 2 的提示词开头已经写了「图1是角色参考，图2是材质参考」，不再加 v0.8 的前缀；version 1 照旧
       taskId = await h3.submit({
-        prompt: `参考所附参考图的材质和机器人造型。${clip.prompt}`,
-        refs,
+        prompt: v2 ? clip.prompt : `参考所附参考图的材质和机器人造型。${clip.prompt}`,
+        refs: refsOf(clip),
         resolution: plan.quality,
         duration: clip.genSec,
         ratio: plan.aspect,
+        promptExpansion: clip.promptExpansion ?? null,
+        styleId: clip.styleId || doc.style,
       });
     } catch (e) {
       entry.status = statusOf(e);

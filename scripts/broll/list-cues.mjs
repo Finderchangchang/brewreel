@@ -15,7 +15,7 @@ if (isMain) {
   }
   const srt = path.join(path.resolve(dir), 'talk.srt');
   if (!fs.existsSync(srt)) {
-    console.log(`项目目录缺少 talk.srt。`);
+    console.log(`项目目录缺少 talk.srt。先自动转写：node scripts/broll/transcribe.mjs "${path.resolve(dir)}"（或者自己放一个 talk.srt）。`);
     process.exit(2);
   }
   try {

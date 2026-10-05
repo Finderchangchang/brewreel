@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 口播配 B-roll 的测试。一个入口跑完：解析、校验、时间、费用、账本、占位片、几何、示例成片。
+// 口播配 B-roll 的测试。一个入口跑完：解析、校验、时间、费用、账本、占位片、几何、v0.9 三个模块和集成测试、示例成片（v1 + v2）。
 //   node tests/broll/run.mjs
 import {spawn, spawnSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -26,7 +26,9 @@ import {h3Tests} from './h3.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEMO = path.join(ROOT, 'examples', 'talk', 'demo');
+const MOTION_DEMO = path.join(ROOT, 'examples', 'talk', 'motion');
 const OUT = path.resolve(ROOT, '..', 'broll-b1', 'demo-placeholder');
+const OUT_MOTION = path.resolve(ROOT, '..', 'broll-b1', 'motion-placeholder');
 const LOGS = path.resolve(ROOT, '..', 'broll-b1', 'logs');
 const unitsOnly = process.argv.includes('--units-only');
 const failures = [];
@@ -167,7 +169,9 @@ const ruleTests = () => {
   const warnDoc = {...doc, clips: [clip({from: 'c3', to: 'c4'})]};
   const warnCues = demoCues().map((c) => (c.id === 'c3' ? {...c, text: '我觉得这样更好'} : c));
   const warned = validateBroll(warnDoc, ctxOf({cues: warnCues}));
-  check('第一人称只警告', warned.errors.length === 0 && warned.warnings.length === 1 && formatReport(warned).includes('不拦截') && formatReport(warned).includes('我觉得'), formatReport(warned));
+  // v0.9 起 v1 的 brick-diorama 还会多一条「实验风格」提醒，这里只数第一人称那条
+  const personWarn = warned.warnings.filter((w) => w.problem.includes('第一人称'));
+  check('第一人称只警告', warned.errors.length === 0 && personWarn.length === 1 && formatReport(warned).includes('不拦截') && formatReport(warned).includes('我觉得'), formatReport(warned));
   expectError('burned 配 full', {...doc, captions: 'burned'}, {}, ['burned', 'split']);
   expectError('burned 配 pip', {...doc, captions: 'burned', clips: doc.clips.map((c) => ({...c, mode: 'pip'}))}, {}, ['burned']);
   expectOk('正例：竖版 burned 配 split', {...doc, captions: 'burned', clips: doc.clips.map((c) => ({...c, mode: 'split'}))});
@@ -267,9 +271,29 @@ const ensureDemo = () => {
       ok = false;
     }
   }
-  if (ok) return;
-  const r = spawnSync(ffmpegPath(), ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'smptebars=size=1080x1920:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', '20', '-shortest', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-c:a', 'aac', dest], {windowsHide: true, encoding: 'utf8'});
-  if (r.status !== 0) throw new Error(`示例口播生成失败：${r.stderr || r.stdout}`);
+  if (!ok) {
+    const r = spawnSync(ffmpegPath(), ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'smptebars=size=1080x1920:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', '20', '-shortest', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-c:a', 'aac', dest], {windowsHide: true, encoding: 'utf8'});
+    if (r.status !== 0) throw new Error(`示例口播生成失败：${r.stderr || r.stdout}`);
+  }
+  // v2 示例（动效 + AI）和 demo 共用同一段口播和字幕；mp4 不进仓库，每次从 demo 拷
+  const motionTalk = path.join(MOTION_DEMO, 'talk.mp4');
+  if (!fs.existsSync(motionTalk) || fs.statSync(motionTalk).size !== fs.statSync(dest).size) fs.copyFileSync(dest, motionTalk);
+};
+
+// v0.9 三个模块各自的单测 + 集成测试：各是一个独立脚本，不下载模型、不联网、不花钱
+const moduleSuites = () => {
+  for (const name of ['asr.mjs', 'motion.mjs', 'styles.mjs', 'integration.mjs']) {
+    const r = runNode([path.join('tests', 'broll', name)]);
+    const out = `${r.stdout || ''}${r.stderr || ''}`;
+    const last = out
+      .trim()
+      .split(/\r?\n/)
+      .filter((l) => !/MODULE_TYPELESS|Reparsing|To eliminate|trace-warnings/.test(l))
+      .slice(-12)
+      .join('\n');
+    check(`模块测试 ${name}`, r.status === 0, last);
+    console.log(`  ${name}：${r.status === 0 ? '通过' : '失败'}`);
+  }
 };
 
 const mediaTests = () => {
@@ -428,6 +452,42 @@ const renderTest = () => {
   check('成片账本不重提', submits === 0);
 };
 
+// v2：一段动效（steps）+ 一段 AI 占位。动效段直接画进成片，不进账本、不加「AI 生成画面」标
+const renderMotionTest = () => {
+  ensureDemo();
+  fs.rmSync(OUT_MOTION, {recursive: true, force: true});
+  console.log('渲染 v2 示例（动效 + 占位）…');
+  const r = runNode(['scripts/make-talk.mjs', MOTION_DEMO, '--out', OUT_MOTION]);
+  fs.mkdirSync(LOGS, {recursive: true});
+  fs.writeFileSync(path.join(LOGS, 'motion-placeholder.txt'), `${r.stdout || ''}\n${r.stderr || ''}`, 'utf8');
+  check('v2 make-talk 退出码', r.status === 0 && (r.stdout || '').includes('交付：'), r.stdout || r.stderr);
+  if (r.status !== 0) return;
+  const manifest = readJson(path.join(OUT_MOTION, 'manifest.json'));
+  const [m, a] = manifest.clips;
+  check('v2 manifest 记来源和模板', m.source === 'motion' && m.template === 'steps' && m.screenText.join('|') === '要做的事列出来|一步一步做完' && m.costYuan === 0 && a.source === 'ai' && a.styleId === 'wood-blocks' && manifest.totalYuan === 0, JSON.stringify(manifest.clips));
+  check('v2 manifest 记转码原因和字幕来源', Array.isArray(manifest.inputs.talkNormalized?.reasons) && manifest.inputs.srtSource === 'user', JSON.stringify(manifest.inputs));
+  const ledger = readJson(path.join(OUT_MOTION, 'ledger.json'));
+  check('动效段不进账本', Object.keys(ledger.clips).join() === 'b02', JSON.stringify(Object.keys(ledger.clips)));
+  const props = readJson(path.join(OUT_MOTION, 'talk-props.json'));
+  check('props：动效段直接写进去', props.clips[0].kind === 'motion' && props.clips[0].badge === false && props.clips[0].template === 'steps' && !props.clips[0].src && props.clips[1].kind === 'video' && props.clips[1].badge === true, JSON.stringify(props.clips[0]).slice(0, 300));
+  const video = path.join(OUT_MOTION, 'video.mp4');
+  const out = probeMedia(video);
+  check('v2 成片时长、音轨、尺寸', out.hasAudio && out.width === 1080 && out.height === 1920 && Math.abs(out.durationSec - 20) < 0.2, JSON.stringify(out));
+  const midA = (m.windowMs[0] + m.windowMs[1]) / 2000;
+  const bar = pixel(readFrame(video, 2.5), 60, 640);
+  const atMotion = pixel(readFrame(video, midA), 60, 640);
+  check('动效段盖住了口播（深色底，不是彩条）', !near(atMotion, bar, 40) && atMotion[0] + atMotion[1] + atMotion[2] < 330, `${atMotion} vs ${bar}`);
+  const b02 = colorOf('b02');
+  const midB = (a.windowMs[0] + a.windowMs[1]) / 2000;
+  const top = pixel(readFrame(video, midB), 60, 300);
+  check('AI 占位段在 split 上半', near(top, [b02.r, b02.g, b02.b], 55), `${top}`);
+  check('v2 检查帧和拼图', ['b01-mid', 'b02-mid'].every((n) => fs.existsSync(path.join(OUT_MOTION, 'check', `${n}.png`))) && fs.existsSync(path.join(OUT_MOTION, 'sheet.png')));
+  const sheet = runNode(['scripts/broll/review-sheet.mjs', MOTION_DEMO, '--out', OUT_MOTION]);
+  const htmlFile = path.join(OUT_MOTION, 'review.html');
+  const html = fs.existsSync(htmlFile) ? fs.readFileSync(htmlFile, 'utf8') : '';
+  check('审片页：动效段标「不用审」并列出上屏字', sheet.status === 0 && html.includes('动效，不用审') && html.includes('要做的事列出来') && html.includes('积木风（wood-blocks）'), sheet.stdout);
+};
+
 const listen = (handler) =>
   new Promise((resolve) => {
     const state = {posts: 0, bodies: []};
@@ -477,7 +537,8 @@ const llmTests = async () => {
     const out = `${dry.stdout || ''}${dry.stderr || ''}`;
     check('dry-run 退出码 0', dry.status === 0, out.slice(-500));
     check('dry-run 打印提示和 token', out.includes('估算约') && out.includes('输入 token') && out.includes('未调用任何接口') && out.includes('正确示例') && out.includes('先看这一段口播'), out.slice(0, 200));
-    check('dry-run 不读密钥', quiet.state.posts === 0 && !out.includes(canary) && !out.includes('CANARY') && !/sk-[A-Za-z0-9]/.test(out), `posts ${quiet.state.posts}`);
+    // 像密钥的串：sk- 后面至少 8 位（和 llm-client 的 SECRET_RE 一样）；SKILL 里提到「sk-cp- 开头的订阅 key」不算
+    check('dry-run 不读密钥', quiet.state.posts === 0 && !out.includes(canary) && !out.includes('CANARY') && !/sk-[A-Za-z0-9_-]{8,}/.test(out), `posts ${quiet.state.posts}`);
   } finally {
     await quiet.close();
   }
@@ -587,6 +648,8 @@ const main = async () => {
   cliTests();
   await llmTests();
   await h3Tests({check, runNode, ROOT, DEMO});
+  console.log('模块测试…');
+  moduleSuites();
   if (failures.length) {
     console.log(`失败 ${failures.length}，通过 ${passed}`);
     for (const f of failures) console.log(`- ${f}`);
@@ -595,6 +658,7 @@ const main = async () => {
   console.log(`单元通过 ${passed}`);
   if (unitsOnly) process.exit(0);
   renderTest();
+  renderMotionTest();
   if (failures.length) {
     console.log(`失败 ${failures.length}，通过 ${passed}`);
     for (const f of failures) console.log(`- ${f}`);

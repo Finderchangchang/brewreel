@@ -10,6 +10,12 @@ template/.render.lock
 *.mp4
 *.mov
 
+# per-project cache written next to talk.mp4 (transcription cache, normalized talk, cues lock)
+.brewreel/
+
+# style reference candidates from make-style-refs --n (pick one, rename, then commit)
+broll/styles/*/refs/*.cand-*.jpg
+
 # env / secrets
 .env
 .env.*

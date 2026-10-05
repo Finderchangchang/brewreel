@@ -2,12 +2,15 @@ import React from 'react';
 import {AbsoluteFill, Audio, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {FONT, ensureFont} from '../core/font';
 import {pick} from '../core/kit';
-import {layoutOf, type TalkLayout} from './layout';
+import {captionLinesFor, layoutOf, uiScale, type TalkLayout} from './layout';
+import {MotionLayer, type MotionClip} from './motion/MotionLayer';
 
 ensureFont();
 
 export type TalkCue = {id: string; startMs: number; endMs: number; text: string};
-export type TalkClip = {
+/** AI 生成 / 占位 / 本地视频段：一段 mp4。kind 不写也当 video（v0.8 的 props 照常能渲染）。 */
+export type VideoClip = {
+  kind?: 'video';
   id: string;
   src: string;
   startMs: number;
@@ -15,6 +18,8 @@ export type TalkClip = {
   mode: 'full' | 'pip' | 'split';
   badge: boolean;
 };
+/** 一段 B-roll：视频段，或动效段（scripts/broll/motion.mjs 的 toMotionProps 产出，直接画 React 组件）。 */
+export type TalkClip = VideoClip | MotionClip;
 export type TalkProps = {
   talkSrc: string;
   width: number;
@@ -24,9 +29,11 @@ export type TalkProps = {
   captions: 'burned' | 'add' | 'none';
   cues: TalkCue[];
   clips: TalkClip[];
-  /** minimax-h3 没审过就出片时为 true，B-roll 出现时右上角加「未审」。 */
+  /** minimax-h3 没审过就出片时为 true，AI 视频段出现时右上角加「未审」。动效段不加。 */
   draft?: boolean;
 };
+
+const isMotion = (clip: TalkClip): clip is MotionClip => clip.kind === 'motion';
 
 const frameStyle = (box: {x: number; y: number; width: number; height: number}, opacity = 1): React.CSSProperties => ({
   position: 'absolute',
@@ -38,19 +45,44 @@ const frameStyle = (box: {x: number; y: number; width: number; height: number}, 
   opacity,
 });
 
-const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps: number; dur: number; draft?: boolean}> = ({clip, talkSrc, lay, fps, dur, draft}) => {
+/** 这一段窗口里字幕最靠上的顶边（成片像素）。split 按每句的行数留高，所以取最高的那句；没有字幕返回 null。 */
+const captionTopOf = (clip: TalkClip, cues: TalkCue[], width: number, height: number): number | null => {
+  const tops = cues
+    .filter((c) => c.endMs > clip.startMs && c.startMs < clip.endMs)
+    .map((c) => layoutOf(clip.mode, width, height, captionLinesFor(clip.mode, width, height, c.text)).caption.y);
+  return tops.length ? Math.min(...tops) : null;
+};
+
+const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps: number; dur: number; draft?: boolean; captionTop: number | null}> = ({
+  clip,
+  talkSrc,
+  lay,
+  fps,
+  dur,
+  draft,
+  captionTop,
+}) => {
   const frame = useCurrentFrame();
+  const {width, height} = useVideoConfig();
+  const s = uiScale(width, height);
   const fade = Math.max(1, Math.round(0.2 * fps));
   const opacity = interpolate(frame, [0, fade, Math.max(fade + 1, dur - fade), dur], [0, 1, 1, 0], {
     extrapolateLeft: 'clamp',
     extrapolateRight: 'clamp',
   });
   const faceOpacity = clip.mode === 'split' ? 1 : opacity;
+  const motion = isMotion(clip);
   return (
     <AbsoluteFill>
-      <div style={frameStyle(lay.broll, opacity)}>
-        <OffthreadVideo muted src={staticFile(clip.src)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-      </div>
+      {motion ? (
+        <div style={{position: 'absolute', inset: 0, opacity}}>
+          <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={captionTop} />
+        </div>
+      ) : (
+        <div style={frameStyle(lay.broll, opacity)}>
+          <OffthreadVideo muted src={staticFile(clip.src)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+        </div>
+      )}
       {lay.face ? (
         <div
           style={{
@@ -67,7 +99,7 @@ const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps
           <OffthreadVideo muted src={staticFile(talkSrc)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
         </div>
       ) : null}
-      {clip.badge ? (
+      {!motion && clip.badge ? (
         <div
           style={{
             position: 'absolute',
@@ -78,30 +110,30 @@ const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps
             color: '#fff',
             fontFamily: FONT,
             fontWeight: 700,
-            fontSize: 28,
+            fontSize: Math.round(28 * s),
             lineHeight: 1.2,
-            padding: '8px 14px',
-            borderRadius: 8,
+            padding: `${Math.round(8 * s)}px ${Math.round(14 * s)}px`,
+            borderRadius: Math.round(8 * s),
           }}
         >
           {pick(undefined, 'AI 生成画面', 'AI-generated')}
         </div>
       ) : null}
-      {draft ? (
+      {!motion && draft ? (
         <div
           style={{
             position: 'absolute',
-            right: 36,
-            top: 36,
+            right: Math.round(36 * s),
+            top: Math.round(36 * s),
             opacity,
             background: 'rgba(0,0,0,0.55)',
             color: '#fff',
             fontFamily: FONT,
             fontWeight: 700,
-            fontSize: 22,
+            fontSize: Math.round(22 * s),
             lineHeight: 1.2,
-            padding: '6px 10px',
-            borderRadius: 8,
+            padding: `${Math.round(6 * s)}px ${Math.round(10 * s)}px`,
+            borderRadius: Math.round(8 * s),
           }}
         >
           {pick(undefined, 'B-roll 未审', 'B-roll unreviewed')}
@@ -118,7 +150,8 @@ const CaptionLayer: React.FC<{cues: TalkCue[]; clips: TalkClip[]; width: number;
   const cue = cues.find((c) => ms >= c.startMs && ms < c.endMs);
   if (!cue) return null;
   const active = clips.find((c) => ms >= c.startMs && ms < c.endMs);
-  const box = layoutOf(active?.mode ?? 'full', width, height).caption;
+  const mode = active?.mode ?? 'full';
+  const box = layoutOf(mode, width, height, captionLinesFor(mode, width, height, cue.text)).caption;
   return (
     <div
       style={{
@@ -153,9 +186,10 @@ export const Talk: React.FC<TalkProps> = ({talkSrc, captions, cues, clips, draft
       {clips.map((clip) => {
         const from = Math.round((clip.startMs / 1000) * fps);
         const dur = Math.max(1, Math.round(((clip.endMs - clip.startMs) / 1000) * fps));
+        const captionTop = captions === 'add' ? captionTopOf(clip, cues, width, height) : null;
         return (
           <Sequence key={clip.id} from={from} durationInFrames={dur}>
-            <ClipLayer clip={clip} talkSrc={talkSrc} lay={layoutOf(clip.mode, width, height)} fps={fps} dur={dur} draft={draft} />
+            <ClipLayer clip={clip} talkSrc={talkSrc} lay={layoutOf(clip.mode, width, height)} fps={fps} dur={dur} draft={draft} captionTop={captionTop} />
           </Sequence>
         );
       })}

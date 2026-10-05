@@ -96,13 +96,41 @@ export const probeMedia = (file) => {
   if (!v) throw new Error('ffprobe 没有找到视频流');
   const durationSec = Number(j.format?.duration ?? v.duration);
   if (!Number.isFinite(durationSec) || durationSec <= 0) throw new Error('ffprobe 没有读到时长');
+  // 手机竖拍常把画面存成横的、再加一个旋转标记：宽高按旋转之后（人看到的样子）算
+  const rotation = rotationOf(v);
+  const turned = Math.abs(rotation) % 180 === 90;
+  const avgFps = rateOf(v.avg_frame_rate);
+  const rFps = rateOf(v.r_frame_rate);
   return {
-    width: v.width,
-    height: v.height,
-    fps: fpsOf(v.avg_frame_rate || v.r_frame_rate),
+    width: turned ? v.height : v.width,
+    height: turned ? v.width : v.height,
+    fps: fpsOf(v.avg_frame_rate && v.avg_frame_rate !== '0/0' ? v.avg_frame_rate : v.r_frame_rate),
     durationSec,
     durationMs: Math.round(durationSec * 1000),
     hasAudio: Boolean(a),
     videoCodec: v.codec_name || '',
+    pixFmt: v.pix_fmt || '',
+    rotation,
+    avgFps,
+    rFps,
+    // 可变帧率：标称帧率和平均帧率差 1% 以上（手机录像常见），或标称帧率高得离谱（时间基当帧率）
+    vfr: Boolean(avgFps && rFps && (rFps > 240 || Math.abs(rFps - avgFps) / avgFps > 0.01)),
+    audioCodec: a?.codec_name || '',
+    audioChannels: Number(a?.channels) || 0,
   };
+};
+
+const rateOf = (rate) => {
+  const [x, y] = String(rate || '').split('/').map(Number);
+  const v = y ? x / y : x;
+  return Number.isFinite(v) && v > 0 ? v : 0;
+};
+
+/** 视频流的旋转角度（0、90、180、-90…）：新版 ffprobe 在 side_data_list 的 Display Matrix 里，老版在 tags.rotate。 */
+const rotationOf = (v) => {
+  const side = (v.side_data_list || []).find((s) => s && Number.isFinite(Number(s.rotation)));
+  const raw = side ? Number(side.rotation) : Number(v.tags?.rotate ?? 0);
+  if (!Number.isFinite(raw)) return 0;
+  const r = Math.round(raw) % 360;
+  return r > 180 ? r - 360 : r <= -180 ? r + 360 : r;
 };

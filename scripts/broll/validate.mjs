@@ -1,25 +1,35 @@
 #!/usr/bin/env node
 // 校验 broll.json。报错格式和 scripts/validate.mjs 一样：哪一段、哪个字段、错在哪、怎么改。
-//   node scripts/broll/validate.mjs <项目目录>
+//   node scripts/broll/validate.mjs <项目目录> [--max-ai 2]
 // 退出码：0 通过 / 1 有错误 / 2 项目目录不齐 / 3 估价超过 budgetYuan
+// version 1（v0.8 的老文件）照常能跑；version 2 加了动效画面（source:"motion"）、副风格（styleAlt + look）、接力（link）。
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {CUES_LOCK_NAME, compareCuesLock} from './asr/lock.mjs';
+import {asrTokensOf} from './asr/tokens.mjs';
+import {probeMedia} from './media.mjs';
+import {MOTION_JOBS, MOTION_MAX_MS, MOTION_MIN_MS, checkAiQuantify, checkMotionSequence, isMotion, validateMotionClip} from './motion.mjs';
+import {clipCost, costLine, keyKindOf, rateOf} from './prices.mjs';
+import {isV2, validateStyles} from './prompt.mjs';
 import {ROOT} from './root.mjs';
 import {parseSrt} from './srt.mjs';
-import {probeMedia} from './media.mjs';
-import {clipCost, rateOf} from './prices.mjs';
 import {MAX_COVER_MS, MAX_RATIO, MIN_BEAT_SEC, MIN_COVER_MS, MIN_GAP_MS, genSecOf, isVertical, secText, windowOf} from './time.mjs';
 
 export const PROVIDERS = ['placeholder', 'local', 'minimax-h3'];
 export const QUALITIES = ['768P', '2K'];
 export const CAPTIONS = ['burned', 'add', 'none'];
 export const MODES = ['full', 'pip', 'split'];
-export const JOBS = ['demonstrate', 'explain', 'ground', 'compare', 'quantify', 'evoke', 'connect'];
+/** AI 画面的 7 个 job（v0.8 起）。 */
+export const AI_JOBS = ['demonstrate', 'explain', 'ground', 'compare', 'quantify', 'evoke', 'connect'];
+/** 全部 job：AI 的 7 个 + 动效画面专用的 list、stress。 */
+export const JOBS = [...AI_JOBS, ...MOTION_JOBS];
+export const SOURCES = ['ai', 'motion'];
 export const CAMERAS = ['static', 'slow-push', 'pull-back', 'pan-left', 'pan-right', 'orbit', 'top-down'];
 export const LIMITS = {plain: 20, place: 12, subject: 12, action: 24, end: 16};
-const TOP_KEYS = new Set(['version', 'style', 'provider', 'quality', 'budgetYuan', 'captions', 'keepFace', 'clips']);
-const CLIP_KEYS = new Set(['id', 'from', 'to', 'mode', 'job', 'plain', 'place', 'subject', 'action', 'end', 'beats', 'camera', 'file']);
+// styleAlt / thread / look / link 是 version 2 的字段；version 1 写了由 validateStyles 报「改成 version 2」，所以这里放行
+const TOP_KEYS = new Set(['version', 'style', 'styleAlt', 'thread', 'provider', 'quality', 'budgetYuan', 'captions', 'keepFace', 'clips']);
+const CLIP_KEYS = new Set(['id', 'from', 'to', 'source', 'mode', 'job', 'plain', 'place', 'subject', 'action', 'end', 'beats', 'camera', 'file', 'look', 'link']);
 const BEAT_KEYS = new Set(['action', 'end']);
 const PERSON = ['我觉得', '我当时', '说实话', '后悔', '我记得', '我以为'];
 const QUOTE_RE = /["“”„‟«»「」『』‘’']/;
@@ -34,17 +44,17 @@ export const loadStyles = (root = ROOT) => {
   const dir = path.join(root, 'broll', 'styles');
   const out = {};
   if (!fs.existsSync(dir)) return out;
-  for (const name of fs.readdirSync(dir)) {
+  for (const name of fs.readdirSync(dir).sort()) {
     const p = path.join(dir, name, 'style.json');
     if (!fs.existsSync(p)) continue;
-    out[name] = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
+    out[name] = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''));
   }
   return out;
 };
 
 export const loadBanned = (root = ROOT) => {
   const p = path.join(root, 'broll', 'banned-words.json');
-  const j = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
+  const j = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''));
   return Array.isArray(j.words) ? j.words : [];
 };
 
@@ -73,10 +83,15 @@ const findBanned = (text, words) => {
 };
 
 const cueNo = (id) => Number(String(id).slice(1));
+const secShort = (ms) => String(Number((ms / 1000).toFixed(2)));
 
 /**
  * @param {object} doc
- * @param {{cues: object[], durationMs: number, width: number, height: number, styles: object, banned: object[], projectDir?: string}} ctx
+ * @param {{cues: object[], durationMs: number, width: number, height: number, styles: object, banned: object[], projectDir?: string,
+ *   character?: object, tokens?: {text: string, startMs: number}[], lockProblem?: {where: string, problem: string, fix: string}|null,
+ *   maxAi?: number|null, keyKind?: 'subscription'|'payg'|'none'}} ctx
+ *   tokens：转写的逐字时间（动效段的 marks 更准）；lockProblem：写完 broll.json 后字幕分句变了；
+ *   maxAi：AI 画面段数上限（llm_broll 用，不传不限）；keyKind：MiniMax key 的种类，只影响估价那一行怎么写
  */
 export const validateBroll = (doc, ctx) => {
   const errors = [];
@@ -91,17 +106,22 @@ export const validateBroll = (doc, ctx) => {
   const durationMs = ctx.durationMs ?? 0;
   const width = ctx.width ?? 0;
   const height = ctx.height ?? 0;
+  const billing = {keyKind: ctx.keyKind ?? 'none'};
 
+  if (ctx.lockProblem) err(ctx.lockProblem.where, ctx.lockProblem.problem, ctx.lockProblem.fix);
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) {
-    return {errors: [{where: 'broll.json', problem: '顶层必须是一个对象', fix: '按 broll/README.md 的字段重写'}], warnings, budgetExceeded: false, costs, estimateYuan: 0, budgetYuan: 0};
+    err('broll.json', '顶层必须是一个对象', '按 broll/README.md 的字段重写');
+    return finish(doc, errors, warnings, costs, false, billing);
   }
+  const v2 = isV2(doc);
   for (const k of Object.keys(doc)) {
     if (TOP_KEYS.has(k)) continue;
     if (/reference/i.test(k)) err(k, '不能自带参考图', '删掉这个字段。参考图由风格预设提供，模型不要写');
-    else err(k, `多了一个不认识的字段「${k}」`, `删掉 ${k}。可用字段：version、style、provider、quality、budgetYuan、captions、keepFace、clips`);
+    else err(k, `多了一个不认识的字段「${k}」`, `删掉 ${k}。可用字段：version、style、styleAlt、thread、provider、quality、budgetYuan、captions、keepFace、clips`);
   }
-  if (doc.version !== 1) err('version', `必须是 1，现在是 ${JSON.stringify(doc.version)}`, '改成 1');
-  if (!styles[doc.style]) err('style', `没有叫「${doc.style ?? ''}」的风格预设`, `改成 ${Object.keys(styles).join('、') || 'brick-diorama'}`);
+  if (doc.version !== 1 && doc.version !== 2) err('version', `必须是 1 或 2，现在是 ${JSON.stringify(doc.version)}`, '改成 2（动效画面、副风格要用 2；v0.8 的老文件可以留 1）');
+  // version 2 的主风格由 validateStyles 的规则 12 报，避免同一个错报两遍
+  if (!v2 && !styles[doc.style]) err('style', `没有叫「${doc.style ?? ''}」的风格预设`, `改成 ${Object.keys(styles).join('、') || 'wood-blocks'}`);
   if (!PROVIDERS.includes(doc.provider)) err('provider', `「${doc.provider ?? ''}」不在可选值里`, '改成 placeholder、local 或 minimax-h3');
   if (!QUALITIES.includes(doc.quality)) err('quality', `「${doc.quality ?? ''}」不在可选值里`, '改成 768P 或 2K');
   if (typeof doc.budgetYuan !== 'number' || !Number.isFinite(doc.budgetYuan) || doc.budgetYuan < 0) err('budgetYuan', '要写一个不小于 0 的数字，单位是元', '比如 20');
@@ -118,7 +138,7 @@ export const validateBroll = (doc, ctx) => {
 
   if (!Array.isArray(doc.clips)) {
     err('clips', '要写成数组', '至少 1 段、最多 12 段');
-    return finish(doc, errors, warnings, costs);
+    return finish(doc, errors, warnings, costs, false, billing);
   }
   if (doc.clips.length < 1 || doc.clips.length > 12) err('clips', `现在 ${doc.clips.length} 段，要在 1 到 12 段之间`, '删掉多余的段，或补上至少一段');
 
@@ -130,11 +150,16 @@ export const validateBroll = (doc, ctx) => {
       err(where, '这一段必须是对象', '看 broll/README.md 里 clips 的字段');
       return;
     }
-    for (const k of Object.keys(clip)) {
-      if (CLIP_KEYS.has(k)) continue;
-      if (/reference/i.test(k)) err(`${where}.${k}`, '不能自带参考图', '删掉这个字段。参考图由风格预设提供');
-      else err(`${where}.${k}`, `多了一个不认识的字段「${k}」`, '删掉它。这一段只写 id、from、to、mode、job、plain、place、subject、action、end 或 beats、camera，local 再加 file');
+    const motion = isMotion(clip);
+    if (!motion) {
+      for (const k of Object.keys(clip)) {
+        if (CLIP_KEYS.has(k)) continue;
+        if (/reference/i.test(k)) err(`${where}.${k}`, '不能自带参考图', '删掉这个字段。参考图由风格预设提供');
+        else if (k === 'template' || k === 'slots') err(`${where}.${k}`, `「${k}」只有动效画面才写`, '这一段要做动效画面就加 "source":"motion"，并删掉 place、subject、action、end、camera；要 AI 画面就删掉 template 和 slots');
+        else err(`${where}.${k}`, `多了一个不认识的字段「${k}」`, '删掉它。AI 画面这一段只写 id、from、to、mode、job、plain、place、subject、action、end 或 beats、camera（version 2 还可以写 source、look、link），local 再加 file');
+      }
     }
+    if (clip.source != null && !SOURCES.includes(clip.source)) err(`${where}.source`, `「${clip.source}」不在可选值里`, 'AI 生成画面写 ai（或不写），免费动效画面写 motion');
     if (typeof clip.id !== 'string' || !ID_RE.test(clip.id)) err(`${where}.id`, `id「${clip.id ?? ''}」要形如 b01`, '改成两位数字，如 b01、b02');
     else if (seen.has(clip.id)) err(clip.id, `id「${clip.id}」重复`, '每段用不同的 id');
     else seen.add(clip.id);
@@ -148,45 +173,56 @@ export const validateBroll = (doc, ctx) => {
 
     if (!MODES.includes(clip.mode)) err(`${id}.mode`, `「${clip.mode ?? ''}」不在可选值里`, '改成 full、pip 或 split');
     if (!JOBS.includes(clip.job)) err(`${id}.job`, `「${clip.job ?? ''}」不在可选值里`, `改成 ${JOBS.join('、')}`);
-    if (!CAMERAS.includes(clip.camera)) err(`${id}.camera`, `「${clip.camera ?? ''}」不在可选值里`, `改成 ${CAMERAS.join('、')}`);
 
-    for (const key of ['plain', 'place', 'subject']) {
-      if (typeof clip[key] !== 'string' || !clip[key].trim()) err(`${id}.${key}`, '不能空着', `写一句不超过 ${LIMITS[key]} 字的话`);
-      else if (charCount(clip[key]) > LIMITS[key]) err(`${id}.${key}`, `${charCount(clip[key])} 字，最多 ${LIMITS[key]} 字`, '整句换成更短的说法，不要删掉词里的字来凑数');
-    }
-
-    const hasAction = typeof clip.action === 'string' || typeof clip.end === 'string';
-    const hasBeats = Array.isArray(clip.beats);
-    if (hasAction && hasBeats) err(id, 'action 和 beats 都写了', '只留一种。一拍写 action 和 end；多拍只写 beats（2 到 4 拍）');
-    else if (!hasAction && !hasBeats) err(id, '缺少动作', '写 action 和 end，或写 2 到 4 拍 beats');
-    else if (hasBeats) {
-      if (clip.beats.length < 2 || clip.beats.length > 4) err(`${id}.beats`, `现在 ${clip.beats.length} 拍，要 2 到 4 拍`, '改成 2 到 4 拍；只有一拍就改成 action 和 end，删掉 beats');
-      clip.beats.forEach((b, bi) => {
-        if (!b || typeof b !== 'object' || Array.isArray(b)) {
-          err(`${id}.beats[${bi}]`, '每一拍要是对象', '写成 {"action":"…","end":"…"}');
-          return;
-        }
-        for (const k of Object.keys(b)) if (!BEAT_KEYS.has(k)) err(`${id}.beats[${bi}].${k}`, `多了一个不认识的字段「${k}」`, '这一拍只写 action 和 end');
-        for (const key of ['action', 'end']) {
-          if (typeof b[key] !== 'string' || !b[key].trim()) err(`${id}.beats[${bi}].${key}`, '不能空着', `写不超过 ${LIMITS[key]} 字`);
-          else if (charCount(b[key]) > LIMITS[key]) err(`${id}.beats[${bi}].${key}`, `${charCount(b[key])} 字，最多 ${LIMITS[key]} 字`, '整句换成更短的说法');
-        }
-      });
+    if (motion) {
+      // 动效段：字段、模板、槽位、摘词、数字、时间规则都交给 motion.mjs；不查运镜、场景、禁用词（屏幕上的字就是原话）
+      if (!v2) err(`${id}.source`, '动效画面是 version 2 的写法', '把顶层 version 改成 2');
+      const r = validateMotionClip(clip, cues, {durationMs, tokens: ctx.tokens});
+      errors.push(...r.errors);
+      warnings.push(...r.warnings);
     } else {
-      if (typeof clip.action !== 'string' || !clip.action.trim()) err(`${id}.action`, '和 end 成对，不能空着', `写不超过 ${LIMITS.action} 字的动作`);
-      else if (charCount(clip.action) > LIMITS.action) err(`${id}.action`, `${charCount(clip.action)} 字，最多 ${LIMITS.action} 字`, '整句换成更短的说法');
-      if (typeof clip.end !== 'string' || !clip.end.trim()) err(`${id}.end`, '和 action 成对，不能空着', `写不超过 ${LIMITS.end} 字的结束画面`);
-      else if (charCount(clip.end) > LIMITS.end) err(`${id}.end`, `${charCount(clip.end)} 字，最多 ${LIMITS.end} 字`, '整句换成更短的说法');
-    }
+      // version 2 里 AI 段写 list/stress 由 validateStyles 的规则 8 报
+      if (MOTION_JOBS.includes(clip.job) && !v2) err(`${id}.job`, `${clip.job} 是动效画面的 job`, `这一段改成动效画面：顶层 version 改成 2，这一段加 "source":"motion"（list 配 checklist、stress 配 keyword）；要 AI 画面就把 job 换成 ${AI_JOBS.join('、')}`);
+      if (!CAMERAS.includes(clip.camera)) err(`${id}.camera`, `「${clip.camera ?? ''}」不在可选值里`, `改成 ${CAMERAS.join('、')}`);
 
-    scanText(id, clip, banned, err);
-    if (doc.provider === 'local') {
-      if (typeof clip.file !== 'string' || !clip.file.trim()) err(`${id}.file`, 'provider 是 local，要写 file', '填上这段 B-roll 的视频路径，相对项目目录或绝对路径');
-      else if (ctx.projectDir) {
-        const abs = path.resolve(ctx.projectDir, clip.file);
-        if (!fs.existsSync(abs)) err(`${id}.file`, `找不到 ${clip.file}`, '改成真实存在的视频路径');
+      for (const key of ['plain', 'place', 'subject']) {
+        if (typeof clip[key] !== 'string' || !clip[key].trim()) err(`${id}.${key}`, '不能空着', `写一句不超过 ${LIMITS[key]} 字的话`);
+        else if (charCount(clip[key]) > LIMITS[key]) err(`${id}.${key}`, `${charCount(clip[key])} 字，最多 ${LIMITS[key]} 字`, '整句换成更短的说法，不要删掉词里的字来凑数');
       }
-    } else if (clip.file != null) err(`${id}.file`, 'provider 不是 local，不要写 file', '删掉 file。占位片和生成片都不收自带视频');
+
+      const hasAction = typeof clip.action === 'string' || typeof clip.end === 'string';
+      const hasBeats = Array.isArray(clip.beats);
+      if (hasAction && hasBeats) err(id, 'action 和 beats 都写了', '只留一种。一拍写 action 和 end；多拍只写 beats（2 到 4 拍）');
+      else if (!hasAction && !hasBeats) err(id, '缺少动作', '写 action 和 end，或写 2 到 4 拍 beats');
+      else if (hasBeats) {
+        if (clip.beats.length < 2 || clip.beats.length > 4) err(`${id}.beats`, `现在 ${clip.beats.length} 拍，要 2 到 4 拍`, '改成 2 到 4 拍；只有一拍就改成 action 和 end，删掉 beats');
+        clip.beats.forEach((b, bi) => {
+          if (!b || typeof b !== 'object' || Array.isArray(b)) {
+            err(`${id}.beats[${bi}]`, '每一拍要是对象', '写成 {"action":"…","end":"…"}');
+            return;
+          }
+          for (const k of Object.keys(b)) if (!BEAT_KEYS.has(k)) err(`${id}.beats[${bi}].${k}`, `多了一个不认识的字段「${k}」`, '这一拍只写 action 和 end');
+          for (const key of ['action', 'end']) {
+            if (typeof b[key] !== 'string' || !b[key].trim()) err(`${id}.beats[${bi}].${key}`, '不能空着', `写不超过 ${LIMITS[key]} 字`);
+            else if (charCount(b[key]) > LIMITS[key]) err(`${id}.beats[${bi}].${key}`, `${charCount(b[key])} 字，最多 ${LIMITS[key]} 字`, '整句换成更短的说法');
+          }
+        });
+      } else {
+        if (typeof clip.action !== 'string' || !clip.action.trim()) err(`${id}.action`, '和 end 成对，不能空着', `写不超过 ${LIMITS.action} 字的动作`);
+        else if (charCount(clip.action) > LIMITS.action) err(`${id}.action`, `${charCount(clip.action)} 字，最多 ${LIMITS.action} 字`, '整句换成更短的说法');
+        if (typeof clip.end !== 'string' || !clip.end.trim()) err(`${id}.end`, '和 action 成对，不能空着', `写不超过 ${LIMITS.end} 字的结束画面`);
+        else if (charCount(clip.end) > LIMITS.end) err(`${id}.end`, `${charCount(clip.end)} 字，最多 ${LIMITS.end} 字`, '整句换成更短的说法');
+      }
+
+      scanText(id, clip, banned, err, v2);
+      if (doc.provider === 'local') {
+        if (typeof clip.file !== 'string' || !clip.file.trim()) err(`${id}.file`, 'provider 是 local，要写 file', '填上这段 B-roll 的视频路径，相对项目目录或绝对路径');
+        else if (ctx.projectDir) {
+          const abs = path.resolve(ctx.projectDir, clip.file);
+          if (!fs.existsSync(abs)) err(`${id}.file`, `找不到 ${clip.file}`, '改成真实存在的视频路径');
+        }
+      } else if (clip.file != null) err(`${id}.file`, 'provider 不是 local，不要写 file', '删掉 file。占位片和生成片都不收自带视频');
+    }
 
     if (clip.mode === 'split' && width > 0 && height > 0 && !isVertical(width, height)) err(`${id}.mode`, `split 只能用于竖版，原片是 ${width}×${height}`, '改成 full 或 pip');
     if (doc.captions === 'burned' && (clip.mode === 'full' || clip.mode === 'pip')) {
@@ -195,7 +231,7 @@ export const validateBroll = (doc, ctx) => {
 
     if (byId.has(clip.from) && byId.has(clip.to) && cueNo(clip.from) <= cueNo(clip.to) && durationMs > 0) {
       const win = windowOf(byId.get(clip.from), byId.get(clip.to), durationMs);
-      ready.push({clip, id, win});
+      ready.push({clip, id, win, motion});
     }
   });
 
@@ -207,9 +243,11 @@ export const validateBroll = (doc, ctx) => {
   const auto = new Set(cues.length ? [cues[0].id, cues[cues.length - 1].id] : []);
 
   for (const item of ready) {
-    const {id, clip, win} = item;
-    if (win.durationMs < MIN_COVER_MS) err(id, `这段盖住 ${secText(win.durationMs)} 秒，短于 2.5 秒`, '把 to 延到后面的句子，让这段盖住 2.5 到 12 秒');
-    else if (win.durationMs > MAX_COVER_MS) err(id, `这段盖住 ${secText(win.durationMs)} 秒，长于 12 秒`, '把 to 收回到更早的句子');
+    const {id, clip, win, motion} = item;
+    // 动效段 1.8–12 秒（一句短话也能配），AI 段 2.5–12 秒（生成最短 4 秒，太短不值）
+    const [minMs, maxMs] = motion ? [MOTION_MIN_MS, MOTION_MAX_MS] : [MIN_COVER_MS, MAX_COVER_MS];
+    if (win.durationMs < minMs) err(id, `这段盖住 ${secText(win.durationMs)} 秒，短于 ${secShort(minMs)} 秒`, `把 to 延到后面的句子，让这段盖住 ${secShort(minMs)} 到 ${secShort(maxMs)} 秒`);
+    else if (win.durationMs > maxMs) err(id, `这段盖住 ${secText(win.durationMs)} 秒，长于 ${secShort(maxMs)} 秒`, '把 to 收回到更早的句子');
     for (let n = cueNo(clip.from); n <= cueNo(clip.to); n++) {
       const cid = `c${n}`;
       if (!protectedIds.has(cid)) continue;
@@ -225,7 +263,7 @@ export const validateBroll = (doc, ctx) => {
         err(id, `窗口 ${secText(win.startMs)}–${secText(win.endMs)} 秒盖住了${why} ${cue.id}（句首会再提前 120 毫秒，句尾再留 200 毫秒）`, '让上一段口播更早结束，或从再往后的句子开始');
       }
     }
-    if (Array.isArray(clip.beats) && clip.beats.length >= 2 && clip.beats.length <= 4 && win.durationMs >= MIN_COVER_MS && win.durationMs <= MAX_COVER_MS) {
+    if (!motion && Array.isArray(clip.beats) && clip.beats.length >= 2 && clip.beats.length <= 4 && win.durationMs >= MIN_COVER_MS && win.durationMs <= MAX_COVER_MS) {
       const gen = genSecOf(win.durationMs);
       const maxBeats = gen / MIN_BEAT_SEC;
       if (clip.beats.length > maxBeats + 1e-9) err(`${id}.beats`, `生成 ${gen} 秒，${clip.beats.length} 拍每拍不到 1.2 秒`, `减到 ${Math.max(2, Math.floor(maxBeats))} 拍以内，或把 from / to 拉长`);
@@ -236,7 +274,8 @@ export const validateBroll = (doc, ctx) => {
       const hit = PERSON.find((w) => cue.text.includes(w));
       if (hit) warn(`${id}（${cue.id}）`, `这句有第一人称经历或情绪（「${hit}」），盖住脸会不像在讲自己的事`, '改口播，或把这句放进 keepFace');
     }
-    if (QUALITIES.includes(doc.quality) && PROVIDERS.includes(doc.provider)) {
+    // 只有 AI 画面花钱；动效段费用恒为 0，不进估价
+    if (!motion && QUALITIES.includes(doc.quality) && PROVIDERS.includes(doc.provider)) {
       const genSec = genSecOf(win.durationMs);
       const costYuan = clipCost(doc.provider, doc.quality, genSec);
       costs.push({id, genSec, rate: rateOf(doc.provider, doc.quality), costYuan, windowMs: [win.startMs, win.endMs]});
@@ -260,10 +299,26 @@ export const validateBroll = (doc, ctx) => {
     if (sum > cap + 1e-6) err('clips', `B-roll 一共 ${secText(sum)} 秒，超过全片 ${secText(durationMs)} 秒的 60%（最多 ${secText(cap)} 秒）`, '删掉一段，或把某段的 to 往前收');
   }
 
-  return finish(doc, errors, warnings, costs, ready.length === doc.clips.length);
+  // 全片搭配：同一模板最多 2 次、相邻动效段不同模板；AI 段报确定的数要改 counter
+  errors.push(...checkMotionSequence(doc.clips).errors);
+  for (const clip of doc.clips) {
+    const q = checkAiQuantify(clip, cues);
+    if (q) errors.push(q);
+  }
+  const aiCount = doc.clips.filter((c) => c && typeof c === 'object' && !Array.isArray(c) && !isMotion(c)).length;
+  if (Number.isInteger(ctx.maxAi) && ctx.maxAi >= 0 && aiCount > ctx.maxAi) {
+    err('clips', `AI 画面写了 ${aiCount} 段，这次最多 ${ctx.maxAi} 段`, `只给最需要画面的 ${ctx.maxAi} 句写 AI 画面；其余的改成动效画面（"source":"motion"，按选择表挑模板），或删掉留真人`);
+  }
+
+  // 风格和段间配合（version 2 的规则 1–13；version 1 只提醒实验风格、写了 v2 字段就让改 version）
+  const st = validateStyles(doc, styles, {character: ctx.character});
+  errors.push(...st.errors);
+  warnings.push(...st.warnings);
+
+  return finish(doc, errors, warnings, costs, ready.length === doc.clips.length, billing);
 };
 
-const scanText = (id, clip, banned, err) => {
+const scanText = (id, clip, banned, err, v2) => {
   const fields = [];
   for (const key of ['plain', 'place', 'subject', 'action', 'end']) if (typeof clip[key] === 'string') fields.push([key, clip[key]]);
   if (Array.isArray(clip.beats)) {
@@ -273,21 +328,29 @@ const scanText = (id, clip, banned, err) => {
     });
   }
   for (const [key, text] of fields) {
-    for (const hit of findBanned(text, banned)) err(`${id}.${key}`, `含禁用词「${hit.word}」`, `换成「${hit.suggest}」（不要出现品牌和商标）`);
+    // version 2 用 suggestV2：老的改法（如「积木机器人」）会撞上「subject 不写材质」的新规则
+    for (const hit of findBanned(text, banned)) err(`${id}.${key}`, `含禁用词「${hit.word}」`, `换成「${(v2 && hit.suggestV2) || hit.suggest}」（不要出现品牌和商标）`);
     const q = text.match(QUOTE_RE);
     if (q) err(`${id}.${key}`, `含引号「${q[0]}」，生成画面里的字不可靠`, '删掉引号，也不要要求画面上写出这句话');
     const letter = text.match(LETTER_RE);
     if (letter) err(`${id}.${key}`, `含「${letter[0]}」，生成画面里的字不可靠`, '删掉「写着」「显示文字」「标语」「字幕」这类要求画面出字的说法');
     const digit = text.match(DIGIT_RE);
-    if (digit) err(`${id}.${key}`, `含数字「${digit[0]}」，生成画面里的数字不可靠`, '数字请用宣传片的数字镜头，这里改成不带阿拉伯数字和百分比的说法');
+    if (digit) err(`${id}.${key}`, `含数字「${digit[0]}」，生成画面里的数字不可靠`, '只是描述画面就改成不带阿拉伯数字和百分比的说法；要让观众看到这个数，就把这一段改成动效画面 "source":"motion" 的 counter（say 照抄原句里的数）');
   }
 };
 
-const finish = (doc, errors, warnings, costs, budgetReady = false) => {
+const finish = (doc, errors, warnings, costs, budgetReady = false, billing = {keyKind: 'none'}) => {
   const estimateYuan = Math.round(costs.reduce((a, c) => a + (c.costYuan ?? 0), 0) * 100) / 100;
+  const aiGenSec = costs.reduce((a, c) => a + (c.genSec ?? 0), 0);
   const budgetYuan = typeof doc?.budgetYuan === 'number' ? doc.budgetYuan : 0;
   const budgetExceeded = Boolean(budgetReady && costs.length && estimateYuan > budgetYuan + 1e-9);
-  return {errors, warnings, budgetExceeded, costs, estimateYuan, budgetYuan};
+  return {errors, warnings, budgetExceeded, costs, estimateYuan, budgetYuan, aiGenSec, provider: doc?.provider, quality: doc?.quality, keyKind: billing.keyKind ?? 'none'};
+};
+
+/** 估价那一句：元；minimax-h3 时加上 AI 视频秒数，订阅 key 再加积分。 */
+const estimateText = (r) => {
+  if (r.provider !== 'minimax-h3') return `估价 ${r.estimateYuan} 元`;
+  return `估价 ${costLine({provider: r.provider, quality: r.quality, genSec: r.aiGenSec ?? 0, yuan: r.estimateYuan, kind: r.keyKind})}`;
 };
 
 export const formatReport = (r) => {
@@ -301,23 +364,36 @@ export const formatReport = (r) => {
     out.push(`提醒 ${r.warnings.length} 条（不拦截）：`);
     r.warnings.forEach((e) => out.push(`  - ${e.where}：${e.problem}（${e.fix}）`));
   }
-  if (!r.errors?.length && !r.budgetExceeded) out.push(`校验通过：估价 ${r.estimateYuan} 元（预算 ${r.budgetYuan} 元）`);
+  if (!r.errors?.length && !r.budgetExceeded) out.push(`校验通过：${estimateText(r)}（预算 ${r.budgetYuan} 元）`);
   return out.join('\n');
 };
 
 export const formatBudget = (r) => {
   const lines = [`估价 ${r.estimateYuan} 元，超过预算 ${r.budgetYuan} 元。这一批不生成。`];
   for (const c of r.costs ?? []) lines.push(`  ${c.id}  ${c.genSec} 秒 × ${c.rate} 元/秒 = ${c.costYuan} 元`);
-  lines.push('   → 怎么改：提高 budgetYuan，或减少段数、缩短 from / to，或把 quality 改成 768P');
+  if (r.provider === 'minimax-h3') lines.push(`  ${costLine({provider: r.provider, quality: r.quality, genSec: r.aiGenSec ?? 0, yuan: r.estimateYuan, kind: r.keyKind})}`);
+  lines.push('   → 怎么改：提高 budgetYuan，或减少 AI 画面段数（改成动效画面不花钱）、缩短 from / to，或把 quality 改成 768P');
   return lines.join('\n');
 };
+
+/** 字幕分句锁的位置：<项目目录>/.brewreel/cues.lock.json（llm_broll 写，validate / make-talk 查）。 */
+export const cuesLockPath = (dir) => path.join(dir, '.brewreel', CUES_LOCK_NAME);
+
+const missingSrtMessage = (dir) =>
+  [
+    '项目目录缺少 talk.srt（字幕）。两种做法：',
+    `  ① 自动转写：node scripts/broll/transcribe.mjs "${dir}"`,
+    `  ② 一条命令从头做到尾：node scripts/talk.mjs "${dir}" --out <仓库外目录>（或先跑 llm_broll），它们会先自动转写`,
+    'make-talk 不自己转写：broll.json 里的句子号要跟着字幕走，字幕得先定下来。',
+  ].join('\n');
 
 export const loadProject = (dir) => {
   const talk = path.join(dir, 'talk.mp4');
   const srtPath = path.join(dir, 'talk.srt');
   const jsonPath = path.join(dir, 'broll.json');
-  const missing = ['talk.mp4', 'talk.srt', 'broll.json'].filter((name) => !fs.existsSync(path.join(dir, name)));
-  if (missing.length) return {ok: false, exitCode: 2, message: `项目目录缺少 ${missing.join('、')}。需要 talk.mp4、talk.srt 和 broll.json。`};
+  if (!fs.existsSync(talk)) return {ok: false, exitCode: 2, message: '项目目录缺少 talk.mp4。把口播视频改名为 talk.mp4 放进项目目录。'};
+  if (!fs.existsSync(srtPath)) return {ok: false, exitCode: 2, message: missingSrtMessage(dir)};
+  if (!fs.existsSync(jsonPath)) return {ok: false, exitCode: 2, message: `项目目录缺少 broll.json。让便宜模型写：node scripts/broll/llm_broll.mjs "${dir}"；或者照 broll/SKILL-broll.md 自己写。`};
   let cues;
   try {
     cues = parseSrt(fs.readFileSync(srtPath, 'utf8'));
@@ -327,7 +403,7 @@ export const loadProject = (dir) => {
   if (!cues.length) return {ok: false, exitCode: 1, message: '字幕里一句都没有。检查 talk.srt 是不是空的。'};
   let doc;
   try {
-    doc = JSON.parse(fs.readFileSync(jsonPath, 'utf8').replace(/^\uFEFF/, ''));
+    doc = JSON.parse(fs.readFileSync(jsonPath, 'utf8').replace(/^﻿/, ''));
   } catch (e) {
     return {ok: false, exitCode: 1, message: `broll.json 解析失败（${e.message}）。检查逗号、括号，字符串里不要用中文引号当 JSON 引号。`};
   }
@@ -337,14 +413,34 @@ export const loadProject = (dir) => {
   } catch (e) {
     return {ok: false, exitCode: 2, message: e.message};
   }
-  return {ok: true, dir, talk, srtPath, jsonPath, cues, doc, media};
+  let lockProblem = null;
+  const lockFile = cuesLockPath(dir);
+  if (fs.existsSync(lockFile)) {
+    let lock = null;
+    try {
+      lock = JSON.parse(fs.readFileSync(lockFile, 'utf8').replace(/^﻿/, ''));
+    } catch {
+      lock = null; // 锁文件坏了就当没有，不拦人
+    }
+    const r = compareCuesLock(lock, cues);
+    if (!r.ok) lockProblem = {where: r.where, problem: r.problem, fix: `${r.fix}（重写：node scripts/broll/llm_broll.mjs "${dir}"；自己核对过句子号的话删掉 .brewreel/${CUES_LOCK_NAME}）`};
+  }
+  const tokens = asrTokensOf(dir);
+  return {ok: true, dir, talk, srtPath, jsonPath, cues, doc, media, lockProblem, tokens};
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
-  const dirArg = process.argv.slice(2).find((a) => !a.startsWith('--'));
+  const argv = process.argv.slice(2);
+  const maxAt = argv.indexOf('--max-ai');
+  const maxRaw = maxAt >= 0 ? argv[maxAt + 1] : undefined;
+  const dirArg = argv.find((a, i) => !a.startsWith('--') && !(maxAt >= 0 && i === maxAt + 1));
   if (!dirArg) {
-    console.log('用法：node scripts/broll/validate.mjs <项目目录>');
+    console.log('用法：node scripts/broll/validate.mjs <项目目录> [--max-ai 2]');
+    process.exit(2);
+  }
+  if (maxAt >= 0 && !/^\d+$/.test(String(maxRaw ?? ''))) {
+    console.log('--max-ai 后面要跟一个不小于 0 的整数');
     process.exit(2);
   }
   const loaded = loadProject(path.resolve(dirArg));
@@ -360,6 +456,10 @@ if (isMain) {
     styles: loadStyles(),
     banned: loadBanned(),
     projectDir: loaded.dir,
+    tokens: loaded.tokens,
+    lockProblem: loaded.lockProblem,
+    maxAi: maxAt >= 0 ? Number(maxRaw) : null,
+    keyKind: keyKindOf(),
   });
   console.log(formatReport(r));
   if (r.budgetExceeded) process.exit(3);
