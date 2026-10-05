@@ -15,7 +15,7 @@
 | OS | Windows (x64 only) / macOS ≥ 15 / Linux (glibc ≥ 2.35, plus shared libs like `libnss3` / `libgbm` / `libasound2`; Alpine and NixOS are not supported) |
 | Node.js | ≥ 18 (20 LTS or newer recommended; this repo is tested on Node 22); the DeepSeek Harness plugin needs 22.x from 22.19, or 24+ |
 | Python | 3.10+; the music script needs `numpy` / `scipy`, `llm_make.py` uses only the standard library |
-| First download | A few hundred MB of render dependencies, plus about 110 MB for Chrome Headless Shell |
+| First download | A few hundred MB of render dependencies, plus about 110 MB for Chrome Headless Shell; for talking-head B-roll, the first transcription also downloads the SenseVoice speech model, about 240 MB (once) |
 
 Output is 1080×1920 (journey defaults to 1080×1350), 30 fps, with music and sound effects.
 
@@ -63,6 +63,16 @@ python scripts/llm_make.py path/to/brief.md
 ```
 
 On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of the values above are placeholders; swap in your own key, and never commit a key or paste one into an issue. You may also put these variables into your AI assistant's own global config (e.g. `~/.claude/settings.json`); that's optional, and this repo never changes any global config for you. With `--dry-run` it calls no API and reads no key; it only writes out the assembled prompt and estimates its token count. Pass `--skip-readthrough-gate` to only warn about read-through problems and still render; by default those problems block rendering.
+
+### Talking-head B-roll (experimental)
+
+Use this when you already have a talking-head video and want explanatory pictures on the lines about steps or numbers. Put only the talk, `talk.mp4`, in a project folder, then run one command:
+
+```bash
+node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
+```
+
+It transcribes the talk on your machine, asks DeepSeek to pick the lines and write `broll.json` (set `DEEPSEEK_API_KEY`), and renders: free motion clips are drawn for real, and AI clips start as solid-color stand-ins at no cost. The first transcription downloads a speech model of about 240 MB. If you are upgrading from v0.8, run `npm install` in `template` again first. Real AI clips, price and review: [Talking-head B-roll](broll.en.md).
 
 ### Use it in DeepSeek Harness
 

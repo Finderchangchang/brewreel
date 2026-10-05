@@ -2,6 +2,54 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## Unreleased
+
+A big update to talking-head B-roll (experimental): a talk video alone is now enough, with free motion clips and several AI clip styles. Promo videos work and look exactly as before. `broll.json` files written for v0.8 (version 1) still run, and clips already generated are not paid for again.
+
+### New: one command
+- `node scripts/talk.mjs <project> --out <dir-outside-the-repo>`: transcribe → a cheap model writes `broll.json` → render. Steps already done are skipped, so you can keep running the same command. It never runs `approve.mjs`.
+
+### New: local transcription
+- Only `talk.mp4` is needed in the project folder. Transcription runs on your machine with the SenseVoice model (through sherpa-onnx), with no network and no cost. The first run downloads a model of about 240 MB, tried from ModelScope, HuggingFace and hf-mirror in that order, with resume and a sha256 check. An existing `talk.srt` is never overwritten.
+- With a DeepSeek key, a proofreading pass runs by default: the model only returns "change this character to that one" patches, the script decides from the pronunciation whether to apply each, and changes touching numbers, negations or opposites are only suggested. The record goes to `talk.fixes.txt`. `--no-fix` turns it off. Proper nouns go in `talk.terms.txt` or `--terms`.
+- Splitting or merging cues after `broll.json` is written is stopped by validation (the cue ids would shift).
+- No cloud transcription in this release.
+
+### New: motion clips
+- Clips with `"source": "motion"` in `broll.json` are motion clips with five templates: `keyword`, `checklist`, `steps`, `counter`, `compare`, built from the existing promo components.
+- Text on a card must be consecutive words from the spoken sentence, checked character by character; a negation right before a quote must be included; numbers only go through `counter`'s `say` / `from` and must come from the sentence.
+- Free, no ledger, no review, no "AI-generated" badge. With the transcription cache, words appear at their real spoken times.
+- A v2 example is in `examples/talk/motion`.
+
+### New: several AI clip styles
+- New styles: `wood-blocks` (the new default, still called 「积木风」 in Chinese, now wooden blocks), `clay-stopmotion`, `paper-layers`, `ink-sketch`. The old `brick-diorama` is now marked experimental and not the default; validation warns that it shows studs. Old projects still work.
+- One shared robot for the whole film; its shape and colors are in `broll/character.json`, and a style only decides its material.
+- `broll.json` version 2: top-level `style` plus an optional second style `styleAlt` and a storyline `thread`; AI clips add `look` (main / second style) and `link` (open on the previous clip's end frame). At most two styles per film, the second style on no more than half the AI clips, and the first AI clip in the main style.
+- Prompt v2: describes only what should be seen; after assembly it is checked for words that steer the picture the wrong way, and is not submitted if any are found.
+- Reference images: `make-style-refs.mjs --style <style id>`. If a style has no reference images, real generation stops before submitting (exit code 2, nothing spent) and offers three fixes: switch style, use motion clips, or preview with stand-ins first.
+
+### Changed
+- `llm_broll`: writes at most 2 AI clips by default (`--max-ai` changes it) and prefers motion clips or the face for the rest; writes version 2; the prompt carries a selection table, a style list and an example per template; transcribes first when there is no `talk.srt`.
+- `validate`: adds `--max-ai`; a sentence that states a number but uses an AI clip is an error, with the `counter` version suggested.
+- Automatic conversion of the talk: HEVC, variable frame rate, mono, rotation flags, odd sizes and non-integer frame rates from phones are converted to H.264 with a constant frame rate in the project's `.brewreel/` before rendering; the original is untouched.
+- Price display: the estimate also gives the total seconds of AI video. MiniMax subscription keys (starting with `sk-cp-`) cannot pay as you go; H3 video is paid in credits, so the estimate adds 「约 N 积分」 (about N credits; 768P estimated at about 70 credits per second, the MiniMax console is the authority). The budget gate still works in yuan.
+- Review page: one row per motion clip listing its on-screen text; AI clips show the style name; the top strip puts each AI clip's middle frame side by side. The approval binds only the AI part, so editing motion clips needs no new review, and v0.8 approvals are still accepted.
+- `manifest.json` records where the captions came from (transcribed / edited / supplied), the transcription model, whether the talk was converted, and each clip's source and style.
+- Dependencies: `template` adds `sherpa-onnx-node` 1.13.8 and `pinyin-pro`. When upgrading from v0.8, run `npm install` in `template` again.
+
+### Fixed
+- The `pip` circle's diameter and margin were fixed pixel values, so the circle looked too big in smaller videos; they now scale with the frame size.
+- `split` captions only reserved one line, so two-line captions pushed down onto the face; the space now grows with the number of lines.
+
+### Known limitations
+- The four new styles (including the default `wood-blocks`) have no reference images yet: they only work as `placeholder` previews for now, and real generation stops before submitting.
+- The new prompts never mention studs, but generated pictures may still occasionally show bricks with round studs; check the review page before publishing.
+- Each AI clip is generated on its own; the shared character and `link` keep clips closer but do not guarantee a match.
+- Motion cards copy the transcript, so transcription mistakes show up on screen.
+- English transcription was tested only with synthetic speech; transcription on macOS is not tested.
+- Cheap models writing v2 `broll.json` and the proofreading pass have not yet been tested at scale with DeepSeek.
+- The DeepSeek Harness plugin still does not include talking-head B-roll.
+
 ## v0.8.0 · 2026-10-05 · Talking-head B-roll (experimental)
 
 Adds brick-style explainer shots on top of an existing talking-head video. Promo videos work and look exactly as before.

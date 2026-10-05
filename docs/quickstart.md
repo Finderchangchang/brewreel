@@ -15,7 +15,7 @@
 | 操作系统 | Windows（仅 x64）/ macOS ≥ 15 / Linux（glibc ≥ 2.35，需要 `libnss3` / `libgbm` / `libasound2` 等共享库；不支持 Alpine、NixOS） |
 | Node.js | ≥ 18（建议 20 LTS 或更高，本仓库在 Node 22 上测试过）；DeepSeek Harness 插件要 22.19+ 的 22.x 或 24+ |
 | Python | 3.10+；配乐脚本要 `numpy` / `scipy`，`llm_make.py` 只用标准库 |
-| 首次下载 | 渲染依赖约几百 MB，外加约 110 MB 的 Chrome Headless Shell |
+| 首次下载 | 渲染依赖约几百 MB，外加约 110 MB 的 Chrome Headless Shell；用口播配画面时，第一次转写再下载约 240 MB 的 SenseVoice 识别模型（只下一次） |
 
 成片 1080×1920（journey 默认 1080×1350），30 fps，带配乐和音效。
 
@@ -63,6 +63,16 @@ python scripts/llm_make.py path/to/brief.md
 ```
 
 Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上都是占位符，换成你自己的 key；不要把 key 提交进仓库或写进 issue。也可以把这些变量写进 AI 编程助手自己的全局配置（如 `~/.claude/settings.json`），这是可选做法，本仓库不会替你改任何全局配置。加 `--dry-run` 不调接口、不读密钥，只把拼好的提示写出来并估算 token 数。加 `--skip-readthrough-gate` 时，通读检查发现的问题只警告，仍照常出片；默认会拦下、不出片。
+
+### 口播配画面（实验）
+
+已经有一段真人口播、想在讲步骤、讲数字的句子上加解释画面时用。项目目录里只放口播 `talk.mp4`，一条命令：
+
+```bash
+node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
+```
+
+它先在本机转写出字幕，再请 DeepSeek 挑句子写 `broll.json`（要设 `DEEPSEEK_API_KEY`），最后出片：免费的动效画面直接画，AI 画面先用纯色占位，不花钱。第一次转写会下载约 240 MB 的识别模型。从 v0.8 升级的，先在 `template` 目录重新 `npm install`。真生成 AI 画面、费用和审片见 [口播配画面](broll.md)。
 
 ### 在 DeepSeek Harness 里用
 

@@ -15,6 +15,7 @@ This product includes BrewReel (精酿), created by Liu Weijie (柳伟杰, GitHu
 第三方组件：
 - Remotion：源码可见，但不是开源软件，有自己的许可证。见 THIRD_PARTY_LICENSES.md。
 - Noto Sans SC、Cascadia Mono：SIL Open Font License 1.1，许可证随字体文件放在同一目录。
+- SenseVoice 转写模型（FunAudioLLM / 阿里巴巴通义实验室）：FunASR 模型开源协议，首次转写时下载，不随本项目分发；sherpa-onnx（Apache-2.0）、pinyin-pro（MIT）由 npm 安装。见 THIRD_PARTY_LICENSES.md。
 
 industries/ 下的校验规则整理自公开法规和平台规则，仅用于辅助自查，不构成法律意见。
 发布内容是否合规，以监管部门和平台的最新规定为准，责任由发布者自行承担。
@@ -34,6 +35,10 @@ Third-party components:
   See THIRD_PARTY_LICENSES.md.
 - Noto Sans SC, Cascadia Mono: SIL Open Font License 1.1; the license text
   ships alongside each font's files.
+- SenseVoice transcription model (FunAudioLLM / Alibaba Tongyi Lab): FunASR
+  Model Open Source License; downloaded on first transcription, not shipped
+  with this project. sherpa-onnx (Apache-2.0) and pinyin-pro (MIT) are
+  installed by npm. See THIRD_PARTY_LICENSES.md.
 
 The compliance rules under industries/ are compiled from public regulations
 and platform rules for self-check purposes only, and do not constitute legal

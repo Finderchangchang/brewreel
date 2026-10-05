@@ -51,3 +51,60 @@ refers to [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-ce
 (MIT License, Copyright (c) 2026 Erduo (Liu Ran)). This project rewrote that
 step with its own fields, checks and brick look. It does not copy that
 project's text or assets.
+
+## SenseVoice（转写模型）
+
+口播配画面的本地转写用 SenseVoice Small 模型（int8 量化，2024-07-17 版），由 sherpa-onnx 项目转换成 ONNX 格式。
+
+- 模型：SenseVoice，FunAudioLLM / 阿里巴巴通义实验室，<https://github.com/FunAudioLLM/SenseVoice>
+- 转换版：<https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17>，用到 `model.int8.onnx` 和 `tokens.txt` 两个文件
+- 许可证：FunASR 模型开源协议（FunASR Model Open Source License Agreement）1.1 版，<https://github.com/modelscope/FunASR/blob/main/MODEL_LICENSE>
+- 版权声明：Copyright (C) 2023-2028 Alibaba Group. All rights reserved.
+- 协议允许使用、复制、修改和分享；使用、复制、修改和分享时要注明出处和作者信息，并保留相关模型名称（SenseVoice）；违反协议条款，许可自动终止。
+- 本仓库不附带模型文件。第一次转写时按顺序从魔搭（第三方上传的副本，两个文件的 sha256 已核对与官方一致）、HuggingFace、hf-mirror 下载到本机缓存，按写死的 sha256 校验，对不上不用。
+- 本仓库的 Apache-2.0 许可证不覆盖这个模型，模型的使用条件以上面的协议为准。
+
+English: Local transcription for talking-head B-roll uses the SenseVoice Small
+model (int8, 2024-07-17), by FunAudioLLM / Alibaba Tongyi Lab
+(<https://github.com/FunAudioLLM/SenseVoice>), converted to ONNX by the
+sherpa-onnx project
+(<https://huggingface.co/csukuangfj/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-2024-07-17>;
+files `model.int8.onnx` and `tokens.txt`). License: FunASR Model Open Source
+License Agreement, Version 1.1
+(<https://github.com/modelscope/FunASR/blob/main/MODEL_LICENSE>), Copyright (C)
+2023-2028 Alibaba Group. All rights reserved. The agreement allows use, copying,
+modification and sharing; you must attribute the source and author information
+and retain the relevant model names (SenseVoice); the license terminates
+automatically if its terms are violated. This repository does not ship the
+model files: the first transcription downloads them to a local cache from
+ModelScope (a third-party copy whose sha256 matches the official files),
+HuggingFace or hf-mirror, and checks them against fixed sha256 values. This
+repository's Apache-2.0 license does not cover the model.
+
+## sherpa-onnx
+
+- 包：`sherpa-onnx-node` 1.13.8 和对应平台的包（如 `sherpa-onnx-win-x64`），写在 `template/package.json` 里，由 npm 安装，不随本仓库分发。用来在本机运行转写模型。
+- 来源：k2-fsa/sherpa-onnx（The next-gen Kaldi team），<https://github.com/k2-fsa/sherpa-onnx>
+- 许可证：Apache License 2.0
+- 平台包里带有 ONNX Runtime 的动态库（Microsoft，MIT License，<https://github.com/microsoft/onnxruntime>）。
+
+English: `sherpa-onnx-node` 1.13.8 and its platform packages (for example
+`sherpa-onnx-win-x64`) are listed in `template/package.json` and installed by
+npm; they are not shipped in this repository. They run the transcription model
+locally. Source: k2-fsa/sherpa-onnx (The next-gen Kaldi team),
+<https://github.com/k2-fsa/sherpa-onnx>, Apache License 2.0. The platform
+packages include ONNX Runtime libraries (Microsoft, MIT License,
+<https://github.com/microsoft/onnxruntime>).
+
+## pinyin-pro
+
+- 包：`pinyin-pro` 3.x，写在 `template/package.json` 里，由 npm 安装，不随本仓库分发。转写校对时用它比对读音，决定一处改字能不能自动落地。
+- 来源：<https://github.com/zh-lx/pinyin-pro>
+- 许可证：MIT License
+- 版权声明：Copyright (c) 2022-present zh-lx
+
+English: `pinyin-pro` 3.x is listed in `template/package.json` and installed by
+npm; it is not shipped in this repository. The transcription proofreading pass
+uses it to compare pronunciations before applying a character fix. Source:
+<https://github.com/zh-lx/pinyin-pro>, MIT License, Copyright (c) 2022-present
+zh-lx.

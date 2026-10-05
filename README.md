@@ -73,7 +73,7 @@ dsh web
 - **18 套主题**：cards 默认 6 套，另有 12 套可选配色，不选时老分镜出片不变，见 [`styles/cards/THEMES.md`](styles/cards/THEMES.md)。
 - **校验与合规**：《广告法》极限词、行业规则、断词换行、安全区、数字出处等几十条校验，自查有 ✗ 的片子不交付。
 - **配乐和字幕**：配乐现场合成、卡着镜头切点，没有版权问题；字幕可选中文或英文。
-- **口播配画面（实验）**：真人口播上加积木风解释画面。见 [口播配画面](docs/broll.md)。
+- **口播配画面（实验）**：只放一段真人口播，一条命令 `node scripts/talk.mjs` 完成本地转写、挑句子、配画面。画面两种：免费的动效卡片（关键词、清单、步骤、数字、对比，字全部照抄原话），和默认最多 2 段 AI 生成画面（积木风等四种风格，花钱前先估价，要人审过）。本地转写用 SenseVoice 模型（FunAudioLLM / 阿里通义实验室）。见 [口播配画面](docs/broll.md)。
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="数据图表镜头" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 套可选配色" /></p>
@@ -93,6 +93,7 @@ dsh web
 - [功能](docs/features.md)：三种配方、配音、行业包、校验与合规、调配方与原创性检查、出片质检
 - [截图](docs/gallery.md)：三种配方、六个行业和更多样例的实际渲染画面
 - [它怎么工作](docs/how-it-works.md)：从简报到成片的流程、目录结构
+- [口播配画面](docs/broll.md)：给真人口播配动效画面和 AI 画面（实验），一条命令、转写、费用、审片
 - [常见问题](docs/faq.md)：配乐、配音、Remotion 授权、Windows、ffmpeg、下载失败等
 - [已知限制](docs/limitations.md)：实测分数、仍存在的问题、测试方法与各轮结果
 - [首次出片指南](https://brewreel.com/guides/first-promo-video.html) · [产品简报模板](https://brewreel.com/guides/product-brief.html)（官网）

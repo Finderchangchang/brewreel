@@ -73,7 +73,7 @@ The plugin has not yet been tested against a real DeepSeek model. The 7 tools, s
 - **18 themes**: 6 default themes for cards plus 12 optional palettes; existing storyboards render unchanged unless you pick one. See [`styles/cards/THEMES.md`](styles/cards/THEMES.md).
 - **Validation and compliance**: dozens of checks for ad-law superlatives, industry rules, line wrapping, safe areas and number sources. A video with a ✗ in its self-check is not delivered.
 - **Music and captions**: music is synthesized on the spot and hits the shot cuts, so there are no copyright issues; captions can be Chinese or English.
-- **Talking-head B-roll (experimental)**: brick-style explainers on a real talking-head video. See [Talking-head B-roll](docs/broll.en.md).
+- **Talking-head B-roll (experimental)**: drop in a real talking-head video and one command, `node scripts/talk.mjs`, transcribes it locally, picks the lines and adds pictures. Two kinds: free motion cards (keyword, checklist, steps, counter, compare; every word copied from the speech) and, by default, at most 2 AI-generated clips (wood blocks and three other styles; cost is estimated first and a person reviews them). Local transcription uses the SenseVoice model (FunAudioLLM / Alibaba Tongyi Lab). See [Talking-head B-roll](docs/broll.en.md).
 
 <p align="center"><img src="docs/images/chart.png" width="720" alt="Data chart shot" /></p>
 <p align="center"><img src="docs/images/themes.png" width="720" alt="12 optional palettes" /></p>
@@ -93,6 +93,7 @@ Details for each item are in [Features](docs/features.en.md); screenshots of the
 - [Features](docs/features.en.md): three recipes, voice-over, industry packs, validation and compliance, recipe crafting and the originality check, render QA
 - [Screenshots](docs/gallery.en.md): real renders of the three recipes, six industries and more samples
 - [How it works](docs/how-it-works.en.md): the flow from brief to video, directory structure
+- [Talking-head B-roll](docs/broll.en.md): motion cards and AI clips on a real talking-head video (experimental): one command, transcription, price, review
 - [FAQ](docs/faq.en.md): music, voice-over, Remotion licensing, Windows, ffmpeg, download failures and more
 - [Known limitations](docs/limitations.en.md): test scores, open problems, test method and results by round
 - [First video guide](https://brewreel.com/guides/first-promo-video.en.html) · [Product brief template](https://brewreel.com/guides/product-brief.en.html) (website)
