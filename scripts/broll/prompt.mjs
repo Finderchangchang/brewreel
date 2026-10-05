@@ -59,6 +59,8 @@ export const IMAGE_ASPECTS = ['1:1', '16:9', '4:3', '3:2', '2:3', '3:4', '9:16',
  */
 export const LEAK_WORDS = ['凸点', '乐高', '拼搭', '颗粒', '人仔', 'stud', 'lego', 'minifig'];
 export const THREAD_MAX = 20;
+/** 凡是让人把 version 1 改成 2 的报错都带上这句：v2 的提示词和请求字段都变了，已经付费生成的段会重新花钱。 */
+export const V2_COST_NOTE = '注意：改成 2 以后，已经生成过的 AI 段会按新的提示词重新生成、重新花钱';
 export const DEFAULT_STYLE = 'wood-blocks';
 const COLOR_BEFORE_ROBOT = /(浅蓝灰|蓝灰|[红橙黄绿青蓝紫灰白黑粉棕金银]色?)的?机器人/;
 
@@ -215,11 +217,15 @@ export const readyStyleIds = (styles = {}, root = ROOT) =>
 /** 缺参考图时的报错（哪个风格、缺哪几张、下一步三条）。field 是 style 或 styleAlt。 */
 export const refsMissingProblem = ({styleId, style, missing, field = 'style', styles = {}, root = ROOT}) => {
   const ready = readyStyleIds(styles, root).filter((id) => id !== styleId);
-  const readyText = ready.length ? ready.join('、') : '现在正式风格都还没出参考图';
+  const options = [];
+  if (ready.length) options.push(`把 ${field} 换成已经有参考图的风格（${ready.join('、')}）`);
+  options.push('这几段改成动效画面（source 写 motion）或删掉留脸，动效画面不花钱、不用参考图');
+  options.push('先用 provider placeholder 出占位版，看排版和节奏');
+  const marks = ['①', '②', '③'];
   return {
     where: field,
-    problem: `风格「${styleLabel(style, styleId)}」还没有参考图：缺 ${missing.join('、')}。AI 画面靠参考图定住角色和材质，缺了不提交，也没有花钱`,
-    fix: `三选一：① 把 ${field} 换成已经有参考图的风格（${readyText}）；② 这几段改成动效画面（source 写 motion）或删掉留脸；③ 先用 provider placeholder 看排版。参考图由维护者出：node scripts/broll/make-style-refs.mjs --style ${styleId} --dry-run 先看要发的请求，确认后把 --dry-run 换成 --yes（每张 ${IMAGE_YUAN} 元）`,
+    problem: `风格「${styleLabel(style, styleId)}」还没有参考图（缺 ${missing.join('、')}），这一版还不能用它真生成。AI 画面靠参考图定住角色和材质，缺了不提交，也没有花钱`,
+    fix: `${options.length === 3 ? '三' : '二'}选一：${options.map((o, i) => `${marks[i]} ${o}`).join('；')}。参考图由项目维护者出好、随新版本发布，普通用户不用自己出，等新版本就行。（维护者出图：node scripts/broll/make-style-refs.mjs --style ${styleId} --dry-run 先看请求，确认后换成 --yes，每张 ${IMAGE_YUAN} 元）`,
   };
 };
 
@@ -311,12 +317,12 @@ export const validateStyles = (doc, styles = {}, opts = {}) => {
 
   if (!isV2(doc)) {
     for (const k of ['styleAlt', 'thread']) {
-      if (k in doc) err(k, `${k} 是 version 2 的写法，现在 version 是 ${JSON.stringify(doc.version)}`, `把顶层 version 改成 2；用不上就删掉 ${k}`);
+      if (k in doc) err(k, `${k} 是 version 2 的写法，现在 version 是 ${JSON.stringify(doc.version)}`, `用不上就删掉 ${k}；一定要用就把顶层 version 改成 2（${V2_COST_NOTE}）`);
     }
     clips.forEach((clip, i) => {
       if (!clip || typeof clip !== 'object') return;
       for (const k of ['look', 'link']) {
-        if (k in clip) err(`${whereOf(clip, i)}.${k}`, `${k} 是 version 2 的写法，现在 version 是 ${JSON.stringify(doc.version)}`, `把顶层 version 改成 2；用不上就删掉 ${k}`);
+        if (k in clip) err(`${whereOf(clip, i)}.${k}`, `${k} 是 version 2 的写法，现在 version 是 ${JSON.stringify(doc.version)}`, `用不上就删掉 ${k}；一定要用就把顶层 version 改成 2（${V2_COST_NOTE}）`);
       }
     });
     if (styles[doc.style] && isExperimental(styles[doc.style])) experimentalWarn('style', doc.style);

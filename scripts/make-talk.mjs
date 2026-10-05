@@ -1,19 +1,21 @@
 #!/usr/bin/env node
 // 口播配 B-roll：校验 → 计划 → 估价闸门 → 原片归一化 → 生成 AI 画面 → 审片（minimax-h3）→ 合成 → 交付。
 //   node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3] [--force-redo]
-// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里、缺参考图 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查、转码或渲染失败 / 5 还没审片
+// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里、缺参考图、缺完整版 ffmpeg、会盖掉付费片段 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查、转码或渲染失败 / 5 还没审片
+// 合成的输入（原片、字幕、计划、生成片、合成代码）和上次交付时完全一样时，不重新渲染，直接用上次的成片（删掉 video.mp4 就会重出）。
 // --out 不许落在仓库里（promo/ 除外，或人手动加 --allow-in-repo）。--dry-run 只校验、写计划和估价，不生成。
 // 动效画面（source:"motion"）不花钱、不进账本、不审片、不加「AI 生成画面」标，合成时直接画；
 // 只有 AI 画面段才走 --yes、预算、审片这几道关。全片都是动效时不用 --yes。
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {sha256Stream} from './broll/asr/audio.mjs';
 import {extractDeliveryFrames} from './broll/frames.mjs';
 import {generateClips} from './broll/generate.mjs';
-import {sha256File} from './broll/hash.mjs';
+import {sha256File, sha256Text, stableString} from './broll/hash.mjs';
 import {loadLedger, markApproved, saveLedger} from './broll/ledger.mjs';
-import {ffmpeg} from './broll/media.mjs';
+import {ffmpeg, ffmpegCheck, ffmpegHelp} from './broll/media.mjs';
 import {toMotionProps} from './broll/motion.mjs';
 import {normalizeTalk, normalizedMediaOf} from './broll/normalize.mjs';
 import {aiClipsOf, buildPlan, writePlan} from './broll/plan.mjs';
@@ -96,6 +98,7 @@ const report = validateBroll(doc, {
   tokens: loaded.tokens,
   lockProblem: loaded.lockProblem,
   keyKind,
+  doubts: loaded.doubts,
 });
 console.log(formatReport(report));
 if (report.errors.length && !report.budgetExceeded) process.exit(1);
@@ -135,6 +138,12 @@ if (refProblems.length) {
   const text = refProblems.map((e, k) => `${k + 1}. ${e.where}：${e.problem}\n   → 怎么改：${e.fix}`).join('\n');
   if (dryRun) console.log(`提醒：真生成时会停在这里（缺参考图）：\n${text}`);
   else fail(2, `缺参考图，不提交：\n${text}`);
+}
+// 出片要完整版 ffmpeg（转码、占位片、片段检查、拼图都要用）：先查，免得生成完、花完钱才在拼图那一步失败
+const ffCheck = ffmpegCheck();
+if (!ffCheck.ok) {
+  if (dryRun) console.log(`提醒：真出片时会停在这里。\n${ffmpegHelp(ffCheck)}`);
+  else fail(2, ffmpegHelp(ffCheck));
 }
 if (dryRun) {
   console.log('dry-run：只出计划，不生成。');
@@ -210,20 +219,50 @@ const cleanup = () => {
   if (!keep) fs.rmSync(runDir, {recursive: true, force: true});
 };
 
+/** 合成代码的指纹：template/src 下所有文件 + 依赖锁文件。代码一改（升级仓库）就重新渲染。 */
+const templateHash = () => {
+  const h = createHash('sha256');
+  const walk = (dir) => {
+    for (const name of fs.readdirSync(dir).sort()) {
+      const p = path.join(dir, name);
+      if (fs.statSync(p).isDirectory()) walk(p);
+      else {
+        h.update(path.relative(TEMPLATE, p).split(path.sep).join('/'));
+        h.update(fs.readFileSync(p));
+      }
+    }
+  };
+  walk(path.join(TEMPLATE, 'src'));
+  for (const f of ['package-lock.json', 'remotion.config.ts']) {
+    const p = path.join(TEMPLATE, f);
+    if (fs.existsSync(p)) {
+      h.update(f);
+      h.update(fs.readFileSync(p));
+    }
+  }
+  return h.digest('hex');
+};
+
+const readJsonSafe = (p) => {
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+};
+
 // 动效画面的配色跟着主风格走（积木风配蓝灰底加橙色，和 AI 段接得上）
 const mainStyle = styles[doc.style] ?? {};
 const motionTheme = typeof mainStyle.motionTheme === 'string' ? mainStyle.motionTheme : mainStyle.motionTheme?.shots;
 const motionPaper = typeof mainStyle.motionTheme === 'object' ? mainStyle.motionTheme?.paper : undefined;
 
 try {
-  fs.mkdirSync(runDir, {recursive: true});
-  fs.copyFileSync(talkReady.file, path.join(runDir, 'talk.mp4'));
+  const clipFiles = {};
   const propsClips = plan.clips.map((clip) => {
     if (clip.source === 'motion') return toMotionProps(clip.motion, {theme: motionTheme, paper: motionPaper});
     const entry = ledger.clips[clip.id];
-    const abs = path.resolve(outDir, entry.file);
     const name = `${clip.id}.mp4`;
-    fs.copyFileSync(abs, path.join(runDir, name));
+    clipFiles[clip.id] = path.resolve(outDir, entry.file);
     return {
       kind: 'video',
       id: clip.id,
@@ -245,6 +284,29 @@ try {
     clips: propsClips,
     draft: doc.provider === 'minimax-h3' && draft && aiClips.length > 0,
   };
+  // 渲染指纹：原片、合成参数（字幕、每段窗口和上屏字、版式）、每段生成片、合成代码。和上次交付时一样就不重新渲染
+  const talkSha = await sha256Stream(loaded.talk);
+  const renderKey = sha256Text(
+    stableString({
+      v: 1,
+      talk: talkSha,
+      talkFile: path.basename(talkReady.file),
+      clipFiles: Object.fromEntries(Object.entries(clipFiles).map(([id, f]) => [id, fs.existsSync(f) ? sha256File(f) : null])),
+      props: {...props, talkSrc: null, clips: props.clips.map((c) => (c.kind === 'video' ? {...c, src: null} : c))},
+      template: templateHash(),
+    }),
+  );
+  const sheetPath = path.join(outDir, 'sheet.png');
+  const manifestPath = path.join(outDir, 'manifest.json');
+  const prev = readJsonSafe(manifestPath);
+  if (prev?.status === 'delivered' && prev.renderKey === renderKey && fs.existsSync(videoPath) && fs.existsSync(sheetPath)) {
+    console.log('合成的输入和上次交付时一样（原片、字幕、broll.json、生成片、合成代码都没变），不重新渲染，直接用上次的成片。要强制重出，删掉输出目录里的 video.mp4。');
+    console.log(`交付：${videoPath}`);
+    throw Object.assign(new Error(''), {exitCode: 0, skipRender: true});
+  }
+  fs.mkdirSync(runDir, {recursive: true});
+  fs.copyFileSync(talkReady.file, path.join(runDir, 'talk.mp4'));
+  for (const [id, abs] of Object.entries(clipFiles)) fs.copyFileSync(abs, path.join(runDir, `${id}.mp4`));
   fs.writeFileSync(propsPath, JSON.stringify(props, null, 2) + '\n', 'utf8');
 
   lock = await acquireRenderLock({file: LOCK, id: `talk-${process.pid}`});
@@ -287,7 +349,6 @@ try {
   const scale = 'scale=180:320:force_original_aspect_ratio=decrease,pad=180:320:(ow-iw)/2:(oh-ih)/2,setsar=1';
   const chain = pngs.map((_, i) => `[${i}:v]${scale}[s${i}]`).join(';');
   const tile = `${pngs.map((_, i) => `[s${i}]`).join('')}concat=n=${pngs.length}:v=1:a=0,tile=${cols}x${rows}:padding=8:color=0x111111`;
-  const sheetPath = path.join(outDir, 'sheet.png');
   const sheet = ffmpeg(['-y', '-hide_banner', '-loglevel', 'error', ...pngs.flatMap((p) => ['-i', p]), '-filter_complex', `${chain};${tile}`, '-frames:v', '1', sheetPath]);
   if (sheet.status !== 0 || !fs.existsSync(sheetPath)) {
     const tail = String(sheet.stderr || sheet.stdout || '')
@@ -304,6 +365,7 @@ try {
   const meta = readTranscribeMeta(projectDir);
   const manifest = {
     status: 'delivered',
+    renderKey,
     provider: doc.provider,
     quality: doc.quality,
     style: doc.style,
@@ -317,7 +379,7 @@ try {
     aiGenSec: plan.aiGenSec,
     draft: props.draft,
     inputs: {
-      'talk.mp4': await sha256Stream(loaded.talk),
+      'talk.mp4': talkSha,
       'talk.srt': sha256File(loaded.srtPath),
       'broll.json': sha256File(loaded.jsonPath),
       srtSource: srtSourceOf(projectDir),
@@ -348,11 +410,14 @@ try {
     }),
     finishedAt,
   };
-  fs.writeFileSync(path.join(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', 'utf8');
+  fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
   console.log(`交付：${videoPath}`);
 } catch (e) {
-  exitCode = e.exitCode || 4;
-  exitMsg = e instanceof QueueTimeoutError ? e.message : e.message || String(e);
+  if (e?.skipRender) exitCode = 0;
+  else {
+    exitCode = e.exitCode || 4;
+    exitMsg = e instanceof QueueTimeoutError ? e.message : e.message || String(e);
+  }
 } finally {
   cleanup();
 }

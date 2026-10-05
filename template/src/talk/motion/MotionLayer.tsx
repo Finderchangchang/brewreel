@@ -80,7 +80,7 @@ export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, 
   if (clip.template === 'keyword') {
     const g = keywordGeom(clip.data);
     content = g.content;
-    body = <Keyword data={clip.data} marks={clip.marks} t={t} geom={g} />;
+    body = <Keyword data={clip.data} marks={clip.marks} t={t} geom={g} dur={dur} />;
     background = `radial-gradient(ellipse at 50% 42%, ${paper.cardAlt ?? paper.bg} 0%, ${paper.bg} 70%)`;
   } else {
     const a = adaptShot(clip, dur, BEAT);

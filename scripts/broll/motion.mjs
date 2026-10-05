@@ -34,6 +34,10 @@ const AFTER_QUAL = ['以上', '以下', '以内', '之内', '左右', '上下', 
 const APPROX_AFTER = ['多', '来', '余'];
 
 /** compare 两栏的栏标题：模型只选枚举，字由这里给 */
+/** 原话里标「新 / 旧」的时间词（归一后的写法，英文去了空格）：查 compare 两栏有没有放反 */
+const TIME_NEW = ['现在', '之后', '后来', '如今', '目前', 'now', 'after', 'later', 'today'];
+const TIME_OLD = ['以前', '之前', '原来', '过去', '当初', '从前', '本来', 'before', 'usedto', 'previously'];
+
 export const LABELS = {
   'before-after': {zh: ['之前', '之后'], en: ['Before', 'After']},
   'old-new': {zh: ['以前', '现在'], en: ['Before', 'Now']},
@@ -93,8 +97,8 @@ export const TEMPLATES = {
       right: {kind: 'quotes', min: 1, max: 2, each: 10, required: true},
       verdict: {kind: 'quote', max: 12},
     },
-    use: '前后、两种做法对比，原句两边都说了',
-    note: '左右对比：左栏先出、右栏后出并胜出；栏标题由 labels 给固定词',
+    use: '前后、两种做法对比，原句先说旧的（或错的）、后说新的（或对的）',
+    note: '左右对比：左栏放先说的旧做法、右栏放后说的新做法并胜出；栏标题由 labels 给固定词。先说新做法的句子别用 compare',
     example: {sentence: '以前配一段画面要花七块钱，现在一分钱不用', job: 'compare', slots: {labels: 'old-new', left: ['要花七块钱'], right: ['一分钱不用']}},
   },
 };
@@ -146,13 +150,38 @@ const lower = (ch) => {
  *  基本平面以外的字（表情符号等，占两个 UTF-16 单元）不参与比对：归一串按 UTF-16 下标查找，chars 按码点排，两者要一一对应 */
 const keepFlags = (chars) => chars.map((c, i) => c.length === 1 && (!STRIP_RE.test(c) || (DIGIT_JOIN.has(c) && isDigit(chars[i - 1] ?? '') && isDigit(chars[i + 1] ?? ''))));
 
+/**
+ * 两个数字字之间夹着被去掉的字（空白、换行、分句处，或阿拉伯数字之间的中文标点）时，归一串里留一个分隔符 SEP：
+ * 「2 30 second」「价格是 20 / 30天之后」不能拼成 230、2030 这种原话里没有的数。英文逗号「1,000」是千分位，不隔。
+ */
+export const SEP = '\u0001';
+const CN_NUM_RE = /[零〇一二两三四五六七八九十百千万亿]/;
+const isNumCh = (ch) => isDigit(ch) || CN_NUM_RE.test(ch ?? '');
+const needSep = (prev, cur, gap) => {
+  if (!prev || !isNumCh(prev) || !isNumCh(cur)) return false;
+  if (gap.boundary || gap.chars.some((c) => /\s/.test(c))) return true;
+  return isDigit(prev) && isDigit(cur) && gap.chars.some((c) => c !== ',');
+};
+
 export const norm = (s) => {
-  const chars = Array.from(String(s ?? '')).map(half);
+  const raw = Array.from(String(s ?? ''));
+  const chars = raw.map(half);
   const keep = keepFlags(chars);
-  return chars
-    .filter((_, i) => keep[i])
-    .map(lower)
-    .join('');
+  let out = '';
+  let prev = '';
+  let gap = {chars: [], boundary: false};
+  chars.forEach((c, i) => {
+    if (!keep[i]) {
+      gap.chars.push(raw[i]);
+      return;
+    }
+    const ch = lower(c);
+    if (needSep(prev, ch, gap)) out += SEP;
+    out += ch;
+    prev = ch;
+    gap = {chars: [], boundary: false};
+  });
+  return out;
 };
 
 /** 字数：汉字算 1，英文、数字、半角符号算半个，空白不算（和模板表的上限同一规则） */
@@ -218,6 +247,7 @@ const tokenTimes = (cue, keptCount, tokens) => {
 export const spokenOf = (cues, opts = {}) => {
   const chars = [];
   const raws = [];
+  let prev = '';
   cues.forEach((cue, ci) => {
     const raw = Array.from(String(cue.text ?? ''));
     const halfChars = raw.map(half);
@@ -235,8 +265,18 @@ export const spokenOf = (cues, opts = {}) => {
       });
     }
     raws.push(raw.map((ch, k) => ({ch, ms: times[k]})));
+    // 分句处算一道缝：上一句末尾和这一句开头都是数字时留 SEP（见 norm）
+    let gap = {chars: [], boundary: ci > 0};
     halfChars.forEach((ch, k) => {
-      if (keep[k]) chars.push({ch: lower(ch), ms: times[k], ci, k});
+      if (!keep[k]) {
+        gap.chars.push(raw[k]);
+        return;
+      }
+      const c = lower(ch);
+      if (needSep(prev, c, gap)) chars.push({ch: SEP, ms: times[k], ci, k, sep: true});
+      chars.push({ch: c, ms: times[k], ci, k});
+      prev = c;
+      gap = {chars: [], boundary: false};
     });
   });
   return {text: chars.map((c) => c.ch).join(''), chars, raws, timed: Boolean(opts.tokens?.length)};
@@ -244,6 +284,9 @@ export const spokenOf = (cues, opts = {}) => {
 
 /** 归一后的 [start, end) → 原文里的那一截（保留句中标点；跨句、跨行处中文直接接上、英文补空格；去掉首尾标点） */
 export const displayOf = (spoken, start, end) => {
+  // 分隔符 SEP 不对应原文里的字：首尾落在它上面时往里收
+  while (start < end && spoken.chars[start]?.sep) start++;
+  while (end > start && spoken.chars[end - 1]?.sep) end--;
   if (!(end > start)) return {text: '', times: []};
   const a = spoken.chars[start];
   const b = spoken.chars[end - 1];
@@ -280,7 +323,35 @@ export const displayOf = (spoken, start, end) => {
   return {text: out.map((c) => c.ch).join(''), times: out.map((c) => c.ms)};
 };
 
-/** 模型摘的字没找到时，给原句里最接近的一截，让模型照抄 */
+// ---- 找不到摘词时的「原句里最接近的」：给整词、不带标点，照抄就能过 ----
+let segmenter = null;
+try {
+  segmenter = typeof Intl?.Segmenter === 'function' ? new Intl.Segmenter('zh', {granularity: 'word'}) : null;
+} catch {
+  segmenter = null;
+}
+/** 一串归一后文字的词边界（下标集合，含 0 和末尾）。没有分词器时每个字都算边界。 */
+const wordBounds = (text) => {
+  const out = new Set([0, text.length]);
+  if (!segmenter) {
+    for (let i = 0; i <= text.length; i++) out.add(i);
+    return out;
+  }
+  for (const seg of segmenter.segment(text)) {
+    out.add(seg.index);
+    out.add(seg.index + seg.segment.length);
+  }
+  return out;
+};
+/** 归一串 [start, end) 在原文里的样子，去掉中文标点和句末英文标点（匹配时本来就忽略标点）。 */
+const hintText = (spoken, start, end) =>
+  displayOf(spoken, start, end)
+    .text.replace(/[，。、！？：；“”「」『』（）《》【】…—]/g, '')
+    .replace(/[,.!?;:]+(?=\s|$)/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+
+/** 模型摘的字没找到时，给原句里最接近的一截，让模型照抄。短句（12 字以内）给整句；长句扩到词边界，不切半个词 */
 const nearest = (q, spoken) => {
   const text = spoken.text;
   let best = '';
@@ -292,17 +363,121 @@ const nearest = (q, spoken) => {
       }
     }
   }
-  if (best.length < 2) return '';
+  if (best.replaceAll(SEP, '').length < 2) return '';
   const at = text.indexOf(best);
-  const s = Math.max(0, at - 3);
-  const e = Math.min(text.length, at + best.length + 4);
-  return displayOf(spoken, s, e).text;
+  // 这一处所在的那一句（归一串里的下标范围）
+  const ci = spoken.chars[at].ci;
+  let lo = at;
+  let hi = at + best.length;
+  while (lo > 0 && spoken.chars[lo - 1].ci === ci) lo--;
+  while (hi < text.length && spoken.chars[hi].ci === ci) hi++;
+  if (text.slice(lo, hi).replaceAll(SEP, '').length <= 12) return hintText(spoken, lo, hi);
+  // 长句：先扩到词边界，再按摘词两头还差的字往外补整词，补到和摘词差不多长
+  const bounds = [...wordBounds(text.slice(lo, hi))].map((x) => x + lo).sort((x, y) => x - y);
+  let s = Math.max(...bounds.filter((x) => x <= at));
+  let e = Math.min(...bounds.filter((x) => x >= at + best.length));
+  // 两头至少各多给两个字（按整词补；模型改写的往往是旁边那个词），摘词两头还差的字更多就补更多
+  const qa = q.indexOf(best);
+  let needLeft = Math.max(2, qa);
+  let needRight = Math.max(2, q.length - qa - best.length);
+  while (needLeft > 0 && s > lo) {
+    const ns = Math.max(...bounds.filter((x) => x < s));
+    needLeft -= s - ns;
+    s = ns;
+  }
+  while (needRight > 0 && e < hi) {
+    const ne = Math.min(...bounds.filter((x) => x > e));
+    needRight -= ne - e;
+    e = ne;
+  }
+  return hintText(spoken, s, e);
+};
+
+// ---- 否定词保护：摘词前面紧挨着「不用 / 不要 / 不会 / 没有 / don't …」时，摘掉就把意思说反了 ----
+/** 以否定字开头、但本身不是否定的词（「特别」「别人」这种否定字不在词头的，靠分词就排除了） */
+const NEG_NOT = new Set(['未来', '无论', '非常', '不久', '不少', '不错', '不断', '不仅', '不但', '不管', '没准', '无数', '非得', '不禁', '未免', '无非', '不过', '别人', '别的', '别处', '不等', '无限', '无所谓']);
+/** 否定字不在词头、但整词是否定的 */
+const NEG_MID = new Set(['从不', '从没', '从未', '毫无', '毫不', '并不', '并没', '并未', '并非', '尚未', '绝不', '决不', '永不', '绝非', '绝无', '全无', '再也不', '一点也不', '一点都不']);
+/** 以「不」收尾、但不是在否定后面的词（「要不」= 要么） */
+const NEG_END_NOT = new Set(['要不']);
+/** 否定字后面跟这些字仍算同一个否定短语（「不用」「不要」「没法」「不太会」） */
+const NEG_BRIDGE = new Set(Array.from('用要会能必该再有太够准可肯敢想需得法过是曾到'));
+const EN_NEG_RE = /^(not|never|no|don['’]?t|doesn['’]?t|didn['’]?t|can['’]?t|cannot|won['’]?t|wouldn['’]?t|shouldn['’]?t|couldn['’]?t|isn['’]?t|aren['’]?t|wasn['’]?t|weren['’]?t|haven['’]?t|hasn['’]?t|hadn['’]?t|mustn['’]?t|without|nobody|nothing|neither|nor|none)$/i;
+const EN_BRIDGE = new Set(['ever', 'even', 'really', 'always', 'actually', 'just', 'need', 'have', 'be', 'to', 'quite', 'necessarily', 'yet']);
+/** 去掉空白后的一串字是不是以否定收尾（给数字查前文用：「不用两个小时」「don't need 2 hours」） */
+const negTail = (str) => {
+  const s = String(str ?? '');
+  for (let k = 1; k <= Math.min(3, s.length); k++) {
+    const tail = s.slice(-k);
+    if (NEG.has(tail[0]) && !NEG_NOT.has(tail) && Array.from(tail.slice(1)).every((ch) => NEG_BRIDGE.has(ch))) return true;
+  }
+  if (NEG_MID.has(s.slice(-2)) || NEG_MID.has(s.slice(-3))) return true;
+  return /(n['’]t|not|never|without)(need|needs|take|takes|have|has|ever|even|really|be|to|cost|costs)?$/i.test(s);
+};
+
+/**
+ * 归一串第 i 个字前面是不是紧挨着一个否定（中文看最后一个词，英文看最后一两个词）。
+ * @returns {{start: number, text: string} | null} start：否定从归一串第几个字开始；text：否定那几个字（原文）
+ */
+export const negationBefore = (spoken, i) => {
+  const text = spoken.text;
+  if (i <= 0) return null;
+  const prevCh = text[i - 1];
+  if (prevCh === SEP) return null;
+  if (/[a-z0-9]/.test(prevCh)) {
+    // 英文：原文里看前面一两个词
+    const words = displayOf(spoken, Math.max(0, i - 40), i)
+      .text.toLowerCase()
+      .split(/\s+/)
+      .map((w) => w.replace(/^[^a-z0-9'’]+|[^a-z0-9'’]+$/g, ''))
+      .filter(Boolean);
+    const last = words[words.length - 1];
+    const prev = words[words.length - 2];
+    let neg = null;
+    if (last && EN_NEG_RE.test(last)) neg = [last];
+    else if (prev && EN_NEG_RE.test(prev) && EN_BRIDGE.has(last)) neg = [prev, last];
+    if (!neg) return null;
+    const n = norm(neg.join(' ')).length;
+    return {start: i - n, text: displayOf(spoken, i - n, i).text};
+  }
+  // 中文：取前面最多 8 个字（不跨 SEP），分词后看最后一个词
+  let lo = Math.max(0, i - 8);
+  const cut = text.lastIndexOf(SEP, i - 1);
+  if (cut >= lo) lo = cut + 1;
+  const win = text.slice(lo, i);
+  if (!win) return null;
+  let last = win.slice(-1);
+  if (segmenter) {
+    const segs = [...segmenter.segment(win)].map((x) => x.segment);
+    last = segs[segs.length - 1] ?? last;
+    // 分词器把「不」「用」拆开时往前并：否定字 + 衔接字
+    for (let k = segs.length - 2; k >= 0 && Array.from(last).every((ch) => NEG_BRIDGE.has(ch)); k--) {
+      last = segs[k] + last;
+      if (NEG.has(segs[k][0])) break;
+    }
+  } else {
+    // 没有分词器：退回「否定字 + 最多两个衔接字」
+    for (let k = 1; k <= Math.min(3, win.length); k++) {
+      const tail = win.slice(-k);
+      if (NEG.has(tail[0]) && Array.from(tail.slice(1)).every((ch) => NEG_BRIDGE.has(ch))) last = tail;
+    }
+  }
+  const tailOk = (str) => Array.from(str).every((ch) => NEG_BRIDGE.has(ch) || NEG.has(ch));
+  let negLen = 0;
+  if (NEG_MID.has(last) || (NEG.has(last[0]) && !NEG_NOT.has(last) && tailOk(last.slice(1)))) negLen = last.length;
+  else {
+    // 分词器把「也不」「都不」「还不会」并成一个词：从词里的「不」算起（「特别」「区别」的「别」不算）
+    const j = last.lastIndexOf('不');
+    if (j > 0 && !NEG_END_NOT.has(last) && tailOk(last.slice(j + 1))) negLen = last.length - j;
+  }
+  if (!negLen) return null;
+  return {start: i - negLen, text: displayOf(spoken, i - negLen, i).text};
 };
 
 /**
  * 在原句里找摘词。
- * @returns {{ok: true, start: number, end: number, startMs: number, endMs: number, text: string, times: number[]} | {ok: false, problem: string, fix: string, early?: number}}
- *   early：只在 from 之前找到（顺序错）时给出它的位置
+ * @returns {{ok: true, start: number, end: number, startMs: number, endMs: number, text: string, times: number[]} | {ok: false, problem: string, fix: string, early?: number, neg?: string}}
+ *   early：只在 from 之前找到（顺序错）时给出它的位置；neg：摘词前面紧挨着的否定（「不用」）
  */
 export const locate = (quote, spoken, {from = 0, within = null} = {}) => {
   const q = norm(quote);
@@ -322,10 +497,11 @@ export const locate = (quote, spoken, {from = 0, within = null} = {}) => {
       fix: hint ? `只能照抄原句里连着的字，不改写、不换同义词、不补数字。原句里最接近的是「${hint}」` : '只能照抄原句里连着的字，不改写、不换同义词、不补数字',
     };
   }
-  const prev = spoken.text[i - 1];
-  if (prev && NEG.has(prev) && !NEG.has(q[0])) {
-    const shown = displayOf(spoken, i - 1, i + q.length).text;
-    return {ok: false, problem: `「${quote}」前面原句是「${prev}」，摘掉后意思反了`, fix: `把「${prev}」一起摘进来，写成「${shown}」`};
+  // 摘词自己以否定开头（「不会乱编数字」「don't trust」）就不用再查前面
+  const neg = NEG.has(q[0]) || EN_NEG_RE.test(String(quote).trim().split(/\s+/)[0] ?? '') ? null : negationBefore(spoken, i);
+  if (neg) {
+    const shown = displayOf(spoken, neg.start, i + q.length).text;
+    return {ok: false, neg: neg.text, problem: `「${quote}」前面原句是「${neg.text}」，摘掉后意思反了`, fix: `把「${neg.text}」一起摘进来，写成「${shown}」`};
   }
   const end = i + q.length;
   const d = displayOf(spoken, i, end);
@@ -419,10 +595,23 @@ export const parseQuantities = (text, ctx = {}) => {
   // 去空白后的串 s，以及 s 里每个字在原文（按码点）里的位置：渲染时要知道「数字最后一个字」是原文第几个字
   const orig = Array.from(String(text ?? '')).map(half);
   const map = [];
+  const kept = [];
+  let ws = -1;
   orig.forEach((ch, idx) => {
-    if (!/\s/.test(ch)) map.push(idx);
+    if (/\s/.test(ch)) {
+      if (ws < 0) ws = idx;
+      return;
+    }
+    // 两个数字字中间隔着空白（「2 30 second」）：留一个分隔符 SEP，不拼成 230
+    if (ws >= 0 && kept.length && isNumCh(kept[kept.length - 1]) && isNumCh(ch)) {
+      kept.push(SEP);
+      map.push(ws);
+    }
+    ws = -1;
+    kept.push(ch);
+    map.push(idx);
   });
-  const s = orig.filter((ch) => !/\s/.test(ch)).join('');
+  const s = kept.join('');
   const before = Array.from(String(ctx.before ?? '')).map(half).join('').replace(/\s+/g, '');
   const after = Array.from(String(ctx.after ?? '')).map(half).join('').replace(/\s+/g, '');
   const out = [];
@@ -477,6 +666,7 @@ export const parseQuantities = (text, ctx = {}) => {
     if (!problem && APPROX_AFTER.some((w) => tail.startsWith(w))) problem = 'approx';
     if (!problem && AFTER_QUAL.some((w) => tail.startsWith(w))) problem = 'qualified';
     if (!problem && BEFORE_QUAL.some((w) => ctxBefore.endsWith(w))) problem = 'qualified';
+    if (!problem && negTail(ctxBefore.replaceAll(SEP, ''))) problem = 'negated';
     if (!problem && !unit && /^[一两]$/.test(raw0)) problem = 'notQuantity';
     if (!problem && !unit && isCjk(s[k] ?? '')) problem = 'unit';
     if (Number.isFinite(value) && !Number.isInteger(value)) decimals = Math.max(decimals, Math.min(2, String(value).split('.')[1]?.length ?? 1));
@@ -507,6 +697,7 @@ const NUM_PROBLEM = {
   colloquial: (r) => [`「${r}」是口语简写，认不准是多少`, '这句别用 counter，改用 keyword 照抄原话'],
   fraction: (r) => [`「${r}」是分数，认不准`, '这句别用 counter，改用 keyword 照抄原话'],
   qualified: (r) => [`「${r}」前后有「不到 / 超过 / 以内 / 左右」这类词，只显示数字会改掉意思`, '这句别用 counter，改用 keyword，把限定词一起照抄'],
+  negated: (r) => [`「${r}」里数字前面有否定词（不用、不要、没有…），只显示数字会把意思说反`, '这句别用 counter，改用 keyword，把否定词一起照抄'],
   notQuantity: (r) => [`「${r}」不是一个数量`, '没有确定的数就别用 counter，改用 keyword'],
   unit: (r) => [`「${r}」里数字后面的单位认不出来`, '只摘数字连同常见单位（元、秒、分钟、小时、天、个、次、倍、% …）；单位不常见就改用 keyword'],
   unknown: (r) => [`「${r}」认不出是多少`, '照抄原句里阿拉伯数字或中文数字的写法；认不出就改用 keyword'],
@@ -676,10 +867,16 @@ export const validateMotionClip = (clip, cues, opts = {}) => {
       }
       const loc = locate(v, spoken, {within});
       if (!loc.ok) {
-        err(field, loc.problem, loc.fix);
+        // 数字前面有否定：把否定摘进来也不行（只显示数字照样说反），直接让它换 keyword
+        if (def.kind === 'number' && loc.neg) err(field, loc.problem, `这句别用 counter：只显示数字会把意思说反。改用 keyword，把「${loc.neg}」一起照抄`);
+        else err(field, loc.problem, loc.fix);
         continue;
       }
       located[name] = loc;
+      if (def.kind === 'number' && spoken.text.slice(loc.start, loc.end).includes(SEP)) {
+        err(field, `「${v}」里的数字是隔开说的（中间隔着空格、换行或分句），连起来是原话里没有的数`, '一格只放一个连着说的数，照抄原句里那几个字；拿不准就改用 keyword');
+        continue;
+      }
       if (def.kind === 'number') {
         const n = parseSay(loc.text, ctxOf(loc.start, loc.end));
         if (n.error) {
@@ -754,7 +951,28 @@ export const validateMotionClip = (clip, cues, opts = {}) => {
     data.leftTitle = LABELS[data.labels][lang][0];
     data.rightTitle = LABELS[data.labels][lang][1];
     if (located['right[0]'] && located['left[0]'] && located['right[0]'].start < located['left[0]'].start) {
-      err('slots.right', '右栏比左栏先说出来', `左栏写先说的那一边，右栏写后说、胜出的那一边（${data.labels} 是「${LABELS[data.labels].zh.join('」在左、「')}」在右）。对不上就换 labels，或者改用 checklist`);
+      // 不要叫模型「换 labels」或「两栏对调」：先说新做法时，对调后就成了「以前：新做法」，意思反了
+      err('slots.right', '右栏比左栏先说出来', `compare 只给「先说旧的（或错的）、后说新的（或对的）」的句子：左栏是先说的旧做法，右栏是后说、胜出的新做法（${data.labels} 是「${LABELS[data.labels].zh.join('」在左、「')}」在右）。这句先说的是新做法，就别用 compare，不要把两栏对调，改用 keyword 或 checklist`);
+    } else if (data.labels === 'old-new' || data.labels === 'before-after') {
+      // 两栏顺序对，但内容放反了：左栏前面紧挨着「现在 / 之后」，或右栏前面紧挨着「以前 / 之前」
+      // 看这一栏前面最近的那个时间词（前 10 个字里，取离得最近的）
+      const timeOf = (loc) => {
+        if (!loc) return null;
+        const win = spoken.text.slice(Math.max(0, loc.start - 10), loc.start);
+        let best = null;
+        for (const [kind, words] of [['new', TIME_NEW], ['old', TIME_OLD]]) {
+          for (const w of words) {
+            const at = win.lastIndexOf(w);
+            if (at >= 0 && (!best || at + w.length > best.end)) best = {kind, end: at + w.length};
+          }
+        }
+        return best?.kind ?? null;
+      };
+      const leftNew = timeOf(located['left[0]']) === 'new';
+      const rightOld = timeOf(located['right[0]']) === 'old';
+      if (leftNew || rightOld) {
+        err('slots.left', `两栏放反了：原话里${leftNew ? `左栏「${data.left[0]}」说的是现在的做法` : `右栏「${data.right[0]}」说的是以前的做法`}，上屏会写成「${LABELS[data.labels].zh[0]}：${data.left[0]}」`, '这句先说的是新做法，别用 compare，不要把两栏对调，改用 keyword 或 checklist');
+      }
     }
   }
   if (clip.template === 'counter' && data.from && data.say) {
@@ -841,7 +1059,7 @@ export const checkMotionSequence = (clips) => {
     list.push(id);
     used.set(clip.template, list);
     if (list.length === 3) errors.push({where: `${id}.template`, problem: `模板 ${clip.template} 已经用了 2 次（${list.slice(0, 2).join('、')}），这是第 3 次`, fix: '同一个模板全片最多用 2 次。换一个模板，或者这句改成 AI 画面，或者删掉这一段留真人'});
-    if (prev && prev.template === clip.template) errors.push({where: `${id}.template`, problem: `和上一段 ${prev.id} 都是 ${clip.template}`, fix: '相邻两段换不同的模板；或者删掉其中一段，留真人'});
+    if (prev && prev.template === clip.template) errors.push({where: `${id}.template`, problem: `和上一段 ${prev.id} 都是 ${clip.template}`, fix: '最省事的是删掉不那么要紧的一段，留真人（两段数字挨着时尤其这样，别把要紧的数换成 keyword）；或者把其中一段换成别的模板'});
     prev = {id, template: clip.template};
   });
   return {errors, warnings};
@@ -933,7 +1151,7 @@ if (isMain) {
   let doc;
   try {
     cues = parseSrt(fs.readFileSync(srt, 'utf8'));
-    doc = JSON.parse(fs.readFileSync(json, 'utf8').replace(/^﻿/, ''));
+    doc = JSON.parse(fs.readFileSync(json, 'utf8').replace(/^\uFEFF/, ''));
   } catch (e) {
     console.log(e.message);
     process.exit(1);

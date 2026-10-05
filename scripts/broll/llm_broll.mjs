@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 // 无 agent：口播项目 → 便宜模型写 broll.json → validate.mjs 报错原文回喂。
-// 连第一次在内最多 3 轮。第 3 轮仍不过就停，退出码 1，最后一版和报错留在项目目录。
+// 连第一次在内最多 3 轮。每一轮先写到 broll.llm-draft.json 再校验，通过了才换成 broll.json（原来有的先备份成 broll.json.bak-<时间>）。
+// 3 轮都不过：项目里原来没有 broll.json，就把最后一版留成 broll.json（照「怎么改」手改）；原来有，就不动它，最后一版留在 broll.llm-draft.json。
 //   node scripts/broll/llm_broll.mjs <项目目录> [--style wood-blocks] [--budget 20] [--captions add|none|burned] [--max-ai 2]
-//                                    [--lang auto|zh|en] [--terms "精酿,BrewReel"] [--no-fix] [--dry-run]
+//                                    [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--no-fix] [--dry-run]
+// 退出码：0 写好 / 1 3 轮都没通过校验 / 2 参数错、缺文件、没有 key、横版原片加 burned / 4 接口调用失败（断网、key 不对、余额不足）
+// 顶层的 style、provider、quality、budgetYuan、captions 按命令行定死：模型写别的值，这里直接改回来再校验（version 不动，写错了让校验报）。
+// 转写时拿不准、还没人核对的字（.brewreel/transcribe.json 的 doubts）会在提示里点名，校验时不许它们上动效卡片。
 // 没有 talk.srt 但有 talk.mp4：先自动转写（本地 SenseVoice，见 transcribe.mjs）；已有 talk.srt 永不覆盖。
 // --max-ai：AI 生成画面最多几段（默认 2），其余要配画面的句子用免费的动效画面或留脸。
 // --dry-run：只打印拼好的提示和估算 token，不调接口，不读密钥，不转写。
@@ -15,8 +19,9 @@ import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {doubtText, openDoubts} from './asr/doubts.mjs';
 import {CUES_LOCK_NAME, cuesLockOf} from './asr/lock.mjs';
-import {callLlm, estTokens, extractJson, readLlmEnv, redact} from './llm-client.mjs';
+import {callLlm, estTokens, explainLlmError, extractJson, readLlmEnv, redact} from './llm-client.mjs';
 import {probeMedia} from './media.mjs';
 import {describeTemplates, isMotion} from './motion.mjs';
 import {defaultStyleId, isExperimental, styleMenu} from './prompt.mjs';
@@ -26,6 +31,7 @@ import {LANGS, transcribeProject} from './transcribe.mjs';
 import {loadStyles} from './validate.mjs';
 
 const MAX_ROUNDS = 3;
+export const DRAFT_NAME = 'broll.llm-draft.json';
 export const DEFAULT_MAX_AI = 2;
 const SKILL_FILE = path.join(ROOT, 'broll', 'SKILL-broll.md');
 const LIST_CUES = path.join(ROOT, 'scripts', 'broll', 'list-cues.mjs');
@@ -85,7 +91,7 @@ const CHOOSE_TABLE = `| 句子在干嘛 | job | source | template |
 | 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter |
 | 列两到四样东西 | list | motion | checklist |
 | 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps |
-| 前后、两种做法对比，原句两边都说了 | compare | motion | compare |
+| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare |
 | 一句要观众记住的话、一个关键词 | stress | motion | keyword |
 | 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写 template，用风格 |
 
@@ -93,21 +99,27 @@ const CHOOSE_TABLE = `| 句子在干嘛 | job | source | template |
 
 const pickFirst = (list, allowed) => list.find((x) => (allowed ?? []).includes(x));
 
-/** 示例跟着这次的主风格写：job、镜头都挑主风格允许的，副风格挑能做对比的那个。 */
-const examplesOf = (styles, styleId, captions) => {
+/**
+ * 示例跟着这次的主风格写：job、镜头都挑主风格允许的，副风格挑能做对比的那个。
+ * 也跟着这次的限制走：--max-ai 0 时示例里没有 AI 段、--max-ai 1 时只有一段；横版不出现 split；burned 只用 split。
+ */
+const examplesOf = (styles, styleId, captions, maxAi = DEFAULT_MAX_AI, vertical = null) => {
   const main = styles[styleId] ?? {};
   const job = pickFirst(['demonstrate', 'explain', 'ground', 'connect'], main.jobs) ?? 'connect';
   const cam = pickFirst(['slow-push', 'static', 'pan-right'], main.cameras) ?? 'static';
-  const alt = (main.pairsWith ?? []).find((id) => styles[id] && !isExperimental(styles[id]) && (styles[id].jobs ?? []).includes('compare') && (styles[id].cameras ?? []).includes('pan-right'));
+  const alt = maxAi >= 2 ? (main.pairsWith ?? []).find((id) => styles[id] && !isExperimental(styles[id]) && (styles[id].jobs ?? []).includes('compare') && (styles[id].cameras ?? []).includes('pan-right')) : undefined;
   const modeA = captions === 'burned' ? 'split' : 'full';
   const modeB = captions === 'burned' ? 'split' : 'pip';
+  const modeS = captions === 'burned' || vertical !== false ? 'split' : 'pip';
   const top = (extra = {}) => ({version: 2, style: styleId, ...extra, provider: 'placeholder', quality: '768P', budgetYuan: 20, captions: captions || 'add'});
   const ex1 = {
     ...top(),
     keepFace: ['c5'],
     clips: [
       {id: 'b01', from: 'c3', to: 'c4', source: 'motion', mode: modeA, job: 'explain', template: 'steps', plain: '先列再做', slots: {items: ['要做的事列出来', '一步一步做完']}},
-      {id: 'b02', from: 'c6', to: 'c7', source: 'ai', mode: 'split', job, plain: '旧的换成新的', place: '小仓库', subject: '机器人', action: '从架子上取下旧方块换上新方块', end: '架子变得整整齐齐', camera: cam},
+      maxAi > 0
+        ? {id: 'b02', from: 'c6', to: 'c7', source: 'ai', mode: modeS, job, plain: '旧的换成新的', place: '小仓库', subject: '机器人', action: '从架子上取下旧方块换上新方块', end: '架子变得整整齐齐', camera: cam}
+        : {id: 'b02', from: 'c6', to: 'c6', source: 'motion', mode: modeA, job: 'stress', template: 'keyword', plain: '旧的换成新的', slots: {text: '把旧的换成新的', hot: '新的'}},
     ],
   };
   const ex1Note = '（假设 c3 是「先把要做的事列出来」，c4 是「再一步一步做完」，c6 是「把旧的换成新的」，c7 是「架子就整齐了」）';
@@ -137,7 +149,7 @@ const examplesOf = (styles, styleId, captions) => {
         from: 'c6',
         to: 'c7',
         source: 'ai',
-        mode: 'split',
+        mode: modeS,
         job: alt ? 'compare' : job,
         ...(alt ? {look: 'alt'} : {}),
         plain: '两种做法对照',
@@ -149,12 +161,14 @@ const examplesOf = (styles, styleId, captions) => {
       },
     ],
   };
-  const ex2Note = `（假设 c2 是「先动手搭第一块」，c4 是「整条视频只用了二十五秒」，c6、c7 在比两种做法）${alt ? `。b03 用副风格 ${alt}：写 "look":"alt"，顶层写 "styleAlt":"${alt}"` : ''}`;
-  return {ex1: JSON.stringify(ex1, null, 2), ex1Note, ex2: JSON.stringify(ex2, null, 2), ex2Note};
+  // --max-ai 1：示例 2 只留一段 AI；--max-ai 0：不给示例 2（它是讲 AI 段怎么接、怎么用副风格的）
+  if (maxAi < 2) ex2.clips = ex2.clips.filter((c) => c.id !== 'b03');
+  const ex2Note = `（假设 c2 是「先动手搭第一块」，c4 是「整条视频只用了二十五秒」${maxAi >= 2 ? '，c6、c7 在比两种做法' : ''}）${alt ? `。b03 用副风格 ${alt}：写 "look":"alt"，顶层写 "styleAlt":"${alt}"` : ''}`;
+  return {ex1: JSON.stringify(ex1, null, 2), ex1Note, ex2: maxAi > 0 ? JSON.stringify(ex2, null, 2) : null, ex2Note};
 };
 
 const usage = () => {
-  console.log('用法：node scripts/broll/llm_broll.mjs <项目目录> [--style wood-blocks] [--budget 20] [--captions add|none|burned] [--max-ai 2] [--lang auto|zh|en] [--terms "词1,词2"] [--no-fix] [--dry-run]');
+  console.log('用法：node scripts/broll/llm_broll.mjs <项目目录> [--style wood-blocks] [--budget 20] [--captions add|none|burned] [--max-ai 2] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--no-fix] [--dry-run]');
 };
 
 const writeText = (file, text) => {
@@ -189,28 +203,53 @@ export const parseArgs = (argv) => {
   return {flags, dir: path.resolve(positionals[0])};
 };
 
-const mediaLine = (dir) => {
+/** 原片的画面朝向和给模型看的那一句。vertical：true 竖版 / false 横版 / null 读不到 */
+const mediaInfo = (dir) => {
   const talk = path.join(dir, 'talk.mp4');
-  if (!fs.existsSync(talk)) return '还没有 talk.mp4。split 只给竖版。';
+  if (!fs.existsSync(talk)) return {vertical: null, line: '还没有 talk.mp4。split 只给竖版。'};
   try {
     const media = probeMedia(talk);
     const vertical = media.height > media.width;
-    return `画面 ${media.width}×${media.height}，时长 ${(media.durationMs / 1000).toFixed(2)} 秒。${vertical ? '竖版，可以用 split。' : '横版，不要用 split。'}`;
+    return {vertical, width: media.width, height: media.height, line: `画面 ${media.width}×${media.height}，时长 ${(media.durationMs / 1000).toFixed(2)} 秒。${vertical ? '竖版，可以用 split。' : '横版，mode 只写 full 或 pip，不要用 split。'}`};
   } catch (e) {
-    return `读 talk.mp4 失败：${e.message}`;
+    return {vertical: null, line: `读 talk.mp4 失败：${e.message}`};
   }
+};
+
+/** 顶层这几个字段由命令行定死：模型写了别的值就改回来（不然它会照报错把 captions 改成 add 混过校验，出片叠两层字幕）。 */
+export const forceTop = (doc, {style, budget, captions}) => {
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return {doc, changed: []};
+  const want = {style, provider: 'placeholder', quality: '768P', budgetYuan: Number(budget), captions};
+  const changed = Object.keys(want).filter((k) => doc[k] !== want[k]);
+  const rest = Object.fromEntries(Object.entries(doc).filter(([k]) => !(k in want) && k !== 'version'));
+  return {doc: {...('version' in doc ? {version: doc.version} : {}), ...want, ...rest}, changed};
 };
 
 /**
  * 拼给便宜模型的提示。styles 是全部风格包；flags.style 不写就用默认主风格（wood-blocks）。
  * @returns {{role: string, content: string}[]}
  */
-export const buildMessages = ({skill, cuesText, picture, flags, styles}) => {
+export const buildMessages = ({skill, cuesText, picture, flags, styles, doubts = [], vertical = null}) => {
   const style = flags.style || defaultStyleId(styles);
   const budget = flags.budget || '20';
   const captions = flags.captions || 'add';
   const maxAi = flags['max-ai'] === '' || flags['max-ai'] == null ? DEFAULT_MAX_AI : Number(flags['max-ai']);
-  const ex = examplesOf(styles, style, captions);
+  const ex = examplesOf(styles, style, captions, maxAi, vertical);
+  const doubtBlock = doubts.length
+    ? [
+        '',
+        '## 转写拿不准的字',
+        '',
+        '下面这几处是自动转写时拿不准、还没人核对的字。这几个字不要放进动效画面的 slots（卡片上的大字一旦是错字，意思可能正好说反）。这几句可以留脸、用 AI 画面，或者只摘这句里别的字：',
+        ...doubts.map((d) => `- ${doubtText(d)}`),
+      ]
+    : [];
+  const modeRule =
+    captions === 'burned'
+      ? '- captions 是 burned，每一段的 mode 只能写 split'
+      : vertical === false
+        ? '- 原片是横版：mode 只写 full 或 pip，不要写 split'
+        : '- captions 不是 burned，full、pip、split 都可以（split 只给竖版）';
   const aiRule =
     maxAi === 0
       ? '- 这次不要 AI 画面：每一段都写 "source":"motion"，不合适做动效的句子留脸'
@@ -223,6 +262,7 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles}) => {
     '## 这次的句子清单',
     '',
     cuesText.trim(),
+    ...doubtBlock,
     '',
     picture,
     '',
@@ -248,14 +288,18 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles}) => {
     '',
     ex.ex1,
     '',
-    '## 正确示例 2',
-    '',
-    ex.ex2Note,
-    '',
-    ex.ex2,
-    '',
-    '想让一段 AI 画面接着上一段 AI 画面的结束画面：两段在 clips 里挨着、look 一样，后一段写 "link":"continue"。不接就不写 link。',
-    '',
+    ...(ex.ex2
+      ? [
+          '## 正确示例 2',
+          '',
+          ex.ex2Note,
+          '',
+          ex.ex2,
+          '',
+          '想让一段 AI 画面接着上一段 AI 画面的结束画面：两段在 clips 里挨着、look 一样，后一段写 "link":"continue"。不接就不写 link。',
+          '',
+        ]
+      : []),
     '## 这次必须遵守',
     '',
     '- version 写 2',
@@ -268,6 +312,7 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles}) => {
     '- 动效段 slots 里的每个字都从句子清单里原样复制（连着的几个字），不许改写、不许换同义词、不许补字，原句里没有的数字不许写',
     '- 数字只写在 counter 的 say 和 from 里，连同单位照抄原句的写法，不要换成阿拉伯数字。约数（七八块）、「第几」、口语简写（一万二）不要用 counter，改用 keyword 或留脸',
     '- 一段只选一个模板。同一个模板全片最多 2 次，相邻两段动效画面不要用同一个模板',
+    ...(doubts.length ? ['- 「转写拿不准的字」里列的那几个字不要上动效卡片'] : []),
     '- AI 段：subject 只写「机器人」或「机器人和某样东西」，不写颜色和材质；place 只写地点，比如「桌面」「小仓库」',
     '- AI 段的 place、subject、action、end 里不要写阿拉伯数字、百分号、引号、品牌和玩具名',
     '- 副风格可以不用；要用最多一个，只给讲道理、做对比的 AI 段；第一段 AI 画面用主风格',
@@ -275,7 +320,7 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles}) => {
     '- 通常 3 到 6 段。动效段窗口至少 1.8 秒，AI 段至少 2.5 秒，都不超过 12 秒。两段之间至少空开一句真人。总长不超过全片 60%',
     '- plain 不超过 20 字，place 和 subject 不超过 12 字，action 不超过 24 字，end 不超过 16 字。字数不含空格',
     '- AI 段的动作要么写 action 和 end，要么写 2 到 4 拍 beats，不要两个都写',
-    captions === 'burned' ? '- captions 是 burned，每一段的 mode 只能写 split' : '- captions 不是 burned，full、pip、split 都可以',
+    modeRule,
     '',
     '只输出一个 JSON 对象。不要 Markdown，不要解释。',
   ].join('\n');
@@ -295,8 +340,9 @@ const printDryRun = (messages) => {
   console.log(`[dry-run] 最多 ${MAX_ROUNDS} 轮。未调用任何接口。`);
 };
 
+/** 校验草稿：不比旧的分句锁（按现在的字幕重写），转写拿不准的字上卡片算错误。 */
 const runValidate = (dir, maxAi) => {
-  const r = spawnSync(process.execPath, [VALIDATE, dir, '--max-ai', String(maxAi)], {cwd: ROOT, encoding: 'utf8', windowsHide: true, maxBuffer: 8 * 1024 * 1024});
+  const r = spawnSync(process.execPath, [VALIDATE, dir, '--max-ai', String(maxAi), '--json', DRAFT_NAME, '--no-lock', '--doubt-error'], {cwd: ROOT, encoding: 'utf8', windowsHide: true, maxBuffer: 8 * 1024 * 1024});
   const report = `${r.stdout || ''}${r.stderr || ''}`.trim();
   return {code: r.status ?? 1, report};
 };
@@ -319,6 +365,19 @@ const writeLog = (dir, model, entries) => {
 };
 
 const lockPath = (dir) => path.join(dir, '.brewreel', CUES_LOCK_NAME);
+
+const stampOf = (d) => {
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+};
+
+/** 旧的 broll.json 改名留底：broll.json.bak-<时间>（同一秒重名就加 -2、-3）。返回备份的文件名。 */
+export const backupJson = (jsonPath, now = new Date()) => {
+  let bak = `${jsonPath}.bak-${stampOf(now)}`;
+  for (let i = 2; fs.existsSync(bak); i++) bak = `${jsonPath}.bak-${stampOf(now)}-${i}`;
+  fs.copyFileSync(jsonPath, bak);
+  return path.basename(bak);
+};
 
 const main = async () => {
   const parsed = parseArgs(process.argv.slice(2));
@@ -356,6 +415,12 @@ const main = async () => {
   }
   const srt = path.join(dir, 'talk.srt');
   const talk = path.join(dir, 'talk.mp4');
+  // 横版原片已经烧了字幕：full、pip 会盖住字幕，split 只给竖版，没有能写的 mode。先拦，不要白转写、白调模型
+  const media = mediaInfo(dir);
+  if ((flags.captions || 'add') === 'burned' && media.vertical === false) {
+    console.log(`原片是横版（${media.width}×${media.height}），已经烧了字幕（--captions burned）：这一版不支持。full、pip 会盖住原片字幕，split 只给竖版。\n→ 怎么改：换成 --captions none（B-roll 那几秒会盖住原片字幕），或者用竖版原片。`);
+    return 2;
+  }
   if (!fs.existsSync(srt)) {
     if (flags.dryRun) {
       console.log('还没有 talk.srt。dry-run 不转写：先跑 node scripts/broll/transcribe.mjs <项目目录>，或去掉 --dry-run（会先自动转写）。');
@@ -381,8 +446,14 @@ const main = async () => {
     console.log((listed.stdout || listed.stderr || '列句子失败').trim());
     return listed.status || 1;
   }
+  let doubts = [];
+  try {
+    doubts = openDoubts(dir, parseSrt(fs.readFileSync(srt, 'utf8')));
+  } catch {
+    doubts = [];
+  }
   const skill = fs.readFileSync(SKILL_FILE, 'utf8');
-  let messages = buildMessages({skill, cuesText: listed.stdout, picture: mediaLine(dir), flags, styles});
+  let messages = buildMessages({skill, cuesText: listed.stdout, picture: media.line, flags, styles, doubts, vertical: media.vertical});
 
   if (flags.dryRun) {
     printDryRun(messages);
@@ -395,15 +466,17 @@ const main = async () => {
   }
   const cfg = readLlmEnv();
   if (!cfg.key) {
-    console.log('没有找到 LLM_API_KEY / DEEPSEEK_API_KEY 环境变量。先设置再运行，或用 --dry-run 只看提示；也可以照 broll/SKILL-broll.md 自己写 broll.json。');
+    console.log(`没有找到 LLM_API_KEY / DEEPSEEK_API_KEY 环境变量，先设置再运行。想只看拼好的提示（不调接口）：node scripts/broll/llm_broll.mjs "${dir}" --dry-run；也可以照 broll/SKILL-broll.md 自己写 broll.json。`);
     return 2;
   }
   console.log(`模型 ${cfg.model} @ ${cfg.base}`);
 
   const jsonPath = path.join(dir, 'broll.json');
+  const draftPath = path.join(dir, DRAFT_NAME);
   const errPath = path.join(dir, 'broll.llm-error.txt');
-  // 要按现在的字幕重写 broll.json：上一次的分句锁作废
-  fs.rmSync(lockPath(dir), {force: true});
+  const hadJson = fs.existsSync(jsonPath);
+  const top = {style: flags.style || defaultStyleId(styles), budget: flags.budget || '20', captions: flags.captions || 'add'};
+  fs.rmSync(draftPath, {force: true});
   const log = [];
   let lastReport = '';
   try {
@@ -413,24 +486,29 @@ const main = async () => {
       const raw = extractJson(content);
       let pretty = raw;
       let doc = null;
+      let forced = [];
       try {
-        doc = JSON.parse(raw);
+        ({doc, changed: forced} = forceTop(JSON.parse(raw), top));
         pretty = JSON.stringify(doc, null, 2);
       } catch {
         doc = null;
       }
-      writeText(jsonPath, pretty);
+      if (forced.length) console.log(`  顶层 ${forced.join('、')} 按命令行改回来了`);
+      // 先写草稿再校验：校验没过不碰原来的 broll.json
+      writeText(draftPath, pretty);
       const checked = runValidate(dir, maxAi);
       lastReport = checked.report;
-      log.push({round, usage, exitCode: checked.code, report: checked.report});
+      log.push({round, usage, exitCode: checked.code, forced, report: checked.report});
       if (checked.code === 0) {
         fs.rmSync(errPath, {force: true});
+        const bak = hadJson ? backupJson(jsonPath) : null;
+        fs.renameSync(draftPath, jsonPath);
         writeLog(dir, cfg.model, log);
-        // 记下这一版 broll.json 对应的分句：之后拆句、并句会被 validate 拦下
+        // 记下这一版 broll.json 对应的分句：之后拆句、并句会被 validate 拦下（新的 broll.json 落地以后才换锁）
         fs.mkdirSync(path.dirname(lockPath(dir)), {recursive: true});
         writeText(lockPath(dir), JSON.stringify(cuesLockOf(parseSrt(fs.readFileSync(srt, 'utf8')))));
         const sum = summarize(doc);
-        console.log(`校验通过：第 ${round} 轮`);
+        console.log(`校验通过：第 ${round} 轮${bak ? `（原来的 broll.json 备份成了 ${bak}）` : ''}`);
         console.log(`选中：${sum.lines.join('；') || '（没有片段）'}`);
         console.log(`AI 画面 ${sum.ai} 段，动效画面 ${sum.motion} 段`);
         console.log(`job：${JSON.stringify(sum.jobs)}`);
@@ -441,21 +519,29 @@ const main = async () => {
       console.log(checked.report);
       if (round === MAX_ROUNDS) break;
       messages = messages.concat([
-        {role: 'assistant', content: raw},
+        {role: 'assistant', content: pretty},
         {role: 'user', content: `校验未通过。下面是校验脚本的原文，请逐条按「怎么改」修改，其余能用的内容保持不变。只输出完整的新 JSON。\n\n${checked.report}`},
       ]);
     }
   } catch (e) {
     const msg = redact(e?.message || e);
     console.log(msg);
+    console.log(`→ ${explainLlmError(msg)}。${hadJson ? '原来的 broll.json 没动。' : ''}`);
     log.push({error: msg});
     writeText(errPath, lastReport ? `${lastReport}\n\n${msg}` : msg);
     writeLog(dir, cfg.model, log);
-    return 1;
+    return 4;
   }
   writeText(errPath, lastReport || '校验未通过');
   writeLog(dir, cfg.model, log);
-  console.log(`重试后仍未通过。最后一版在 ${jsonPath}，报错在 ${errPath}`);
+  if (hadJson) {
+    console.log(`重试后仍未通过。原来的 broll.json 没动；模型最后一版在 ${draftPath}，报错在 ${errPath}`);
+  } else {
+    // 原来没有 broll.json：把最后一版留成 broll.json，照「怎么改」手改就能接着跑。旧的分句锁（如果有）对不上这一版，删掉
+    fs.renameSync(draftPath, jsonPath);
+    fs.rmSync(lockPath(dir), {force: true});
+    console.log(`重试后仍未通过。最后一版在 ${jsonPath}，报错在 ${errPath}`);
+  }
   return 1;
 };
 

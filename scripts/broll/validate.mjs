@@ -6,12 +6,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {doubtText, openDoubts} from './asr/doubts.mjs';
 import {CUES_LOCK_NAME, compareCuesLock} from './asr/lock.mjs';
 import {asrTokensOf} from './asr/tokens.mjs';
 import {probeMedia} from './media.mjs';
-import {MOTION_JOBS, MOTION_MAX_MS, MOTION_MIN_MS, checkAiQuantify, checkMotionSequence, isMotion, validateMotionClip} from './motion.mjs';
+import {MOTION_JOBS, MOTION_MAX_MS, MOTION_MIN_MS, checkAiQuantify, checkMotionSequence, isMotion, norm, validateMotionClip} from './motion.mjs';
 import {clipCost, costLine, keyKindOf, rateOf} from './prices.mjs';
-import {isV2, validateStyles} from './prompt.mjs';
+import {V2_COST_NOTE, isV2, validateStyles} from './prompt.mjs';
 import {ROOT} from './root.mjs';
 import {parseSrt} from './srt.mjs';
 import {MAX_COVER_MS, MAX_RATIO, MIN_BEAT_SEC, MIN_COVER_MS, MIN_GAP_MS, genSecOf, isVertical, secText, windowOf} from './time.mjs';
@@ -47,14 +48,14 @@ export const loadStyles = (root = ROOT) => {
   for (const name of fs.readdirSync(dir).sort()) {
     const p = path.join(dir, name, 'style.json');
     if (!fs.existsSync(p)) continue;
-    out[name] = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''));
+    out[name] = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
   }
   return out;
 };
 
 export const loadBanned = (root = ROOT) => {
   const p = path.join(root, 'broll', 'banned-words.json');
-  const j = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''));
+  const j = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
   return Array.isArray(j.words) ? j.words : [];
 };
 
@@ -89,9 +90,11 @@ const secShort = (ms) => String(Number((ms / 1000).toFixed(2)));
  * @param {object} doc
  * @param {{cues: object[], durationMs: number, width: number, height: number, styles: object, banned: object[], projectDir?: string,
  *   character?: object, tokens?: {text: string, startMs: number}[], lockProblem?: {where: string, problem: string, fix: string}|null,
- *   maxAi?: number|null, keyKind?: 'subscription'|'payg'|'none'}} ctx
+ *   maxAi?: number|null, keyKind?: 'subscription'|'payg'|'none', doubts?: object[], doubtLevel?: 'warn'|'error'}} ctx
  *   tokens：转写的逐字时间（动效段的 marks 更准）；lockProblem：写完 broll.json 后字幕分句变了；
- *   maxAi：AI 画面段数上限（llm_broll 用，不传不限）；keyKind：MiniMax key 的种类，只影响估价那一行怎么写
+ *   maxAi：AI 画面段数上限（llm_broll 用，不传不限）；keyKind：MiniMax key 的种类，只影响估价那一行怎么写；
+ *   doubts：转写校对拿不准、还没人核对的字（asr/doubts.mjs 的 openDoubts）；动效卡片用到它们时，
+ *   doubtLevel 'error' 拦下（llm_broll 回喂给模型），默认 'warn' 只提醒（人自己跑 make-talk 时）
  */
 export const validateBroll = (doc, ctx) => {
   const errors = [];
@@ -119,13 +122,21 @@ export const validateBroll = (doc, ctx) => {
     if (/reference/i.test(k)) err(k, '不能自带参考图', '删掉这个字段。参考图由风格预设提供，模型不要写');
     else err(k, `多了一个不认识的字段「${k}」`, `删掉 ${k}。可用字段：version、style、styleAlt、thread、provider、quality、budgetYuan、captions、keepFace、clips`);
   }
-  if (doc.version !== 1 && doc.version !== 2) err('version', `必须是 1 或 2，现在是 ${JSON.stringify(doc.version)}`, '改成 2（动效画面、副风格要用 2；v0.8 的老文件可以留 1）');
-  // version 2 的主风格由 validateStyles 的规则 12 报，避免同一个错报两遍
-  if (!v2 && !styles[doc.style]) err('style', `没有叫「${doc.style ?? ''}」的风格预设`, `改成 ${Object.keys(styles).join('、') || 'wood-blocks'}`);
+  if (doc.version !== 1 && doc.version !== 2) err('version', `必须是 1 或 2，现在是 ${JSON.stringify(doc.version)}`, `改成 2（动效画面、副风格要用 2；v0.8 的老文件可以留 1。${V2_COST_NOTE}）`);
+  // version 2 的主风格由 validateStyles 的规则 12 报，避免同一个错报两遍。
+  // version 1 只认 v0.8 就有的风格（style.json 里有 references 的那些）：新风格只有 v2 的 refs，v1 的老提示词拼法用不上它们的参考图
+  if (!v2) {
+    const v1Styles = Object.keys(styles).filter((id) => Array.isArray(styles[id]?.references) && styles[id].references.length);
+    if (!styles[doc.style]) err('style', `没有叫「${doc.style ?? ''}」的风格预设`, `version 1 只能用 ${v1Styles.join('、') || 'brick-diorama'}；要用新风格，把顶层 version 改成 2（${V2_COST_NOTE}）`);
+    else if (!v1Styles.includes(doc.style)) err('style', `${doc.style} 是 v0.9 的新风格，version 1 用不了`, `把顶层 version 改成 2（${V2_COST_NOTE}）；或者 style 留 ${v1Styles.join('、') || 'brick-diorama'}`);
+  }
   if (!PROVIDERS.includes(doc.provider)) err('provider', `「${doc.provider ?? ''}」不在可选值里`, '改成 placeholder、local 或 minimax-h3');
   if (!QUALITIES.includes(doc.quality)) err('quality', `「${doc.quality ?? ''}」不在可选值里`, '改成 768P 或 2K');
   if (typeof doc.budgetYuan !== 'number' || !Number.isFinite(doc.budgetYuan) || doc.budgetYuan < 0) err('budgetYuan', '要写一个不小于 0 的数字，单位是元', '比如 20');
   if (!CAPTIONS.includes(doc.captions)) err('captions', `「${doc.captions ?? ''}」不在可选值里`, 'burned = 原片已经烧了字幕；add = 按 SRT 另画一层；none = 不要字幕');
+  else if (doc.captions === 'burned' && width > 0 && height > 0 && !isVertical(width, height)) {
+    err('captions', `横版原片（${width}×${height}）已经烧了字幕，这一版不支持：full、pip 会盖住原片字幕，split 只给竖版`, '把 captions 改成 none（B-roll 那几秒会盖住原片字幕），或者换竖版原片。用 talk.mjs 的话加 --captions none --rewrite-broll 重写');
+  }
 
   const keepFace = Array.isArray(doc.keepFace) ? doc.keepFace : doc.keepFace == null ? [] : null;
   if (!keepFace) err('keepFace', '要写成句子号的数组', '比如 ["c7"]；没有就写成 [] 或整段删掉');
@@ -176,13 +187,23 @@ export const validateBroll = (doc, ctx) => {
 
     if (motion) {
       // 动效段：字段、模板、槽位、摘词、数字、时间规则都交给 motion.mjs；不查运镜、场景、禁用词（屏幕上的字就是原话）
-      if (!v2) err(`${id}.source`, '动效画面是 version 2 的写法', '把顶层 version 改成 2');
+      if (!v2) err(`${id}.source`, '动效画面是 version 2 的写法', `把顶层 version 改成 2（${V2_COST_NOTE}）；不想重新花钱就删掉这一段，留真人`);
       const r = validateMotionClip(clip, cues, {durationMs, tokens: ctx.tokens});
       errors.push(...r.errors);
       warnings.push(...r.warnings);
+      // 卡片上的字用到了转写拿不准、还没人核对的字：全屏大字一旦是错字，意思可能正好说反
+      if (r.plan && Array.isArray(ctx.doubts) && ctx.doubts.length) {
+        const shown = norm(r.plan.screenText.join(' '));
+        for (const d of ctx.doubts) {
+          if (cueNo(d.cue) < cueNo(clip.from) || cueNo(d.cue) > cueNo(clip.to) || !shown.includes(norm(d.frag))) continue;
+          const problem = `卡片上的字用了转写时拿不准的字：${doubtText(d)}`;
+          if (ctx.doubtLevel === 'error') err(`${id}.slots`, problem, '这几个字先不要上卡片：换一句做动效画面，或者这句改成 AI 画面、留脸');
+          else warn(`${id}.slots`, problem, `出片前听一下原片 ${d.cue}；错了就改 talk.srt 再重写 broll.json（talk.mjs 加 --rewrite-broll），没错就不用管`);
+        }
+      }
     } else {
       // version 2 里 AI 段写 list/stress 由 validateStyles 的规则 8 报
-      if (MOTION_JOBS.includes(clip.job) && !v2) err(`${id}.job`, `${clip.job} 是动效画面的 job`, `这一段改成动效画面：顶层 version 改成 2，这一段加 "source":"motion"（list 配 checklist、stress 配 keyword）；要 AI 画面就把 job 换成 ${AI_JOBS.join('、')}`);
+      if (MOTION_JOBS.includes(clip.job) && !v2) err(`${id}.job`, `${clip.job} 是动效画面的 job`, `要 AI 画面就把 job 换成 ${AI_JOBS.join('、')}；要动效画面得把顶层 version 改成 2（${V2_COST_NOTE}），这一段加 "source":"motion"（list 配 checklist、stress 配 keyword）`);
       if (!CAMERAS.includes(clip.camera)) err(`${id}.camera`, `「${clip.camera ?? ''}」不在可选值里`, `改成 ${CAMERAS.join('、')}`);
 
       for (const key of ['plain', 'place', 'subject']) {
@@ -224,9 +245,11 @@ export const validateBroll = (doc, ctx) => {
       } else if (clip.file != null) err(`${id}.file`, 'provider 不是 local，不要写 file', '删掉 file。占位片和生成片都不收自带视频');
     }
 
+    // 横版 + burned 在顶层一次报清楚（见 clips 循环后面），这里不再逐段来回打转
+    const horizontalBurned = doc.captions === 'burned' && width > 0 && height > 0 && !isVertical(width, height);
     if (clip.mode === 'split' && width > 0 && height > 0 && !isVertical(width, height)) err(`${id}.mode`, `split 只能用于竖版，原片是 ${width}×${height}`, '改成 full 或 pip');
-    if (doc.captions === 'burned' && (clip.mode === 'full' || clip.mode === 'pip')) {
-      err(`${id}.mode`, `captions 是 burned，${clip.mode} 会盖住原片上已经烧进去的字幕`, '竖版改成 split，或把 captions 改成 add，让字幕画在 B-roll 上面');
+    if (doc.captions === 'burned' && (clip.mode === 'full' || clip.mode === 'pip') && !horizontalBurned) {
+      err(`${id}.mode`, `captions 是 burned，${clip.mode} 会盖住原片上已经烧进去的字幕`, '改成 split（上面放画面、下面露脸和原片字幕）');
     }
 
     if (byId.has(clip.from) && byId.has(clip.to) && cueNo(clip.from) <= cueNo(clip.to) && durationMs > 0) {
@@ -303,7 +326,10 @@ export const validateBroll = (doc, ctx) => {
   errors.push(...checkMotionSequence(doc.clips).errors);
   for (const clip of doc.clips) {
     const q = checkAiQuantify(clip, cues);
-    if (q) errors.push(q);
+    if (!q) continue;
+    // version 1 的老文件：v0.8 能过的不拦（动效画面要升 version 2，升了已生成的段会重新花钱），只提醒
+    if (v2) errors.push(q);
+    else warnings.push({where: q.where, problem: q.problem, fix: `这是 v0.8 的老文件，先照常出片。下次重写时改用动效画面的 counter（要把 version 改成 2，${V2_COST_NOTE}）`});
   }
   const aiCount = doc.clips.filter((c) => c && typeof c === 'object' && !Array.isArray(c) && !isMotion(c)).length;
   if (Number.isInteger(ctx.maxAi) && ctx.maxAi >= 0 && aiCount > ctx.maxAi) {
@@ -387,13 +413,20 @@ const missingSrtMessage = (dir) =>
     'make-talk 不自己转写：broll.json 里的句子号要跟着字幕走，字幕得先定下来。',
   ].join('\n');
 
-export const loadProject = (dir) => {
+/**
+ * 读项目目录：talk.mp4、talk.srt、broll.json、画面参数、分句锁、逐字时间、还没核对的转写疑点。
+ * @param {string} dir
+ * @param {{jsonPath?: string, ignoreLock?: boolean}} [opts] jsonPath：校验别的文件（llm_broll 的草稿）；
+ *   ignoreLock：不比分句锁（按现在的字幕重写 broll.json 时，旧锁对应的是旧字幕）
+ */
+export const loadProject = (dir, opts = {}) => {
   const talk = path.join(dir, 'talk.mp4');
   const srtPath = path.join(dir, 'talk.srt');
-  const jsonPath = path.join(dir, 'broll.json');
+  const jsonPath = opts.jsonPath ? path.resolve(dir, opts.jsonPath) : path.join(dir, 'broll.json');
+  const jsonName = path.basename(jsonPath);
   if (!fs.existsSync(talk)) return {ok: false, exitCode: 2, message: '项目目录缺少 talk.mp4。把口播视频改名为 talk.mp4 放进项目目录。'};
   if (!fs.existsSync(srtPath)) return {ok: false, exitCode: 2, message: missingSrtMessage(dir)};
-  if (!fs.existsSync(jsonPath)) return {ok: false, exitCode: 2, message: `项目目录缺少 broll.json。让便宜模型写：node scripts/broll/llm_broll.mjs "${dir}"；或者照 broll/SKILL-broll.md 自己写。`};
+  if (!fs.existsSync(jsonPath)) return {ok: false, exitCode: 2, message: opts.jsonPath ? `找不到 ${jsonPath}` : `项目目录缺少 broll.json。让便宜模型写：node scripts/broll/llm_broll.mjs "${dir}"；或者照 broll/SKILL-broll.md 自己写。`};
   let cues;
   try {
     cues = parseSrt(fs.readFileSync(srtPath, 'utf8'));
@@ -403,9 +436,9 @@ export const loadProject = (dir) => {
   if (!cues.length) return {ok: false, exitCode: 1, message: '字幕里一句都没有。检查 talk.srt 是不是空的。'};
   let doc;
   try {
-    doc = JSON.parse(fs.readFileSync(jsonPath, 'utf8').replace(/^﻿/, ''));
+    doc = JSON.parse(fs.readFileSync(jsonPath, 'utf8').replace(/^\uFEFF/, ''));
   } catch (e) {
-    return {ok: false, exitCode: 1, message: `broll.json 解析失败（${e.message}）。检查逗号、括号，字符串里不要用中文引号当 JSON 引号。`};
+    return {ok: false, exitCode: 1, message: `${jsonName} 解析失败（${e.message}）。检查逗号、括号，字符串里不要用中文引号当 JSON 引号。`};
   }
   let media;
   try {
@@ -415,35 +448,56 @@ export const loadProject = (dir) => {
   }
   let lockProblem = null;
   const lockFile = cuesLockPath(dir);
-  if (fs.existsSync(lockFile)) {
+  if (!opts.ignoreLock && fs.existsSync(lockFile)) {
     let lock = null;
     try {
-      lock = JSON.parse(fs.readFileSync(lockFile, 'utf8').replace(/^﻿/, ''));
+      lock = JSON.parse(fs.readFileSync(lockFile, 'utf8').replace(/^\uFEFF/, ''));
     } catch {
       lock = null; // 锁文件坏了就当没有，不拦人
     }
     const r = compareCuesLock(lock, cues);
-    if (!r.ok) lockProblem = {where: r.where, problem: r.problem, fix: `${r.fix}（重写：node scripts/broll/llm_broll.mjs "${dir}"；自己核对过句子号的话删掉 .brewreel/${CUES_LOCK_NAME}）`};
+    if (!r.ok) lockProblem = {where: r.where, problem: r.problem, fix: `${r.fix}（重写：node scripts/talk.mjs "${dir}" --out <输出目录> --rewrite-broll，或 node scripts/broll/llm_broll.mjs "${dir}"；自己核对过句子号的话删掉 .brewreel/${CUES_LOCK_NAME}）`};
   }
   const tokens = asrTokensOf(dir);
-  return {ok: true, dir, talk, srtPath, jsonPath, cues, doc, media, lockProblem, tokens};
+  const doubts = openDoubts(dir, cues);
+  return {ok: true, dir, talk, srtPath, jsonPath, cues, doc, media, lockProblem, tokens, doubts};
 };
 
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
+  // --json <文件>：校验项目目录里的另一份 broll（llm_broll 的草稿）；--no-lock：不比分句锁；
+  // --doubt-error：卡片用到转写拿不准的字时算错误（llm_broll 回喂给模型用）。后三个是给 llm_broll 的，人一般不用
+  const USAGE = '用法：node scripts/broll/validate.mjs <项目目录> [--max-ai 2]';
   const argv = process.argv.slice(2);
-  const maxAt = argv.indexOf('--max-ai');
-  const maxRaw = maxAt >= 0 ? argv[maxAt + 1] : undefined;
-  const dirArg = argv.find((a, i) => !a.startsWith('--') && !(maxAt >= 0 && i === maxAt + 1));
-  if (!dirArg) {
-    console.log('用法：node scripts/broll/validate.mjs <项目目录> [--max-ai 2]');
+  const takes = new Set(['--max-ai', '--json']);
+  const switches = new Set(['--no-lock', '--doubt-error']);
+  const vals = {};
+  const flags = new Set();
+  const pos = [];
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    if (takes.has(a)) {
+      vals[a] = argv[i + 1];
+      i += 1;
+    } else if (switches.has(a)) flags.add(a);
+    else if (a.startsWith('--')) {
+      console.log(`不认识的参数 ${a}\n${USAGE}`);
+      process.exit(2);
+    } else pos.push(a);
+  }
+  if (pos.length !== 1) {
+    console.log(USAGE);
     process.exit(2);
   }
-  if (maxAt >= 0 && !/^\d+$/.test(String(maxRaw ?? ''))) {
+  if ('--max-ai' in vals && !/^\d+$/.test(String(vals['--max-ai'] ?? ''))) {
     console.log('--max-ai 后面要跟一个不小于 0 的整数');
     process.exit(2);
   }
-  const loaded = loadProject(path.resolve(dirArg));
+  if ('--json' in vals && !vals['--json']) {
+    console.log('--json 后面要跟文件名');
+    process.exit(2);
+  }
+  const loaded = loadProject(path.resolve(pos[0]), {jsonPath: vals['--json'], ignoreLock: flags.has('--no-lock')});
   if (!loaded.ok) {
     console.log(loaded.message);
     process.exit(loaded.exitCode);
@@ -458,8 +512,10 @@ if (isMain) {
     projectDir: loaded.dir,
     tokens: loaded.tokens,
     lockProblem: loaded.lockProblem,
-    maxAi: maxAt >= 0 ? Number(maxRaw) : null,
+    maxAi: '--max-ai' in vals ? Number(vals['--max-ai']) : null,
     keyKind: keyKindOf(),
+    doubts: loaded.doubts,
+    doubtLevel: flags.has('--doubt-error') ? 'error' : 'warn',
   });
   console.log(formatReport(r));
   if (r.budgetExceeded) process.exit(3);

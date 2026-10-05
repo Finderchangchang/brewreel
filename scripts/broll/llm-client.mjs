@@ -28,6 +28,18 @@ export const extractJson = (text) => {
   return a >= 0 && b > a ? t.slice(a, b + 1) : t;
 };
 
+/** 接口报错 → 一句人话的下一步（key 填错、余额不足、断网最常见）。msg 是 callLlm 抛出的报错原文。 */
+export const explainLlmError = (msg) => {
+  const m = String(msg ?? '');
+  if (/HTTP 40[13]\b/.test(m)) return 'key 不对或已经失效：检查 DEEPSEEK_API_KEY（或 LLM_API_KEY）有没有填错、是不是这家接口的 key，改好再跑同一条命令';
+  if (/HTTP 402\b|insufficient|balance/i.test(m)) return '账户余额不足：去 DeepSeek 开放平台充值后，再跑同一条命令';
+  if (/HTTP 404\b/.test(m)) return '接口地址或模型名不对：检查 LLM_BASE_URL 和 LLM_MODEL';
+  if (/HTTP 429\b/.test(m)) return '请求太频繁或额度用完：等一会儿再跑同一条命令';
+  if (/HTTP 5\d\d\b/.test(m)) return '接口那边出错：等一会儿再跑同一条命令';
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|TimeoutError|AbortError|network/i.test(m)) return '连不上接口：检查网络，以及 LLM_BASE_URL 有没有写错，再跑同一条命令';
+  return '检查 key、账户余额和网络，再跑同一条命令';
+};
+
 /** 有没有可用的 key（不返回 key 本身）。 */
 export const hasLlmKey = (env = process.env) => Boolean(env.LLM_API_KEY || env.DEEPSEEK_API_KEY);
 

@@ -26,6 +26,22 @@ export const saveLedger = (file, ledger) => {
   }
 };
 
+export const FREE_PROVIDERS = ['placeholder', 'local'];
+
+/** 不花钱的来源（占位片、本地文件）留下的条目。老账本没写 provider 时看 task id 的前缀。 */
+export const isFreeEntry = (entry) => {
+  if (!entry || typeof entry !== 'object') return false;
+  if (typeof entry.provider === 'string' && entry.provider) return FREE_PROVIDERS.includes(entry.provider);
+  return typeof entry.taskId === 'string' && /^(placeholder|local)-/.test(entry.taskId);
+};
+
+/** 花过钱的 minimax-h3 条目（提交过、或已经有生成片）。占位片 / 本地文件不许覆盖它们。 */
+export const isPaidEntry = (entry) => {
+  if (!entry || typeof entry !== 'object' || isFreeEntry(entry)) return false;
+  if (entry.provider && entry.provider !== 'minimax-h3') return false;
+  return Boolean(entry.taskId || entry.redoCount || ['submitting', 'submit_unknown', 'submitted', 'succeeded', 'timeout', 'downloaded', 'checked', 'approved'].includes(entry.status));
+};
+
 /** 付费来源每段最多重做这么多次。再重做要 --force-redo。第一次生成不算重做。 */
 export const REDO_LIMIT = 2;
 
@@ -38,6 +54,8 @@ const HOLD = new Set(['failed', 'submit_failed', 'moderation', 'cancelled', 'aut
  */
 export const decidePaid = (entry, requestHash, opt = {}) => {
   const redo = !!opt.redo;
+  // 占位片 / 本地文件的条目没花过钱：换成 minimax-h3 后第一次真生成是 submit，不占重做次数
+  if (isFreeEntry(entry)) return 'submit';
   if (entry && (entry.status === 'submitting' || entry.status === 'submit_unknown')) return 'stuck';
   if (entry?.taskId && IN_FLIGHT.has(entry.status)) return 'query';
   const spent = entry && (entry.taskId || entry.redoCount || entry.status === 'checked' || entry.status === 'approved' || entry.status === 'downloaded' || HOLD.has(entry.status));

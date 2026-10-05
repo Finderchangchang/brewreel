@@ -2,11 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {freezeNoiseOf} from './check-clip.mjs';
 import {sha256File, sha256Text, stableString} from './hash.mjs';
-import {isMotion, validateMotionClip} from './motion.mjs';
+import {MOTION_MAX_MS, isMotion, validateMotionClip} from './motion.mjs';
 import {buildPrompt, buildPromptV2, clipRefs, hashFieldsV2, isV2, loadCharacter, prevForContinue} from './prompt.mjs';
 import {clipCost, rateOf} from './prices.mjs';
 import {ROOT} from './root.mjs';
-import {aspectOf, framesFor, genSecOf, secText, windowOf} from './time.mjs';
+import {MAX_RATIO, MIN_GAP_MS, aspectOf, framesFor, genSecOf, secText, windowOf} from './time.mjs';
 
 const cueNo = (id) => Number(String(id).slice(1));
 
@@ -73,7 +73,9 @@ export const buildPlan = ({doc, cues, media, style, styles = null, character = n
       }
       prompt = built.prompt;
       const fields = hashFieldsV2({doc, clip, prev, styles: allStyles});
-      request = {style: doc.style, provider: doc.provider, quality: doc.quality, aspect, width: media.width, height: media.height, genSec, prompt, sourceSha256, ...fields};
+      // style 放这一段实际用的风格（fields.styleId），不放主风格 doc.style：
+      // 用副风格的段，换主风格时提示词和参考图都没变，不该重新花钱
+      request = {style: fields.styleId, provider: doc.provider, quality: doc.quality, aspect, width: media.width, height: media.height, genSec, prompt, sourceSha256, ...fields};
       extra = {
         styleId: fields.styleId,
         look: fields.look,
@@ -119,6 +121,7 @@ export const buildPlan = ({doc, cues, media, style, styles = null, character = n
       ...extra,
     };
   });
+  extendMotionTails(clips, cues, media.durationMs);
   const ai = clips.filter((c) => c.source !== 'motion');
   const totalYuan = Math.round(ai.reduce((a, c) => a + c.costYuan, 0) * 100) / 100;
   return {
@@ -143,6 +146,44 @@ export const buildPlan = ({doc, cues, media, style, styles = null, character = n
     aiGenSec: ai.reduce((a, c) => a + c.genSec, 0),
     clips,
   };
+};
+
+/**
+ * 动效段说完最后一个字后至少再停一会儿：亮完（约 0.1 秒）+ 马克笔扫完（约 0.35 秒）+ 全亮停 0.5 秒 + 淡出 0.2 秒。
+ * 窗口本来停在这句话结束后 0.2 秒，最后一个字常常落在句尾，全亮的样子只闪一下。后面是静音时把窗口往后延，
+ * 但只在不添新问题的范围里延：不进下一句话（停在下一句开口那一刻）、和下一段之间照样留够 1 秒真人、
+ * 不超过 12 秒、全片 B-roll 不超过 60%。校验用的仍是原来的窗口，这里延出来的只进合成。
+ */
+export const TAIL_HOLD_MS = 1050;
+
+export const extendMotionTails = (clips, cues, durationMs) => {
+  const byNo = new Map(cues.map((c) => [cueNo(c.id), c]));
+  const sorted = [...clips].sort((a, b) => a.windowMs[0] - b.windowMs[0]);
+  let total = clips.reduce((a, c) => a + (c.windowMs[1] - c.windowMs[0]), 0);
+  const cap = durationMs * MAX_RATIO;
+  for (const clip of sorted) {
+    if (clip.source !== 'motion' || !clip.motion) continue;
+    const marks = Object.entries(clip.motion.marksMs ?? {})
+      .flatMap(([, v]) => (Array.isArray(v) ? v : [v]))
+      .filter(Number.isFinite);
+    if (!marks.length) continue;
+    const [w0, w1] = clip.windowMs;
+    let limit = Math.min(Math.max(...marks) + TAIL_HOLD_MS, durationMs, w0 + MOTION_MAX_MS);
+    const nextCue = byNo.get(cueNo(clip.to) + 1);
+    if (nextCue) limit = Math.min(limit, nextCue.startMs);
+    const nextClip = sorted.find((c) => c !== clip && c.windowMs[0] >= w1);
+    if (nextClip) limit = Math.min(limit, nextClip.windowMs[0] - MIN_GAP_MS);
+    limit = Math.min(limit, w1 + Math.max(0, cap - total));
+    limit = Math.round(limit);
+    if (limit <= w1) continue;
+    total += limit - w1;
+    clip.windowMs = [w0, limit];
+    clip.windowSec = Number(secText(limit - w0));
+    clip.frames = framesFor(limit - w0, 30);
+    clip.tailExtendedMs = limit - w1;
+    clip.motion = {...clip.motion, windowMs: [w0, limit]};
+  }
+  return clips;
 };
 
 /** 只要 AI 画面段（要生成、要审片、要花钱的那些）。 */

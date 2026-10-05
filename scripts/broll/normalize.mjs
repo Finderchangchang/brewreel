@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {sha256Stream} from './asr/audio.mjs';
-import {ffmpeg, probeMedia} from './media.mjs';
+import {ffmpeg, ffmpegCheck, ffmpegHelp, isMissingFeature, probeMedia} from './media.mjs';
 
 /** 常见帧率：差 0.6 以内就归到这一档（29.97 → 30）。 */
 export const STANDARD_FPS = [24, 25, 30, 50, 60];
@@ -95,6 +95,12 @@ export const normalizeTalk = async ({talk, projectDir, media = null, log = conso
   }
   if (r.status !== 0 || !fs.existsSync(tmp)) {
     fs.rmSync(tmp, {force: true});
+    // 精简版 ffmpeg 缺滤镜时，问题出在 ffmpeg，不在原片：照实说怎么装
+    if (isMissingFeature(`${r.stderr || ''}${r.stdout || ''}`)) {
+      const err = new Error(`原片转码失败：${tailOf(r)}\n${ffmpegHelp(ffmpegCheck())}`);
+      err.exitCode = 2;
+      throw err;
+    }
     const err = new Error(`原片转码失败：${tailOf(r)}。可以先用剪辑软件把口播导出成 H.264、30 帧/秒的 mp4，再改名为 talk.mp4。`);
     err.exitCode = 4;
     throw err;

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {DEFAULT_FREEZE_NOISE, checkClip} from './check-clip.mjs';
-import {decidePaid, loadLedger, nextRedoCount, resumeClip, saveLedger} from './ledger.mjs';
+import {decidePaid, isPaidEntry, loadLedger, nextRedoCount, resumeClip, saveLedger} from './ledger.mjs';
 import {clipCost} from './prices.mjs';
 import {prepareLocal} from './providers/local.mjs';
 import {renderPlaceholder} from './providers/placeholder.mjs';
@@ -109,6 +109,18 @@ export const generateClips = async ({
     throw err;
   }
 
+  // 占位片 / 本地文件不许盖掉已经花钱生成的片段（漏写 --provider minimax-h3 再跑一次，就会把付费片和账本悄悄换成占位版）
+  if (doc.provider !== 'minimax-h3') {
+    const paid = aiClips.filter((c) => isPaidEntry(ledger.clips[c.id])).map((c) => c.id);
+    if (paid.length) {
+      const err = new Error(
+        `这个输出目录里已经有 MiniMax H3 生成的付费片段（${paid.join('、')}），现在的来源是 ${doc.provider}，接着跑会把它们换成${doc.provider === 'placeholder' ? '占位片' : '本地文件'}。没有生成，也没有改账本。\n→ 怎么改：要接着用付费片段，命令里加回 --provider minimax-h3；只想看占位排版，换一个 --out 目录。`,
+      );
+      err.exitCode = 2;
+      throw err;
+    }
+  }
+
   const h3 = doc.provider === 'minimax-h3' && selected.length ? client ?? createH3Client({pollMs, timeoutMs, sleep, log}) : null;
   const refs = references ?? [];
   /** 这一段送哪些参考图：计划里按 look 选好的（v2），没有就用调用方给的（v1 / 测试）。 */
@@ -179,7 +191,7 @@ export const generateClips = async ({
       if (!list.length || missing.length) {
         const sid = clip.styleId || doc.style;
         const what = list.length ? `缺参考图 ${missing.map((p) => path.basename(p)).join('、')}` : '没有参考图';
-        const err = new Error(`${clip.id}：风格 ${sid} ${what}。这一段没有提交，也没有花钱。下一步：换一个已经有参考图的风格，或把这几段改成动效画面 / 留脸；参考图由维护者出：node scripts/broll/make-style-refs.mjs --style ${sid} --dry-run，确认后加 --yes`);
+        const err = new Error(`${clip.id}：风格 ${sid} ${what}，这一版还不能用它真生成。这一段没有提交，也没有花钱。下一步：换一个已经有参考图的风格，或把这几段改成动效画面 / 留脸，或先用 --provider placeholder 出占位版。参考图由项目维护者出好、随新版本发布，普通用户不用自己出。（维护者出图：node scripts/broll/make-style-refs.mjs --style ${sid} --dry-run）`);
         err.exitCode = 2;
         throw err;
       }

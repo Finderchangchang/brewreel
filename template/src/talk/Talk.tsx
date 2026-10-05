@@ -2,7 +2,7 @@ import React from 'react';
 import {AbsoluteFill, Audio, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {FONT, ensureFont} from '../core/font';
 import {pick} from '../core/kit';
-import {captionLinesFor, layoutOf, uiScale, type TalkLayout} from './layout';
+import {captionFor, layoutOf, pipCaptionPlacement, uiScale, type PipCaption, type TalkLayout} from './layout';
 import {MotionLayer, type MotionClip} from './motion/MotionLayer';
 
 ensureFont();
@@ -45,11 +45,16 @@ const frameStyle = (box: {x: number; y: number; width: number; height: number}, 
   opacity,
 });
 
-/** 这一段窗口里字幕最靠上的顶边（成片像素）。split 按每句的行数留高，所以取最高的那句；没有字幕返回 null。 */
+const cuesIn = (clip: TalkClip, cues: TalkCue[]) => cues.filter((c) => c.endMs > clip.startMs && c.startMs < clip.endMs);
+
+/** pip 段的字幕放圆窗左边还是上方：整段统一，按这一段里最长的那句定（见 layout.ts 的 pipCaptionPlacement）。 */
+const placementOf = (clip: TalkClip | undefined, cues: TalkCue[], width: number, height: number): PipCaption =>
+  clip && clip.mode === 'pip' ? pipCaptionPlacement(width, height, cuesIn(clip, cues).map((c) => c.text)) : 'side';
+
+/** 这一段窗口里字幕最靠上的顶边（成片像素）。split 和 pip 上方按每句的行数留高，所以取最高的那句；没有字幕返回 null。 */
 const captionTopOf = (clip: TalkClip, cues: TalkCue[], width: number, height: number): number | null => {
-  const tops = cues
-    .filter((c) => c.endMs > clip.startMs && c.startMs < clip.endMs)
-    .map((c) => layoutOf(clip.mode, width, height, captionLinesFor(clip.mode, width, height, c.text)).caption.y);
+  const placement = placementOf(clip, cues, width, height);
+  const tops = cuesIn(clip, cues).map((c) => captionFor(clip.mode, width, height, c.text, placement).y);
   return tops.length ? Math.min(...tops) : null;
 };
 
@@ -151,7 +156,7 @@ const CaptionLayer: React.FC<{cues: TalkCue[]; clips: TalkClip[]; width: number;
   if (!cue) return null;
   const active = clips.find((c) => ms >= c.startMs && ms < c.endMs);
   const mode = active?.mode ?? 'full';
-  const box = layoutOf(mode, width, height, captionLinesFor(mode, width, height, cue.text)).caption;
+  const box = captionFor(mode, width, height, cue.text, placementOf(active, cues, width, height));
   return (
     <div
       style={{

@@ -31,16 +31,87 @@ const pythonFfmpeg = () => {
   return r.status === 0 && line && fs.existsSync(line) ? line : null;
 };
 
-/** 完整版 ffmpeg（要 lavfi / drawtext / blackdetect）。优先 FFMPEG 环境变量，其次 python 的 imageio。 */
+/** 系统 PATH 里的 ffmpeg：能跑 -version 才算。 */
+const systemFfmpeg = () => {
+  const r = run('ffmpeg', ['-hide_banner', '-version']);
+  return r.status === 0 && /ffmpeg version/i.test(String(r.stdout || '')) ? 'ffmpeg' : null;
+};
+
+/**
+ * 完整版 ffmpeg（要 lavfi / drawtext / blackdetect / tile）。查找顺序：
+ * FFMPEG 环境变量 → Python 的 imageio-ffmpeg → 系统 PATH 里的 ffmpeg → Remotion 自带的精简版（缺很多滤镜，只够转写抽音频）。
+ * 精简版排最后：装了 Remotion 以后它总在，排前面会盖住用户自己装的完整版。
+ */
 export const ffmpegPath = () => {
   if (cachedFf) return cachedFf;
   if (process.env.FFMPEG && fs.existsSync(process.env.FFMPEG)) return (cachedFf = process.env.FFMPEG);
   const found = pythonFfmpeg();
   if (found) return (cachedFf = found);
+  const sys = systemFfmpeg();
+  if (sys) return (cachedFf = sys);
   const bundled = remotionBin('ffmpeg');
   if (bundled) return (cachedFf = bundled);
   return (cachedFf = 'ffmpeg');
 };
+
+/**
+ * 出片要用到的滤镜和编码器：原片转码（scale / setsar / format）、占位片（color / geq / drawtext）、
+ * 片段检查（fps / crop / blackdetect / freezedetect / select）、拼图（pad / concat / tile）。
+ * 转写只用 aresample / silencedetect，Remotion 自带的精简版就够，不查。
+ */
+export const REQUIRED_FILTERS = ['scale', 'setsar', 'format', 'fps', 'crop', 'pad', 'concat', 'tile', 'color', 'geq', 'drawtext', 'blackdetect', 'freezedetect', 'select'];
+export const REQUIRED_ENCODERS = ['libx264', 'aac'];
+
+/** 解析 `ffmpeg -filters` / `-encoders` 的输出，返回名字集合。 */
+export const parseFfmpegList = (text) => {
+  const out = new Set();
+  for (const line of String(text || '').split(/\r?\n/)) {
+    const m = /^\s*[A-Z.|]{3,6}\s+([A-Za-z0-9_]+)\s/.exec(line);
+    if (m && m[1] !== '=') out.add(m[1]);
+  }
+  return out;
+};
+
+let cachedCheck = null;
+/**
+ * 现在用的 ffmpeg 够不够出片。返回 {ok, path, missing[], bundled}。runner 只给测试用。
+ * @param {{runner?: (bin: string, args: string[]) => {status: number, stdout?: string, stderr?: string}, bin?: string}} [opts]
+ */
+export const ffmpegCheck = (opts = {}) => {
+  if (!opts.runner && !opts.bin && cachedCheck) return cachedCheck;
+  const runner = opts.runner ?? run;
+  const bin = opts.bin ?? ffmpegPath();
+  const bundled = /[\\/]@remotion[\\/]compositor-/.test(bin);
+  const f = runner(bin, ['-hide_banner', '-filters']);
+  const e = runner(bin, ['-hide_banner', '-encoders']);
+  let result;
+  if (f.status !== 0 && !f.stdout) result = {ok: false, path: bin, missing: ['ffmpeg 本身'], bundled};
+  else {
+    const filters = parseFfmpegList(f.stdout);
+    const encoders = parseFfmpegList(e.stdout);
+    const missing = [...REQUIRED_FILTERS.filter((x) => !filters.has(x)), ...REQUIRED_ENCODERS.filter((x) => !encoders.has(x))];
+    result = {ok: missing.length === 0, path: bin, missing, bundled};
+  }
+  if (!opts.runner && !opts.bin) cachedCheck = result;
+  return result;
+};
+
+/** 缺完整版 ffmpeg 时给人看的话：缺什么、三种装法。 */
+export const ffmpegHelp = (check) => {
+  const what = check.missing.includes('ffmpeg 本身')
+    ? '没找到能用的 ffmpeg'
+    : `${check.bundled ? '现在用的是 Remotion 自带的精简版 ffmpeg' : `现在用的 ffmpeg（${check.path}）`}，缺 ${check.missing.join('、')}`;
+  return [
+    `出片要完整版 ffmpeg：${what}。三选一装好再跑同一条命令：`,
+    '  ① pip install imageio-ffmpeg（推荐，装完不用设置）',
+    '  ② 自己装 ffmpeg 并放进 PATH（Windows：winget install ffmpeg；macOS：brew install ffmpeg；Linux：apt install ffmpeg）',
+    '  ③ 设环境变量 FFMPEG=完整版 ffmpeg 的路径',
+    'Full ffmpeg is required: pip install imageio-ffmpeg, or put a full ffmpeg on PATH, or set FFMPEG=/path/to/ffmpeg.',
+  ].join('\n');
+};
+
+/** ffmpeg 报错是不是因为缺滤镜 / 编码器（精简版 ffmpeg 的典型报错）。 */
+export const isMissingFeature = (text) => /No such filter|Error parsing filterchain|Filter not found|Unknown encoder|Encoder not found/i.test(String(text || ''));
 
 export const ffprobePath = () => {
   if (cachedProbe) return cachedProbe;

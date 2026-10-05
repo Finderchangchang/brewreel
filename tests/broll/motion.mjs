@@ -111,8 +111,8 @@ check('units 汉字 1、英文半个、空白不算', units('口播 AI') === 3 &
   check('locate「难用」前面是「不」也要拦', !c.ok && c.fix.includes('不难用'), JSON.stringify(c));
   const d = locate('视频文件', sp);
   check('locate 改写的找不到', !d.ok && d.problem.includes('不在'), JSON.stringify(d));
-  const e = locate('乱编 数字', sp);
-  check('locate 空格、标点不影响比对', e.ok && e.text === '乱编数字', JSON.stringify(e));
+  const e = locate('不会乱编 数字', sp);
+  check('locate 空格、标点不影响比对', e.ok && e.text === '不会乱编数字', JSON.stringify(e));
   const f = locate('不，会乱编', sp);
   check('locate 模型加的标点不会上屏（上屏字从原文拷）', f.ok && f.text === '不会乱编', JSON.stringify(f));
   const sp2 = spokenOf([{id: 'c1', startMs: 0, endMs: 2000, text: '要花 3.5 元'}]);

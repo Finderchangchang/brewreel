@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // v0.9 集成测试：动效段、多风格 v2、转写接入、归一化、计费显示、版式修复、一条命令。几秒跑完。
-// 不下载模型、不联网、不花钱（用到 ffmpeg 合成一段 1 秒的小视频）。
+// 不下载模型、不联网、不花钱（用到 ffmpeg 合成一段 1 秒的小视频；示例口播 mp4 没有就先生成，见 demo.mjs）。
 //   node tests/broll/integration.mjs
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
@@ -23,7 +23,9 @@ import {ROOT} from '../../scripts/broll/root.mjs';
 import {parseSrt} from '../../scripts/broll/srt.mjs';
 import {formatReport, loadBanned, loadProject, loadStyles, validateBroll} from '../../scripts/broll/validate.mjs';
 import {parseTalkArgs} from '../../scripts/talk.mjs';
-import {captionLinesFor, layoutOf, pipOf} from '../../template/src/talk/layout.ts';
+import {importTs} from './quiet-ts.mjs';
+import {ensureDemo} from './demo.mjs';
+const {captionLinesFor, layoutOf, pipOf} = await importTs('../../template/src/talk/layout.ts', import.meta.url);
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEMO = path.join(ROOT, 'examples', 'talk', 'demo');
@@ -355,6 +357,8 @@ const cliTests = () => {
 
 const main = async () => {
   const t0 = Date.now();
+  // 示例口播的 mp4 不进仓库：单独跑这个文件时也要先生成（几秒）
+  ensureDemo();
   const slow = [];
   for (const [name, fn] of Object.entries({layoutTests, billingTests, validateTests, planTests, reviewTests, generateTests, normalizeTests, projectTests, cliTests})) {
     const t = Date.now();

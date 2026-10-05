@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 本地转写：talk.mp4 → talk.srt（SenseVoice，sherpa-onnx-node，免费、不联网，只有第一次要下载约 240MB 模型）。
-//   node scripts/broll/transcribe.mjs <项目目录> [--lang auto|zh|en] [--terms "精酿,BrewReel"] [--no-fix] [--force] [--engine local]
+//   node scripts/broll/transcribe.mjs <项目目录> [--lang auto|zh|en|yue|ja|ko] [--terms "产品名,人名"] [--no-fix] [--force] [--engine local]
 // 已有 talk.srt 且没加 --force：什么都不动，退出 0（不会覆盖你改过的字幕）。
 // --force：旧的 talk.srt 先改名为 talk.srt.bak-<时间>；同一个视频复用缓存里的逐字时间，只重新切句和校对。
 // 有 LLM_API_KEY / DEEPSEEK_API_KEY 且没加 --no-fix：便宜模型只交改字补丁，脚本按拼音规则决定改不改，记录写进 talk.fixes.txt。
@@ -13,6 +13,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {detectSilences, extractWav, sha256Stream} from './asr/audio.mjs';
 import {cuesFromAsr, layoutText, toSrt} from './asr/cues.mjs';
+import {doubtsFromHints} from './asr/doubts.mjs';
 import {formatFixesTxt, runFix} from './asr/fix.mjs';
 import {DEFAULT_MODEL, MODELS, ensureModel} from './asr/models.mjs';
 import {AsrRuntimeError, recognizeWav} from './asr/sensevoice.mjs';
@@ -28,7 +29,7 @@ const SELF = fileURLToPath(import.meta.url);
 const CACHE_VERSION = 1;
 
 const usage = () =>
-  '用法：node scripts/broll/transcribe.mjs <项目目录> [--lang auto|zh|en] [--terms "精酿,BrewReel"] [--no-fix] [--force] [--engine local]';
+  '用法：node scripts/broll/transcribe.mjs <项目目录> [--lang auto|zh|en|yue|ja|ko] [--terms "产品名,人名"] [--no-fix] [--force] [--engine local]';
 
 /** "精酿,BrewReel" / ["精酿"] → 去重后的数组。逗号、顿号、分号、换行都算分隔。 */
 export const parseTerms = (v) => {
@@ -261,6 +262,8 @@ export const transcribeProject = async (dir, opts = {}) => {
     talkSha256: sha,
     cache: path.basename(cachePath),
     fix: {status: fix.status, model: fix.model || '', applied: fix.applied.length, hints: fix.hints.length},
+    // 还没人核对过的字（连同当时那一句的原文）：validate 不让它们上动效卡片，llm_broll 的提示里也会点名
+    doubts: doubtsFromHints(fix.hints, finalCues),
     at: now().toISOString(),
   };
   fs.writeFileSync(transcribeMetaPath(dir), JSON.stringify(meta, null, 2), 'utf8');

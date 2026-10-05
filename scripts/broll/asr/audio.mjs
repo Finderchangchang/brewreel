@@ -1,5 +1,5 @@
 // 转写前的音频处理：抽 16k 单声道 wav、找静音、在静音处切块。
-// ffmpeg 用 media.mjs 的查找顺序（FFMPEG 环境变量 → Python imageio → Remotion 自带）。
+// ffmpeg 用 media.mjs 的查找顺序（FFMPEG 环境变量 → Python imageio → 系统 PATH → Remotion 自带的精简版）。
 // Remotion 自带的精简版 ffmpeg 没有 s16le 封装，所以输出一律用 wav 容器（-c:a pcm_s16le）。
 import {createHash} from 'node:crypto';
 import fs from 'node:fs';

@@ -123,6 +123,8 @@ export const adaptShot = (c: MotionClip, dur: number, beat = BEAT): Adapted | nu
       to: say.value,
       from: hasFrom ? from!.value : undefined,
       showFrom: hasFrom,
+      // 钱数带 from 时宣传片会多画一个算出来的「↓57%」：原话里没有这个数，口播动效不画
+      hideDelta: true,
       decimals: Math.max(say.decimals, hasFrom ? from!.decimals : 0),
       prefix: say.prefix || undefined,
       suffix: say.suffix || undefined,

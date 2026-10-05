@@ -21,8 +21,10 @@ import {ROOT} from '../../scripts/broll/root.mjs';
 import {parseSrt} from '../../scripts/broll/srt.mjs';
 import {beatSpans, fmtSec, framesFor, genSecOf, windowOf} from '../../scripts/broll/time.mjs';
 import {formatReport, loadBanned, loadStyles, validateBroll} from '../../scripts/broll/validate.mjs';
-import {layoutOf} from '../../template/src/talk/layout.ts';
+import {importTs} from './quiet-ts.mjs';
+import {ensureDemo} from './demo.mjs';
 import {h3Tests} from './h3.mjs';
+const {layoutOf} = await importTs('../../template/src/talk/layout.ts', import.meta.url);
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEMO = path.join(ROOT, 'examples', 'talk', 'demo');
@@ -260,29 +262,9 @@ const ledgerTests = () => {
   fs.rmSync(file, {force: true});
 };
 
-const ensureDemo = () => {
-  const dest = path.join(DEMO, 'talk.mp4');
-  let ok = false;
-  if (fs.existsSync(dest)) {
-    try {
-      const m = probeMedia(dest);
-      ok = m.width === 1080 && m.height === 1920 && m.hasAudio && Math.abs(m.durationSec - 20) < 0.2;
-    } catch {
-      ok = false;
-    }
-  }
-  if (!ok) {
-    const r = spawnSync(ffmpegPath(), ['-y', '-hide_banner', '-loglevel', 'error', '-f', 'lavfi', '-i', 'smptebars=size=1080x1920:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000', '-t', '20', '-shortest', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'veryfast', '-c:a', 'aac', dest], {windowsHide: true, encoding: 'utf8'});
-    if (r.status !== 0) throw new Error(`示例口播生成失败：${r.stderr || r.stdout}`);
-  }
-  // v2 示例（动效 + AI）和 demo 共用同一段口播和字幕；mp4 不进仓库，每次从 demo 拷
-  const motionTalk = path.join(MOTION_DEMO, 'talk.mp4');
-  if (!fs.existsSync(motionTalk) || fs.statSync(motionTalk).size !== fs.statSync(dest).size) fs.copyFileSync(dest, motionTalk);
-};
-
 // v0.9 三个模块各自的单测 + 集成测试：各是一个独立脚本，不下载模型、不联网、不花钱
 const moduleSuites = () => {
-  for (const name of ['asr.mjs', 'motion.mjs', 'styles.mjs', 'integration.mjs']) {
+  for (const name of ['asr.mjs', 'motion.mjs', 'styles.mjs', 'integration.mjs', 'fixes.mjs']) {
     const r = runNode([path.join('tests', 'broll', name)]);
     const out = `${r.stdout || ''}${r.stderr || ''}`;
     const last = out

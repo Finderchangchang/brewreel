@@ -106,12 +106,31 @@ const hotPart = (line: string, from: number, text: string, hot?: string): string
   return Array.from(line).slice(a - l0, b - l0).join('');
 };
 
-export const Keyword: React.FC<{data: KeywordData; marks: KeywordMarks; t: number; geom?: KeywordGeom}> = ({data, marks, t, geom}) => {
+/**
+ * 马克笔什么时候扫、扫多久：说完 hot 那一刻开始扫 0.45 秒。
+ * 离这段淡出太近时：全亮、带马克笔的样子要在淡出（最后 0.2 秒）前停够 0.5 秒，来不及就扫快一点，再不够就提前扫（不早于 hot 第一个字）。
+ */
+export const markerTiming = (hotMark: number | undefined, dur?: number, hotStart?: number): {at?: number; dur: number} => {
+  if (!Number.isFinite(hotMark)) return {at: undefined, dur: 0.45};
+  let at = Math.max(0, (hotMark as number) - 0.1);
+  let len = 0.45;
+  if (dur != null && Number.isFinite(dur)) {
+    const doneBy = dur - 0.2 - 0.5;
+    if (at + len > doneBy) len = Math.max(0.2, doneBy - at);
+    if (at + len > doneBy) {
+      const earliest = Number.isFinite(hotStart) ? Math.max(0, (hotStart as number) - 0.1) : 0;
+      at = Math.max(earliest, doneBy - len);
+    }
+  }
+  return {at, dur: len};
+};
+
+export const Keyword: React.FC<{data: KeywordData; marks: KeywordMarks; t: number; geom?: KeywordGeom; dur?: number}> = ({data, marks, t, geom, dur}) => {
   const pal = usePal();
   const g = geom ?? keywordGeom(data);
   const total = Array.from(data.text ?? '').length;
   const enter = popScale(t, 0, 0.27, 0.85);
-  const markerAt = Number.isFinite(marks.hot) ? Math.max(0, (marks.hot as number) - 0.1) : undefined;
+  const marker = markerTiming(marks.hot, dur, marks.hot0);
   return (
     <div style={{position: 'absolute', inset: 0, fontFamily: FONT}}>
       <div
@@ -139,7 +158,7 @@ export const Keyword: React.FC<{data: KeywordData; marks: KeywordMarks; t: numbe
           const hot = hotPart(line.text, line.from, data.text, data.hot);
           return (
             <div key={i} style={{fontSize: g.size, fontWeight: 900, lineHeight: LINE_H, color: pal.ink, textAlign: 'center', whiteSpace: 'nowrap'}}>
-              <Lit text={line.text} t={t} t0={0} rate={6} clock={clockOf(line.text, line.from, marks, total)} hot={hot} hotColor={pal.primary} marker={!!hot} markerAt={markerAt} markerDur={0.45} />
+              <Lit text={line.text} t={t} t0={0} rate={6} clock={clockOf(line.text, line.from, marks, total)} hot={hot} hotColor={pal.primary} marker={!!hot} markerAt={marker.at} markerDur={marker.dur} />
             </div>
           );
         })}

@@ -31,6 +31,8 @@ type P = {
   sub?: string;
   icon?: string;
   showFrom?: boolean;
+  /** 不画算出来的降幅胶囊（↓57%、↑3 倍）。口播动效用：屏幕上的字只能出自原话，算出来的百分比原话里没有。宣传片不传，照旧 */
+  hideDelta?: boolean;
   tone?: 'accent' | 'good' | 'bad';
 };
 
@@ -113,7 +115,7 @@ const Counter: React.FC<ShotProps<P>> = ({params: p, t, dur, beat, meta}) => {
   const showFrom = !!p.showFrom && hasFrom && from !== to; // 没写 from 就不显示旧值行
   const discount = showFrom && money; // 钱：划掉 + 降幅胶囊
   const change = showFrom && !money; // 其他：旧值 → 新值，不划掉、不出百分比
-  const delta = discount ? deltaText(from, to, lang) : '';
+  const delta = discount && !p.hideDelta ? deltaText(from, to, lang) : '';
   const deltaP = pop(t, pl.land + 0.05, 12, 200);
   const strike = interpolate(t, [pl.land - 0.25, pl.land], [0, 1], clamp);
   const down = hasFrom && to < from;

@@ -2,8 +2,9 @@
 //   模型输出 {"fixes":[{"cue":"c3","from":"他","to":"它"}],"doubt":[{"cue":"c6","text":"之后","why":"上下文像之前"}]}
 //   一条补丁同时满足下面几条才自动落地，其余只写进 talk.fixes.txt 的「只提示，没改」：
 //     from 在这句原文里出现且只出现一次；中文 from ≤4 字、to ≤6 字（英文按词数）；字数差 ≤1（to 是专有名词的除外）；
-//     不涉及数字、否定和反义字；不带声调的拼音逐音节相同（z/zh、c/ch、s/sh、n/l、an/ang、en/eng、in/ing、f/h 互混），
-//     或者 to 是专有名词表里的词；每句最多自动改 2 处。
+//     不涉及数字、否定和反义字；不带声调的拼音逐音节相同（z/zh、c/ch、s/sh、n/l、an/ang、en/eng、in/ing、f/h 互混）；
+//     to 带专有名词表里的词时：纯英文字母的名词免查读音，中文名词按放宽的读音比对，数字、否定、反义只对名词以外的字免查；
+//     每句最多自动改 2 处。
 // 校对结果按 sha256(句子清单 + 名词表 + 模型名 + 提示词版本) 缓存在 .brewreel/，复跑不重复调接口。
 import {createRequire} from 'node:module';
 import fs from 'node:fs';
@@ -59,11 +60,28 @@ const charIndexOf = (text, part) => {
 };
 const countOf = (text, part) => (part ? text.split(part).length - 1 : 0);
 
-/** 专有名词命中：to 就是名词表里的某个词（最多多带 1 个字）。 */
-const glossaryHit = (to, terms) => terms.some((g) => g && to.includes(g) && lenOf(to, isLatin(to)) - lenOf(g, isLatin(g)) <= 1);
+/** 专有名词命中：to 就是名词表里的某个词（最多多带 1 个字）。返回命中的那个词，没命中返回 null。 */
+const glossaryHit = (to, terms) => terms.find((g) => g && to.includes(g) && lenOf(to, isLatin(to)) - lenOf(g, isLatin(g)) <= 1) ?? null;
+const isLatinOnly = (s) => /^[\x00-\x7F]+$/.test(String(s));
+/** 放宽的读音比对（只给中文专有名词用）：每个音节声母或韵母有一样对得上就算（「精娘」→「精酿」能过，「工具」→「精酿」过不了）。 */
+const looseSame = (x, y) => {
+  // y / w 只是拼写上的零声母：yan 的韵母是 ian（和 niang 的 iang 只差前后鼻音），wan 的韵母是 uan
+  const split = (py) => {
+    let p = String(py);
+    if (/^y/.test(p)) p = /^y[iu]/.test(p) ? p.slice(1).replace(/^u/, 'v') : `i${p.slice(1)}`;
+    else if (/^w/.test(p)) p = /^wu/.test(p) ? p.slice(1) : `u${p.slice(1)}`;
+    const m = /^(zh|ch|sh|[bpmfdtnlgkhjqxrzcs])?(.*)$/.exec(fuzzy(p));
+    return {ini: m?.[1] ?? '', fin: (m?.[2] ?? '').replace(/ng$/, 'n')};
+  };
+  const a = split(x);
+  const b = split(y);
+  return x === y || fuzzy(x) === fuzzy(y) || (a.ini && a.ini === b.ini) || (a.fin && a.fin === b.fin);
+};
 
 /**
  * 判一条补丁能不能自动落地。
+ * to 里带专有名词时：数字、否定、反义字只对名词以外的字免查（「之前」改成「名词+后」照样拦）；
+ * 只有纯英文字母的名词才免查读音，中文名词要过一遍放宽的读音比对（不然模型可以把任意词换成名词表里的词）。
  * @returns {{apply: boolean, why: string}}
  */
 export const judgeFix = (cueText, fix, terms = []) => {
@@ -75,15 +93,31 @@ export const judgeFix = (cueText, fix, terms = []) => {
   if (countOf(text, from) > 1) return {apply: false, why: `「${from}」在这句里出现了不止一次，不知道改哪个`};
   const latin = isLatin(from + to);
   if (lenOf(from, latin) > 4 || lenOf(to, latin) > 6) return {apply: false, why: '一次改得太长'};
-  const inGlossary = glossaryHit(to, terms);
+  const term = glossaryHit(to, terms);
+  const inGlossary = Boolean(term);
+  // to 去掉名词之后剩下的字：数字、否定、反义照查
+  const rest = inGlossary ? to.replace(term, '') : to;
   if (Math.abs(lenOf(from, latin) - lenOf(to, latin)) > 1 && !inGlossary) return {apply: false, why: '字数变化超过 1'};
-  if (DIGIT_RE.test(from) || (DIGIT_RE.test(to) && !inGlossary)) return {apply: false, why: '涉及数字，只提示'};
-  if (NEGATION_RE.test(from) || (NEGATION_RE.test(to) && !inGlossary)) return {apply: false, why: '涉及否定词，只提示'};
+  if (DIGIT_RE.test(from) || DIGIT_RE.test(rest)) return {apply: false, why: '涉及数字，只提示'};
+  if (NEGATION_RE.test(from) || NEGATION_RE.test(rest)) return {apply: false, why: '涉及否定词，只提示'};
   const fa = [...from];
   const ta = [...to];
+  if (inGlossary) {
+    // 名词以外：from 里被换掉的字、to 里多出来的字，有反义字就只提示
+    const gone = fa.filter((ch) => !ta.includes(ch)).join('');
+    const added = [...rest].filter((ch) => !fa.includes(ch)).join('');
+    if (FLIP_RE.test(gone + added)) return {apply: false, why: `改动含「${[...new Set(gone + added)].join('')}」，可能改了意思，只提示`};
+    if (isLatinOnly(term)) return {apply: true, why: '专有名词表'};
+    const at = charIndexOf(text, from);
+    const a = pinyinAt(text, at, fa.length);
+    const b = pinyinAt(text.replace(from, to), at, ta.length);
+    if (!a || !b) return {apply: false, why: '没装 pinyin-pro，读音没法核对，只提示'};
+    if (a.length !== b.length) return {apply: false, why: '音节数不同（专有名词），只提示'};
+    if (!a.every((x, i) => looseSame(x, b[i]))) return {apply: false, why: `读音差得远（${a.join(' ')} → ${b.join(' ')}），只提示`};
+    return {apply: true, why: `专有名词表（读音接近：${a.join(' ')} → ${b.join(' ')}）`};
+  }
   const changed = ta.filter((ch, i) => ch !== fa[i]).join('') + fa.filter((ch, i) => ch !== ta[i]).join('');
-  if (FLIP_RE.test(changed) && !inGlossary) return {apply: false, why: `改动含「${[...new Set(changed)].join('')}」，可能改了意思，只提示`};
-  if (inGlossary) return {apply: true, why: '专有名词表'};
+  if (FLIP_RE.test(changed)) return {apply: false, why: `改动含「${[...new Set(changed)].join('')}」，可能改了意思，只提示`};
   if (latin) return {apply: false, why: '英文改词只提示'};
   const at = charIndexOf(text, from);
   const a = pinyinAt(text, at, fa.length);
