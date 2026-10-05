@@ -156,12 +156,12 @@ const planTests = () => {
   extendMotionTails(near, cues, 13500);
   check('不挤掉和下一段之间的 1 秒真人', near[0].windowMs[1] === 7200, JSON.stringify(near[0].windowMs));
   // 副风格的段：换主风格、提示词和参考图都不变时，请求哈希不变（不重新花钱）
-  const base = {version: 2, style: 'wood-blocks', styleAlt: 'ink-sketch', provider: 'minimax-h3', quality: '768P', budgetYuan: 20, captions: 'add', keepFace: ['c5'], clips: clone(motionDoc().clips)};
+  const base = {version: 2, style: 'wood-blocks', styleAlt: 'paper-layers', provider: 'minimax-h3', quality: '768P', budgetYuan: 20, captions: 'add', keepFace: ['c5'], clips: clone(motionDoc().clips)};
   base.clips = [
     {...motionDoc().clips[1], id: 'b01', from: 'c3', to: 'c4', mode: 'full', job: 'demonstrate'},
     {...motionDoc().clips[1], id: 'b02', from: 'c6', to: 'c7', look: 'alt', job: 'compare', camera: 'pan-right'},
   ];
-  const other = {...clone(base), style: 'paper-layers'};
+  const other = {...clone(base), style: 'clay-stopmotion'};
   const pa = buildPlan({doc: base, cues: demoCues(), media: MEDIA, styles: STYLES});
   const pb = buildPlan({doc: other, cues: demoCues(), media: MEDIA, styles: STYLES});
   check('副风格段换主风格：哈希不变', pa.clips[1].prompt === pb.clips[1].prompt && pa.clips[1].requestHash === pb.clips[1].requestHash && pa.clips[0].requestHash !== pb.clips[0].requestHash);

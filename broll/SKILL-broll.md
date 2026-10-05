@@ -180,10 +180,10 @@ compare，原句 c10「以前要自己手动剪，现在交给脚本来做」：
 
 | style | 名字 | 能做的 job | 镜头 | 能搭的副风格 |
 |---|---|---|---|---|
-| `wood-blocks` | 积木风（默认） | 全部 7 种 | 全部 7 种 | `ink-sketch`、`paper-layers` |
-| `clay-stopmotion` | 黏土定格 | demonstrate、ground、evoke、connect | static、slow-push、pull-back、pan-left、pan-right | `ink-sketch`、`paper-layers` |
-| `paper-layers` | 分层纸艺 | explain、ground、compare、connect | static、slow-push、pan-left、pan-right | `ink-sketch`、`wood-blocks` |
-| `ink-sketch` | 手绘线稿 | explain、compare、quantify、connect | static、slow-push、pan-left、pan-right | `paper-layers`、`wood-blocks` |
+| `wood-blocks` | 积木风（默认） | 全部 7 种 | 全部 7 种 | `paper-layers` |
+| `clay-stopmotion` | 黏土定格 | demonstrate、ground、evoke、connect | static、slow-push、pull-back、pan-left、pan-right | `paper-layers` |
+| `paper-layers` | 分层纸艺 | explain、ground、compare、connect | static、slow-push、pan-left、pan-right | `wood-blocks` |
+| `ink-sketch` | 手绘线稿（实验） | 实验风格，参考图还没出，只能 `placeholder` 占位预览，也不能当副风格。用户没点名就不要选 | | |
 | `brick-diorama` | 塑料积木（实验） | 实验风格，不是默认，只为 v0.8 的老文件保留。用户没点名就不要选 | | |
 
 AI 画面的 7 种 job：demonstrate、explain、ground、compare、quantify、evoke、connect。`list`、`stress` 只给动效段。
@@ -208,7 +208,7 @@ AI 画面的 7 种 job：demonstrate、explain、ground、compare、quantify、e
 "beats": [{"action": "拿起一块方块放到桌上", "end": "方块放在桌面中央"}, {"action": "再把一块方块靠上去", "end": "两块方块靠在一起"}]
 ```
 
-用副风格做对比（顶层要有 `"styleAlt": "ink-sketch"`，而且前面已经有一段主风格的 AI 画面）：
+用副风格做对比（顶层要有 `"styleAlt": "paper-layers"`，而且前面已经有一段主风格的 AI 画面）：
 
 ```json
 {"id": "b07", "from": "c14", "to": "c14", "source": "ai", "mode": "split", "job": "compare", "look": "alt", "plain": "两种做法对照", "place": "两张桌子", "subject": "机器人", "action": "看向左边的乱方块再看向右边的齐方块", "end": "机器人站在整齐的那一桌前", "camera": "pan-right"}
@@ -271,7 +271,7 @@ AI 段不要写：毫秒、生成秒数、比例、分辨率、风格长描述�
 
 动效段不管 `provider` 是什么都不花钱。
 
-风格还没有参考图时，`make-talk` 会在提交前停下（退出码 2，没花钱），告诉你换哪个风格或改成动效。这一版四个正式风格的参考图都还没出，AI 画面只能用 `placeholder` 占位预览。参考图由维护者出，出图要花钱，你不要自己跑 `make-style-refs.mjs`。
+风格还没有参考图时，`make-talk` 会在提交前停下（退出码 2，没花钱），告诉你换哪个风格或改成动效。这一版三个正式风格（`wood-blocks`、`clay-stopmotion`、`paper-layers`）的参考图已经随仓库发布；手绘线稿 `ink-sketch` 是实验风格，参考图还没出，用它只能 `placeholder` 占位预览。参考图由维护者出，出图要花钱，你不要自己跑 `make-style-refs.mjs`。
 
 同一个 `--out` 里已经有 `minimax-h3` 生成的付费片段时，用 `placeholder` 或 `local` 跑会停下（退出码 2），不会把付费片段换成占位片。照提示加回 `--provider minimax-h3`，或者换一个 `--out`。
 
@@ -358,7 +358,7 @@ node scripts/make-talk.mjs <项目目录> --out <仓库外目录> --yes --draft
 
 生成和出片时的报错：
 
-- 风格还没有参考图：停下（退出码 2，没花钱）。按报错的做法选一种：换有参考图的风格（这一版还没有）、改成动效画面或留脸、先用 `placeholder` 看排版。不要自己出参考图。
+- 风格还没有参考图：停下（退出码 2，没花钱）。按报错的做法选一种：换有参考图的风格（`wood-blocks`、`clay-stopmotion`、`paper-layers`）、改成动效画面或留脸、先用 `placeholder` 看排版。不要自己出参考图。
 - 缺完整版 ffmpeg：停下（退出码 2）。请用户 `pip install imageio-ffmpeg`，或装好系统 ffmpeg，再跑同一条命令。
 - 估价超过预算（退出码 3）：减少 AI 画面段（改成动效画面不花钱）、缩短 `from` / `to`，或请用户提高 `budgetYuan`。
 - 鉴权失败：停下。请用户核对 `MINIMAX_API_KEY` 和域名是不是同一区。不要重试，不要把密钥写进文件或日志。

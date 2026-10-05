@@ -17,13 +17,15 @@ The robot's shape and colours are not in the style pack. They live in `broll/cha
 
 | id | Name | Status | Jobs | Camera | References |
 |---|---|---|---|---|---|
-| `wood-blocks` | Wood blocks (shown as "积木风") | default main style | all 7 | all 7 | not made yet |
-| `clay-stopmotion` | Clay stop-motion | usable | demonstrate, ground, evoke, connect | no orbit, no top-down | not made yet |
-| `paper-layers` | Layered paper | usable | explain, ground, compare, connect | static, slow-push, pan-left, pan-right only | not made yet |
-| `ink-sketch` | Ink sketch | usable, good second style | explain, compare, quantify, connect | static, slow-push, pan-left, pan-right only | not made yet |
+| `wood-blocks` | Wood blocks (shown as "积木风") | default main style | all 7 | all 7 | made |
+| `clay-stopmotion` | Clay stop-motion | usable | demonstrate, ground, evoke, connect | no orbit, no top-down | made |
+| `paper-layers` | Layered paper | usable | explain, ground, compare, connect | static, slow-push, pan-left, pan-right only | made |
+| `ink-sketch` | Ink sketch (experimental) | experimental, not default | explain, compare, quantify, connect | static, slow-push, pan-left, pan-right only | not made yet (the robot keeps getting an antenna) |
 | `brick-diorama` | Plastic bricks (experimental) | experimental, not default | all 7 | all 7 | `ref-3.jpg` (has studs) |
 
 `brick-diorama` is the v0.8 style. All 5 clips generated with it had studs, and its reference image has studs too, so it is marked experimental: validation warns about it and it cannot be used as another style's second style. It stays so that version 1 `broll.json` files keep working. Its `look`, `forbid`, `negative`, `camera` and `references` fields are kept exactly as in v0.8 (changing them would change old projects' request hashes and trigger paid regeneration); version 2 reads `lookV2` and `forbidV2`. To retire it, move the whole folder away. Other styles are not affected; old files that name `brick-diorama` will fail validation with "no such style".
+
+`ink-sketch` is experimental in v0.9: in two rounds of image-01 every hand-drawn robot came out with an antenna on its head, which does not match the shared character (round, smooth head), so this release ships no references for it. It only works for stand-in previews with `provider: placeholder`, validation warns about it, and it cannot be another style's second style. The known issue and the next step (use the `wood-blocks` character image as the reference for the line drawing) are in [`ink-sketch/refs/README.md`](ink-sketch/refs/README.md).
 
 Styles without references can still be laid out and previewed with `provider: placeholder`. For real generation (`minimax-h3`) a maintainer must make the references first; otherwise the scripts stop before submitting, say which image is missing and what to do next, and nothing is charged.
 

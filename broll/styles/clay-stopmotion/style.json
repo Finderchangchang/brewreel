@@ -20,7 +20,7 @@
   },
   "cameras": ["static", "slow-push", "pull-back", "pan-left", "pan-right"],
   "jobs": ["demonstrate", "ground", "evoke", "connect"],
-  "pairsWith": ["ink-sketch", "paper-layers"],
+  "pairsWith": ["paper-layers"],
   "materialWords": ["黏土", "粘土", "陶泥", "橡皮泥", "彩泥"],
   "refs": [
     {

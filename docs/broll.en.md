@@ -5,7 +5,7 @@
 Add explanatory pictures to a real talking-head video. There are two kinds:
 
 - **Motion clips**: free. Five card types (keyword, checklist, steps, counter, compare). Every word on the card is copied from what the speaker said, and it lights up as the word is spoken.
-- **AI clips**: small scenes generated with MiniMax H3. They cost money and a person must review them. Styles: wood blocks, clay stop-motion, layered paper, ink sketch, all with the same robot.
+- **AI clips**: small scenes generated with MiniMax H3. They cost money and a person must review them. Three regular styles: wood blocks (the default), clay stop-motion and layered paper; ink sketch is experimental and only works as a stand-in preview. The same robot appears throughout.
 
 The model only writes `broll.json`: which lines get a picture, and which kind. Scripts handle timing, cost, generation and the final cut.
 
@@ -47,7 +47,7 @@ No DeepSeek key? Ask an AI coding assistant to write `broll.json` by [`broll/SKI
 
 ### Really generating AI clips
 
-> **This release cannot generate AI clips yet.** The four regular styles have no reference images yet; real generation with them stops before submitting (exit code 2, nothing spent). For now AI clips are stand-in previews only, and motion clips render normally. The commands below work once the maintainer ships the reference images in a new release.
+> The three regular styles (wood blocks, clay stop-motion, layered paper) ship with reference images and can be generated for real. Ink sketch (`ink-sketch`) is experimental and has no reference images yet: real generation with it stops before submitting (exit code 2, nothing spent), so it only works as a stand-in preview.
 
 When the stand-in version looks right, switch to MiniMax H3. Set `MINIMAX_API_KEY` first.
 
@@ -122,7 +122,7 @@ node scripts/broll/approve.mjs <project> --out <dir-outside-the-repo>
 
 The words on a card must be consecutive words from the speech, not reworded; a negation before the quote (不用, 不要, 不会, "don't"...) must be included; a number to show goes in `counter`, only if the speaker really said it, and two numbers separated by a space, line break or sentence break are never joined into one. So **transcription mistakes show up on screen as is**: check `talk.srt` before rendering and fix typos there. After the last word, a card holds a little longer when silence follows.
 
-Layout: motion clips default to `split` (card on the top 60%, speaker on the bottom 40%), `pip` on a horizontal talk, so the speaker stays on screen; `keyword` cannot use `full`, and `full` is only for a checklist or steps with 3 or more items (validation blocks the rest). Colours and finish follow the main style: wood blocks get a warm wood table, off-white cards and blue-grey and warm-orange wooden blocks; clay stop-motion gets warm pastels; layered paper gets off-white paper with a few coloured sheets; ink sketch gets white paper and ink lines. The background has a faint texture and slowly drifting shapes; decorations only go in the corners away from the text and captions, and there are no words.
+Layout: motion clips default to `split` (card on the top 60%, speaker on the bottom 40%), `pip` on a horizontal talk, so the speaker stays on screen; `keyword` cannot use `full`, and `full` is only for a checklist or steps with 3 or more items (validation blocks the rest). Colours and finish follow the main style: wood blocks get a warm wood table, off-white cards and blue-grey and warm-orange wooden blocks; clay stop-motion gets warm pastels; layered paper gets off-white paper with a few coloured sheets; ink sketch (experimental) gets white paper and ink lines. The background has a faint texture and slowly drifting shapes; decorations only go in the corners away from the text and captions, and there are no words.
 
 Transitions: there is only one picture of the speaker. In `split` it shrinks from full screen to the bottom while the card slides down from the top; in `pip` it shrinks into the circle at the bottom right (a bit larger for motion clips, with the face zoomed in a little and a card-coloured ring). The exit plays it backwards, so two faces never overlap. When a `keyword` clip's caption says the same words as the big text, the caption keeps only the extra words, or is hidden. A money amount (元, 块, ¥ ...) with an old price does not roll: it flips to the new price at the moment it is said, so no price that was never said appears; without an old price it only rolls for the 0.6 s before it is said.
 
@@ -133,12 +133,12 @@ Transitions: there is only one picture of the speaker. In `split` it shrinks fro
 | `wood-blocks` | Wood blocks (default, 「积木风」) | Anything; best for steps, amounts, showing one object |
 | `clay-stopmotion` | Clay stop-motion | Doing things by hand, places, mood |
 | `paper-layers` | Layered paper | Explaining, places, comparisons |
-| `ink-sketch` | Ink sketch | Explaining, comparisons, amounts; best as the second style |
+| `ink-sketch` | Ink sketch (experimental) | Experimental: no reference images yet, stand-in previews only, cannot be a second style |
 | `brick-diorama` | Plastic bricks (experimental) | Experimental, not the default; its output shows studs; not recommended |
 
 The AI clips of one film use at most two styles: the main `style` and an optional second `styleAlt` (only one the main style pairs with). The robot's shape and colors live in `broll/character.json` and are shared by every style; a style only decides what the robot is made of. Which jobs and cameras each style allows, and whether its reference images exist yet: [`broll/styles/README.en.md`](../broll/styles/README.en.md).
 
-If a style has no reference images yet, real generation with it stops before submitting (exit code 2, nothing spent) and says which style to switch to, or to use motion clips instead. Previews with `placeholder` are not affected. In this release none of the four regular styles has reference images yet.
+If a style has no reference images yet, real generation with it stops before submitting (exit code 2, nothing spent) and says which style to switch to, or to use motion clips instead. Previews with `placeholder` are not affected. In this release the three regular styles ship with reference images; only ink sketch (experimental) has none.
 
 ## Three placements
 
@@ -237,7 +237,7 @@ If a run is interrupted, run it again with the same `--out`: clips already submi
 
 - **Experimental**: not yet used on many real talking-head videos. Treat the result as a first cut and watch the whole video before publishing.
 - **Studs may still show up now and then**: the new styles' prompts describe only what should be seen and never mention studs, but the video model occasionally still draws bricks with round studs. Check frame by frame on the review page. `brick-diorama` shows studs reliably and is kept only for old projects.
-- **The four new styles have no reference images yet**: AI clips cannot really be generated in this release and only work with `placeholder`. The maintainer makes them and ships them in the repo.
+- **Ink sketch (`ink-sketch`) is only experimental**: in two rounds of reference images the robot always got an antenna on its head, which does not match the shared character, so this release ships no reference images for it. It only works with `placeholder` and cannot be a second style. The three regular styles ship with reference images.
 - **Changing a v0.8 file to version 2 costs money again**: v2 changes the prompt and the request, so AI clips already generated are generated again. Old files still run as version 1.
 - **Each AI clip is generated on its own**: the shared character, reference images and `link: continue` keep clips closer, but shape and colors can still differ; clips are not guaranteed to match.
 - **At most two styles of AI clip per film**: one main style plus one second style, not a different style per clip.

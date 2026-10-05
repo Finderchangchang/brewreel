@@ -19,7 +19,7 @@
   },
   "cameras": ["static", "slow-push", "pan-left", "pan-right"],
   "jobs": ["explain", "ground", "compare", "connect"],
-  "pairsWith": ["ink-sketch", "wood-blocks"],
+  "pairsWith": ["wood-blocks"],
   "materialWords": ["卡纸", "剪纸", "纸艺", "折纸", "纸片", "纸雕"],
   "refs": [
     {

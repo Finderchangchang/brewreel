@@ -72,7 +72,7 @@ Use this when you already have a talking-head video and want explanatory picture
 node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 ```
 
-It transcribes the talk on your machine, asks DeepSeek to pick the lines and write `broll.json` (set `DEEPSEEK_API_KEY`), and renders: free motion clips are drawn for real, and AI clips start as solid-color stand-ins at no cost. The first transcription downloads a speech model of about 240 MB. If you are upgrading from v0.8, run `npm install` in `template` again first. Talking-head B-roll needs a full ffmpeg; the `imageio-ffmpeg` in the install step above is for it (the slim build bundled with Remotion is not enough). In this release the four AI clip styles have no reference images yet, so AI clips are stand-in previews only, while motion clips render normally. Real AI clips, price and review: [Talking-head B-roll](broll.en.md).
+It transcribes the talk on your machine, asks DeepSeek to pick the lines and write `broll.json` (set `DEEPSEEK_API_KEY`), and renders: free motion clips are drawn for real, and AI clips start as solid-color stand-ins at no cost. The first transcription downloads a speech model of about 240 MB. If you are upgrading from v0.8, run `npm install` in `template` again first. Talking-head B-roll needs a full ffmpeg; the `imageio-ffmpeg` in the install step above is for it (the slim build bundled with Remotion is not enough). AI clips come in three regular styles (wood blocks, clay stop-motion, layered paper) whose reference images ship with the repo; ink sketch is experimental, has no reference images yet and only works as a stand-in preview. Real AI clips, price and review: [Talking-head B-roll](broll.en.md).
 
 ### Use it in DeepSeek Harness
 

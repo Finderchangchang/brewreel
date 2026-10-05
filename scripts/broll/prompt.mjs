@@ -313,8 +313,14 @@ export const validateStyles = (doc, styles = {}, opts = {}) => {
   const whereOf = (clip, i) => (clip && typeof clip === 'object' && typeof clip.id === 'string' && clip.id ? clip.id : `clips[${i}]`);
   const def = defaultStyleId(styles);
   const stableText = stableStyleIds(styles).join('、') || def;
+  // 原因写在各风格的 summary 里（brick-diorama 会出凸点，ink-sketch 参考图未出），这里不写死某一个风格的毛病
+  const otherStable = stableStyleIds(styles).filter((id) => id !== def);
   const experimentalWarn = (field, id) =>
-    warn(field, `${styleLabel(styles[id], id)}是实验风格，不是默认，生成的画面会出凸点`, `换成 ${def}（${styles[def]?.name ?? '积木风'}）；一定要用就在审片页逐帧看有没有凸点`);
+    warn(
+      field,
+      `${styleLabel(styles[id], id)}是实验风格，不是默认：${styles[id]?.summary ?? '效果没有验证过'}`,
+      `换成 ${def}（${styles[def]?.name ?? '积木风'}）${otherStable.length ? `或 ${otherStable.join('、')}` : ''}；一定要用就先用 provider placeholder 看排版，真生成后在审片页逐帧看`,
+    );
 
   if (!isV2(doc)) {
     for (const k of ['styleAlt', 'thread']) {

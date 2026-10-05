@@ -26,7 +26,7 @@
   },
   "cameras": ["static", "slow-push", "pull-back", "pan-left", "pan-right", "orbit", "top-down"],
   "jobs": ["demonstrate", "explain", "ground", "compare", "quantify", "evoke", "connect"],
-  "pairsWith": ["ink-sketch"],
+  "pairsWith": [],
   "materialWords": ["塑料积木", "塑料", "积木"],
   "references": [
     "ref-3.jpg"

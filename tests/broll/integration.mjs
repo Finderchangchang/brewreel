@@ -144,7 +144,7 @@ const validateTests = () => {
   expectErr('副风格不在 pairsWith', {...doc, styleAlt: 'clay-stopmotion'}, ['styleAlt']);
   expectErr('AI 段 subject 写材质', {...doc, clips: [doc.clips[0], {...doc.clips[1], subject: '木头机器人'}]}, ['b02.subject', '材质词']);
   expectErr('AI 段 place 写材质', {...doc, clips: [doc.clips[0], {...doc.clips[1], place: '积木小仓库'}]}, ['b02.place']);
-  expectErr('第一段 AI 用 alt', {...doc, styleAlt: 'ink-sketch', clips: [doc.clips[0], {...doc.clips[1], look: 'alt', job: 'compare', camera: 'pan-right'}]}, ['第一段 AI 画面必须用主风格']);
+  expectErr('第一段 AI 用 alt', {...doc, styleAlt: 'paper-layers', clips: [doc.clips[0], {...doc.clips[1], look: 'alt', job: 'compare', camera: 'pan-right'}]}, ['第一段 AI 画面必须用主风格']);
   expectErr('v2 禁用词用 suggestV2', {...doc, clips: [doc.clips[0], {...doc.clips[1], subject: '乐高小人'}]}, ['乐高', '「机器人」']);
   expectErr('v1 的 AI 段写 list', {...readJson(path.join(DEMO, 'broll.json')), clips: [{...readJson(path.join(DEMO, 'broll.json')).clips[0], job: 'list'}]}, ['动效画面的 job'], {projectDir: DEMO});
   expectErr('风格不存在（v2）', {...doc, style: 'no-such'}, ['没有叫「no-such」的风格']);
@@ -172,17 +172,17 @@ const planTests = () => {
   check('v2 AI 段按风格带参考图和扩写模式', ai.styleId === 'wood-blocks' && ai.refs.length === 2 && ai.refs[0].endsWith(path.join('refs', 'character.jpg')) && ai.promptExpansion === 'disabled' && ai.prompt.startsWith('图1是角色参考，图2是材质参考。'));
   check('v2 提示词没有泄漏词', !/凸点|乐高|拼搭|颗粒|人仔|stud|lego|minifig/i.test(ai.prompt), ai.prompt);
   const alt = clone(doc);
-  alt.styleAlt = 'ink-sketch';
+  alt.styleAlt = 'paper-layers';
   const planAlt = buildPlan({doc: alt, cues: demoCues(), media: MEDIA, styles: STYLES, projectDir: MOTION});
   check('写了 styleAlt 但这段没用 alt：哈希不变', planAlt.clips[1].requestHash === ai.requestHash);
   const three = clone(doc);
-  three.styleAlt = 'ink-sketch';
+  three.styleAlt = 'paper-layers';
   three.clips = [
     {...doc.clips[1], id: 'b01', from: 'c3', to: 'c4', mode: 'full', job: 'demonstrate'},
     {...doc.clips[1], id: 'b02', from: 'c6', to: 'c7', look: 'alt', job: 'compare', camera: 'pan-right', link: 'new'},
   ];
   const p3 = buildPlan({doc: three, cues: demoCues(), media: MEDIA, styles: STYLES, projectDir: MOTION});
-  check('look alt 换风格、换参考图', p3.clips[1].styleId === 'ink-sketch' && p3.clips[1].refs[0].includes('ink-sketch') && p3.clips[1].prompt.includes('墨') && p3.clips[1].freezeNoise === 0.0005, p3.clips[1].prompt);
+  check('look alt 换风格、换参考图', p3.clips[1].styleId === 'paper-layers' && p3.clips[1].refs[0].includes('paper-layers') && p3.clips[1].prompt.includes('卡纸') && p3.clips[1].freezeNoise === 0.0005, p3.clips[1].prompt);
   const cont = clone(three);
   cont.clips[1].look = 'main';
   cont.clips[1].job = 'demonstrate';
@@ -333,7 +333,11 @@ const cliTests = () => {
   const skill = fs.readFileSync(path.join(ROOT, 'broll', 'SKILL-broll.md'), 'utf8');
   const cuesText = fs.readFileSync(path.join(DEMO, 'talk.srt'), 'utf8');
   const msg = buildMessages({skill, cuesText, picture: '竖版', flags: {...parseLlmArgs(['x']).flags}, styles})[1].content;
-  check('提示词：v2、选择表、模板、风格清单、AI 上限', msg.includes('version 写 2') && msg.includes('style 写 wood-blocks') && msg.includes('| 报一个确定的数') && msg.includes('- counter：') && msg.includes('积木风（wood-blocks）') && msg.includes('手绘线稿（ink-sketch）') && msg.includes('最多 2 段'), msg.slice(-1500));
+  check('提示词：v2、选择表、模板、风格清单、AI 上限', msg.includes('version 写 2') && msg.includes('style 写 wood-blocks') && msg.includes('| 报一个确定的数') && msg.includes('- counter：') && msg.includes('积木风（wood-blocks）') && msg.includes('分层纸艺（paper-layers）') && msg.includes('最多 2 段'), msg.slice(-1500));
+  // 实验风格（brick-diorama、ink-sketch）不进风格清单和示例；SKILL-broll 的风格表里只当实验风格提一句
+  const menuPart = msg.split('## 风格清单')[1].split('## 正确示例 1')[0];
+  const examplePart = msg.split('## 正确示例 1')[1].split('## 这次必须遵守')[0];
+  check('提示词：风格清单和示例不推荐实验风格', !/ink-sketch|brick-diorama/.test(menuPart) && !/ink-sketch|brick-diorama/.test(examplePart) && examplePart.includes('"styleAlt": "paper-layers"'), menuPart + examplePart.slice(0, 800));
   check('提示词：去掉旧约束', !msg.includes('浅蓝灰积木机器人') && !msg.includes('积木工作台') && !msg.includes('塑料积木（实验）（brick-diorama）：'));
   // 示例 1 照这次的句子能通过校验
   const ex = msg.split('## 正确示例 1')[1].split('## 正确示例 2')[0];

@@ -22,7 +22,7 @@
   },
   "cameras": ["static", "slow-push", "pull-back", "pan-left", "pan-right", "orbit", "top-down"],
   "jobs": ["demonstrate", "explain", "ground", "compare", "quantify", "evoke", "connect"],
-  "pairsWith": ["ink-sketch", "paper-layers"],
+  "pairsWith": ["paper-layers"],
   "materialWords": ["木积木", "积木", "木块", "榉木", "木头"],
   "refs": [
     {

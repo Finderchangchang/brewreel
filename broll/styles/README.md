@@ -17,13 +17,15 @@ broll/styles/<id>/
 
 | id | 名字 | 状态 | 适合的 job | 运镜 | 参考图 |
 |---|---|---|---|---|---|
-| `wood-blocks` | 积木风（木积木） | 默认主风格 | 全部 7 种 | 全部 7 种 | 还没出 |
-| `clay-stopmotion` | 黏土定格 | 可用 | demonstrate、ground、evoke、connect | 不用 orbit、top-down | 还没出 |
-| `paper-layers` | 分层纸艺 | 可用 | explain、ground、compare、connect | 只用 static、slow-push、pan-left、pan-right | 还没出 |
-| `ink-sketch` | 手绘线稿 | 可用，适合当副风格 | explain、compare、quantify、connect | 只用 static、slow-push、pan-left、pan-right | 还没出 |
+| `wood-blocks` | 积木风（木积木） | 默认主风格 | 全部 7 种 | 全部 7 种 | 已出 |
+| `clay-stopmotion` | 黏土定格 | 可用 | demonstrate、ground、evoke、connect | 不用 orbit、top-down | 已出 |
+| `paper-layers` | 分层纸艺 | 可用 | explain、ground、compare、connect | 只用 static、slow-push、pan-left、pan-right | 已出 |
+| `ink-sketch` | 手绘线稿（实验） | 实验，不是默认 | explain、compare、quantify、connect | 只用 static、slow-push、pan-left、pan-right | 还没出（角色图头顶总有天线） |
 | `brick-diorama` | 塑料积木（实验） | 实验，不是默认 | 全部 7 种 | 全部 7 种 | 有 `ref-3.jpg`（带凸点） |
 
 `brick-diorama` 是 v0.8 的老风格。它生成的 5 段画面全部带凸点，参考图本身也带凸点，所以标成实验风格：校验会提醒，也不能当别的风格的副风格。留着是为了让 version 1 的老 `broll.json` 照常能跑。它的 `look`、`forbid`、`negative`、`camera`、`references` 五个字段保持 v0.8 原样（改了会让老项目的请求哈希变掉、重新花钱），version 2 读 `lookV2`、`forbidV2`。要下线就把整个目录移走：其他风格不受影响，只是写了 `brick-diorama` 的老文件会在校验时报「没有这个风格」。
+
+`ink-sketch` 在 v0.9 降成实验风格：两轮 image-01 出的角色图，手绘机器人头顶都有天线，和共用角色（圆头、头顶光滑）对不上，所以这一版不发参考图。它只能用 `provider: placeholder` 占位预览，校验会提醒，也不能当别的风格的副风格。已知问题和下一步（拿 `wood-blocks` 的角色图当参考出线稿）见 [`ink-sketch/refs/README.md`](ink-sketch/refs/README.md)。
 
 参考图还没出的风格可以用 `provider: placeholder` 排版、预览；要真生成（`minimax-h3`），先由维护者出参考图，否则脚本会在提交前停下，说清缺哪张、下一步怎么做，不会花钱。
 

@@ -182,10 +182,10 @@ The same five templates with Chinese sentences are in `SKILL-broll.md`.
 
 | style | Name | Jobs | Cameras | Second styles it pairs with |
 |---|---|---|---|---|
-| `wood-blocks` | Wood blocks (default, 「积木风」) | all 7 | all 7 | `ink-sketch`, `paper-layers` |
-| `clay-stopmotion` | Clay stop-motion | demonstrate, ground, evoke, connect | static, slow-push, pull-back, pan-left, pan-right | `ink-sketch`, `paper-layers` |
-| `paper-layers` | Layered paper | explain, ground, compare, connect | static, slow-push, pan-left, pan-right | `ink-sketch`, `wood-blocks` |
-| `ink-sketch` | Ink sketch | explain, compare, quantify, connect | static, slow-push, pan-left, pan-right | `paper-layers`, `wood-blocks` |
+| `wood-blocks` | Wood blocks (default, 「积木风」) | all 7 | all 7 | `paper-layers` |
+| `clay-stopmotion` | Clay stop-motion | demonstrate, ground, evoke, connect | static, slow-push, pull-back, pan-left, pan-right | `paper-layers` |
+| `paper-layers` | Layered paper | explain, ground, compare, connect | static, slow-push, pan-left, pan-right | `wood-blocks` |
+| `ink-sketch` | Ink sketch (experimental) | Experimental: no reference images yet, `placeholder` previews only, and it cannot be a second style. Do not pick it unless the user names it | | |
 | `brick-diorama` | Plastic bricks (experimental) | Experimental, not the default, kept only for v0.8 files. Do not pick it unless the user names it | | |
 
 The 7 AI jobs: demonstrate, explain, ground, compare, quantify, evoke, connect. `list` and `stress` are for motion clips only.
@@ -214,7 +214,7 @@ Two beats use `beats` instead of `action` and `end`:
 "beats": [{"action": "拿起一块方块放到桌上", "end": "方块放在桌面中央"}, {"action": "再把一块方块靠上去", "end": "两块方块靠在一起"}]
 ```
 
-A comparison in the second style (the top level needs `"styleAlt": "ink-sketch"`, and an earlier AI clip must use the main style):
+A comparison in the second style (the top level needs `"styleAlt": "paper-layers"`, and an earlier AI clip must use the main style):
 
 ```json
 {"id": "b07", "from": "c14", "to": "c14", "source": "ai", "mode": "split", "job": "compare", "look": "alt", "plain": "两种做法对照", "place": "两张桌子", "subject": "机器人", "action": "看向左边的乱方块再看向右边的齐方块", "end": "机器人站在整齐的那一桌前", "camera": "pan-right"}
@@ -277,7 +277,7 @@ Caption position is fixed by the template. `full` and `pip` sit in the lower qua
 
 Motion clips are free whatever the provider.
 
-If a style has no reference images yet, `make-talk` stops before submitting (exit code 2, nothing spent) and says which style to switch to or to use motion instead. In this release none of the four regular styles has reference images yet, so AI clips can only be previewed with `placeholder`. The maintainer makes reference images, and making them costs money; do not run `make-style-refs.mjs` yourself.
+If a style has no reference images yet, `make-talk` stops before submitting (exit code 2, nothing spent) and says which style to switch to or to use motion instead. In this release the three regular styles (`wood-blocks`, `clay-stopmotion`, `paper-layers`) ship with reference images; the ink sketch `ink-sketch` is experimental and has none yet, so with it AI clips can only be previewed with `placeholder`. The maintainer makes reference images, and making them costs money; do not run `make-style-refs.mjs` yourself.
 
 If the same `--out` already holds paid clips from `minimax-h3`, running with `placeholder` or `local` stops (exit code 2) instead of replacing them with placeholders. Add `--provider minimax-h3` back as the message says, or use another `--out`.
 
@@ -364,7 +364,7 @@ Each validation error is one line, `clip.field：problem`, followed by a 怎么�
 
 Errors while generating and rendering:
 
-- A style has no reference images: stop (exit code 2, nothing spent). Pick one of the fixes in the message: switch to a style that has them (none yet in this release), use motion clips or keep the face, or preview with `placeholder` first. Do not make reference images yourself.
+- A style has no reference images: stop (exit code 2, nothing spent). Pick one of the fixes in the message: switch to a style that has them (`wood-blocks`, `clay-stopmotion`, `paper-layers`), use motion clips or keep the face, or preview with `placeholder` first. Do not make reference images yourself.
 - No full ffmpeg: stop (exit code 2). Ask the user to `pip install imageio-ffmpeg` or install a system ffmpeg, then run the same command again.
 - Over budget (exit code 3): cut AI clips (motion clips are free), shorten `from` / `to`, or ask the user to raise `budgetYuan`.
 - Auth failure: stop. Ask the user to check `MINIMAX_API_KEY` and that the key and the host are the same region. Do not retry. Do not write the key into a file or a log.

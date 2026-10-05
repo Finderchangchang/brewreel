@@ -1,6 +1,6 @@
 # 黏土定格（clay-stopmotion）参考图
 
-这里放两张图，还没出：
+这里放两张图，v0.9 已出、随仓库发布（从 image-01 的候选里人工挑的：圆头光滑、没有凸点、没有嘴、没有字）：
 
 - `character.jpg`：图1，角色。机器人正面全身，单独站着。
 - `material.jpg`：图2，材质。一片没有角色的空场景。
@@ -14,8 +14,8 @@ node scripts/broll/make-style-refs.mjs --style clay-stopmotion --n 2 --yes    # 
 
 挑图标准：任何表面都没有圆形凸点；机器人头顶光滑、两只手都是实心圆球；画面里没有字；两张图看着是同一个世界。
 
-没有这两张图时，这个风格只能用 `provider: placeholder` 预览；`minimax-h3` 会在提交前停下，不花钱。
+要重出时先把旧图移走（已有的图不会被覆盖）。没有这两张图时，这个风格只能用 `provider: placeholder` 预览；`minimax-h3` 会在提交前停下，不花钱。
 
 ## English
 
-Two images go here (not made yet): `character.jpg` (image 1, the robot, front view, full body) and `material.jpg` (image 2, an empty scene without characters). Prompts are in `../style.json` → `refs`; the robot's shape and colours come from `broll/character.json`. Run the commands above (`--dry-run` first, then `--yes`), rename the chosen candidates, and check: no round studs on any surface, smooth head top, both hands solid balls, no text, both images look like the same world. Without them this style only works with `provider: placeholder`; `minimax-h3` stops before submitting and charges nothing.
+Two images go here (made for v0.9 and shipped with the repo, picked by eye from image-01 candidates): `character.jpg` (image 1, the robot, front view, full body) and `material.jpg` (image 2, an empty scene without characters). Prompts are in `../style.json` → `refs`; the robot's shape and colours come from `broll/character.json`. To redo them, move the old images away first (existing images are never overwritten), run the commands above (`--dry-run` first, then `--yes`), rename the chosen candidates, and check: no round studs on any surface, smooth head top, both hands solid balls, no text, both images look like the same world. Without them this style only works with `provider: placeholder`; `minimax-h3` stops before submitting and charges nothing.

@@ -40,7 +40,10 @@ const show = (r) => JSON.stringify(r, null, 1);
 
 const styles = readStyles(ROOT);
 const character = loadCharacter(ROOT);
-const STABLE = ['wood-blocks', 'clay-stopmotion', 'paper-layers', 'ink-sketch'];
+// v0.9 发布的三种正式风格；ink-sketch 是 v0.9 新做的风格包，但参考图没出，降成实验风格
+const FORMAL = ['wood-blocks', 'clay-stopmotion', 'paper-layers'];
+const STABLE = [...FORMAL, 'ink-sketch'];
+const EXPERIMENTAL = ['brick-diorama', 'ink-sketch'];
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'broll-styles-'));
 const png1 = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const jpg1 = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 0xff, 0xd9]);
@@ -64,7 +67,12 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   check('wood-blocks 对外叫积木风', styles['wood-blocks'].name === '积木风');
   check('brick-diorama 是实验、非默认', styles['brick-diorama'].status === 'experimental' && styles['brick-diorama'].default === false);
   check('brick-diorama 说明会出凸点', String(styles['brick-diorama'].summary).includes('凸点') && String(styles['brick-diorama'].note).includes('凸点'));
-  check('没有风格把实验风格当副风格', Object.values(styles).every((st) => !(st.pairsWith ?? []).includes('brick-diorama')));
+  check('ink-sketch 是实验、非默认', styles['ink-sketch'].status === 'experimental' && styles['ink-sketch'].default === false && styles['ink-sketch'].name.includes('实验'));
+  check('ink-sketch 说明参考图未出、只能占位预览', String(styles['ink-sketch'].summary).includes('参考图未出') && String(styles['ink-sketch'].summary).includes('只能占位预览') && String(styles['ink-sketch'].note).includes('天线'));
+  check('正式风格正好三种', JSON.stringify(Object.keys(styles).filter((id) => styles[id].status !== 'experimental').sort()) === JSON.stringify([...FORMAL].sort()), Object.keys(styles).filter((id) => styles[id].status !== 'experimental').join(','));
+  check('没有风格把实验风格当副风格', Object.values(styles).every((st) => !(st.pairsWith ?? []).some((p) => EXPERIMENTAL.includes(p))), Object.entries(styles).map(([id, st]) => `${id}:${(st.pairsWith ?? []).join('/')}`).join(' '));
+  check('正式风格的参考图都在仓库里', FORMAL.every((id) => styleRefs(id, styles[id]).every((r) => r.exists)));
+  check('ink-sketch 的参考图不在仓库里', styleRefs('ink-sketch', styles['ink-sketch']).every((r) => !r.exists));
   check('白底风格调低静帧容差', styles['paper-layers'].freezeNoise < DEFAULT_FREEZE_NOISE && styles['ink-sketch'].freezeNoise < DEFAULT_FREEZE_NOISE && styles['wood-blocks'].freezeNoise === DEFAULT_FREEZE_NOISE);
   check('新风格关掉提示词扩写', STABLE.every((id) => styles[id].promptExpansion === 'disabled'));
   check('纸艺不用 orbit', !styles['paper-layers'].cameras.includes('orbit'));
@@ -173,10 +181,10 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   check('continue 的开场在主体之后、动作之前', cp.indexOf('主体：') < cp.indexOf('开场画面') && cp.indexOf('开场画面') < cp.indexOf('动作：'), cp);
 
   // alt 段用副风格的 look 和参考图说明
-  const adoc = base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt', job: 'compare'})]});
+  const adoc = base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt', job: 'compare'})]});
   const ap = buildPromptV2({doc: adoc, clip: adoc.clips[1], genSec: 4, styles, character});
-  check('alt 段用副风格', ap.styleId === 'ink-sketch' && ap.prompt.includes(styles['ink-sketch'].look) && !ap.prompt.includes(styles['wood-blocks'].look), ap.prompt);
-  check('alt 段带线稿的 forbid', ap.prompt.endsWith(styles['ink-sketch'].forbid));
+  check('alt 段用副风格', ap.styleId === 'paper-layers' && ap.prompt.includes(styles['paper-layers'].look) && !ap.prompt.includes(styles['wood-blocks'].look), ap.prompt);
+  check('alt 段带纸艺的 forbid', ap.prompt.endsWith(styles['paper-layers'].forbid));
 
   // 实验风格在 v2 用 lookV2 / forbidV2，不带 v0.8 那几句反着写的话
   const bp = buildPromptV2({doc: base({style: 'brick-diorama', clips: [c('b01')]}), clip: c('b01'), genSec: 4, styles, character});
@@ -206,33 +214,35 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
     return r;
   };
 
-  const a = ok('A 正确：主积木 + 副线稿做对比', base({styleAlt: 'ink-sketch', thread: '机器人把乱方块搭成一座桥', clips: [c('b01', {job: 'demonstrate'}), c('b02', {look: 'alt', job: 'compare', action: '左边画乱线右边画直线', end: '两边并排'}), c('b03', {link: 'new', end: '方块搭成一座小桥'})]}));
+  const a = ok('A 正确：主积木 + 副纸艺做对比', base({styleAlt: 'paper-layers', thread: '机器人把乱方块搭成一座桥', clips: [c('b01', {job: 'demonstrate'}), c('b02', {look: 'alt', job: 'compare', action: '左边摆乱的右边摆齐的', end: '两边并排'}), c('b03', {link: 'new', end: '方块搭成一座小桥'})]}));
   check('A 没有提醒', a.warnings.length === 0, show(a.warnings));
   ok('A2 正确：同风格接力', base({clips: [c('b01', {end: '方块堆成一堆'}), c('b02', {link: 'continue', action: '把那堆方块搭成小桥', end: '小桥搭好'})]}));
-  ok('副风格切 2 次可以', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt'}), c('b03', {look: 'alt'}), c('b04')]}));
-  bad('规则 1：段里写 style', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {style: 'clay-stopmotion'})]}), 'b02.style', ['段里不能写 style', '"look": "alt"']);
+  ok('副风格切 2 次可以', base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt'}), c('b03', {look: 'alt'}), c('b04')]}));
+  bad('规则 1：段里写 style', base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {style: 'clay-stopmotion'})]}), 'b02.style', ['段里不能写 style', '"look": "alt"']);
   bad('规则 2：alt 但没有 styleAlt', base({clips: [c('b01'), c('b02', {look: 'alt'})]}), 'b02.look', ['顶层没有 styleAlt', '"styleAlt"']);
   bad('规则 3：styleAlt 和 style 一样', base({styleAlt: 'wood-blocks', clips: [c('b01')]}), 'styleAlt', ['一样']);
-  bad('规则 3：副风格不在 pairsWith', base({styleAlt: 'clay-stopmotion', clips: [c('b01'), c('b02', {look: 'alt', job: 'evoke'})]}), 'styleAlt', ['不搭配', 'ink-sketch']);
+  bad('规则 3：副风格不在 pairsWith', base({styleAlt: 'clay-stopmotion', clips: [c('b01'), c('b02', {look: 'alt', job: 'evoke'})]}), 'styleAlt', ['不搭配', 'paper-layers']);
   bad('规则 3：实验风格不能当副风格', base({styleAlt: 'brick-diorama', clips: [c('b01')]}), 'styleAlt', ['不搭配']);
-  bad('规则 4：第一段用副风格', base({styleAlt: 'ink-sketch', clips: [c('b01', {look: 'alt'}), c('b02')]}), 'b01.look', ['第一段', 'main']);
-  bad('规则 5：副风格超过一半', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt'}), c('b03', {look: 'alt'}), c('b04', {look: 'alt'})]}), 'clips', ['超过一半']);
-  bad('规则 6：来回切 3 次', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt'}), c('b03'), c('b04', {look: 'alt'})]}), 'clips', ['切了 3 次']);
+  const inkAlt = bad('规则 3：手绘线稿（实验）不能当副风格', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt', job: 'compare'})]}), 'styleAlt', ['不搭配']);
+  check('规则 3：报错列的副风格里没有实验风格', inkAlt.errors.filter((e) => e.where === 'styleAlt').every((e) => !EXPERIMENTAL.some((x) => e.fix.includes(x))), show(inkAlt.errors));
+  bad('规则 4：第一段用副风格', base({styleAlt: 'paper-layers', clips: [c('b01', {look: 'alt'}), c('b02')]}), 'b01.look', ['第一段', 'main']);
+  bad('规则 5：副风格超过一半', base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt'}), c('b03', {look: 'alt'}), c('b04', {look: 'alt'})]}), 'clips', ['超过一半']);
+  bad('规则 6：来回切 3 次', base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt'}), c('b03'), c('b04', {look: 'alt'})]}), 'clips', ['切了 3 次']);
   bad('规则 7：第一段写 continue', base({clips: [c('b01', {link: 'continue'})]}), 'b01.link', ['前面没有画面', 'new']);
-  bad('规则 7：换风格还 continue', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt', link: 'continue'})]}), 'b02.link', ['接不上']);
+  bad('规则 7：换风格还 continue', base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt', link: 'continue'})]}), 'b02.link', ['接不上']);
   bad('规则 8：黏土做 quantify', base({styleAlt: 'clay-stopmotion', style: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt', job: 'quantify'})]}), 'b02.job', ['黏土定格不适合 quantify', 'counter']);
   bad('规则 8：纸艺用 orbit', base({style: 'paper-layers', clips: [c('b01', {camera: 'orbit'})]}), 'b01.camera', ['不用 orbit', 'pan-left']);
   bad('规则 8：AI 段写动效的 job', base({clips: [c('b01', {job: 'list'})]}), 'b01.job', ['动效画面的 job', 'source: motion']);
   bad('规则 9：place 照抄积木工作台', base({style: 'clay-stopmotion', clips: [c('b01', {job: 'demonstrate', place: '积木工作台'})]}), 'b01.place', ['积木', '只写地点']);
   bad('规则 9：subject 照抄浅蓝灰积木机器人', base({clips: [c('b01', {subject: '浅蓝灰积木机器人'})]}), 'b01.subject', ['积木', '只写「机器人」']);
-  bad('规则 10：线稿段动作写黏土', base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt', action: '捏一团黏土'})]}), 'b02', ['手绘线稿', '黏土定格的「黏土」']);
+  bad('规则 10：纸艺段动作写黏土', base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt', action: '捏一团黏土'})]}), 'b02', ['分层纸艺', '黏土定格的「黏土」']);
   bad('规则 10：beats 里也查', base({style: 'paper-layers', clips: [{...c('b01', {action: undefined, end: undefined}), beats: [{action: '堆起木块', end: '木块堆好'}, {action: '推倒', end: '倒了'}]}]}), 'b01', ['积木风的「木块」']);
   bad('规则 11：subject 里没有机器人', base({clips: [c('b01', {subject: '小推车'})]}), 'b01.subject', ['机器人']);
   bad('subject 写了颜色', base({clips: [c('b01', {subject: '蓝色机器人'})]}), 'b01.subject', ['颜色']);
   bad('规则 12：主风格不存在', base({style: 'no-such', clips: [c('b01')]}), 'style', ['没有叫「no-such」', 'wood-blocks']);
   bad('规则 12：主风格没写', base({style: undefined, clips: [c('b01')]}), 'style', ['没写', 'wood-blocks']);
   bad('规则 12：副风格不存在', base({styleAlt: 'no-such', clips: [c('b01')]}), 'styleAlt', ['没有叫「no-such」']);
-  const r13 = ok('规则 13：写了副风格没用只提醒', base({styleAlt: 'ink-sketch', clips: [c('b01')]}));
+  const r13 = ok('规则 13：写了副风格没用只提醒', base({styleAlt: 'paper-layers', clips: [c('b01')]}));
   check('规则 13：提醒内容', r13.warnings.some((w) => w.where === 'styleAlt' && w.problem.includes('没有一段用它')), show(r13.warnings));
   bad('look 写错', base({clips: [c('b01', {look: 'side'})]}), 'b01.look', ['不在可选值里']);
   bad('link 写错', base({clips: [c('b01', {link: 'next'})]}), 'b01.link', ['不在可选值里']);
@@ -244,11 +254,13 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   // 实验风格只提醒
   const exp = ok('v2 用实验风格不拦截', base({style: 'brick-diorama', clips: [c('b01')]}));
   check('v2 用实验风格会提醒', exp.warnings.some((w) => w.where === 'style' && w.problem.includes('凸点') && w.fix.includes('wood-blocks')), show(exp.warnings));
+  const inkMain = ok('v2 用手绘线稿（实验）当主风格不拦截', base({style: 'ink-sketch', clips: [c('b01')]}));
+  check('手绘线稿的提醒说参考图未出，不说凸点', inkMain.warnings.some((w) => w.where === 'style' && w.problem.includes('实验风格') && w.problem.includes('参考图未出') && !w.problem.includes('凸点') && w.fix.includes('wood-blocks') && w.fix.includes('placeholder')), show(inkMain.warnings));
 
   // 动效段不归风格管
   const motion = {id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'split', job: 'list', template: 'checklist', plain: '两样东西', slots: {items: ['口播视频', '预算']}};
   ok('动效段不查风格规则', base({clips: [motion, c('b02', {from: 'c4', to: 'c4'})]}));
-  bad('动效后第一段 AI 用副风格也算第一段', base({styleAlt: 'ink-sketch', clips: [motion, c('b02', {look: 'alt'})]}), 'b02.look', ['第一段']);
+  bad('动效后第一段 AI 用副风格也算第一段', base({styleAlt: 'paper-layers', clips: [motion, c('b02', {look: 'alt'})]}), 'b02.look', ['第一段']);
   bad('接在动效段后面写 continue', base({clips: [c('b01'), {...motion, id: 'b02'}, c('b03', {link: 'continue'})]}), 'b03.link', ['动效画面', '接不上']);
   ok('只有动效段', base({clips: [motion]}));
 
@@ -265,7 +277,7 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
 
 // ───────── 参考图、请求哈希、风格清单 ─────────
 {
-  const doc = base({styleAlt: 'ink-sketch', clips: [c('b01'), c('b02', {look: 'alt', job: 'compare'})]});
+  const doc = base({styleAlt: 'paper-layers', clips: [c('b01'), c('b02', {look: 'alt', job: 'compare'})]});
   const fakeRoot = path.join(tmp, 'root');
   fs.mkdirSync(path.join(fakeRoot, 'broll'), {recursive: true});
   fs.cpSync(path.join(ROOT, 'broll', 'styles'), path.join(fakeRoot, 'broll', 'styles'), {recursive: true});
@@ -291,7 +303,7 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   const refs = clipRefs({doc: woodOnly, clip: woodOnly.clips[0], styles, root: fakeRoot});
   check('每段参考图按图1角色、图2材质排', refs.length === 2 && refs[0].role === '角色' && refs[1].role === '材质' && refs.every((r) => r.exists && path.isAbsolute(r.abs)), show(refs));
   const altRefs = clipRefs({doc, clip: doc.clips[1], styles, root: fakeRoot});
-  check('alt 段用副风格的参考图', altRefs.every((r) => r.abs.includes(`${path.sep}ink-sketch${path.sep}`)) && altRefs.every((r) => !r.exists));
+  check('alt 段用副风格的参考图', altRefs.every((r) => r.abs.includes(`${path.sep}paper-layers${path.sep}`)) && altRefs.every((r) => !r.exists));
   const legacy = styleRefs('brick-diorama', styles['brick-diorama']);
   check('brick-diorama 的参考图是 ref-3.jpg', legacy.length === 1 && legacy[0].file === 'ref-3.jpg' && legacy[0].exists);
 
@@ -299,7 +311,7 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   check('哈希字段：风格、look、link、扩写模式', hf.styleId === 'wood-blocks' && hf.look === 'main' && hf.link === 'new' && hf.promptExpansion === 'disabled' && hf.prevEnd === null, show(hf));
   check('哈希字段：参考图 sha256', hf.referenceSha256.length === 2 && hf.referenceSha256.every((h) => /^[0-9a-f]{64}$/.test(h)), show(hf));
   const hfAlt = hashFieldsV2({doc, clip: doc.clips[1], styles, root: fakeRoot});
-  check('哈希字段：缺的图记 missing', hfAlt.referenceSha256.every((h) => h.startsWith('missing:refs/')) && hfAlt.styleId === 'ink-sketch', show(hfAlt));
+  check('哈希字段：缺的图记 missing', hfAlt.referenceSha256.every((h) => h.startsWith('missing:refs/')) && hfAlt.styleId === 'paper-layers', show(hfAlt));
   const cdoc = base({clips: [c('b01', {end: '方块堆成一堆'}), c('b02', {link: 'continue'})]});
   const hfc = hashFieldsV2({doc: cdoc, clip: cdoc.clips[1], prev: prevForContinue(cdoc, cdoc.clips[1]), styles, root: fakeRoot});
   check('哈希字段：continue 带上一段结尾', hfc.prevEnd === '方块堆成一堆' && hfc.link === 'continue');
@@ -309,7 +321,13 @@ const has = (r, where, ...needles) => r.errors.some((e) => e.where === where && 
   check('brick-diorama 不带扩写模式', hashFieldsV2({doc: base({style: 'brick-diorama', clips: [c('b01')]}), clip: c('b01'), styles}).promptExpansion === null);
 
   const menu = styleMenu(styles, 'wood-blocks').join('\n');
-  check('风格清单：主风格 + 能搭的副风格', menu.includes('积木风（wood-blocks）') && menu.includes('ink-sketch') && menu.includes('paper-layers') && !menu.includes('brick-diorama') && !menu.includes('clay-stopmotion'), menu);
+  check('风格清单：主风格 + 能搭的副风格', menu.includes('积木风（wood-blocks）') && menu.includes('paper-layers') && !menu.includes('ink-sketch') && !menu.includes('brick-diorama') && !menu.includes('clay-stopmotion'), menu);
+  const leaky = FORMAL.filter((id) => EXPERIMENTAL.some((x) => styleMenu(styles, id).join('\n').includes(x)));
+  check('正式风格当主风格时，风格清单不推荐实验风格', leaky.length === 0, leaky.join(','));
+  // 真仓库：正式风格的参考图齐了；手绘线稿（实验）用 minimax-h3 会在提交前停下，给出换风格的下一步
+  const inkMiss = missingRefs(base({style: 'ink-sketch', provider: 'minimax-h3', clips: [c('b01')]}), styles);
+  check('手绘线稿缺参考图：停下并说清下一步', inkMiss.length === 1 && inkMiss[0].where === 'style' && inkMiss[0].problem.includes('手绘线稿') && inkMiss[0].problem.includes('没有花钱') && FORMAL.every((id) => inkMiss[0].fix.includes(id)) && inkMiss[0].fix.includes('placeholder'), show(inkMiss));
+  check('三种正式风格不缺参考图', FORMAL.every((id) => missingRefs(base({style: id, provider: 'minimax-h3', clips: [c('b01', {job: styles[id].jobs[0]})]}), styles).length === 0));
 }
 
 // ───────── H3 请求体 ─────────
