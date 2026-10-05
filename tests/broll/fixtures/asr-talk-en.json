@@ -1,0 +1,12 @@
+{
+  "source": "SenseVoice int8 2024-07-17, synthetic English TTS voice, 2 chunks (chunk boundary + blank token after comma); text and timestamps only",
+  "model": "sensevoice-int8-20240717",
+  "lang": "auto",
+  "detected": "en",
+  "audioSec": 22.976,
+  "chunks": [0,7.966469,22.976],
+  "breaks": [0,29],
+  "silences": [{"start":2.91125,"end":3.78625},{"start":5.1005,"end":5.539187},{"start":7.520938,"end":8.412},{"start":9.197062,"end":9.617062},{"start":10.214313,"end":10.694688},{"start":11.09425,"end":11.516625},{"start":12.436375,"end":13.289312},{"start":15.429438,"end":16.3135},{"start":17.727563,"end":18.13325},{"start":19.144875,"end":20.014813},{"start":22.214313,"end":22.976}],
+  "tokens": ["I"," have"," been"," building"," an"," open"," source"," tool"," called"," Bru","re","el"," You"," record"," a"," short"," talk",","," and"," it"," pick","s"," the"," lines"," that"," need"," a"," picture",".","For"," example",","," when"," I"," say",","," first",","," list"," the"," steps",","," a"," short"," animation"," shows"," up"," right"," there"," before"," it"," spend","s"," any"," money",","," it"," gives"," you"," a"," quote",","," ","Nothing"," is"," generated"," until"," you"," say"," yes","."],
+  "times": [0.06,0.24,0.42,0.6,0.9,1.08,1.38,1.74,2.04,2.4,2.64,2.76,3.66,3.96,4.32,4.5,4.86,5.16,5.4,5.58,5.82,6,6.12,6.24,6.54,6.78,6.96,7.08,7.86,8.386,8.686,9.106,9.586,9.766,9.946,10.126,10.606,11.026,11.446,11.806,11.986,12.406,13.186,13.426,13.726,14.386,14.686,14.926,15.106,16.246,16.606,16.846,17.026,17.206,17.446,17.686,17.986,18.286,18.526,18.646,18.826,19.066,19.126,19.966,20.326,20.566,21.106,21.406,21.586,21.826,22.846]
+}
