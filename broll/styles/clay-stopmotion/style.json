@@ -1,0 +1,42 @@
+{
+  "id": "clay-stopmotion",
+  "name": "黏土定格",
+  "nameEn": "Clay stop-motion",
+  "status": "stable",
+  "default": false,
+  "summary": "手捏黏土定格动画，有温度、偏生活，适合动手做事、点一个地方、给气氛、把两件事连起来；不做数量",
+  "summaryEn": "hand-made clay stop-motion, warm and homely; good for doing things, places, mood and links; not for amounts",
+  "look": "手捏黏土定格动画，微距实拍，柔和顶光。所有物件都是哑光彩色黏土捏的，表面有轻微指纹和不平整的手作痕迹，边缘圆润。配色温暖：奶油白、浅蓝灰、陶土橙、苔绿。",
+  "character": "角色是一个黏土捏的玩具机器人，脸上只有两只眼睛",
+  "characterEn": "a toy robot hand-sculpted from matte modelling clay, with only two eyes on its face",
+  "ground": "地面是一块米色亚麻桌布",
+  "forbid": "画面里没有文字、字母、数字、商标和真实人物，没有人声对白。",
+  "camera": {
+    "static": "镜头固定不动",
+    "slow-push": "镜头缓慢推近",
+    "pull-back": "镜头缓慢拉远",
+    "pan-left": "镜头缓慢向左摇",
+    "pan-right": "镜头缓慢向右摇"
+  },
+  "cameras": ["static", "slow-push", "pull-back", "pan-left", "pan-right"],
+  "jobs": ["demonstrate", "ground", "evoke", "connect"],
+  "pairsWith": ["ink-sketch", "paper-layers"],
+  "materialWords": ["黏土", "粘土", "陶泥", "橡皮泥", "彩泥"],
+  "refs": [
+    {
+      "file": "refs/character.jpg",
+      "role": "角色",
+      "aspect": "1:1",
+      "prompt": "Macro photograph of a stop-motion puppet, front view, full body: {character} Soft fingerprints and hand-made texture on the clay. It stands alone on a beige linen tablecloth in front of a softly blurred cream background. Soft top light, shallow depth of field. Nothing is written anywhere in the image."
+    },
+    {
+      "file": "refs/material.jpg",
+      "role": "材质",
+      "aspect": "16:9",
+      "prompt": "Macro photograph of an empty miniature stop-motion set on a beige linen tablecloth: small handmade objects sculpted from matte coloured clay, a little cup, a round stool, a few rounded pebbles and a tiny potted plant, in cream white, light blue-grey, terracotta orange and moss green. Soft fingerprints and uneven hand-made texture, rounded edges. No characters in the scene. Soft top light, shallow depth of field. Nothing is written anywhere in the image."
+    }
+  ],
+  "promptExpansion": "disabled",
+  "freezeNoise": 0.003,
+  "motionTheme": "studio-blue-orange"
+}

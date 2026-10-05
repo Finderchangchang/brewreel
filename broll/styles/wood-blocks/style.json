@@ -1,0 +1,44 @@
+{
+  "id": "wood-blocks",
+  "name": "积木风",
+  "nameEn": "Wood blocks",
+  "status": "default",
+  "default": true,
+  "summary": "桌面上的木头积木小世界，什么内容都能配，最适合讲步骤、讲数量（用块数表现）、讲一样东西",
+  "summaryEn": "a little world of wooden toy blocks on a table; fits every job, best for steps, amounts (shown as block counts) and showing one object",
+  "look": "桌面上的原木积木小世界，微距实拍，浅景深，柔和侧光。所有积木都是榉木做的实心立方体、长方体、圆柱和拱形，表面是哑光彩漆，看得到木纹，棱角磨圆，每一面都是平整光滑的素面。低饱和的蓝灰、暖棕，点缀少量橙、青绿。",
+  "character": "角色是一个木头做的玩具机器人，表面刷哑光漆",
+  "characterEn": "a toy robot carved from beech wood and coated in matte paint",
+  "ground": "地面是一整块平整光滑的浅色木桌面",
+  "forbid": "画面里没有文字、字母、数字、商标和真实人物，没有人声对白。",
+  "camera": {
+    "static": "镜头固定不动",
+    "slow-push": "镜头缓慢推近",
+    "pull-back": "镜头缓慢拉远",
+    "pan-left": "镜头缓慢向左摇",
+    "pan-right": "镜头缓慢向右摇",
+    "orbit": "镜头缓缓环绕主体",
+    "top-down": "镜头从正上方俯拍"
+  },
+  "cameras": ["static", "slow-push", "pull-back", "pan-left", "pan-right", "orbit", "top-down"],
+  "jobs": ["demonstrate", "explain", "ground", "compare", "quantify", "evoke", "connect"],
+  "pairsWith": ["ink-sketch", "paper-layers"],
+  "materialWords": ["木积木", "积木", "木块", "榉木", "木头"],
+  "refs": [
+    {
+      "file": "refs/character.jpg",
+      "role": "角色",
+      "aspect": "1:1",
+      "prompt": "Macro product photograph, front view, full body: {character} It stands alone on a smooth plain light wooden tabletop in front of a softly blurred warm background. Soft side light, shallow depth of field, calm and tidy. Nothing is written anywhere in the image."
+    },
+    {
+      "file": "refs/material.jpg",
+      "role": "材质",
+      "aspect": "16:9",
+      "prompt": "Macro photograph of an empty miniature scene on a smooth plain light wooden tabletop: solid beech wood toy blocks in simple shapes, cubes, rectangular blocks, cylinders and arches, painted in muted blue-grey and warm brown with a few orange and teal pieces. Visible wood grain, softly rounded edges, every face is flat smooth plain wood. No characters in the scene. Soft side light, shallow depth of field. Nothing is written anywhere in the image."
+    }
+  ],
+  "promptExpansion": "disabled",
+  "freezeNoise": 0.003,
+  "motionTheme": "studio-graphite"
+}

@@ -1,9 +1,20 @@
 {
   "id": "brick-diorama",
-  "name": "积木微缩",
+  "name": "塑料积木（实验）",
+  "nameEn": "Plastic bricks (experimental)",
+  "status": "experimental",
+  "default": false,
+  "note": "实验风格，不是默认：v0.8 用它生成的 5 段全部带凸点，ref-3.jpg 本身也带凸点。留着是为了让 version 1 的老 broll.json 照常能跑。look / forbid / negative / camera / references 五个字段是 v0.8 原样，不要改：改了会让老项目的请求哈希变掉、重新花钱。version 2 拼提示词时读 lookV2 / forbidV2。要下线：把整个目录移走即可，其他风格不受影响。",
+  "summary": "塑料方块微缩场景（实验风格，会出凸点，不建议用）",
+  "summaryEn": "plastic brick miniature scene (experimental; studs show up, not recommended)",
   "look": "微缩积木场景。积木一律顶面光滑、没有凸点（smooth-top blocks / studless tiles）。积木感靠方块造型、拼搭结构、鲜艳哑光塑料、微距浅景深来撑。柔和侧光。低饱和的蓝灰、暖棕，点缀少量橙、青绿。全片只有一个角色：圆头、圆球手、头顶光滑、身上没有任何图案的浅蓝灰积木机器人，哑光塑料拼成，两只圆眼睛柔和发光。造型保持不变。",
   "negative": "no studs, no logos or lettering on any surface, no minifigure, no C-shaped hands, no yellow skin.",
   "forbid": "画面里不要出现凸点、文字、字母、数字、商标、品牌标志或真实人物，不要开口夹手，不要黄色皮肤，没有人声对白。no studs, no logos or lettering on any surface, no minifigure, no C-shaped hands, no yellow skin.",
+  "lookV2": "微缩方块场景，微距实拍，浅景深，柔和侧光。所有方块都是哑光塑料做的，每一面都平整光滑。低饱和的蓝灰、暖棕，点缀少量橙、青绿。",
+  "forbidV2": "画面里没有文字、字母、数字、商标和真实人物，没有人声对白。",
+  "character": "角色是一个哑光塑料方块做成的玩具机器人",
+  "characterEn": "a toy robot made of matte plastic blocks",
+  "ground": "地面是一整块平整光滑的浅色桌面",
   "camera": {
     "static": "镜头固定不动",
     "slow-push": "镜头缓慢推近",
@@ -13,7 +24,22 @@
     "orbit": "镜头缓缓环绕主体",
     "top-down": "镜头从正上方俯拍"
   },
+  "cameras": ["static", "slow-push", "pull-back", "pan-left", "pan-right", "orbit", "top-down"],
+  "jobs": ["demonstrate", "explain", "ground", "compare", "quantify", "evoke", "connect"],
+  "pairsWith": ["ink-sketch"],
+  "materialWords": ["塑料积木", "塑料", "积木"],
   "references": [
     "ref-3.jpg"
-  ]
+  ],
+  "refs": [
+    {
+      "file": "ref-3.jpg",
+      "role": "角色和材质",
+      "aspect": "9:16",
+      "prompt": null,
+      "note": "v0.8 出的图，本身带凸点。不再重出，所以没有出图提示。"
+    }
+  ],
+  "freezeNoise": 0.003,
+  "motionTheme": "studio-graphite"
 }

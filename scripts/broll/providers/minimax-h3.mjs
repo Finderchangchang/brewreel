@@ -3,12 +3,18 @@
 // 域名默认 https://api.minimaxi.com，可用 MINIMAX_BASE_URL 改。只收 https；
 // 本机 127.0.0.1 / localhost 的 http 只给测试假服务器用。
 // 提交不重试。查询和下载遇到 429 / 5xx 才指数退避，最多 3 次。
+// 每段送自己的参考图（最多 5 张，5 张以内免费）；风格包可以写 extra.prompt_expansion_mode。
 import fs from 'node:fs';
 import path from 'node:path';
 
 export const DEFAULT_BASE = 'https://api.minimaxi.com';
 export const VIDEO_MODEL = 'MiniMax-H3';
 export const IMAGE_MODEL = 'image-01';
+/** H3 的 extra.prompt_expansion_mode 可选值。不传 = 官方默认 balanced。 */
+export const EXPANSION_MODES = ['disabled', 'balanced', 'quality'];
+/** 每段参考图 5 张以内免费，超过每张另收 0.2 元；接口上限 9 张。脚本只送免费的量。 */
+export const FREE_REFS = 5;
+export const MAX_REFS = 9;
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]']);
 const AUTH_CODES = new Set([1004, 2049]);
 const BALANCE_CODES = new Set([1008]);
@@ -104,6 +110,54 @@ export const taskFailure = (task, key) => {
 };
 
 const mimeOf = (buf) => (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xd8 ? 'image/jpeg' : 'image/png');
+const dataUrl = (buf) => `data:${mimeOf(buf)};base64,${buf.toString('base64')}`;
+
+/**
+ * H3 提交的请求体。每段带自己的参考图（按顺序就是提示词里的图1、图2）；
+ * promptExpansion 有值才写 extra.prompt_expansion_mode，不传时和 v0.8 的请求体一模一样。
+ * 不发请求，先把会花冤枉钱或必然失败的情况拦下：没有参考图、参考图文件不在、超过 5 张、扩写模式写错。
+ * @param {{prompt: string, refs: string[], resolution: string, duration: number, ratio: string,
+ *   promptExpansion?: string|null, styleId?: string, readFile?: (p: string) => Buffer, exists?: (p: string) => boolean}} p
+ */
+export const buildVideoBody = ({prompt, refs, resolution, duration, ratio, promptExpansion = null, styleId = '', readFile = fs.readFileSync, exists = fs.existsSync}) => {
+  const who = styleId ? `风格 ${styleId} ` : '';
+  const next = `下一步：换一个已经有参考图的风格（或把这几段改成动效画面 / 留脸），或让维护者先跑 node scripts/broll/make-style-refs.mjs --style ${styleId || '<风格 id>'} --dry-run 看要发的请求，确认后加 --yes 出图。`;
+  const list = Array.isArray(refs) ? refs : [];
+  if (!list.length) throw new H3Error('NO_REFS', `${who}没有参考图。AI 画面要靠参考图定住角色和材质，这一段没有提交，也没有花钱。${next}`, {exitCode: 2});
+  const missing = list.filter((p) => !exists(p));
+  if (missing.length) {
+    throw new H3Error('NO_REFS', `${who}缺参考图：${missing.map((p) => path.basename(p)).join('、')}（${missing.join('；')}）。这一段没有提交，也没有花钱。${next}`, {exitCode: 2});
+  }
+  if (list.length > FREE_REFS) {
+    throw new H3Error('BAD_REQUEST', `参考图 ${list.length} 张。超过 ${FREE_REFS} 张的部分每张要另收 0.2 元，脚本不送。风格包的 refs 最多写 ${FREE_REFS} 张。`, {exitCode: 2});
+  }
+  if (promptExpansion != null && !EXPANSION_MODES.includes(promptExpansion)) {
+    throw new H3Error('BAD_REQUEST', `提示词扩写模式「${promptExpansion}」不对，只能是 ${EXPANSION_MODES.join('、')}。改风格包里的 promptExpansion。`, {exitCode: 2});
+  }
+  const content = [{type: 'text', text: prompt}];
+  for (const ref of list) content.push({type: 'image_url', image_url: {url: dataUrl(readFile(ref))}, role: 'reference_image'});
+  const body = {model: VIDEO_MODEL, content, resolution, duration, ratio};
+  if (promptExpansion != null) body.extra = {prompt_expansion_mode: promptExpansion};
+  return body;
+};
+
+/** image-01 的请求体。subjectPath 有值时带主体参考（官方 subject_reference，type=character，Data URL）。 */
+export const buildImageBody = ({prompt, aspect, subjectPath, readFile = fs.readFileSync}) => {
+  const body = {model: IMAGE_MODEL, prompt, aspect_ratio: aspect, response_format: 'url', n: 1, prompt_optimizer: false};
+  if (subjectPath) body.subject_reference = [{type: 'character', image_file: dataUrl(readFile(subjectPath))}];
+  return body;
+};
+
+/** 打印用：把请求体里的 Data URL 换成「多少字节」，其余原样。不含密钥（密钥只在请求头里）。 */
+export const redactBody = (value) => {
+  if (typeof value === 'string') {
+    const m = value.match(/^data:([^;,]+);base64,(.*)$/s);
+    return m ? `data:${m[1]};base64,…（${Math.floor((m[2].length * 3) / 4)} 字节，略）` : value;
+  }
+  if (Array.isArray(value)) return value.map(redactBody);
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, redactBody(v)]));
+  return value;
+};
 
 /**
  * @param {{env?: NodeJS.ProcessEnv, fetchImpl?: typeof fetch, sleep?: (ms: number) => Promise<void>,
@@ -185,14 +239,15 @@ export const createH3Client = (opts = {}) => {
     base,
     pollMs,
     timeoutMs,
-    /** 提交一段。不重试。成功返回 task id 字符串。 */
-    async submit({prompt, refs, resolution, duration, ratio}) {
-      const content = [{type: 'text', text: prompt}];
-      for (const ref of refs ?? []) {
-        const buf = fs.readFileSync(ref);
-        content.push({type: 'image_url', image_url: {url: `data:${mimeOf(buf)};base64,${buf.toString('base64')}`}, role: 'reference_image'});
-      }
-      const body = {model: VIDEO_MODEL, content, resolution, duration, ratio};
+    /**
+     * 提交一段。不重试。成功返回 task id 字符串。
+     * refs 是这一段自己的参考图路径（v2 按 look 选风格，每段可以不同）；
+     * promptExpansion 来自风格包（disabled / balanced / quality），不传就不写 extra。
+     * styleId 只用来让缺图的报错说清是哪个风格。
+     */
+    async submit({prompt, refs, resolution, duration, ratio, promptExpansion = null, styleId = ''}) {
+      key();
+      const body = buildVideoBody({prompt, refs, resolution, duration, ratio, promptExpansion, styleId});
       let json;
       try {
         json = await request('POST', '/v2/video_generation', body, 180_000);
@@ -269,11 +324,7 @@ export const createH3Client = (opts = {}) => {
      * subjectPath 有值时带主体参考（官方 subject_reference，type=character，Data URL）。
      */
     async image({prompt, aspect, subjectPath}) {
-      const body = {model: IMAGE_MODEL, prompt, aspect_ratio: aspect, response_format: 'url', n: 1, prompt_optimizer: false};
-      if (subjectPath) {
-        const buf = fs.readFileSync(subjectPath);
-        body.subject_reference = [{type: 'character', image_file: `data:${mimeOf(buf)};base64,${buf.toString('base64')}`}];
-      }
+      const body = buildImageBody({prompt, aspect, subjectPath});
       let json;
       try {
         json = await request('POST', '/v1/image_generation', body, 120_000);

@@ -1,0 +1,11 @@
+{
+  "id": "robot",
+  "name": "机器人",
+  "note": "所有风格共用的角色。形状和色号只写在这里，脚本每段都加进提示词；风格只决定这个机器人用什么材质做。subject 只写「机器人」或「机器人和某样东西」，不写颜色和材质。",
+  "shape": "圆头、头顶光滑、两只圆眼睛柔和发光、两只手各是一个实心圆球、胸口是一块空白方板、身上没有任何图案",
+  "color": "主体浅蓝灰 #9FB1BC，眼睛暖橙 #FFB04A",
+  "en": {
+    "shape": "a round head with a smooth dome top, two round softly glowing eyes, each hand is one solid round ball, the chest is a plain blank square panel, and the body carries no pattern or marking.",
+    "color": "Body light blue-grey (#9FB1BC), eyes warm orange (#FFB04A)."
+  }
+}

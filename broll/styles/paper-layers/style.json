@@ -1,0 +1,41 @@
+{
+  "id": "paper-layers",
+  "name": "分层纸艺",
+  "nameEn": "Layered paper",
+  "status": "stable",
+  "default": false,
+  "summary": "彩色卡纸分层拼贴，干净平整，适合讲道理、点一个场景、做对比、把两件事连起来；镜头只平移和推近",
+  "summaryEn": "layered coloured card paper, clean and flat; good for explaining, places, comparisons and links; camera only pans and pushes in",
+  "look": "分层彩色卡纸拼贴的立体纸艺场景，正面平视，层与层之间有柔和投影，纸张边缘看得到细微纤维。配色：米白底，浅蓝灰、暖橙、青绿三种卡纸。",
+  "character": "角色是一个卡纸剪出来的扁平玩具机器人",
+  "characterEn": "a flat toy robot cut out of matte card paper",
+  "ground": "背景是一张米白色卡纸",
+  "forbid": "画面里没有文字、字母、数字、商标和真实人物，没有人声对白。",
+  "camera": {
+    "static": "镜头固定不动",
+    "slow-push": "镜头缓慢推近",
+    "pan-left": "镜头缓慢向左平移",
+    "pan-right": "镜头缓慢向右平移"
+  },
+  "cameras": ["static", "slow-push", "pan-left", "pan-right"],
+  "jobs": ["explain", "ground", "compare", "connect"],
+  "pairsWith": ["ink-sketch", "wood-blocks"],
+  "materialWords": ["卡纸", "剪纸", "纸艺", "折纸", "纸片", "纸雕"],
+  "refs": [
+    {
+      "file": "refs/character.jpg",
+      "role": "角色",
+      "aspect": "1:1",
+      "prompt": "Front view, full body, flat paper-craft illustration photographed straight on: {character} Built from two or three layers of card with soft shadows between layers and fine paper fibres on the cut edges. It stands alone on an off-white card background. Even soft light. Nothing is written anywhere in the image."
+    },
+    {
+      "file": "refs/material.jpg",
+      "role": "材质",
+      "aspect": "16:9",
+      "prompt": "Front view of an empty layered paper-craft scene photographed straight on: three layers of matte card paper in light blue-grey, warm orange and teal on an off-white card background, soft shadows between the layers, fine paper fibres visible on the cut edges. Simple shapes only, rolling hills, a round sun and a small house outline. No characters in the scene. Even soft light. Nothing is written anywhere in the image."
+    }
+  ],
+  "promptExpansion": "disabled",
+  "freezeNoise": 0.0005,
+  "motionTheme": "studio-cream-blue"
+}

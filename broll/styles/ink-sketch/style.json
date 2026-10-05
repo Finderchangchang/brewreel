@@ -1,0 +1,41 @@
+{
+  "id": "ink-sketch",
+  "name": "手绘线稿",
+  "nameEn": "Ink sketch",
+  "status": "stable",
+  "default": false,
+  "summary": "白纸上的墨线手绘，大面积留白，适合讲道理、做对比、讲数量、把两件事连起来，最适合当副风格",
+  "summaryEn": "black ink lines on white paper with lots of white space; good for explaining, comparisons, amounts and links; best as the second style",
+  "look": "白纸上的黑色墨线手绘动画，线条干净、略有手绘抖动，只用少量橙色和浅蓝灰色块点缀，大面积留白。",
+  "character": "角色是一个墨线画的简笔玩具机器人，身上用浅蓝灰色块平涂",
+  "characterEn": "a simple hand-drawn toy robot in black ink lines, filled with flat light blue-grey",
+  "ground": "背景是一张干净的白纸",
+  "forbid": "画面里没有文字、字母、数字、商标和真实人物，线条不组成任何字，没有人声对白。",
+  "camera": {
+    "static": "镜头固定不动",
+    "slow-push": "镜头缓慢推近",
+    "pan-left": "镜头缓慢向左平移",
+    "pan-right": "镜头缓慢向右平移"
+  },
+  "cameras": ["static", "slow-push", "pan-left", "pan-right"],
+  "jobs": ["explain", "compare", "quantify", "connect"],
+  "pairsWith": ["paper-layers", "wood-blocks"],
+  "materialWords": ["线稿", "铅笔", "手绘", "墨线", "简笔", "钢笔"],
+  "refs": [
+    {
+      "file": "refs/character.jpg",
+      "role": "角色",
+      "aspect": "1:1",
+      "prompt": "Hand-drawn ink illustration, front view, full body: {character} Clean, slightly wobbly black ink lines, centred on a clean white sheet of paper with lots of empty white space. Nothing is written anywhere in the image, and no line forms a letter or a number."
+    },
+    {
+      "file": "refs/material.jpg",
+      "role": "材质",
+      "aspect": "16:9",
+      "prompt": "A clean white sheet of paper with a few simple hand-drawn objects in black ink lines: a cup, a small box, a winding path and a desk lamp. Lightly wobbly lines, flat touches of orange and light blue-grey, lots of empty white space. No characters in the scene. Nothing is written anywhere in the image, and no line forms a letter or a number."
+    }
+  ],
+  "promptExpansion": "disabled",
+  "freezeNoise": 0.0005,
+  "motionTheme": "studio-red-black"
+}
