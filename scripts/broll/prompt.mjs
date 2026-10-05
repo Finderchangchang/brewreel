@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {sha256File} from './hash.mjs';
+import {lintMotionTheme} from './motion.mjs';
 import {IMAGE_YUAN} from './prices.mjs';
 import {EXPANSION_MODES} from './providers/minimax-h3.mjs';
 import {ROOT} from './root.mjs';
@@ -489,8 +490,7 @@ export const lintStyle = (style, id, ctx = {}) => {
   if (!Array.isArray(style.materialWords) || !style.materialWords.length || style.materialWords.some((w) => typeof w !== 'string' || !w)) bad('materialWords 要写至少一个材质词');
   if (style.promptExpansion != null && !EXPANSION_MODES.includes(style.promptExpansion)) bad(`promptExpansion 要是 ${EXPANSION_MODES.join(' / ')}，或不写`);
   if (!(typeof style.freezeNoise === 'number' && style.freezeNoise > 0 && style.freezeNoise <= 0.05)) bad('freezeNoise 要是 0 到 0.05 之间的数（静帧检测的噪声容差，默认 0.003）');
-  if (typeof style.motionTheme !== 'string' || !style.motionTheme) bad('motionTheme 要写一个主题 id');
-  else if (ctx.themes && !ctx.themes[style.motionTheme]) bad(`motionTheme「${style.motionTheme}」不在 template/src/core/themes.json 里`);
+  for (const p of lintMotionTheme(style.motionTheme)) bad(p);
   const refs = refListOf(style);
   if (!Array.isArray(style.refs) || !style.refs.length) bad('refs 要写参考图清单');
   const files = new Set();

@@ -103,16 +103,16 @@ node scripts/make-talk.mjs <项目目录> --out <仓库外目录> --yes
 
 每句先按这张表定 `source` 和 `template`：
 
-| 句子在干嘛 | job | source | template |
-|---|---|---|---|
-| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter |
-| 列两到四样东西 | list | motion | checklist |
-| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps |
-| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare |
-| 一句要观众记住的话、一个关键词 | stress | motion | keyword |
-| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写，用风格 |
+| 句子在干嘛 | job | source | template | mode |
+|---|---|---|---|---|
+| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter | split 或 pip |
+| 列两到四样东西 | list | motion | checklist | split 或 pip；3 条以上才可以 full |
+| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps | split 或 pip；3 条以上才可以 full |
+| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare | split 或 pip |
+| 一句要观众记住的话、一个关键词 | stress | motion | keyword | split 或 pip，不许 full |
+| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写，用风格 | full、pip 或 split |
 
-同一个模板全片最多用 2 次，相邻两段动效画面不要用同一个模板。AI 画面超过上限（默认 2 段，命令行 `--max-ai` 可以改，以「这次必须遵守」为准）时，把不那么要紧的改成动效画面或留脸。
+动效段默认写 `split`（上 60% 放画面、下 40% 露脸），横版原片写 `pip`：说话的人要留在画面里。keyword 写 `full` 会被拦；`full` 只给 3 条以上的 checklist、steps。同一个模板全片最多用 2 次，相邻两段动效画面不要用同一个模板。AI 画面超过上限（默认 2 段，命令行 `--max-ai` 可以改，以「这次必须遵守」为准）时，把不那么要紧的改成动效画面或留脸。
 
 这些词出现时留脸，不要配画面：我觉得、我当时、说实话、后悔、我记得、我以为。脚本只警告，不拦截。你自己拿掉。
 
@@ -151,13 +151,13 @@ keyword，原句 c2「花钱之前，它先报价」：
 checklist，原句 c4「你要准备的只有两样东西：口播视频和预算」：
 
 ```json
-{"id": "b02", "from": "c4", "to": "c4", "source": "motion", "mode": "full", "job": "list", "template": "checklist", "plain": "要准备两样东西", "slots": {"title": "要准备的", "items": ["口播视频", "预算"]}}
+{"id": "b02", "from": "c4", "to": "c4", "source": "motion", "mode": "split", "job": "list", "template": "checklist", "plain": "要准备两样东西", "slots": {"title": "要准备的", "items": ["口播视频", "预算"]}}
 ```
 
 steps，原句 c6「做法分三步：先转写，再挑句子，最后出片」：
 
 ```json
-{"id": "b03", "from": "c6", "to": "c6", "source": "motion", "mode": "full", "job": "explain", "template": "steps", "plain": "三步做完", "slots": {"items": ["先转写", "再挑句子", "最后出片"]}}
+{"id": "b03", "from": "c6", "to": "c6", "source": "motion", "mode": "split", "job": "explain", "template": "steps", "plain": "三步做完", "slots": {"items": ["先转写", "再挑句子", "最后出片"]}}
 ```
 
 counter，原句 c8「整条视频只用了二十五秒」：
@@ -171,7 +171,7 @@ counter，原句 c8「整条视频只用了二十五秒」：
 compare，原句 c10「以前要自己手动剪，现在交给脚本来做」：
 
 ```json
-{"id": "b05", "from": "c10", "to": "c10", "source": "motion", "mode": "full", "job": "compare", "template": "compare", "plain": "以前手动现在自动", "slots": {"labels": "old-new", "left": ["要自己手动剪"], "right": ["交给脚本来做"]}}
+{"id": "b05", "from": "c10", "to": "c10", "source": "motion", "mode": "split", "job": "compare", "template": "compare", "plain": "以前手动现在自动", "slots": {"labels": "old-new", "left": ["要自己手动剪"], "right": ["交给脚本来做"]}}
 ```
 
 `labels` 只选一个词，栏标题（以前 / 现在）由脚本给。左栏写先说的旧做法，右栏写后说、胜出的新做法。原句先说新做法（「现在一分钱不用，以前要花七块钱」）就别用 compare，也不要把两栏对调，改用 keyword 或 checklist。
@@ -238,7 +238,7 @@ AI 画面的 7 种 job：demonstrate、explain、ground、compare、quantify、e
 | id | `b01`、`b02`，按顺序 |
 | from / to | 句子号。一段可以盖连续的几句 |
 | source | `motion`（动效画面）或 `ai`（AI 画面，可以不写） |
-| mode | `full` 盖满，`pip` 右下角圆窗，`split` 上 60% 是画面、下 40% 是脸。`split` 只给竖版 |
+| mode | `full` 盖满，`pip` 右下角圆窗，`split` 上 60% 是画面、下 40% 是脸。`split` 只给竖版。动效段默认 `split`（横版 `pip`），keyword 不许 `full`，`full` 只给 3 条以上的 checklist、steps |
 | job | 按选择表 |
 | plain | 这段画面在干嘛。不超过 20 字。不进画面 |
 
@@ -346,6 +346,7 @@ node scripts/make-talk.mjs <项目目录> --out <仓库外目录> --yes --draft
 | 画面上的字要到第 3.8 秒才说出来 | 把 `from` 改成报错里给的句子号 |
 | 最后一处字说完后，画面还要停 | 把 `to` 改成报错里给的句子号 |
 | 和上一段 b01 都是 keyword / 已经用了 2 次 | 删掉不那么要紧的一段留脸（两段数字挨着时尤其这样），或者换一个模板 |
+| keyword 不用 full / 只有 2 条，用 full 整屏太空 / counter 不用 full | 动效段改成 `split`（横版 `pip`），把说话的人留在画面里。`full` 只给 3 条以上的 checklist、steps |
 | AI 画面写了 3 段，这次最多 2 段 | 按报错里的上限，只留最需要画面的几段，其余改成动效画面或删掉 |
 | 第一段 AI 画面必须用主风格 | 这一段删掉 `look`；副风格留给后面讲道理、做对比的段 |
 | 不搭配 / 没有叫「…」的风格 | `styleAlt` 换成报错里列的风格，或删掉 `styleAlt` |

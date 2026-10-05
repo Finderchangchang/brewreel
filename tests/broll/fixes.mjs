@@ -39,7 +39,7 @@ const demoCues = () => parseSrt(fs.readFileSync(path.join(DEMO, 'talk.srt'), 'ut
 const motionDoc = () => readJson(path.join(MOTION_DEMO, 'broll.json'));
 const MEDIA = {width: 1080, height: 1920, fps: 30, durationMs: 20000};
 const errText = (r) => r.errors.map((e) => `${e.where}：${e.problem} → ${e.fix}`).join('\n');
-const motionClip = (cues, over) => validateMotionClip({id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'full', plain: '测试', ...over}, cues, {durationMs: 20000});
+const motionClip = (cues, over) => validateMotionClip({id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'split', plain: '测试', ...over}, cues, {durationMs: 20000});
 const three = (t2, t3 = '中间一句') => [cue(1, 0, 1500, '开场'), cue(2, 2000, 5000, t2), cue(3, 5100, 8000, t3), cue(4, 9000, 10000, '结尾')];
 
 // ───────── 完整版 ffmpeg：查得出精简版缺什么 ─────────
@@ -146,7 +146,7 @@ const motionTests = () => {
 // ───────── 计划：动效段说完后多停一会儿；v2 哈希按这一段的风格 ─────────
 const planTests = () => {
   const cues = [cue(1, 0, 1500, '开场'), cue(2, 2000, 4000, '一句话'), cue(3, 5000, 7000, '插一段积木动画'), cue(4, 8000, 9000, '中间一句'), cue(5, 12000, 13000, '结尾')];
-  const doc = {version: 2, style: 'wood-blocks', provider: 'placeholder', quality: '768P', budgetYuan: 20, captions: 'add', keepFace: [], clips: [{id: 'b01', from: 'c3', to: 'c3', source: 'motion', mode: 'full', job: 'stress', template: 'keyword', plain: '积木动画', slots: {text: '插一段积木动画'}}]};
+  const doc = {version: 2, style: 'wood-blocks', provider: 'placeholder', quality: '768P', budgetYuan: 20, captions: 'add', keepFace: [], clips: [{id: 'b01', from: 'c3', to: 'c3', source: 'motion', mode: 'split', job: 'stress', template: 'keyword', plain: '积木动画', slots: {text: '插一段积木动画'}}]};
   const plan = buildPlan({doc, cues, media: {width: 1080, height: 1920, fps: 30, durationMs: 13500}, styles: STYLES});
   const c = plan.clips[0];
   const lastMs = Math.max(...c.motion.marksMs.chars);
@@ -261,9 +261,10 @@ const layoutTests = () => {
   const twelve = captionFor('full', 1080, 1920, '一二三四五六七八九十一二\n短');
   check('full：12 个字的一行缩一点字号，不折行', twelve.lines === 2 && twelve.fontSize < 72 && twelve.fontSize >= 72 * 0.8, JSON.stringify(twelve));
   check('pip 横版照旧放圆窗左边', pipCaptionPlacement(1920, 1080, [t]) === 'side');
-  const adapt = fs.readFileSync(path.join(TEMPLATE, 'src', 'talk', 'motion', 'adapt.ts'), 'utf8');
-  const counter = fs.readFileSync(path.join(TEMPLATE, 'src', 'shots', 'counter.tsx'), 'utf8');
-  check('口播 counter 不画算出来的降幅', adapt.includes('hideDelta: true') && counter.includes('!p.hideDelta'));
+  // 口播 counter 屏幕上的数只有原话里的 say / from（滚动中的数、旧值），不画算出来的降幅、百分比
+  const counter = fs.readFileSync(path.join(TEMPLATE, 'src', 'talk', 'motion', 'Counter.tsx'), 'utf8');
+  const shown = [...counter.matchAll(/\{numText\(([^)]*)\)\}/g)].map((m) => m[1]).sort();
+  check('口播 counter 只显示原话里的数', JSON.stringify(shown) === JSON.stringify(['from!.value, fromDec', 'value, dec']) && !/['"`]%['"`]/.test(counter), JSON.stringify(shown));
 };
 
 // ───────── llm_broll：草稿、备份、接口失败（本机假接口） ─────────

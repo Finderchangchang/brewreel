@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-// 动效画面（source:"motion"）的单测：摘词定位、数字解析、否定词、顺序、上屏字从原文拷、marks、模板搭配、舞台几何、时间重映射。
+// 动效画面（source:"motion"）的单测：摘词定位、数字解析、否定词、顺序、上屏字从原文拷、marks、模板搭配、摆法、配色、取景框、出场时刻。
 // 不渲染、不下载、不联网，几秒跑完。夹具只有文字和时间戳。
 //   node tests/broll/motion.mjs
 import {parseSrt} from '../../scripts/broll/srt.mjs';
 import {
+  FULL_MIN_ITEMS,
   LABELS,
+  MOTION_COLOR_KEYS,
+  MOTION_LOOKS,
   MOTION_TEMPLATES,
   TEMPLATES,
   checkAiQuantify,
@@ -12,7 +15,10 @@ import {
   cnToNum,
   describeTemplates,
   findNumbers,
+  lintMotionTheme,
   locate,
+  motionLookOf,
+  motionModeProblem,
   norm,
   parseSay,
   spokenOf,
@@ -20,8 +26,9 @@ import {
   units,
   validateMotionClip,
 } from '../../scripts/broll/motion.mjs';
-import {SHOT_MAIN, stageOf, toComp} from '../../template/src/talk/motion/stage.ts';
-import {END_PAD, makeWarp, warpKnots} from '../../template/src/talk/motion/warp.ts';
+import {LOOK_DEFAULTS, MOTION_COLOR_KEYS as TS_COLOR_KEYS, MOTION_LOOKS as TS_LOOKS, resolvePalette} from '../../template/src/talk/motion/palette.ts';
+import {freeRect} from '../../template/src/talk/motion/stage.ts';
+import {FADE, FIRST_BY, LAST_BEFORE_END, LEAD, counterClock, counterValue, doneTime, markerTiming, revealTimes} from '../../template/src/talk/motion/timing.ts';
 
 const failures = [];
 let passed = 0;
@@ -201,13 +208,13 @@ check('findNumbers 找到确定的数，「一个」「一段」不算', JSON.st
   if (r.plan) {
     const m = r.plan.marksMs.items;
     check('steps marks 按说话先后递增、落在窗口里', m.length === 3 && m[0] < m[1] && m[1] < m[2] && m[0] >= r.plan.windowMs[0] && m[2] <= r.plan.windowMs[1], JSON.stringify(m));
-    const p = toMotionProps(r.plan, {theme: 'studio-graphite'});
-    check('toMotionProps 时刻换成窗口内的秒数', p.kind === 'motion' && p.badge === false && p.theme === 'studio-graphite' && near(p.marks.items[0], (m[0] - r.plan.windowMs[0]) / 1000, 0.001) && p.startMs === r.plan.windowMs[0], JSON.stringify(p));
+    const p = toMotionProps(r.plan, {look: {look: 'wood', accent: '#FFB04A'}});
+    check('toMotionProps 时刻换成窗口内的秒数', p.kind === 'motion' && p.badge === false && p.look?.look === 'wood' && p.look.accent === '#FFB04A' && near(p.marks.items[0], (m[0] - r.plan.windowMs[0]) / 1000, 0.001) && p.startMs === r.plan.windowMs[0], JSON.stringify(p));
     check('toMotionProps 带 mode 和 lang', p.mode === 'split' && p.lang === 'zh');
   }
 }
 {
-  const r = expectOk('checklist 正确写法', clip({id: 'b03', from: 'c4', to: 'c4', mode: 'full', job: 'list', template: 'checklist', slots: {title: '要准备的', items: ['口播视频', '预算']}}));
+  const r = expectOk('checklist 正确写法', clip({id: 'b03', from: 'c4', to: 'c4', mode: 'pip', job: 'list', template: 'checklist', slots: {title: '要准备的', items: ['口播视频', '预算']}}));
   if (r.plan) check('checklist 上屏字', JSON.stringify(r.plan.screenText) === JSON.stringify(['要准备的', '口播视频', '预算']), JSON.stringify(r.plan.screenText));
 }
 {
@@ -288,83 +295,110 @@ expectErr('说完停太久：to 要改', clip({from: 'c5', to: 'c7', mode: 'pip'
   check('LABELS 中英都有', Object.values(LABELS).every((l) => l.zh.length === 2 && l.en.length === 2));
 }
 
-// ---------------- 舞台几何 ----------------
-const inside = (r, f, eps = 0.5) => r.x >= f.left - eps && r.x + r.width <= f.right + eps && r.y >= f.top - eps && r.y + r.height <= f.bottom + eps;
+// ---------------- 摆法：说话的人优先留在画面里 ----------------
+{
+  expectErr('keyword 不许 full', clip({from: 'c6', to: 'c6', mode: 'full', job: 'stress', template: 'keyword', slots: {text: '它不会乱编数字'}}), 'b01.mode', ['keyword', 'split', 'pip']);
+  const wide = run(clip({from: 'c6', to: 'c6', mode: 'full', job: 'stress', template: 'keyword', slots: {text: '它不会乱编数字'}}), {width: 1920, height: 1080});
+  check('横版 keyword full：只让改 pip', wide.errors.some((e) => e.where === 'b01.mode' && e.fix.includes('pip') && !e.fix.includes('split')), errText(wide));
+  const burned = run(clip({from: 'c6', to: 'c6', mode: 'full', job: 'stress', template: 'keyword', slots: {text: '它不会乱编数字'}}), {width: 1080, height: 1920, captions: 'burned'});
+  check('burned keyword full：只让改 split', burned.errors.some((e) => e.where === 'b01.mode' && e.fix.includes('split') && !e.fix.includes('pip')), errText(burned));
+  expectErr('两条的清单不许 full', clip({from: 'c4', to: 'c4', mode: 'full', job: 'list', template: 'checklist', slots: {items: ['口播视频', '预算']}}), 'b01.mode', ['2 条', `${FULL_MIN_ITEMS} 条以上`]);
+  expectOk('三条的步骤可以 full', clip({from: 'c3', to: 'c3', mode: 'full', job: 'explain', template: 'steps', slots: {items: ['先转写', '再挑句子', '最后出片']}}));
+  expectErr('counter 不许 full', clip({from: 'c5', to: 'c5', mode: 'full', job: 'quantify', template: 'counter', slots: {say: '二十五秒', label: '整条视频'}}), 'b01.mode', ['counter']);
+  expectErr('compare 不许 full', clip({mode: 'full', slots: {labels: 'old-new', left: ['要花七块钱'], right: ['一分钱不用']}}), 'b01.mode', ['compare']);
+  expectOk('keyword 用 pip', clip({from: 'c6', to: 'c6', mode: 'pip', job: 'stress', template: 'keyword', slots: {text: '它不会乱编数字'}}));
+  check('split / pip 都不报', ['split', 'pip'].every((m) => MOTION_TEMPLATES.every((n) => motionModeProblem(n, m, {items: ['a', 'b']}) === null)));
+  check('模板表的示例都不用 full', MOTION_TEMPLATES.every((n) => motionModeProblem(n, 'split', TEMPLATES[n].example.slots) === null));
+}
+
+// ---------------- 配色：风格包的 motionTheme ----------------
+{
+  check('look 和色号的键名脚本、合成两边一致', JSON.stringify(MOTION_LOOKS) === JSON.stringify(TS_LOOKS) && JSON.stringify(MOTION_COLOR_KEYS) === JSON.stringify(TS_COLOR_KEYS));
+  check('每个 look 的默认色都齐', TS_LOOKS.every((l) => TS_COLOR_KEYS.every((k) => /^#[0-9A-F]{6}$/i.test(LOOK_DEFAULTS[l][k]))));
+  check('lintMotionTheme：对的写法没问题', lintMotionTheme({look: 'wood', accent: '#FFB04A'}).length === 0);
+  check('lintMotionTheme：字符串、错的 look、错的色号、多的键都报', lintMotionTheme('studio-graphite').length === 1 && lintMotionTheme({look: 'neon'}).length === 1 && lintMotionTheme({look: 'wood', accent: 'orange'}).length === 1 && lintMotionTheme({look: 'wood', glow: '#FFFFFF'}).length === 1);
+  const look = motionLookOf({motionTheme: {look: 'paper', accent: '#F28E6C', extra: 1, ink: 'bad'}});
+  check('motionLookOf 只拷认识的键', JSON.stringify(look) === JSON.stringify({look: 'paper', accent: '#F28E6C'}), JSON.stringify(look));
+  check('motionLookOf：老的字符串主题名不传', motionLookOf({motionTheme: 'studio-graphite'}) === undefined && motionLookOf({}) === undefined);
+  const pal = resolvePalette({look: 'paper', accent: '#123456', ink: 'nope'});
+  check('resolvePalette：写了的色号覆盖、写错的用默认', pal.look === 'paper' && pal.accent === '#123456' && pal.ink === LOOK_DEFAULTS.paper.ink, JSON.stringify(pal));
+  check('resolvePalette：不认识的 look、字符串都退回 wood', resolvePalette({look: 'neon'}).look === 'wood' && resolvePalette('studio-graphite').look === 'wood' && resolvePalette(undefined).cool === '#9FB1BC');
+}
+
+// ---------------- 取景框：让开平台栏、字幕、画中画圆窗 ----------------
+const inBox = (r, b, eps = 0.5) => r.x >= b.x - eps && r.x + r.width <= b.x + b.width + eps && r.y >= b.y - eps && r.y + r.height <= b.y + b.height + eps;
+const hits = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.x) && Math.min(a.y + a.height, b.y + b.height) > Math.max(a.y, b.y);
 {
   // 720×1280 split：上 60% 是框，字幕一行时贴在分界线上方
   const box = {x: 0, y: 0, width: 720, height: 768};
-  const st = stageOf({box, compW: 720, compH: 1280, captionTop: 695, content: {x0: 150, x1: 930, y0: 597, y1: 1302}});
-  check('split：内容放得下就不缩（k=1）', near(st.k, 1), JSON.stringify(st));
-  check('split：内容在可用区里', inside(st.placed, st.free), JSON.stringify(st));
-  check('split：不压字幕', st.placed.y + st.placed.height <= 695, JSON.stringify(st.placed));
-  check('split：让开平台顶栏', st.placed.y >= (205 / 1920) * 1280 - 0.5, JSON.stringify(st.placed));
-  const p = toComp(st, box, 150, 597);
-  check('toComp 和 placed 对得上', near(p.x, st.placed.x, 0.01) && near(p.y, st.placed.y, 0.01), JSON.stringify(p));
-  // 字幕三行：顶边上移，内容等比缩小
-  const st3 = stageOf({box, compW: 720, compH: 1280, captionTop: 560, content: {x0: 150, x1: 930, y0: 597, y1: 1302}});
-  check('split 三行字幕：缩小但不压字幕', st3.k < 1 && st3.placed.y + st3.placed.height <= 560 + 0.5 && inside(st3.placed, st3.free), JSON.stringify(st3));
-  // 内容小（compare）时，三行字幕下也不必缩
-  const stc = stageOf({box, compW: 720, compH: 1280, captionTop: 560, content: {x0: 150, x1: 944, y0: 731, y1: 1185}});
-  check('split 三行字幕 + 小内容：不缩', near(stc.k, 1), JSON.stringify(stc));
+  const f = freeRect({box, compW: 720, compH: 1280, captionTop: 695});
+  check('split：取景框在框里', inBox(f, box), JSON.stringify(f));
+  check('split：不压字幕', f.y + f.height <= 695, JSON.stringify(f));
+  check('split：让开平台顶栏', f.y >= (205 / 1920) * 1280 - 0.5, JSON.stringify(f));
+  check('split：宽度用满（只留 4% 边）', f.width >= 720 * 0.9, JSON.stringify(f));
+  const f3 = freeRect({box, compW: 720, compH: 1280, captionTop: 560});
+  check('split 三行字幕：底边跟着上移', f3.y + f3.height <= 560 && f3.height < f.height, JSON.stringify(f3));
+  const f0 = freeRect({box, compW: 720, compH: 1280, captionTop: null});
+  check('没有字幕：用到框底（留边）', f0.y + f0.height <= 768 && f0.height > f.height, JSON.stringify(f0));
 }
 {
-  // 1080×1920 pip：圆窗在右下，主体在 205–1340 之间
+  // 1080×1920 pip：圆窗在右下，取景框在平台安全区里、不压圆窗
   const box = {x: 0, y: 0, width: 1080, height: 1920};
   const face = {x: 696, y: 1536, width: 320, height: 320};
-  const st = stageOf({box, compW: 1080, compH: 1920, captionTop: 1440, avoid: face, content: SHOT_MAIN});
-  check('pip 竖版：主体在平台安全区里', st.placed.y >= 205 - 0.5 && st.placed.y + st.placed.height <= 1340 + 0.5, JSON.stringify(st.placed));
-  const r = st.placed;
-  const hitFace = Math.min(r.x + r.width, face.x + face.width) > Math.max(r.x, face.x) && Math.min(r.y + r.height, face.y + face.height) > Math.max(r.y, face.y);
-  check('pip 竖版：不压圆窗', !hitFace, JSON.stringify(r));
-  // 圆窗变大（版式按宽度缩放后）压进主体区时，内容让到圆窗上面
+  const f = freeRect({box, compW: 1080, compH: 1920, captionTop: 1440, avoid: face});
+  check('pip 竖版：在平台安全区里', f.y >= 205 - 0.5 && f.y + f.height <= 1340 + 0.5, JSON.stringify(f));
+  check('pip 竖版：不压圆窗', !hits(f, face), JSON.stringify(f));
   const big = {x: 560, y: 1100, width: 460, height: 460};
-  const st2 = stageOf({box, compW: 1080, compH: 1920, captionTop: 1440, avoid: big, content: SHOT_MAIN});
-  check('pip 大圆窗：内容让到圆窗上沿以上', st2.placed.y + st2.placed.height <= big.y, JSON.stringify(st2.placed));
+  const f2 = freeRect({box, compW: 1080, compH: 1920, captionTop: 1440, avoid: big});
+  check('pip 大圆窗压进来：取景框让开', !hits(f2, big) && f2.height > 300, JSON.stringify(f2));
 }
 {
-  // 横版 1920×1080 full：按高度缩，字幕在 0.75H
+  // 横版 1920×1080 pip：圆窗在右下，字幕在 0.75H
   const box = {x: 0, y: 0, width: 1920, height: 1080};
-  const st = stageOf({box, compW: 1920, compH: 1080, captionTop: 810, content: {x0: 150, x1: 930, y0: 597, y1: 1302}});
-  check('横版：按高度缩小、不压字幕、在框里', st.k < 1 && st.placed.y + st.placed.height <= 810 && inside(st.placed, st.free), JSON.stringify(st));
-  check('横版：不按竖版平台栏留顶', st.free.top < 100, JSON.stringify(st.free));
-}
-{
-  // 没有字幕层
-  const box = {x: 0, y: 0, width: 720, height: 768};
-  const st = stageOf({box, compW: 720, compH: 1280, captionTop: null, content: SHOT_MAIN});
-  check('没有字幕：内容在框里', inside(st.placed, st.free) && st.placed.y + st.placed.height <= 768, JSON.stringify(st));
+  const face = {x: 1596, y: 756, width: 260, height: 260};
+  const f = freeRect({box, compW: 1920, compH: 1080, captionTop: 810, avoid: face});
+  check('横版 pip：不压字幕、不压圆窗、在框里', f.y + f.height <= 810 && !hits(f, face) && inBox(f, box), JSON.stringify(f));
+  check('横版：不按竖版平台栏留顶', f.y < 100, JSON.stringify(f));
 }
 
-// ---------------- 时间重映射 ----------------
+// ---------------- 出场时刻：第 i 条在说出第 i 条的那一刻出来 ----------------
 {
-  const dur = 6;
-  const anchors = [{real: 2.5, shot: 1.0, lead: 0.5}, {real: 4.0, shot: 2.0, lead: 0.5}];
-  const w = makeWarp(anchors, dur);
-  check('warp 锚点正好对上', near(w(2.5), 1.0) && near(w(4.0), 2.0), `${w(2.5)} ${w(4.0)}`);
-  const samples = Array.from({length: 601}, (_, i) => w(i / 100));
-  check('warp 单调不减', samples.every((v, i) => i === 0 || v >= samples[i - 1] - 1e-9));
-  check('warp 起点 0、负数也是 0', w(0) === 0 && w(-1) === 0);
-  check('warp 不超过 dur（不进退场尾巴）', samples.every((v) => v <= dur - END_PAD + 1e-9));
-  // 事件前 lead 秒按 1:1 播（光点、滚动不被拉成慢动作）
-  check('warp 事件前按 1:1 播', near(w(2.5) - w(2.0), 0.5, 1e-6), `${w(2.0)} ${w(2.5)}`);
-  // 事件后 follow 秒按 1:1 播（弹跳播完），中间停住
-  check('warp 入场按 1:1 播', near(w(0.3), 0.3, 1e-6), String(w(0.3)));
-  const k = warpKnots(anchors, dur);
-  check('warp 拐点真实秒严格递增', k.every((p, i) => i === 0 || p[0] > k[i - 1][0]), JSON.stringify(k));
-  // 说得比镜头排得快：加速
-  const fast = makeWarp([{real: 0.5, shot: 1.5, lead: 1.1}], 3);
-  check('warp 说得快就加速', near(fast(0.5), 1.5) && near(fast(0.25), 0.75), `${fast(0.25)}`);
-  // 不单调的锚点丢掉
-  const bad = warpKnots([{real: 1, shot: 2}, {real: 2, shot: 1}], 5);
-  check('warp 丢掉不单调的锚点', bad.length === 2 && bad[1][0] === 1 && bad[1][1] === 2, JSON.stringify(bad));
-  // stretch：入场后不停住，匀速走到锚点（counter 没有旧值时不停在 0 上）
-  const sw = makeWarp([{real: 3, shot: 1.5, lead: 1.1, stretch: true}], 4);
-  const sv = Array.from({length: 31}, (_, i) => sw(i / 10));
-  check('warp stretch 到锚点前一直在走、正好落在锚点', near(sw(3), 1.5) && sv.every((v, i) => i === 0 || v > sv[i - 1]), JSON.stringify(sv));
-  // 最后一个锚点之后 1:1
-  check('warp 最后一个锚点之后 1:1', near(w(5) - w(4.5), 0.5, 1e-6));
+  const dur = 5;
+  const marks = [1.2, 2.0, 3.1];
+  const at = revealTimes(marks, 3, dur);
+  check('第一条不晚于 FIRST_BY（画面一出来就有字）', at[0] <= FIRST_BY + 1e-9, JSON.stringify(at));
+  check('后面的条目正好在开口前 LEAD 秒出场', near(at[1], 2.0 - LEAD) && near(at[2], 3.1 - LEAD), JSON.stringify(at));
+  check('出场单调不减、都不晚于开口', at.every((v, i) => (i === 0 || v >= at[i - 1]) && v <= marks[i]));
+  const late = revealTimes([0.2, 4.95], 2, dur);
+  check('说得太晚的条目也在淡出前出场', late[1] <= dur - LAST_BEFORE_END + 1e-9, JSON.stringify(late));
+  const right = revealTimes([2.5], 1, dur, null);
+  check('compare 右栏不提前到开头', near(right[0], 2.5 - LEAD), JSON.stringify(right));
+  const none = revealTimes(undefined, 3, dur);
+  check('没有 marks 时按拍子排开', none[0] > 0 && none[1] > none[0] && none[2] > none[1] && none[2] <= dur - LAST_BEFORE_END, JSON.stringify(none));
+  const bad = revealTimes([2, 1], 2, dur);
+  check('时刻倒着来也不倒退', bad[1] >= bad[0], JSON.stringify(bad));
+  const done = doneTime(at, [1.8, 2.8, 3.9], dur);
+  check('全部说完：最后一条结尾之后、淡出之前', done > 3.9 && done <= dur - LAST_BEFORE_END, String(done));
 }
-
+{
+  // keyword 马克笔：说完 hot 开始扫；离淡出太近就扫快、再不够提前（不早于 hot 第一个字）
+  const m = markerTiming(1.5, 4, 1.0);
+  check('马克笔在说完 hot 时扫', near(m.at, 1.4) && near(m.dur, 0.45), JSON.stringify(m));
+  const tight = markerTiming(3.2, 4, 2.6);
+  check('马克笔离淡出太近：扫完后还停够 0.5 秒', tight.at + tight.dur <= 4 - FADE - 0.5 + 1e-9 && tight.at >= 2.6 - 0.1 - 1e-9, JSON.stringify(tight));
+  check('没有 hot 就不扫', markerTiming(undefined, 4).at === undefined);
+}
+{
+  // counter：念到最后一个数字字时落定；没有旧值时一直在往上滚，有旧值时旧值先亮着
+  const c = counterClock(2.4, false, 4);
+  check('counter 落定在念到数字的那一刻', near(c.land, 2.4) && near(counterValue(2.4, c, 25), 25) && near(counterValue(3.5, c, 25), 25));
+  const vs = Array.from({length: 25}, (_, i) => counterValue(0.2 + i * 0.09, c, 25));
+  check('counter 没有旧值：落定前一直在动（不停在 0 上）', vs.every((v, i) => i === 0 || v > vs[i - 1] || v === 25), JSON.stringify(vs.map((v) => v.toFixed(2))));
+  const f = counterClock(2.4, true, 4);
+  check('counter 有旧值：滚之前停在旧值', near(counterValue(0.8, f, 3.5, 7), 7) && f.start > 1 && near(counterValue(2.4, f, 3.5, 7), 3.5), JSON.stringify(f));
+  const early = counterClock(0.1, false, 3);
+  check('counter 数字说得很早也有一小段滚动', early.land > early.start, JSON.stringify(early));
+}
 if (failures.length) {
   console.log(`motion 单测：${passed} 过，${failures.length} 败`);
   failures.forEach((f, i) => console.log(`${i + 1}. ${f}`));

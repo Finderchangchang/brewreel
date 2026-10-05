@@ -12,7 +12,7 @@
       "from": "c3",
       "to": "c4",
       "source": "motion",
-      "mode": "full",
+      "mode": "split",
       "job": "explain",
       "template": "steps",
       "plain": "先列再做",

@@ -114,13 +114,15 @@ node scripts/broll/approve.mjs <project> --out <dir-outside-the-repo>
 
 | Template | Use it for | On screen |
 |---|---|---|
-| `keyword` | A line the viewer should remember | Big keyword text that lights up word by word |
+| `keyword` | A line the viewer should remember | Big keyword text (about 80% of the frame width, two lines when long) that lights up word by word; the key phrase gets a highlighter stroke |
 | `checklist` | Two to four things | A list; each item appears and gets a tick as it is said |
-| `steps` | An order of steps | A step flow; each step lights up as it is said |
+| `steps` | An order of steps | Steps laid out as a staircase; each step lights up as it is said (dots on the block show which step) |
 | `counter` | One exact number | A rolling number that lands when the number is said |
-| `compare` | Before and after, or two ways, old way said first | Two columns; the side said later wins. Do not use it when the new way is said first |
+| `compare` | Before and after, or two ways, old way said first | Two stacked cards on a vertical talk (two columns on a horizontal one); the side said later wins. Do not use it when the new way is said first |
 
-The words on a card must be consecutive words from the speech, not reworded; a negation before the quote (不用, 不要, 不会, "don't"...) must be included; a number to show goes in `counter`, only if the speaker really said it, and two numbers separated by a space, line break or sentence break are never joined into one. So **transcription mistakes show up on screen as is**: check `talk.srt` before rendering and fix typos there. Card colors follow the main style. After the last word, a card holds a little longer when silence follows.
+The words on a card must be consecutive words from the speech, not reworded; a negation before the quote (不用, 不要, 不会, "don't"...) must be included; a number to show goes in `counter`, only if the speaker really said it, and two numbers separated by a space, line break or sentence break are never joined into one. So **transcription mistakes show up on screen as is**: check `talk.srt` before rendering and fix typos there. After the last word, a card holds a little longer when silence follows.
+
+Layout: motion clips default to `split` (card on the top 60%, speaker on the bottom 40%), `pip` on a horizontal talk, so the speaker stays on screen; `keyword` cannot use `full`, and `full` is only for a checklist or steps with 3 or more items (validation blocks the rest). Colours and finish follow the main style: wood blocks get a warm wood table, off-white cards and blue-grey and warm-orange wooden blocks; clay stop-motion gets warm pastels; layered paper gets off-white paper with a few coloured sheets; ink sketch gets white paper and ink lines. The background has a faint texture and slowly drifting shapes, and no words.
 
 ### AI clip styles
 

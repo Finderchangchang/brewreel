@@ -104,6 +104,65 @@ export const TEMPLATES = {
 };
 export const MOTION_TEMPLATES = Object.keys(TEMPLATES);
 
+// ============================================================
+// 摆法：说话的人优先留在画面里
+// 动效段默认 split（上 60% 动效、下 40% 真人），横版用 pip。keyword 不许 full；full 只给条目多（≥3 条）的 checklist / steps。
+// ============================================================
+export const FULL_MIN_ITEMS = 3;
+
+/**
+ * 这一段的 mode 配不配这个模板。配就返回 null，不配返回 {problem, fix}。
+ * @param {string} template
+ * @param {string} mode
+ * @param {object | null} slots
+ * @param {{vertical?: boolean | null, captions?: string}} [ctx] vertical：原片是不是竖版（不知道传 null）；captions 是 burned 时只给 split
+ */
+export const motionModeProblem = (template, mode, slots, ctx = {}) => {
+  if (mode !== 'full' || !TEMPLATES[template]) return null;
+  const alt =
+    ctx.captions === 'burned'
+      ? 'split（上 60% 放画面、下 40% 露脸）'
+      : ctx.vertical === false
+        ? 'pip（右下角圆窗留脸）'
+        : 'split（上 60% 放画面、下 40% 露脸），横版原片改成 pip（右下角圆窗留脸）';
+  if (template === 'keyword') return {problem: 'keyword 不用 full：整屏一张字卡，看不到说话的人，像在放幻灯片', fix: `改成 ${alt}`};
+  if (template === 'checklist' || template === 'steps') {
+    const n = Array.isArray(slots?.items) ? slots.items.length : 0;
+    if (n >= FULL_MIN_ITEMS) return null;
+    return {problem: `${template} 只有 ${n} 条，用 full 整屏太空，也看不到说话的人`, fix: `改成 ${alt}。full 只给 ${FULL_MIN_ITEMS} 条以上的 checklist、steps`};
+  }
+  return {problem: `${template} 不用 full：一张卡盖满整屏，看不到说话的人`, fix: `改成 ${alt}。full 只给 ${FULL_MIN_ITEMS} 条以上的 checklist、steps`};
+};
+
+// ============================================================
+// 配色和质感：风格包 style.json 的 motionTheme。键名和 template/src/talk/motion/palette.ts 一致（测试会对）
+// ============================================================
+export const MOTION_LOOKS = ['wood', 'clay', 'paper', 'ink'];
+export const MOTION_COLOR_KEYS = ['bg', 'bg2', 'card', 'edge', 'ink', 'sub', 'accent', 'cool', 'warm', 'good', 'muted'];
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+
+/** 查 motionTheme 写得对不对，返回问题清单 */
+export const lintMotionTheme = (mt) => {
+  if (!mt || typeof mt !== 'object' || Array.isArray(mt)) return [`motionTheme 要写成对象：{"look": "${MOTION_LOOKS.join(' / ')}", 色号…}`];
+  const out = [];
+  if (!MOTION_LOOKS.includes(mt.look)) out.push(`motionTheme.look 要是 ${MOTION_LOOKS.join('、')} 之一`);
+  for (const [k, v] of Object.entries(mt)) {
+    if (k === 'look') continue;
+    if (!MOTION_COLOR_KEYS.includes(k)) out.push(`motionTheme 里多了不认识的「${k}」（色号只有 ${MOTION_COLOR_KEYS.join('、')}）`);
+    else if (typeof v !== 'string' || !HEX_RE.test(v)) out.push(`motionTheme.${k} 要写成 #RRGGBB`);
+  }
+  return out;
+};
+
+/** 风格包 → 传给合成的 look（只拷认识的键）。v0.9 早期写成字符串主题名的老风格包：不传，合成用积木风默认 */
+export const motionLookOf = (style) => {
+  const mt = style?.motionTheme;
+  if (!mt || typeof mt !== 'object' || Array.isArray(mt) || !MOTION_LOOKS.includes(mt.look)) return undefined;
+  const out = {look: mt.look};
+  for (const k of MOTION_COLOR_KEYS) if (typeof mt[k] === 'string' && HEX_RE.test(mt[k])) out[k] = mt[k];
+  return out;
+};
+
 /** 给 llm_broll 的提示词用：模板、配哪些 job、槽位写法、一个正确示例 */
 export const describeTemplates = () =>
   MOTION_TEMPLATES.map((name) => {
@@ -750,7 +809,8 @@ const LAND_MIN_MS = 500; // counter 数字落定后至少还要露 0.5 秒
  *
  * @param {object} clip broll.json 里的一段（source 应为 "motion"）
  * @param {{id: string, startMs: number, endMs: number, text: string}[]} cues 全片句子（parseSrt 的结果）
- * @param {{durationMs?: number, tokens?: {text: string, startMs: number}[], full?: boolean}} [opts]
+ * mode 配不配模板（keyword 不许 full、full 只给 3 条以上的清单和步骤）总是查；传 width / height / captions 时报错里的改法更准。
+ * @param {{durationMs?: number, tokens?: {text: string, startMs: number}[], full?: boolean, width?: number, height?: number, captions?: string}} [opts]
  * @returns {{errors: {where: string, problem: string, fix: string}[], warnings: {where: string, problem: string, fix: string}[], plan: MotionPlan | null}}
  */
 export const validateMotionClip = (clip, cues, opts = {}) => {
@@ -792,6 +852,12 @@ export const validateMotionClip = (clip, cues, opts = {}) => {
       const numHint = clip.template !== 'counter' && /count|num|数/.test(k) ? '；数字只能写在 counter 的 say 和 from 里' : '';
       err(`slots.${k}`, `模板 ${clip.template} 没有「${k}」这一格`, `删掉它。${clip.template} 只有 ${Object.keys(tpl.slots).join('、')}${numHint}`);
     }
+  }
+  // 摆法：说话的人优先留在画面里（keyword 不许 full；full 只给 3 条以上的清单、步骤）
+  {
+    const vertical = opts.width > 0 && opts.height > 0 ? opts.height > opts.width : null;
+    const mp = motionModeProblem(clip.template, clip.mode, slotsOk ? slots : null, {vertical, captions: opts.captions});
+    if (mp) err('mode', mp.problem, mp.fix);
   }
 
   const byId = new Map(cues.map((c) => [c.id, c]));
@@ -1086,7 +1152,7 @@ export const checkAiQuantify = (clip, cues) => {
 /**
  * 计划 → Talk 合成的一段 props（template/src/talk/motion/types.ts 的 MotionClip）。时刻换成「窗口内第几秒」。
  * @param {MotionPlan} plan validateMotionClip 返回的 plan
- * @param {{theme?: string, paper?: string}} [opts] theme：宣传片配色名（core/themes.json，默认 studio-graphite）；paper：keyword 纸卡配色（quiz tokens，默认 sage-pine）
+ * @param {{look?: {look: string} & Record<string, string>}} [opts] look：主风格的配色和质感（motionLookOf(style) 的结果）；不写 = 合成用积木风默认
  */
 export const toMotionProps = (plan, opts = {}) => {
   const [w0, w1] = plan.windowMs;
@@ -1105,8 +1171,7 @@ export const toMotionProps = (plan, opts = {}) => {
     badge: false,
     lang: plan.lang,
   };
-  if (opts.theme) out.theme = opts.theme;
-  if (opts.paper) out.paper = opts.paper;
+  if (opts.look && typeof opts.look === 'object') out.look = opts.look;
   return out;
 };
 
@@ -1161,11 +1226,14 @@ if (isMain) {
     process.exit(1);
   }
   let durationMs = cues[cues.length - 1].endMs + 500;
+  let size = {};
   const talk = path.join(dir, 'talk.mp4');
   if (fs.existsSync(talk)) {
     try {
       const {probeMedia} = await import('./media.mjs');
-      durationMs = probeMedia(talk).durationMs;
+      const media = probeMedia(talk);
+      durationMs = media.durationMs;
+      size = {width: media.width, height: media.height};
     } catch {
       // 读不到时长就按最后一句估
     }
@@ -1174,7 +1242,7 @@ if (isMain) {
   const all = [];
   for (const clip of clips) {
     if (!isMotion(clip)) continue;
-    const r = validateMotionClip(clip, cues, {durationMs, full: true, tokens: asrTokensOf(dir)});
+    const r = validateMotionClip(clip, cues, {durationMs, full: true, tokens: asrTokensOf(dir), ...size, captions: doc.captions});
     all.push(...r.errors);
     r.warnings.forEach((w) => console.log(`提醒 ${w.where}：${w.problem}（${w.fix}）`));
     if (r.plan) {

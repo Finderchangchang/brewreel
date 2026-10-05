@@ -26,16 +26,16 @@
       "file": "refs/character.jpg",
       "role": "角色",
       "aspect": "1:1",
-      "prompt": "Hand-drawn ink illustration, front view, full body: {character} Clean, slightly wobbly black ink lines, centred on a clean white sheet of paper with lots of empty white space. Nothing is written anywhere in the image, and no line forms a letter or a number."
+      "prompt": "Hand-drawn ink illustration, front view, full body: {character} The head is a smooth round dome with nothing on top: no antenna, no knob, no bolt. Bold, clear, slightly wobbly black ink outlines, drawn large so the robot fills about two thirds of the frame height, centred on a clean white sheet of paper. Nothing is written anywhere in the image, and no line forms a letter or a number."
     },
     {
       "file": "refs/material.jpg",
       "role": "材质",
       "aspect": "16:9",
-      "prompt": "A clean white sheet of paper with a few simple hand-drawn objects in black ink lines: a cup, a small box, a winding path and a desk lamp. Lightly wobbly lines, flat touches of orange and light blue-grey, lots of empty white space. No characters in the scene. Nothing is written anywhere in the image, and no line forms a letter or a number."
+      "prompt": "Hand-drawn ink sketch illustration on a clean white sheet of paper: four everyday objects drawn large and clearly across the middle of the frame, a coffee cup, a small cardboard box, a desk lamp and a potted plant, standing on one simple ink line that marks the table edge. Bold, clear, slightly wobbly black ink outlines, each object filled with flat touches of orange or light blue-grey, white paper around them. No characters in the scene. Nothing is written anywhere in the image, and no line forms a letter or a number."
     }
   ],
   "promptExpansion": "disabled",
   "freezeNoise": 0.0005,
-  "motionTheme": "studio-red-black"
+  "motionTheme": {"look": "ink", "bg": "#FBFAF6", "bg2": "#F1EFE8", "card": "#FFFFFF", "edge": "#26231F", "ink": "#221F1C", "sub": "#5D5952", "accent": "#FFD84A", "cool": "#8EA3B1", "warm": "#E9C9A0", "good": "#2F7D5B", "muted": "#BDB8AE"}
 }

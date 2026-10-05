@@ -188,7 +188,7 @@ export const validateBroll = (doc, ctx) => {
     if (motion) {
       // 动效段：字段、模板、槽位、摘词、数字、时间规则都交给 motion.mjs；不查运镜、场景、禁用词（屏幕上的字就是原话）
       if (!v2) err(`${id}.source`, '动效画面是 version 2 的写法', `把顶层 version 改成 2（${V2_COST_NOTE}）；不想重新花钱就删掉这一段，留真人`);
-      const r = validateMotionClip(clip, cues, {durationMs, tokens: ctx.tokens});
+      const r = validateMotionClip(clip, cues, {durationMs, tokens: ctx.tokens, width, height, captions: doc.captions});
       errors.push(...r.errors);
       warnings.push(...r.warnings);
       // 卡片上的字用到了转写拿不准、还没人核对的字：全屏大字一旦是错字，意思可能正好说反

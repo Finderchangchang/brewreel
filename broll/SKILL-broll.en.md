@@ -103,16 +103,16 @@ Never cover `c1`, the last cue, or any id in `keepFace`. Leave at least 1 second
 
 Decide `source` and `template` for each sentence with this table:
 
-| What the sentence does | job | source | template |
-|---|---|---|---|
-| States one exact number (money, time, count, multiple) that is in the sentence | quantify | motion | counter |
-| Lists two to four things | list | motion | checklist |
-| Gives an order (first… then… finally) | explain or demonstrate | motion | steps |
-| Contrasts before and after, or two ways, saying the old way first and the new way second (if the new way comes first, do not use compare) | compare | motion | compare |
-| A line or keyword the viewer should remember | stress | motion | keyword |
-| Points at a place or object, sets a mood, does something by hand, links two things | ground, evoke, demonstrate, connect | ai | none, use the style |
+| What the sentence does | job | source | template | mode |
+|---|---|---|---|---|
+| States one exact number (money, time, count, multiple) that is in the sentence | quantify | motion | counter | split or pip |
+| Lists two to four things | list | motion | checklist | split or pip; full only with 3 or more items |
+| Gives an order (first… then… finally) | explain or demonstrate | motion | steps | split or pip; full only with 3 or more items |
+| Contrasts before and after, or two ways, saying the old way first and the new way second (if the new way comes first, do not use compare) | compare | motion | compare | split or pip |
+| A line or keyword the viewer should remember | stress | motion | keyword | split or pip, never full |
+| Points at a place or object, sets a mood, does something by hand, links two things | ground, evoke, demonstrate, connect | ai | none, use the style | full, pip or split |
 
-Use the same template at most twice per film, and never in two motion clips in a row. If you go over the AI clip limit (2 by default; `--max-ai` can change it, follow the "must follow this time" section), turn the less important ones into motion clips or keep the face.
+Motion clips default to `split` (picture on the top 60%, face on the bottom 40%); on a horizontal talk use `pip`. The speaker stays on screen. A keyword clip in `full` is rejected; `full` is only for a checklist or steps with 3 or more items. Use the same template at most twice per film, and never in two motion clips in a row. If you go over the AI clip limit (2 by default; `--max-ai` can change it, follow the "must follow this time" section), turn the less important ones into motion clips or keep the face.
 
 Leave the face on screen when the sentence has any of these: 我觉得, 我当时, 说实话, 后悔, 我记得, 我以为 (I think, back then, honestly, regret, I remember, I thought). The script warns and does not block. You still remove those clips.
 
@@ -151,13 +151,13 @@ keyword, cue c2 "Before it spends money, it gives you a price.":
 checklist, cue c4 "You only need two things: the talk video and a budget.":
 
 ```json
-{"id": "b02", "from": "c4", "to": "c4", "source": "motion", "mode": "full", "job": "list", "template": "checklist", "plain": "two things", "slots": {"title": "You only need", "items": ["the talk video", "a budget"]}}
+{"id": "b02", "from": "c4", "to": "c4", "source": "motion", "mode": "split", "job": "list", "template": "checklist", "plain": "two things", "slots": {"title": "You only need", "items": ["the talk video", "a budget"]}}
 ```
 
 steps, cue c6 "First transcribe, then pick lines, then render.":
 
 ```json
-{"id": "b03", "from": "c6", "to": "c6", "source": "motion", "mode": "full", "job": "explain", "template": "steps", "plain": "three steps", "slots": {"items": ["First transcribe", "then pick lines", "then render"]}}
+{"id": "b03", "from": "c6", "to": "c6", "source": "motion", "mode": "split", "job": "explain", "template": "steps", "plain": "three steps", "slots": {"items": ["First transcribe", "then pick lines", "then render"]}}
 ```
 
 counter, cue c8 "The whole video took 25 seconds.":
@@ -171,7 +171,7 @@ When the sentence says "from 7 yuan down to 3 yuan", `from` is `7 yuan` and `say
 compare, cue c10 "Before, you cut it by hand; now the script does it.":
 
 ```json
-{"id": "b05", "from": "c10", "to": "c10", "source": "motion", "mode": "full", "job": "compare", "template": "compare", "plain": "hand vs script", "slots": {"labels": "manual-auto", "left": ["you cut it by hand"], "right": ["the script does it"]}}
+{"id": "b05", "from": "c10", "to": "c10", "source": "motion", "mode": "split", "job": "compare", "template": "compare", "plain": "hand vs script", "slots": {"labels": "manual-auto", "left": ["you cut it by hand"], "right": ["the script does it"]}}
 ```
 
 `labels` picks one word pair; the column titles (Manual / Auto) come from the script. The left column is the old way, said first; the right column is the new way, said later, the one that wins. If the sentence says the new way first ("now it's free, before it cost seven yuan"), do not use compare and do not swap the columns; use keyword or checklist.
@@ -244,7 +244,7 @@ Every clip:
 | id | `b01`, `b02`, in order |
 | from / to | Cue ids. One clip may cover several cues in a row |
 | source | `motion` (motion clip) or `ai` (AI clip, may be omitted) |
-| mode | `full` fills the frame. `pip` is a circle at the bottom right. `split` is the picture on the top 60% and the face on the bottom 40%. `split` is vertical only |
+| mode | `full` fills the frame. `pip` is a circle at the bottom right. `split` is the picture on the top 60% and the face on the bottom 40%. `split` is vertical only. Motion clips default to `split` (`pip` on a horizontal talk); keyword never uses `full`; `full` is only for a checklist or steps with 3 or more items |
 | job | From the table above |
 | plain | What the picture does. At most 20 characters. Not shown |
 
@@ -349,6 +349,7 @@ Each validation error is one line, `clip.field：problem`, followed by a 怎么�
 | 画面上的字要到第 3.8 秒才说出来 (the words are spoken only 3.8 s in) | Set `from` to the cue id in the message |
 | 最后一处字说完后，画面还要停 (the picture stays after the last word) | Set `to` to the cue id in the message |
 | 和上一段 b01 都是 keyword / 已经用了 2 次 (same template as the previous clip / used twice) | Delete the less important clip and keep the face (especially for two numbers in a row), or pick another template |
+| keyword 不用 full / 只有 2 条，用 full 整屏太空 / counter 不用 full (keyword/counter/compare in full, or a short list in full) | Change the motion clip to `split` (`pip` on a horizontal talk) so the speaker stays on screen. `full` is only for a checklist or steps with 3 or more items |
 | AI 画面写了 3 段，这次最多 2 段 (3 AI clips, at most 2) | Keep as many as the limit in the message, the ones that most need a picture; make the rest motion clips or delete them |
 | 右栏比左栏先说出来 / 两栏放反了 (right column said first / columns swapped) | The sentence says the new way first: do not use compare and do not swap the columns; use keyword or checklist |
 | 卡片上的字用了转写时拿不准的字 (card uses words the transcription was unsure about) | Keep those words off the card: pick another sentence, or make it an AI clip or keep the face |

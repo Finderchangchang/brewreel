@@ -59,7 +59,7 @@ const FIELD_TABLE = `顶层只写这些字段：
 | id | b01、b02，按顺序 |
 | from / to | 句子号。一段可以盖连续的几句。不要比清单里的句子多 |
 | source | motion（免费动效画面）或 ai（AI 生成画面） |
-| mode | full、pip 或 split。split 只给竖版 |
+| mode | full、pip 或 split。split 只给竖版。动效段默认 split（横版 pip），keyword 不许 full |
 | job | 按选择表写 |
 | plain | 这段画面在干嘛。不超过 20 字。不进画面 |
 
@@ -86,22 +86,23 @@ source 是 ai 的段另外写：
 
 不要写 file。不要写毫秒、秒数、比例、分辨率、提示词、参考图、模型名。`;
 
-const CHOOSE_TABLE = `| 句子在干嘛 | job | source | template |
-|---|---|---|---|
-| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter |
-| 列两到四样东西 | list | motion | checklist |
-| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps |
-| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare |
-| 一句要观众记住的话、一个关键词 | stress | motion | keyword |
-| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写 template，用风格 |
+const CHOOSE_TABLE = `| 句子在干嘛 | job | source | template | mode |
+|---|---|---|---|---|
+| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter | split 或 pip |
+| 列两到四样东西 | list | motion | checklist | split 或 pip；3 条以上才可以 full |
+| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps | split 或 pip；3 条以上才可以 full |
+| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare | split 或 pip |
+| 一句要观众记住的话、一个关键词 | stress | motion | keyword | split 或 pip，不许 full |
+| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写 template，用风格 | full、pip 或 split |
 
-同一个模板全片最多用 2 次，相邻两段动效画面不要用同一个模板。开场句、收尾句、讲自己感受的句子留脸。`;
+动效段默认写 split（上 60% 放画面、下 40% 露脸），横版原片写 pip：说话的人要留在画面里。同一个模板全片最多用 2 次，相邻两段动效画面不要用同一个模板。开场句、收尾句、讲自己感受的句子留脸。`;
 
 const pickFirst = (list, allowed) => list.find((x) => (allowed ?? []).includes(x));
 
 /**
  * 示例跟着这次的主风格写：job、镜头都挑主风格允许的，副风格挑能做对比的那个。
  * 也跟着这次的限制走：--max-ai 0 时示例里没有 AI 段、--max-ai 1 时只有一段；横版不出现 split；burned 只用 split。
+ * 动效段一律写 split（横版 pip），留着说话的人；full 只在 AI 段的示例里出现。
  */
 const examplesOf = (styles, styleId, captions, maxAi = DEFAULT_MAX_AI, vertical = null) => {
   const main = styles[styleId] ?? {};
@@ -116,10 +117,10 @@ const examplesOf = (styles, styleId, captions, maxAi = DEFAULT_MAX_AI, vertical 
     ...top(),
     keepFace: ['c5'],
     clips: [
-      {id: 'b01', from: 'c3', to: 'c4', source: 'motion', mode: modeA, job: 'explain', template: 'steps', plain: '先列再做', slots: {items: ['要做的事列出来', '一步一步做完']}},
+      {id: 'b01', from: 'c3', to: 'c4', source: 'motion', mode: modeS, job: 'explain', template: 'steps', plain: '先列再做', slots: {items: ['要做的事列出来', '一步一步做完']}},
       maxAi > 0
-        ? {id: 'b02', from: 'c6', to: 'c7', source: 'ai', mode: modeS, job, plain: '旧的换成新的', place: '小仓库', subject: '机器人', action: '从架子上取下旧方块换上新方块', end: '架子变得整整齐齐', camera: cam}
-        : {id: 'b02', from: 'c6', to: 'c6', source: 'motion', mode: modeA, job: 'stress', template: 'keyword', plain: '旧的换成新的', slots: {text: '把旧的换成新的', hot: '新的'}},
+        ? {id: 'b02', from: 'c6', to: 'c7', source: 'ai', mode: modeA, job, plain: '旧的换成新的', place: '小仓库', subject: '机器人', action: '从架子上取下旧方块换上新方块', end: '架子变得整整齐齐', camera: cam}
+        : {id: 'b02', from: 'c6', to: 'c6', source: 'motion', mode: modeS, job: 'stress', template: 'keyword', plain: '旧的换成新的', slots: {text: '把旧的换成新的', hot: '新的'}},
     ],
   };
   const ex1Note = '（假设 c3 是「先把要做的事列出来」，c4 是「再一步一步做完」，c6 是「把旧的换成新的」，c7 是「架子就整齐了」）';
@@ -143,7 +144,7 @@ const examplesOf = (styles, styleId, captions, maxAi = DEFAULT_MAX_AI, vertical 
         ],
         camera: cam,
       },
-      {id: 'b02', from: 'c4', to: 'c4', source: 'motion', mode: modeA, job: 'quantify', template: 'counter', plain: '只用二十五秒', slots: {say: '二十五秒', label: '整条视频'}},
+      {id: 'b02', from: 'c4', to: 'c4', source: 'motion', mode: modeS, job: 'quantify', template: 'counter', plain: '只用二十五秒', slots: {say: '二十五秒', label: '整条视频'}},
       {
         id: 'b03',
         from: 'c6',
@@ -248,8 +249,8 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles, doubts =
     captions === 'burned'
       ? '- captions 是 burned，每一段的 mode 只能写 split'
       : vertical === false
-        ? '- 原片是横版：mode 只写 full 或 pip，不要写 split'
-        : '- captions 不是 burned，full、pip、split 都可以（split 只给竖版）';
+        ? '- 原片是横版：mode 只写 full 或 pip，不要写 split。动效段写 pip（keyword 不许 full；full 只给 3 条以上的 checklist、steps）'
+        : '- captions 不是 burned，full、pip、split 都可以（split 只给竖版）。动效段默认写 split，keyword 不许 full，full 只给 3 条以上的 checklist、steps';
   const aiRule =
     maxAi === 0
       ? '- 这次不要 AI 画面：每一段都写 "source":"motion"，不合适做动效的句子留脸'

@@ -1,56 +1,26 @@
 // 动效 B-roll：在 Talk 合成里直接画 React 组件。不生成、不进账本、不审片、不加「AI 生成画面」标。
-// 三层：① 框内铺不透明背景（宣传片配色的渐变；keyword 用 quiz 的纸色）
-//       ② 舞台（stage.ts）：1080×1920 的镜头画布缩放进 B-roll 框，内容落在可用区正中，让开平台栏、字幕、画中画圆窗
-//       ③ 时间重映射（warp.ts）：镜头里「第 i 条亮起」对到口播说出第 i 条的那一刻
-// 复用宣传片公共镜头 steps / quickList / counter / compare（一行不改），keyword 是口播专用的新组件。
+// 两层：① 背景（Backdrop）铺满 B-roll 框：主风格的底色、很淡的纹理、框边几块慢慢漂的形状
+//       ② 模板：在取景框（stage.ts 的 freeRect：让开平台栏、字幕、画中画圆窗之后剩下的那一块）里按它的宽高排版、把它填满
+// 时刻直接按 marks（timing.ts）：第 i 条在口播说出第 i 条的那一刻出来。配色和质感跟主风格走（palette.ts）。
+// 坐标用「参考像素」：短边 1080 时 1 参考像素 = 1 成片像素，别的分辨率整体等比缩放。
 //
 // 用法（Talk.tsx 的 ClipLayer，包在已有的 0.2 秒淡入淡出层里）：
 //   <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={captions === 'add' ? 本段最靠上的字幕顶边 : null} />
 import React from 'react';
-import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
-import {pop} from '../../core/anim';
-import {fitLine} from '../../core/fit';
+import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {FONT} from '../../core/font';
-import {Icon} from '../../core/icons';
-import {THEME_NAMES, ThemeProvider, alpha, moodColors, resolveTheme, textOnHot, useTheme} from '../../core/theme';
-import type {Meta} from '../../schema';
-import Compare from '../../shots/compare';
-import Counter from '../../shots/counter';
-import QuickList from '../../shots/quickList';
-import Steps from '../../shots/steps';
-import {StyleTokensProvider} from '../../styles/context';
-import quizTokens from '../../styles/quiz/tokens.json';
 import type {Rect} from '../layout';
-import {BEAT, CHECK_TITLE, adaptShot, type ShotType} from './adapt';
-import {Keyword, keywordGeom} from './Keyword';
-import {stageOf, type VBox} from './stage';
+import {Backdrop} from './Backdrop';
+import {Checklist} from './Checklist';
+import {Compare} from './Compare';
+import {Counter} from './Counter';
+import {Keyword} from './Keyword';
+import {resolvePalette} from './palette';
+import {freeRect} from './stage';
+import {Steps} from './Steps';
 import type {MotionClip} from './types';
-import {makeWarp} from './warp';
 
 export type {MotionClip} from './types';
-
-/** 宣传片配色默认值（积木风配 studio-graphite：蓝灰底加橙色，和 AI 段接得上） */
-export const DEFAULT_MOTION_THEME = 'studio-graphite';
-/** keyword 纸卡默认配色 */
-export const DEFAULT_PAPER = 'sage-pine';
-
-const SHOTS: Record<ShotType, React.FC<any>> = {steps: Steps, quickList: QuickList, counter: Counter, compare: Compare};
-const QUIZ = quizTokens as unknown as {themes: Record<string, Record<string, string>>};
-
-/** checklist 的小标题胶囊（照 quickList 自带标题的样子画，只是贴在清单正上方） */
-const CheckTitle: React.FC<{text: string; y: number; t: number}> = ({text, y, t}) => {
-  const th = useTheme();
-  const q = pop(t, 0, 15, 190);
-  const size = fitLine(text, 640, 44, 40);
-  return (
-    <div style={{position: 'absolute', left: 150, width: 780, top: y, height: CHECK_TITLE.h, display: 'flex', justifyContent: 'center', alignItems: 'center', opacity: Math.min(1, q * 1.6), transform: `translateY(${(1 - q) * -30}px)`}}>
-      <div style={{display: 'flex', alignItems: 'center', gap: 14, height: CHECK_TITLE.h, boxSizing: 'border-box', padding: '0 36px', borderRadius: CHECK_TITLE.h / 2, background: th.hot, color: textOnHot(th), fontSize: size, fontWeight: 900, whiteSpace: 'nowrap', boxShadow: '0 10px 26px rgba(0,0,0,0.2)', border: '4px solid #ffffff'}}>
-        <Icon name="bolt" size={40} color={textOnHot(th)} stroke={2.6} />
-        {text}
-      </div>
-    </div>
-  );
-};
 
 export type MotionLayerProps = {
   clip: MotionClip;
@@ -67,51 +37,28 @@ export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, 
   const {fps, width, height} = useVideoConfig();
   const t = frame / fps;
   const dur = Math.max(0.1, (clip.endMs - clip.startMs) / 1000);
-  // 不认识的配色名退回默认（resolveTheme 自己会退到亮色的 warm-emotion，和口播片不搭）
-  const themeName = clip.theme && THEME_NAMES.includes(clip.theme) ? clip.theme : DEFAULT_MOTION_THEME;
-  const theme = resolveTheme(themeName);
-  const paperName = clip.paper && QUIZ.themes[clip.paper] ? clip.paper : DEFAULT_PAPER;
-  const paper = QUIZ.themes[paperName];
-  const meta = {title: '', product: '', theme: themeName, lang: clip.lang === 'en' ? 'en' : 'zh'} as unknown as Meta;
-
+  const pal = resolvePalette(clip.look);
+  const u = Math.max(0.1, Math.min(width, height) / 1080);
+  const area = freeRect({box, compW: width, compH: height, captionTop, avoid: face ?? null});
+  // 参考像素下的框和取景框（取景框相对框左上角）
+  const bw = box.width / u;
+  const bh = box.height / u;
+  const W = area.width / u;
+  const H = area.height / u;
+  const fx = (area.x - box.x) / u;
+  const fy = (area.y - box.y) / u;
+  const common = {t, dur, W, H, pal};
   let body: React.ReactNode = null;
-  let content: VBox | undefined;
-  let background: string;
-  if (clip.template === 'keyword') {
-    const g = keywordGeom(clip.data);
-    content = g.content;
-    body = <Keyword data={clip.data} marks={clip.marks} t={t} geom={g} dur={dur} />;
-    background = `radial-gradient(ellipse at 50% 42%, ${paper.cardAlt ?? paper.bg} 0%, ${paper.bg} 70%)`;
-  } else {
-    const a = adaptShot(clip, dur, BEAT);
-    const bg = moodColors(theme, 0.5);
-    background = `linear-gradient(180deg, ${bg.top} 0%, ${bg.bot} 100%)`;
-    if (a) {
-      const Comp = SHOTS[a.type];
-      const st = makeWarp(a.anchors, dur)(t);
-      content = a.content;
-      body = (
-        <>
-          {a.title ? <CheckTitle text={a.title.text} y={a.title.y} t={st} /> : null}
-          <Comp params={a.params} t={st} dur={dur} beat={BEAT} index={1} isLast={false} mood={0.5} meta={meta} />
-        </>
-      );
-    }
-  }
-  const st = stageOf({box, compW: width, compH: height, captionTop, avoid: face ?? null, content});
-  const glowY = st.placed.y - box.y + st.placed.height / 2;
+  if (clip.template === 'keyword') body = <Keyword data={clip.data} marks={clip.marks} {...common} />;
+  else if (clip.template === 'checklist') body = <Checklist data={clip.data} marks={clip.marks} {...common} />;
+  else if (clip.template === 'steps') body = <Steps data={clip.data} marks={clip.marks} {...common} />;
+  else if (clip.template === 'counter') body = <Counter data={clip.data} marks={clip.marks} {...common} />;
+  else if (clip.template === 'compare') body = <Compare data={clip.data} marks={clip.marks} {...common} />;
   return (
     <div style={{position: 'absolute', left: box.x, top: box.y, width: box.width, height: box.height, overflow: 'hidden'}}>
-      <AbsoluteFill style={{background}} />
-      {clip.template !== 'keyword' ? (
-        <AbsoluteFill style={{background: `radial-gradient(ellipse ${Math.round(st.placed.width * 0.9)}px ${Math.round(st.placed.height * 0.8)}px at 50% ${Math.round(glowY)}px, ${alpha(theme.accent, 0.1)} 0%, transparent 100%)`}} />
-      ) : null}
-      <div style={{position: 'absolute', left: 0, top: 0, width: 1080, height: 1920, transformOrigin: '0 0', transform: `translate(${st.tx}px, ${st.ty}px) scale(${st.u})`, fontFamily: FONT}}>
-        <ThemeProvider theme={theme}>
-          <StyleTokensProvider tokens={quizTokens as any} themeName={paperName}>
-            {body}
-          </StyleTokensProvider>
-        </ThemeProvider>
+      <div style={{position: 'absolute', left: 0, top: 0, width: bw, height: bh, transformOrigin: '0 0', transform: `scale(${u})`, fontFamily: FONT}}>
+        <Backdrop pal={pal} w={bw} h={bh} t={t} seed={clip.id} focus={{x: fx, y: fy, w: W, h: H}} />
+        <div style={{position: 'absolute', left: fx, top: fy, width: W, height: H}}>{body}</div>
       </div>
     </div>
   );

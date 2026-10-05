@@ -13,7 +13,7 @@ import {generateClips} from '../../scripts/broll/generate.mjs';
 import {sha256File} from '../../scripts/broll/hash.mjs';
 import {buildMessages, parseArgs as parseLlmArgs} from '../../scripts/broll/llm_broll.mjs';
 import {ffmpeg, probeMedia} from '../../scripts/broll/media.mjs';
-import {toMotionProps} from '../../scripts/broll/motion.mjs';
+import {motionLookOf, toMotionProps} from '../../scripts/broll/motion.mjs';
 import {normalizeArgs, normalizeReasons, normalizeTalk, normalizedMediaOf, targetFpsOf} from '../../scripts/broll/normalize.mjs';
 import {aiClipsOf, buildPlan} from '../../scripts/broll/plan.mjs';
 import {costLine, creditsOf, isSubscriptionKey, keyKindOf} from '../../scripts/broll/prices.mjs';
@@ -116,7 +116,7 @@ const validateTests = () => {
   expectErr('动效摘词不在原句', {...doc, clips: [{...doc.clips[0], slots: {items: ['先列好清单', '一步一步做完']}}, doc.clips[1]]}, ['items[0]']);
   // 动效段 1.8 秒可以，AI 段要 2.5 秒
   const shortCues = [cue(1, 0, 1500, '开场先说一句'), cue(2, 3000, 4500, '你录一段口播'), cue(3, 9000, 12000, '这里放一段画面看看'), cue(4, 18000, 19500, '最后一句')];
-  const mShort = {...doc, keepFace: [], clips: [{id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'full', job: 'stress', template: 'keyword', plain: '录口播', slots: {text: '录一段口播'}}]};
+  const mShort = {...doc, keepFace: [], clips: [{id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'split', job: 'stress', template: 'keyword', plain: '录口播', slots: {text: '录一段口播'}}]};
   expectOk('动效段 1.8 秒窗口可以', mShort, {cues: shortCues});
   const aShort = {...doc, keepFace: [], clips: [{...doc.clips[1], id: 'b01', from: 'c2', to: 'c2'}]};
   expectErr('AI 段 1.8 秒窗口不行', aShort, ['短于 2.5'], {cues: shortCues});
@@ -125,8 +125,8 @@ const validateTests = () => {
     ...doc,
     keepFace: [],
     clips: [
-      {id: 'b01', from: 'c3', to: 'c3', source: 'motion', mode: 'full', job: 'stress', template: 'keyword', plain: '列出来', slots: {text: '要做的事列出来'}},
-      {id: 'b02', from: 'c6', to: 'c6', source: 'motion', mode: 'full', job: 'stress', template: 'keyword', plain: '换新', slots: {text: '把旧的换成新的'}},
+      {id: 'b01', from: 'c3', to: 'c3', source: 'motion', mode: 'split', job: 'stress', template: 'keyword', plain: '列出来', slots: {text: '要做的事列出来'}},
+      {id: 'b02', from: 'c6', to: 'c6', source: 'motion', mode: 'pip', job: 'stress', template: 'keyword', plain: '换新', slots: {text: '把旧的换成新的'}},
     ],
   };
   expectErr('相邻动效段同模板', twoKw, ['b02.template']);
@@ -134,7 +134,7 @@ const validateTests = () => {
   const numCues = [cue(1, 0, 1500, '开场'), cue(2, 2500, 6000, '整条视频只用了二十五秒'), cue(3, 9000, 12000, '中间'), cue(4, 18000, 19500, '最后一句')];
   const quant = {...doc, keepFace: [], clips: [{...doc.clips[1], id: 'b01', from: 'c2', to: 'c2', job: 'quantify'}]};
   expectErr('AI 段报确定的数要改 counter', quant, ['b01.source', 'counter', '二十五秒'], {cues: numCues});
-  const counter = {...doc, keepFace: [], clips: [{id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'full', job: 'quantify', template: 'counter', plain: '二十五秒', slots: {say: '二十五秒', label: '整条视频'}}]};
+  const counter = {...doc, keepFace: [], clips: [{id: 'b01', from: 'c2', to: 'c2', source: 'motion', mode: 'split', job: 'quantify', template: 'counter', plain: '二十五秒', slots: {say: '二十五秒', label: '整条视频'}}]};
   expectOk('counter 照抄原句的数', counter, {cues: numCues});
   expectErr('counter 编数字', {...counter, clips: [{...counter.clips[0], slots: {say: '三十秒', label: '整条视频'}}]}, ['slots.say'], {cues: numCues});
   // AI 段上限
@@ -191,8 +191,8 @@ const planTests = () => {
   cont.clips[1].link = 'continue';
   const pCont = buildPlan({doc: cont, cues: demoCues(), media: MEDIA, styles: STYLES, projectDir: MOTION});
   check('continue 把上一段结尾写进提示词和哈希', pCont.clips[1].prompt.includes('开场画面接上一段的结尾：架子变得整整齐齐') && pCont.clips[1].requestHash !== pNew.clips[1].requestHash, pCont.clips[1].prompt);
-  const props = toMotionProps(m.motion, {theme: STYLES['wood-blocks'].motionTheme});
-  check('动效 props', props.kind === 'motion' && props.badge === false && props.theme === 'studio-graphite' && props.startMs === 3880 && Array.isArray(props.marks.items) && props.marks.items[0] > 0 && props.marks.items[0] < 5, JSON.stringify(props));
+  const props = toMotionProps(m.motion, {look: motionLookOf(STYLES['wood-blocks'])});
+  check('动效 props', props.kind === 'motion' && props.badge === false && props.look?.look === 'wood' && props.look.cool === '#9FB1BC' && props.look.accent === '#FFB04A' && props.startMs === 3880 && Array.isArray(props.marks.items) && props.marks.items[0] > 0 && props.marks.items[0] < 5, JSON.stringify(props));
   // 转写逐字时间接进 marks
   const tokens = tokensFromAsr({tokens: ['先', '把', '要', '做', '的', '事', '列', '出', '来', '再', '一', '步', '一', '步', '做', '完'], times: [4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 5.6, 5.7, 5.8, 6.5, 6.6, 6.7, 6.8, 6.9, 8.1, 8.2]});
   const timed = buildPlan({doc, cues: demoCues(), media: MEDIA, styles: STYLES, projectDir: MOTION, tokens});
@@ -235,6 +235,8 @@ const generateTests = async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'broll-gen-'));
   const doc = {...motionDoc(), provider: 'minimax-h3'};
   const plan = buildPlan({doc, cues: demoCues(), media: MEDIA, styles: STYLES, projectDir: MOTION});
+  // 仓库里已经有积木风的参考图了（964ca30）：把这一段的参考图指到不存在的地方，模拟「还没出图」
+  for (const c of plan.clips) if (Array.isArray(c.refs)) c.refs = c.refs.map((r) => path.join(tmp, 'no-refs', path.basename(r)));
   let submits = 0;
   const client = {submit: async () => (submits += 1), poll: async () => ({}), download: async () => 0};
   let err = null;

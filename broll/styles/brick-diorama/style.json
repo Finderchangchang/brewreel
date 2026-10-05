@@ -41,5 +41,5 @@
     }
   ],
   "freezeNoise": 0.003,
-  "motionTheme": "studio-graphite"
+  "motionTheme": {"look": "wood"}
 }

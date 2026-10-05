@@ -1,5 +1,6 @@
 // 动效 B-roll 的 props 形状。由 scripts/broll/motion.mjs 的 toMotionProps() 产出，写进 Talk 的 props.clips。
-// 只有类型，没有运行时代码（节点测试可以直接引用 stage.ts / warp.ts，不会拖进 React）。
+// 只有类型，没有运行时代码（节点测试可以直接引用 stage.ts / timing.ts / palette.ts，不会拖进 React）。
+import type {MotionLookSpec} from './palette';
 
 export type MotionTemplate = 'keyword' | 'checklist' | 'steps' | 'counter' | 'compare';
 export type MotionMode = 'full' | 'pip' | 'split';
@@ -33,11 +34,9 @@ type Base = {
   mode: MotionMode;
   /** 动效段不加「AI 生成画面」标，恒为 false */
   badge: false;
-  /** 宣传片配色（core/themes.json 的名字），默认 studio-graphite。由风格预设的 motionTheme 决定 */
-  theme?: string;
-  /** keyword 纸卡配色（styles/quiz/tokens.json 的 themes），默认 sage-pine */
-  paper?: string;
-  /** 原句语言，决定镜头里少量固定词（「倍」/「×」） */
+  /** 配色和质感（主风格 style.json 的 motionTheme 原样传进来，见 palette.ts）。不写 = 积木风默认 */
+  look?: MotionLookSpec;
+  /** 原句语言（compare 的栏标题已经由脚本按语言给好，这里只留着给排版判断） */
   lang?: 'zh' | 'en';
 };
 

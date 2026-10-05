@@ -16,7 +16,10 @@ A big update to talking-head B-roll (experimental): a talk video alone is now en
 - No cloud transcription in this release.
 
 ### New: motion clips
-- Clips with `"source": "motion"` in `broll.json` are motion clips with five templates: `keyword`, `checklist`, `steps`, `counter`, `compare`, built from the existing promo components.
+- Clips with `"source": "motion"` in `broll.json` are motion clips with five templates: `keyword`, `checklist`, `steps`, `counter`, `compare`.
+- The layout is redrawn for the talking-head frame and fills the free area (what is left after the platform bars, captions and the picture-in-picture circle) instead of a small card on a large empty background: the keyword takes about 80% of the width and wraps to two lines when long, and the key phrase gets a highlighter stroke and one small grow; checklist, steps, counter and compare cards and text are much larger.
+- Colours and finish follow the main style so they sit well next to the AI clips (`motionTheme` in a style's `style.json` is now `{"look": …, colours…}`): wood blocks get a warm wood table, off-white cards and blue-grey and warm-orange wooden blocks; clay stop-motion warm pastels; layered paper off-white paper with a few coloured sheets; ink sketch white paper and ink lines. The background has a faint texture and slowly drifting shapes; only shapes and textures are added, every word still comes from the speech.
+- Layout modes: motion clips default to `split` (`pip` on a horizontal talk) so the speaker stays on screen; `keyword` in `full` is rejected and `full` is only for a `checklist` / `steps` with 3 or more items, with the fix in the error. The `llm_broll` prompt and examples and the `SKILL-broll` choice table follow.
 - Text on a card must be consecutive words from the spoken sentence, checked character by character; a negation right before a quote must be included; numbers only go through `counter`'s `say` / `from` and must come from the sentence.
 - Free, no ledger, no review, no "AI-generated" badge. With the transcription cache, words appear at their real spoken times.
 - A v2 example is in `examples/talk/motion`.

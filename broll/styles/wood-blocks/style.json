@@ -40,5 +40,5 @@
   ],
   "promptExpansion": "disabled",
   "freezeNoise": 0.003,
-  "motionTheme": "studio-graphite"
+  "motionTheme": {"look": "wood", "bg": "#F3E8D6", "bg2": "#E4D1B4", "card": "#FFFAF1", "edge": "#D9BD94", "ink": "#2E3843", "sub": "#76685A", "accent": "#FFB04A", "cool": "#9FB1BC", "warm": "#C99464", "good": "#5F9A78", "muted": "#CDBBA2"}
 }

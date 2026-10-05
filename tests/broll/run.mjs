@@ -456,9 +456,10 @@ const renderMotionTest = () => {
   const out = probeMedia(video);
   check('v2 成片时长、音轨、尺寸', out.hasAudio && out.width === 1080 && out.height === 1920 && Math.abs(out.durationSec - 20) < 0.2, JSON.stringify(out));
   const midA = (m.windowMs[0] + m.windowMs[1]) / 2000;
-  const bar = pixel(readFrame(video, 2.5), 60, 640);
-  const atMotion = pixel(readFrame(video, midA), 60, 640);
-  check('动效段盖住了口播（深色底，不是彩条）', !near(atMotion, bar, 40) && atMotion[0] + atMotion[1] + atMotion[2] < 330, `${atMotion} vs ${bar}`);
+  // 动效段在 split 上半：顶上平台栏那一条只有背景（积木风的暖木色桌面），和口播原片不一样
+  const bar = pixel(readFrame(video, 2.5), 540, 120);
+  const atMotion = pixel(readFrame(video, midA), 540, 120);
+  check('动效段盖住了口播（积木风暖木色底）', !near(atMotion, bar, 40) && atMotion[0] > 200 && atMotion[1] > 180 && atMotion[2] > 150 && atMotion[0] > atMotion[2] + 15, `${atMotion} vs ${bar}`);
   const b02 = colorOf('b02');
   const midB = (a.windowMs[0] + a.windowMs[1]) / 2000;
   const top = pixel(readFrame(video, midB), 60, 300);
