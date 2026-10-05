@@ -27,8 +27,13 @@ import {
   validateMotionClip,
 } from '../../scripts/broll/motion.mjs';
 import {LOOK_DEFAULTS, MOTION_COLOR_KEYS as TS_COLOR_KEYS, MOTION_LOOKS as TS_LOOKS, resolvePalette} from '../../template/src/talk/motion/palette.ts';
-import {freeRect} from '../../template/src/talk/motion/stage.ts';
-import {FADE, FIRST_BY, LAST_BEFORE_END, LEAD, counterClock, counterValue, doneTime, markerTiming, revealTimes} from '../../template/src/talk/motion/timing.ts';
+import {CAPTION_GAP, TALL_SIDE, freeRect, inflate, placeDecor, rectsHit} from '../../template/src/talk/motion/stage.ts';
+import {FADE, FIRST_BY, LAST_BEFORE_END, LEAD, ROLL, counterClock, counterValue, doneTime, isMoney, markerTiming, revealTimes, stepCheckTimes} from '../../template/src/talk/motion/timing.ts';
+import {badgeOf, oldCardOf, shapeColors} from '../../template/src/talk/motion/palette.ts';
+import {listGeom} from '../../template/src/talk/motion/measure.ts';
+import {keywordLayout} from '../../template/src/talk/motion/kwLayout.ts';
+import {MOTION_PIP_K, TRANS_SEC, captionMinusKeyword, pipOf} from '../../template/src/talk/layout.ts';
+import {MOTION_FRAMING, edgesOf, panelOffset, transFrames, transProgress, videoPlacement} from '../../template/src/talk/transition.ts';
 
 const failures = [];
 let passed = 0;
@@ -399,6 +404,144 @@ const hits = (a, b) => Math.min(a.x + a.width, b.x + b.width) > Math.max(a.x, b.
   const early = counterClock(0.1, false, 3);
   check('counter 数字说得很早也有一小段滚动', early.land > early.start, JSON.stringify(early));
 }
+// ---------------- 第二轮打磨：摆法按模式取景、进出场、装饰禁区、关键词版面、数字翻牌、配色 ----------------
+{
+  // 竖版 pip / full：左右各留 60 像素@720（右边不进抖音图标列），顶在 0.1H，底不过字幕、圆窗
+  const box = {x: 0, y: 0, width: 720, height: 1280};
+  const {d, margin} = pipOf(720, 1280, MOTION_PIP_K);
+  const face = {x: 720 - margin - d, y: 1280 - margin - d, width: d, height: d};
+  check('动效段圆窗放大到 240–260 像素@720', d >= 240 && d <= 260, String(d));
+  check('视频段圆窗还是 v0.8 的大小', pipOf(720, 1280).d === 213);
+  const f = freeRect({box, compW: 720, compH: 1280, captionTop: 960, avoid: face, mode: 'pip'});
+  check('pip 竖版：右边不过 x 660、左边留够 48', f.x + f.width <= 660 + 0.5 && f.x >= 48, JSON.stringify(f));
+  check('pip 竖版：顶在 y 120–140，底在字幕顶 24 像素以上', f.y >= 120 && f.y <= 140 && f.y + f.height <= 960 - 24, JSON.stringify(f));
+  check('pip 竖版：不压圆窗', !rectsHit(f, face) && f.y + f.height <= face.y - 24, JSON.stringify(f));
+  check('pip 竖版：比老规矩高（用到字幕上方）', f.height > freeRect({box, compW: 720, compH: 1280, captionTop: 960, avoid: face}).height, JSON.stringify(f));
+  const noCap = freeRect({box, compW: 720, compH: 1280, captionTop: null, avoid: face, mode: 'pip'});
+  check('pip 竖版没有字幕：底到圆窗上面、不过 y 1000', noCap.y + noCap.height <= Math.min(1000, face.y - 24) + 0.5 && noCap.height > f.height, JSON.stringify(noCap));
+  const full = freeRect({box, compW: 720, compH: 1280, captionTop: null, mode: 'full'});
+  check('full 竖版没有字幕：底不过 y 1080', full.y + full.height <= 1080 + 0.5 && full.y + full.height > 1000, JSON.stringify(full));
+  const split = freeRect({box: {x: 0, y: 0, width: 720, height: 768}, compW: 720, compH: 1280, captionTop: 695, mode: 'split'});
+  check('split：卡片底和字幕顶隔够 24 像素', split.y + split.height <= 695 - 24, JSON.stringify(split));
+  check('左右留边常量是 60/720', near(TALL_SIDE * 720, 60) && CAPTION_GAP * 1280 >= 24);
+}
+{
+  // 进出场：一个视频层，e 0 → 1 → 0；split 只平移不缩放；pip 收进圆窗、画面盖满圆窗
+  const fps = 30;
+  const T = transFrames(fps);
+  check('进出场 10–12 帧', T >= 10 && T <= 12 && near(T / fps, TRANS_SEC, 0.02), String(T));
+  const dur = 90;
+  check('进场从 0 开始、走完是 1、出场回到 0', transProgress(0, dur, fps) === 0 && transProgress(T, dur, fps) === 1 && transProgress(45, dur, fps) === 1 && transProgress(dur, dur, fps) === 0);
+  const mid = transProgress(T / 2, dur, fps);
+  check('进场缓进缓出（中点 0.5）', near(mid, 0.5, 0.02), String(mid));
+  const clips = [
+    {startMs: 1000, endMs: 4000, mode: 'split'},
+    {startMs: 4000, endMs: 7000, mode: 'split'},
+    {startMs: 7000, endMs: 9000, mode: 'pip'},
+    {startMs: 12000, endMs: 15000, mode: 'pip'},
+  ];
+  const e = edgesOf(clips, fps);
+  check('首尾相接、摆法相同：中间不收放', e[0].exit === false && e[1].enter === false && e[1].exit === true && e[2].enter === true && e[2].exit === true && e[3].enter === true, JSON.stringify(e));
+  check('不收放的那头一直是 1', transProgress(0, dur, fps, {enter: false, exit: true}) === 1);
+  const W = 720;
+  const H = 1280;
+  const s0 = videoPlacement('split', W, H, 0, MOTION_FRAMING);
+  const s1 = videoPlacement('split', W, H, 1, MOTION_FRAMING);
+  check('split e=0 是全屏', s0.frame.y === 0 && s0.frame.height === H && s0.s === 1 && s0.ty === 0);
+  check('split e=1：真人在下方 40%、不缩放、裁切往下挪了一点', near(s1.frame.y, 768) && s1.s === 1 && s1.ty < 768 / 2 && s1.ty > 768 * 0.4, JSON.stringify(s1));
+  const p1 = videoPlacement('pip', W, H, 1, MOTION_FRAMING);
+  const {d, margin} = pipOf(W, H, MOTION_PIP_K);
+  check('pip e=1：裁切框就是圆窗', near(p1.frame.x, W - margin - d) && near(p1.frame.y, H - margin - d) && near(p1.frame.width, d) && near(p1.frame.radius, d / 2), JSON.stringify(p1.frame));
+  const vx0 = p1.tx;
+  const vy0 = p1.ty;
+  const vx1 = p1.tx + p1.s * W;
+  const vy1 = p1.ty + p1.s * H;
+  check('pip e=1：画面盖满圆窗（不露黑边）', vx0 <= p1.frame.x && vy0 <= p1.frame.y && vx1 >= p1.frame.x + d && vy1 >= p1.frame.y + d, JSON.stringify({vx0, vy0, vx1, vy1}));
+  check('pip e=1：脸放大了（比刚好盖满大 1.2 倍以上）', p1.s >= (d / W) * 1.2, String(p1.s));
+  const f1 = videoPlacement('full', W, H, 1);
+  check('full e=1：真人整个被面板盖住', near(f1.frame.y, H) && near(f1.frame.height, 0));
+  check('面板：split / full 从上方推进来，pip 不动', panelOffset('split', 768, 0) === -768 && panelOffset('split', 768, 1) === 0 && panelOffset('pip', 1280, 0) === 0);
+}
+{
+  // 装饰禁区：放出来的装饰（连漂动余量）不碰取景框外扩 48、字幕带、圆窗外扩 72；放不下就不放
+  const bw = 1080;
+  const bh = 1152;
+  const focus = {x: 43, y: 205, width: 994, height: 790};
+  const cap = {x: -bw, y: 1000, width: bw * 3, height: 152};
+  const no = [inflate(focus, 48), cap];
+  const specs = [
+    {slot: 'tl', w: 367, h: 184},
+    {slot: 'tr', w: 259, h: 140, at: 0},
+    {slot: 'tm', w: 86, h: 86, at: 0.01},
+    {slot: 'bl', w: 173, h: 173},
+    {slot: 'br', w: 205, h: 205},
+  ];
+  const placed = specs.map((sp) => placeDecor(sp, bw, bh, no));
+  check('split：顶上的装饰都放得下，且碰不到禁区', placed.slice(0, 3).every((p) => p && !no.some((r) => rectsHit(p.hit, r))), JSON.stringify(placed.slice(0, 3)));
+  check('split：底下没地方（字幕带到框底）就不放', placed[3] === null && placed[4] === null, JSON.stringify(placed.slice(3)));
+  check('装饰最多一半出画', placed.slice(0, 3).every((p, i) => p.y >= -0.5 * specs[i].h * p.s - 1e-6));
+  // pip：圆窗在右下，左下角可以放，右下角不放
+  const pbh = 1920;
+  const circle = {x: 640, y: 1480, width: 375, height: 375};
+  const pno = [inflate({x: 90, y: 192, width: 900, height: 1100}, 48), {x: -bw, y: 1390, width: bw * 3, height: 150}, inflate(circle, 72)];
+  const bl = placeDecor({slot: 'bl', w: 173, h: 173}, bw, pbh, pno);
+  const br = placeDecor({slot: 'br', w: 205, h: 205}, bw, pbh, pno);
+  check('pip：左下角的装饰放在字幕下面、碰不到圆窗', bl && !pno.some((r) => rectsHit(bl.hit, r)), JSON.stringify(bl));
+  check('pip：右下角紧挨圆窗，不放', br === null, JSON.stringify(br));
+}
+{
+  // keyword 版面
+  const a = keywordLayout({text: '花钱之前它会先给你报价', hot: '先给你报价'}, 993, 912);
+  check('split：hot 单独一行、按宽度撑满（九成宽左右）、前面的字缩到 0.6 倍', a.stacked && a.lines.length === 2 && a.lines[1].text === '先给你报价' && a.lines[1].size * 5 >= 993 * 0.8 && near(a.lines[0].size / a.lines[1].size, 0.6, 0.05), JSON.stringify(a.lines));
+  const b = keywordLayout({text: '花钱之前它会先给你报价', hot: '先给你报价'}, 900, 1100);
+  check('pip：hot 拆两行再放大，字块占到框高一半以上', b.stacked && b.lines.length === 3 && b.blockH >= 1100 * 0.5 && b.blockH <= 1100 * 0.86 + 1, JSON.stringify(b));
+  const c = keywordLayout({text: '它不会乱编数字', hot: '不会乱编'}, 900, 1100);
+  check('7 个字拆两行（它不会 / 乱编数字），不把一个字单独成行', c.lines.length === 2 && c.lines[0].text === '它不会' && c.lines[1].text === '乱编数字' && c.lines[0].size >= 180, JSON.stringify(c.lines));
+  check('每一行都在取景框宽度里', [a, b, c].every((L, i) => L.blockW <= [993, 900, 900][i] + 1));
+  const cc = keywordLayout({text: '花钱之前，它会先给你报价', hot: '先给你报价'}, 993, 912);
+  check('行尾标点不上屏', cc.lines.every((l) => !/[，、。,.]$/.test(l.text)), JSON.stringify(cc.lines));
+}
+{
+  // 清单 / 步骤：竖长的框行高 225–330 参考像素（720 宽时 150–220 像素），整组在框里
+  const g = listGeom(3, 900, 1150, true);
+  check('pip 清单：行高 225–330、整组在框里', g.tall && g.rh >= 225 && g.rh <= 330 && g.y0 >= 0 && g.y0 + g.total <= 1150 && g.x0 >= 0 && g.x0 + g.contentW <= 900, JSON.stringify(g));
+  const sg = listGeom(3, 993, 680, true);
+  check('split 清单：整组在框里', !sg.tall && sg.y0 + sg.total <= 680 && sg.rh >= 60, JSON.stringify(sg));
+  // 步骤打勾：下一步开口时打；最后一步 min(说完, 结束前 0.7 秒)，太晚就不打
+  const ck = stepCheckTimes([0.3, 1.5, 2.8], 3.4, 4.6);
+  check('步骤：每一步在下一步开口时打勾，最后一步在结束前 0.7 秒内打', near(ck[0], 1.5) && near(ck[1], 2.8) && near(ck[2], 3.4), JSON.stringify(ck));
+  const late = stepCheckTimes([0.3, 1.5, 3.8], 4.4, 4.6);
+  check('步骤：最后一步说得太晚就不打勾（不出半个徽章）', late[2] === null, JSON.stringify(late));
+}
+{
+  // counter：金额不出中间价
+  check('金额识别', isMoney('', '元') && isMoney('¥', '') && isMoney('', '块钱') && !isMoney('', '秒') && !isMoney('', '个'));
+  const c = counterClock(2.4, true, 4, true);
+  const vals = Array.from({length: 40}, (_, i) => counterValue(i * 0.1, c, 3.5, 7));
+  check('金额有旧值：翻牌，屏幕上只有 7 和 3.5', c.how === 'flip' && vals.every((v) => v === 7 || v === 3.5) && near(counterValue(2.4, c, 3.5, 7), 3.5), JSON.stringify([...new Set(vals)]));
+  const pop = counterClock(2.4, false, 4, true);
+  check('金额没有旧值：落定前最多滚 0.6 秒', pop.how === 'pop' && pop.land - pop.start <= ROLL + 1e-9, JSON.stringify(pop));
+  const cnt = counterClock(2.4, true, 4, false);
+  check('计数有旧值：最多滚 0.6 秒', cnt.how === 'roll' && cnt.land - cnt.start <= ROLL + 1e-9, JSON.stringify(cnt));
+}
+{
+  // 配色：完成徽章按风格取色，ink 只用黑白黄
+  const wood = resolvePalette({look: 'wood'});
+  const ink = resolvePalette({look: 'ink'});
+  check('wood 徽章：暖橙底、正文色勾', badgeOf(wood).bg === '#FFB04A' && badgeOf(wood).fg === wood.ink, JSON.stringify(badgeOf(wood)));
+  check('clay / paper 徽章：珊瑚、鼠尾草绿', resolvePalette({look: 'clay'}).good === '#FF9B78' && resolvePalette({look: 'paper'}).good === '#8FB9A8');
+  check('ink 徽章：荧光黄底、黑描边、黑勾', badgeOf(ink).bg === '#FFD84A' && badgeOf(ink).border === ink.ink && badgeOf(ink).fg === ink.ink, JSON.stringify(badgeOf(ink)));
+  check('ink 条目上色不用蓝灰', !shapeColors(ink).includes(ink.cool), JSON.stringify(shapeColors(ink)));
+  check('compare 旧卡片不透明', /^#[0-9A-F]{6}$/i.test(oldCardOf(wood).face) && oldCardOf(wood).face === '#EFE4D2' && oldCardOf(resolvePalette({look: 'paper'})).face === '#EEE9E0');
+}
+{
+  // keyword 段字幕不和大字重复
+  check('字幕整句就是 keyword：不显示', captionMinusKeyword('花钱之前，它会先给你报价', '花钱之前它会先给你报价') === '');
+  check('字幕比 keyword 多一截：只显示多出的', captionMinusKeyword('关键是，它不会乱编数字', '它不会乱编数字') === '关键是');
+  check('keyword 八成的字都在字幕里：不显示', captionMinusKeyword('它绝不会乱编一个数字', '它不会乱编数字') === '');
+  check('不相干的字幕照常显示', captionMinusKeyword('想试试就去搜精酿', '它不会乱编数字') === '想试试就去搜精酿');
+}
+
 if (failures.length) {
   console.log(`motion 单测：${passed} 过，${failures.length} 败`);
   failures.forEach((f, i) => console.log(`${i + 1}. ${f}`));

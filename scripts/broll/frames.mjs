@@ -11,7 +11,7 @@ const tailOf = (r) =>
 
 /**
  * 从合成后的成片上抽检查帧：每段 before / start / mid / end / after。
- * start 和 end 往窗口里面收一点，躲开 0.2 秒淡入淡出，这样看得到 pip 和 split。
+ * start 和 end 往窗口里面收一点，躲开 0.36 秒的进出场（真人收放、面板推进推出），这样看得到摆好的 pip 和 split。
  */
 export const extractDeliveryFrames = ({video, clips, durationSec, fps = 30, checkDir}) => {
   if (!fs.existsSync(video)) throw new Error('成片不在，抽不了检查帧。');
@@ -20,7 +20,7 @@ export const extractDeliveryFrames = ({video, clips, durationSec, fps = 30, chec
     const start = clip.windowMs[0] / 1000;
     const end = clip.windowMs[1] / 1000;
     const mid = (start + end) / 2;
-    const pad = Math.min(0.25, Math.max(0, (end - start) / 4));
+    const pad = Math.min(0.45, Math.max(0, (end - start) / 4));
     const marks = [
       ['before', Math.max(0, start - 1 / fps)],
       ['start', Math.min(mid, start + pad)],

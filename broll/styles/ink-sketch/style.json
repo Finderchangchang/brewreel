@@ -37,5 +37,5 @@
   ],
   "promptExpansion": "disabled",
   "freezeNoise": 0.0005,
-  "motionTheme": {"look": "ink", "bg": "#FBFAF6", "bg2": "#F1EFE8", "card": "#FFFFFF", "edge": "#26231F", "ink": "#221F1C", "sub": "#5D5952", "accent": "#FFD84A", "cool": "#8EA3B1", "warm": "#E9C9A0", "good": "#2F7D5B", "muted": "#BDB8AE"}
+  "motionTheme": {"look": "ink", "bg": "#FBFAF6", "bg2": "#F1EFE8", "card": "#FFFFFF", "edge": "#26231F", "ink": "#221F1C", "sub": "#5D5952", "accent": "#FFD84A", "cool": "#8EA3B1", "warm": "#E9C9A0", "good": "#FFD84A", "muted": "#BDB8AE"}
 }

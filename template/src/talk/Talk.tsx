@@ -1,9 +1,11 @@
 import React from 'react';
-import {AbsoluteFill, Audio, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
+import {AbsoluteFill, Audio, OffthreadVideo, Sequence, staticFile, useCurrentFrame, useVideoConfig} from 'remotion';
 import {FONT, ensureFont} from '../core/font';
 import {pick} from '../core/kit';
-import {captionFor, layoutOf, pipCaptionPlacement, uiScale, type PipCaption, type TalkLayout} from './layout';
+import {CAPTION_LINE, MOTION_PIP_K, SPLIT_TOP, captionFor, captionMinusKeyword, layoutOf, pipCaptionPlacement, uiScale, type PipCaption, type TalkLayout} from './layout';
 import {MotionLayer, type MotionClip} from './motion/MotionLayer';
+import {resolvePalette} from './motion/palette';
+import {MOTION_FRAMING, VIDEO_FRAMING, edgesOf, panelOffset, transProgress, videoPlacement} from './transition';
 
 ensureFont();
 
@@ -34,83 +36,146 @@ export type TalkProps = {
 };
 
 const isMotion = (clip: TalkClip): clip is MotionClip => clip.kind === 'motion';
-
-const frameStyle = (box: {x: number; y: number; width: number; height: number}, opacity = 1): React.CSSProperties => ({
-  position: 'absolute',
-  left: box.x,
-  top: box.y,
-  width: box.width,
-  height: box.height,
-  overflow: 'hidden',
-  opacity,
-});
+/** 圆窗放大倍数：动效段的圆窗大一点（人优先），视频段和 v0.8 一样 */
+const pipKOf = (clip: TalkClip | undefined) => (clip && isMotion(clip) ? MOTION_PIP_K : 1);
 
 const cuesIn = (clip: TalkClip, cues: TalkCue[]) => cues.filter((c) => c.endMs > clip.startMs && c.startMs < clip.endMs);
 
+/** 这一段里字幕实际显示的字：keyword 段去掉和大字重复的部分（见 layout.ts 的 captionMinusKeyword），'' = 不显示 */
+const shownText = (clip: TalkClip | undefined, text: string): string =>
+  clip && isMotion(clip) && clip.template === 'keyword' ? captionMinusKeyword(text, clip.data.text) : text;
+
+const shownTextsIn = (clip: TalkClip, cues: TalkCue[]) =>
+  cuesIn(clip, cues)
+    .map((c) => shownText(clip, c.text))
+    .filter(Boolean);
+
 /** pip 段的字幕放圆窗左边还是上方：整段统一，按这一段里最长的那句定（见 layout.ts 的 pipCaptionPlacement）。 */
 const placementOf = (clip: TalkClip | undefined, cues: TalkCue[], width: number, height: number): PipCaption =>
-  clip && clip.mode === 'pip' ? pipCaptionPlacement(width, height, cuesIn(clip, cues).map((c) => c.text)) : 'side';
+  clip && clip.mode === 'pip' ? pipCaptionPlacement(width, height, shownTextsIn(clip, cues), pipKOf(clip)) : 'side';
 
-/** 这一段窗口里字幕最靠上的顶边（成片像素）。split 和 pip 上方按每句的行数留高，所以取最高的那句；没有字幕返回 null。 */
-const captionTopOf = (clip: TalkClip, cues: TalkCue[], width: number, height: number): number | null => {
+/** 这一段窗口里字幕占的竖向范围（成片像素）：最靠上那句的顶边、最靠下那句的底边。没有要显示的字幕返回 null。 */
+const captionBandOf = (clip: TalkClip, cues: TalkCue[], width: number, height: number): {top: number; bottom: number} | null => {
   const placement = placementOf(clip, cues, width, height);
-  const tops = cuesIn(clip, cues).map((c) => captionFor(clip.mode, width, height, c.text, placement).y);
-  return tops.length ? Math.min(...tops) : null;
+  const boxes = shownTextsIn(clip, cues).map((text) => captionFor(clip.mode, width, height, text, placement, pipKOf(clip)));
+  if (!boxes.length) return null;
+  return {top: Math.min(...boxes.map((b) => b.y)), bottom: Math.max(...boxes.map((b) => b.y + b.lines * Math.round(b.fontSize * CAPTION_LINE)))};
 };
 
-const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps: number; dur: number; draft?: boolean; captionTop: number | null}> = ({
-  clip,
-  talkSrc,
-  lay,
-  fps,
-  dur,
-  draft,
-  captionTop,
-}) => {
+type Edge = {enter: boolean; exit: boolean};
+type Slot = {clip: TalkClip; from: number; dur: number; edge: Edge};
+
+/** 这一帧在哪一段里、进场走到哪了 */
+const activeAt = (slots: Slot[], frame: number, fps: number): {slot: Slot; e: number} | null => {
+  const slot = slots.find((s) => frame >= s.from && frame < s.from + s.dur);
+  if (!slot) return null;
+  return {slot, e: transProgress(frame - slot.from, slot.dur, fps, slot.edge)};
+};
+
+/** B-roll 面板：视频段是一段 mp4，动效段是 React 组件。split / full 从上方推进来，pip 在人像后面不动。 */
+const PanelLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; band: {top: number; bottom: number} | null}> = ({slot, lay, fps, band}) => {
   const frame = useCurrentFrame();
-  const {width, height} = useVideoConfig();
-  const s = uiScale(width, height);
-  const fade = Math.max(1, Math.round(0.2 * fps));
-  const opacity = interpolate(frame, [0, fade, Math.max(fade + 1, dur - fade), dur], [0, 1, 1, 0], {
-    extrapolateLeft: 'clamp',
-    extrapolateRight: 'clamp',
-  });
-  const faceOpacity = clip.mode === 'split' ? 1 : opacity;
-  const motion = isMotion(clip);
+  const {clip} = slot;
+  const e = transProgress(frame, slot.dur, fps, slot.edge);
+  const dy = panelOffset(clip.mode, lay.broll.height, e);
   return (
-    <AbsoluteFill>
-      {motion ? (
-        <div style={{position: 'absolute', inset: 0, opacity}}>
-          <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={captionTop} />
-        </div>
+    <AbsoluteFill style={{transform: `translateY(${dy}px)`}}>
+      {isMotion(clip) ? (
+        <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={band ? band.top : null} captionBottom={band ? band.bottom : null} />
       ) : (
-        <div style={frameStyle(lay.broll, opacity)}>
+        <div style={{position: 'absolute', left: lay.broll.x, top: lay.broll.y, width: lay.broll.width, height: lay.broll.height, overflow: 'hidden'}}>
           <OffthreadVideo muted src={staticFile(clip.src)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
         </div>
       )}
-      {lay.face ? (
+    </AbsoluteFill>
+  );
+};
+
+/** 真人：整片只有这一个视频层，按当前这段的摆法收放（transition.ts），不叠第二张脸 */
+const FaceLayer: React.FC<{talkSrc: string; slots: Slot[]}> = ({talkSrc, slots}) => {
+  const frame = useCurrentFrame();
+  const {width: W, height: H, fps} = useVideoConfig();
+  const at = activeAt(slots, frame, fps);
+  const video = <OffthreadVideo muted src={staticFile(talkSrc)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />;
+  if (!at || at.e <= 0) return <AbsoluteFill>{video}</AbsoluteFill>;
+  const {clip} = at.slot;
+  const motion = isMotion(clip);
+  const pl = videoPlacement(clip.mode, W, H, at.e, motion ? MOTION_FRAMING : VIDEO_FRAMING);
+  const u = Math.min(W, H) / 1080;
+  const {inset: c, frame: f} = pl;
+  const circle = clip.mode === 'pip';
+  // 圆窗描边：720 宽竖版 6 像素，卡片色（动效段）或白色（视频段）；阴影 0 8px 24px rgba(0,0,0,.18)
+  const ring = Math.max(2, Math.round(9 * u));
+  const ringColor = motion ? resolvePalette(clip.look).card : '#FFFFFF';
+  const ringOpacity = Math.max(0, Math.min(1, (at.e - 0.35) / 0.5));
+  return (
+    <AbsoluteFill>
+      {circle ? (
         <div
           style={{
             position: 'absolute',
-            left: lay.face.x,
-            top: lay.face.y,
-            width: lay.face.width,
-            height: lay.face.height,
-            overflow: 'hidden',
-            borderRadius: lay.face.shape === 'circle' ? '50%' : 0,
-            opacity: faceOpacity,
+            left: f.x - ring,
+            top: f.y - ring,
+            width: f.width + ring * 2,
+            height: f.height + ring * 2,
+            borderRadius: f.radius + ring,
+            boxShadow: `0 ${Math.round(12 * u)}px ${Math.round(36 * u)}px rgba(0,0,0,${(0.18 * at.e).toFixed(3)})`,
           }}
-        >
-          <OffthreadVideo muted src={staticFile(talkSrc)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
-        </div>
+        />
       ) : null}
-      {!motion && clip.badge ? (
+      <div style={{position: 'absolute', inset: 0, clipPath: `inset(${c.top}px ${c.right}px ${c.bottom}px ${c.left}px round ${c.radius}px)`}}>
+        <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, transformOrigin: '0 0', transform: `translate(${pl.tx}px, ${pl.ty}px) scale(${pl.s})`}}>{video}</div>
+      </div>
+      {circle && ringOpacity > 0 && motion ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: f.x - ring,
+            top: f.y - ring,
+            width: f.width + ring * 2,
+            height: f.height + ring * 2,
+            boxSizing: 'border-box',
+            borderRadius: f.radius + ring,
+            border: `${ring}px solid ${ringColor}`,
+            opacity: ringOpacity,
+          }}
+        />
+      ) : null}
+    </AbsoluteFill>
+  );
+};
+
+/** 画在真人上面的：split 动效段的分界线（主题色细线 + 往下一道软阴影）、视频段的「AI 生成画面」和「未审」角标 */
+const OverlayLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; draft?: boolean}> = ({slot, lay, fps, draft}) => {
+  const frame = useCurrentFrame();
+  const {width, height} = useVideoConfig();
+  const s = uiScale(width, height);
+  const {clip} = slot;
+  const e = transProgress(frame, slot.dur, fps, slot.edge);
+  if (e <= 0) return null;
+  if (isMotion(clip)) {
+    if (clip.mode !== 'split') return null;
+    const pal = resolvePalette(clip.look);
+    const u = Math.min(width, height) / 1080;
+    const y = Math.round(height * SPLIT_TOP) * e;
+    const line = Math.max(2, Math.round(6 * u));
+    const shadow = Math.round(24 * u);
+    return (
+      <AbsoluteFill>
+        <div style={{position: 'absolute', left: 0, top: y, width, height: shadow, background: 'linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0) 100%)'}} />
+        <div style={{position: 'absolute', left: 0, top: y - line / 2, width, height: line, background: pal.look === 'ink' ? pal.ink : pal.accent}} />
+      </AbsoluteFill>
+    );
+  }
+  return (
+    <AbsoluteFill>
+      {clip.badge ? (
         <div
           style={{
             position: 'absolute',
             left: lay.badge.x,
             top: lay.badge.y,
-            opacity,
+            opacity: e,
             background: 'rgba(0,0,0,0.55)',
             color: '#fff',
             fontFamily: FONT,
@@ -124,13 +189,13 @@ const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps
           {pick(undefined, 'AI 生成画面', 'AI-generated')}
         </div>
       ) : null}
-      {!motion && draft ? (
+      {draft ? (
         <div
           style={{
             position: 'absolute',
             right: Math.round(36 * s),
             top: Math.round(36 * s),
-            opacity,
+            opacity: e,
             background: 'rgba(0,0,0,0.55)',
             color: '#fff',
             fontFamily: FONT,
@@ -148,21 +213,29 @@ const ClipLayer: React.FC<{clip: TalkClip; talkSrc: string; lay: TalkLayout; fps
   );
 };
 
-const CaptionLayer: React.FC<{cues: TalkCue[]; clips: TalkClip[]; width: number; height: number}> = ({cues, clips, width, height}) => {
+/** 字幕：跟着当前这段的摆法走（进出场时位置跟着一起移），keyword 段去掉和大字重复的部分 */
+const CaptionLayer: React.FC<{cues: TalkCue[]; slots: Slot[]; width: number; height: number}> = ({cues, slots, width, height}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const ms = (frame / fps) * 1000;
   const cue = cues.find((c) => ms >= c.startMs && ms < c.endMs);
   if (!cue) return null;
-  const active = clips.find((c) => ms >= c.startMs && ms < c.endMs);
-  const mode = active?.mode ?? 'full';
-  const box = captionFor(mode, width, height, cue.text, placementOf(active, cues, width, height));
+  const at = activeAt(slots, frame, fps);
+  const active = at && at.e > 0 ? at.slot.clip : undefined;
+  const text = shownText(active, cue.text);
+  if (!text) return null;
+  const box = captionFor(active?.mode ?? 'full', width, height, text, placementOf(active, cues, width, height), pipKOf(active));
+  let y = box.y;
+  if (active && at) {
+    const fullY = captionFor('full', width, height, text).y;
+    y = fullY + (box.y - fullY) * at.e;
+  }
   return (
     <div
       style={{
         position: 'absolute',
         left: box.x,
-        top: box.y,
+        top: y,
         width: box.width,
         textAlign: 'center',
         fontFamily: FONT,
@@ -176,7 +249,7 @@ const CaptionLayer: React.FC<{cues: TalkCue[]; clips: TalkClip[]; width: number;
         whiteSpace: 'pre-line',
       }}
     >
-      {cue.text}
+      {text}
     </div>
   );
 };
@@ -184,21 +257,33 @@ const CaptionLayer: React.FC<{cues: TalkCue[]; clips: TalkClip[]; width: number;
 export const Talk: React.FC<TalkProps> = ({talkSrc, captions, cues, clips, draft}) => {
   const {width, height, fps} = useVideoConfig();
   if (!talkSrc) return <AbsoluteFill style={{background: '#141218'}} />;
+  const edges = edgesOf(clips, fps);
+  const slots: Slot[] = clips.map((clip, i) => ({
+    clip,
+    from: Math.round((clip.startMs / 1000) * fps),
+    dur: Math.max(1, Math.round(((clip.endMs - clip.startMs) / 1000) * fps)),
+    edge: edges[i],
+  }));
   return (
     <AbsoluteFill style={{background: '#000'}}>
-      <OffthreadVideo muted src={staticFile(talkSrc)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+      {slots.map((slot) => (
+        <Sequence key={`p-${slot.clip.id}`} from={slot.from} durationInFrames={slot.dur}>
+          <PanelLayer
+            slot={slot}
+            lay={layoutOf(slot.clip.mode, width, height, 1, pipKOf(slot.clip))}
+            fps={fps}
+            band={captions === 'add' ? captionBandOf(slot.clip, cues, width, height) : null}
+          />
+        </Sequence>
+      ))}
+      <FaceLayer talkSrc={talkSrc} slots={slots} />
       <Audio src={staticFile(talkSrc)} />
-      {clips.map((clip) => {
-        const from = Math.round((clip.startMs / 1000) * fps);
-        const dur = Math.max(1, Math.round(((clip.endMs - clip.startMs) / 1000) * fps));
-        const captionTop = captions === 'add' ? captionTopOf(clip, cues, width, height) : null;
-        return (
-          <Sequence key={clip.id} from={from} durationInFrames={dur}>
-            <ClipLayer clip={clip} talkSrc={talkSrc} lay={layoutOf(clip.mode, width, height)} fps={fps} dur={dur} draft={draft} captionTop={captionTop} />
-          </Sequence>
-        );
-      })}
-      {captions === 'add' ? <CaptionLayer cues={cues} clips={clips} width={width} height={height} /> : null}
+      {slots.map((slot) => (
+        <Sequence key={`o-${slot.clip.id}`} from={slot.from} durationInFrames={slot.dur}>
+          <OverlayLayer slot={slot} lay={layoutOf(slot.clip.mode, width, height, 1, pipKOf(slot.clip))} fps={fps} draft={draft} />
+        </Sequence>
+      ))}
+      {captions === 'add' ? <CaptionLayer cues={cues} slots={slots} width={width} height={height} /> : null}
     </AbsoluteFill>
   );
 };

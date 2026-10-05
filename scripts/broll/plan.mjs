@@ -149,12 +149,12 @@ export const buildPlan = ({doc, cues, media, style, styles = null, character = n
 };
 
 /**
- * 动效段说完最后一个字后至少再停一会儿：亮完（约 0.1 秒）+ 马克笔扫完（约 0.35 秒）+ 全亮停 0.5 秒 + 淡出 0.2 秒。
+ * 动效段说完最后一个字后至少再停一会儿：亮完（约 0.1 秒）+ 马克笔扫完（约 0.35 秒）+ 全亮停 0.5 秒 + 退场 0.36 秒（面板推出去、真人回到全屏）。
  * 窗口本来停在这句话结束后 0.2 秒，最后一个字常常落在句尾，全亮的样子只闪一下。后面是静音时把窗口往后延，
  * 但只在不添新问题的范围里延：不进下一句话（停在下一句开口那一刻）、和下一段之间照样留够 1 秒真人、
  * 不超过 12 秒、全片 B-roll 不超过 60%。校验用的仍是原来的窗口，这里延出来的只进合成。
  */
-export const TAIL_HOLD_MS = 1050;
+export const TAIL_HOLD_MS = 1250;
 
 export const extendMotionTails = (clips, cues, durationMs) => {
   const byNo = new Map(cues.map((c) => [cueNo(c.id), c]));
