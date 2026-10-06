@@ -2,6 +2,14 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## Unreleased
+
+### New: style factory
+
+- `node scripts/broll/new-style.mjs`: one sentence drafts an AI B-roll style under `broll/styles/_drafts/<id>/`, generates references, scores them, picks, and makes one still. Without `--yes` it only prints the requests it would send. A video trial needs both `--video` and `--yes`, and it prints the credit and list-price line before the real call. The vision check is only the first screen; a person looks last.
+- `node scripts/broll/approve-style.mjs <id>`: a person runs this after the review page. It publishes the draft into `broll/styles/<id>/`. An AI assistant must not run it. Status is `stable` when a video trial was made and passed, otherwise `experimental`.
+- Style directories whose names start with `_` are not part of the style menu. See [docs/style-factory.en.md](docs/style-factory.en.md).
+
 ## v0.9.0 · 2026-10-05 · Drop in one talking-head video, get explainer shots
 
 A big update to talking-head B-roll (experimental): a talk video alone is now enough, with free motion clips and several AI clip styles. Promo videos work and look exactly as before. `broll.json` files written for v0.8 still run as version 1, and clips already generated are not paid for again; changing a file to version 2 changes the prompt and the request, so AI clips already generated are generated and paid for again.

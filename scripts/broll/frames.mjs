@@ -35,3 +35,24 @@ export const extractDeliveryFrames = ({video, clips, durationSec, fps = 30, chec
     }
   }
 };
+
+/**
+ * 从一段视频上按固定间隔抽帧（风格工厂的视频试拍：4 秒、每 0.5 秒 1 帧，共 8 帧）。
+ * 时刻是 0、0.5、…，不含结尾那一格（落到文件末尾容易抽空）。
+ * @returns {string[]} 抽出的 jpg 路径
+ */
+export const extractFramesEvery = ({video, outDir, everySec = 0.5, durationSec = 4}) => {
+  if (!fs.existsSync(video)) throw new Error(`视频不在：${video}。先生成再抽帧。`);
+  if (!(everySec > 0) || !(durationSec > 0)) throw new Error(`抽帧间隔不对：everySec=${everySec}，durationSec=${durationSec}。`);
+  fs.mkdirSync(outDir, {recursive: true});
+  const n = Math.round(durationSec / everySec);
+  const files = [];
+  for (let i = 0; i < n; i++) {
+    const sec = Math.round(i * everySec * 1000) / 1000;
+    const dest = path.join(outDir, `f${String(i).padStart(2, '0')}.jpg`);
+    const shot = ffmpeg(['-y', '-hide_banner', '-loglevel', 'error', '-i', video, '-ss', sec.toFixed(3), '-frames:v', '1', dest]);
+    if (shot.status !== 0 || !fs.existsSync(dest)) throw new Error(`抽帧失败（${sec} 秒）：${tailOf(shot)}。检查 ffmpeg 和视频。`);
+    files.push(dest);
+  }
+  return files;
+};

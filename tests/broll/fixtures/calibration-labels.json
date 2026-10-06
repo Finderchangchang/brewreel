@@ -1,0 +1,6 @@
+{
+  "items": [
+    {"file": "fixtures/missing-a.jpg", "kind": "character", "verdict": "fail", "reasons": ["mouth"]},
+    {"file": "fixtures/missing-b.jpg", "kind": "material", "verdict": "pass"}
+  ]
+}

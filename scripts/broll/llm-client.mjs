@@ -7,7 +7,25 @@
 
 export const SECRET_RE = /bearer\s+\S+|sk-[A-Za-z0-9_-]{8,}/gi;
 
-export const redact = (text) => String(text ?? '').replace(SECRET_RE, (m) => (m.toLowerCase().startsWith('bearer') ? 'Bearer [redacted]' : 'sk-[redacted]'));
+const KEY_ENV_NAMES = ['MINIMAX_API_KEY', 'MINIMAX_PAYGO_API_KEY', 'DEEPSEEK_API_KEY', 'LLM_API_KEY'];
+
+/** 先按 key 原文替换，再套通用正则。key 含点号或不以 sk- 开头时，只靠正则会漏。 */
+export const redact = (text, key) => {
+  let out = String(text ?? '');
+  const extra = String(key ?? '').trim();
+  if (extra.length >= 8) out = out.split(extra).join('***');
+  return out.replace(SECRET_RE, (m) => (m.toLowerCase().startsWith('bearer') ? 'Bearer [redacted]' : 'sk-[redacted]'));
+};
+
+/** 环境里这几个 key 都按原文打码，再套通用正则。写报告前再过一遍。 */
+export const redactSecrets = (text, env = process.env) => {
+  let out = String(text ?? '');
+  for (const name of KEY_ENV_NAMES) {
+    const key = String(env?.[name] ?? '').trim();
+    if (key.length >= 8) out = out.split(key).join('***');
+  }
+  return redact(out);
+};
 
 /** 粗估 token：中日韩字符按 0.7，其余按 3.5 字符一个。只用于 --dry-run 提示。 */
 export const estTokens = (text) => {
@@ -76,7 +94,7 @@ export const callLlm = async (messages, cfg, opts = {}) => {
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
-      last = redact(`接口调用失败：${e?.name || 'Error'}: ${e?.message || e}`);
+      last = redact(`接口调用失败：${e?.name || 'Error'}: ${e?.message || e}`, cfg.key);
       if (attempt < 2) {
         log(`  网络中断，${Math.round((retryDelayMs * (attempt + 1)) / 1000)} 秒后重试…`);
         await sleep(retryDelayMs * (attempt + 1));
@@ -86,7 +104,7 @@ export const callLlm = async (messages, cfg, opts = {}) => {
     }
     const raw = await res.text();
     if (res.status === 429 || res.status >= 500) {
-      last = redact(`接口报错 HTTP ${res.status}：${raw.slice(0, 300)}`);
+      last = redact(`接口报错 HTTP ${res.status}：${raw.slice(0, 300)}`, cfg.key);
       if (attempt < 2) {
         log(`  接口 HTTP ${res.status}，${Math.round((retryDelayMs * (attempt + 1)) / 1000)} 秒后重试…`);
         await sleep(retryDelayMs * (attempt + 1));
@@ -94,7 +112,7 @@ export const callLlm = async (messages, cfg, opts = {}) => {
       }
       throw new Error(last);
     }
-    if (!res.ok) throw new Error(redact(`接口报错 HTTP ${res.status}：${raw.slice(0, 300)}`));
+    if (!res.ok) throw new Error(redact(`接口报错 HTTP ${res.status}：${raw.slice(0, 300)}`, cfg.key));
     let data;
     try {
       data = JSON.parse(raw);

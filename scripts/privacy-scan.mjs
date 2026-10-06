@@ -43,6 +43,7 @@ const ALLOW = [
 ];
 
 const EXCLUDE_DIRS = new Set(['.git', 'node_modules', 'out', '.render.lock']);
+const STYLE_DRAFTS = 'broll/styles/_drafts';
 // 本工具自身的规则源码天然会包含这些关键词/示例文本，不算真实泄露。
 // DeepSeek Harness 插件打包时（npm run sync / npm pack）会把本文件复制进 skill/ 快照，那份副本同理豁免；
 // 快照里的其它文件照常扫（它们就是 npm 包的内容）。
@@ -57,8 +58,8 @@ const BINARY_EXT = new Set([
   '.ico', '.zip', '.lock', '.tgz', '.gz', '.pyc',
 ]);
 
-function loadDenylist() {
-  const p = path.join(ROOT, '.privacy-denylist.local');
+function loadDenylist(root = ROOT) {
+  const p = path.join(root, '.privacy-denylist.local');
   if (!fs.existsSync(p)) return [];
   return fs
     .readFileSync(p, 'utf8')
@@ -72,15 +73,21 @@ function isAllowed(relFile, text) {
   return ALLOW.some((a) => relFile.split(path.sep).join('/').includes(a.fileIncludes.split(path.sep).join('/')) && text.includes(a.textIncludes));
 }
 
-function walk(dir, out) {
+function isStyleDraft(rel) {
+  const norm = rel.split(path.sep).join('/');
+  return norm === STYLE_DRAFTS || norm.startsWith(`${STYLE_DRAFTS}/`);
+}
+
+function walk(dir, out, root) {
   for (const name of fs.readdirSync(dir)) {
     if (EXCLUDE_DIRS.has(name)) continue;
     const full = path.join(dir, name);
-    const rel = path.relative(ROOT, full);
+    const rel = path.relative(root, full);
+    if (isStyleDraft(rel)) continue;
     if (EXCLUDE_PATH_PARTS.some((p) => rel.split(path.sep).join('/').includes(p.split('\\').join('/')))) continue;
     const st = fs.statSync(full);
     if (st.isDirectory()) {
-      walk(full, out);
+      walk(full, out, root);
     } else {
       if (BINARY_EXT.has(path.extname(name).toLowerCase())) continue;
       out.push(full);
@@ -116,6 +123,24 @@ function scanText(label, text, denylistRules) {
   return hits;
 }
 
+function scanRoot(root, opts = {}) {
+  const denylistRules = opts.denylistRules ?? loadDenylist(root);
+  const files = walk(root, [], root);
+  const allHits = [];
+  for (const f of files) {
+    let text;
+    try {
+      text = fs.readFileSync(f, 'utf8');
+    } catch {
+      continue;
+    }
+    const rel = path.relative(root, f);
+    if (SELF_EXCLUDE.has(rel)) continue;
+    allHits.push(...scanText(rel, text, denylistRules));
+  }
+  return allHits;
+}
+
 async function main() {
   const denylistRules = loadDenylist();
   let allHits = [];
@@ -125,19 +150,7 @@ async function main() {
     const text = Buffer.concat(chunks).toString('utf8');
     allHits = scanText('<stdin>', text, denylistRules);
   } else {
-    const files = walk(ROOT, []);
-    for (const f of files) {
-      let text;
-      try {
-        text = fs.readFileSync(f, 'utf8');
-      } catch {
-        continue;
-      }
-      const rel = path.relative(ROOT, f);
-      if (SELF_EXCLUDE.has(rel)) continue;
-      const hits = scanText(rel, text, denylistRules);
-      allHits.push(...hits);
-    }
+    allHits = scanRoot(ROOT, {denylistRules});
   }
   if (allHits.length === 0) {
     console.log('隐私扫描：0 命中。');
@@ -150,7 +163,7 @@ async function main() {
   process.exit(1);
 }
 
-export {RULES, scanText, loadDenylist};
+export {RULES, scanText, loadDenylist, scanRoot};
 
 const invoked = process.argv[1] && path.resolve(process.argv[1]).toLowerCase() === fileURLToPath(import.meta.url).toLowerCase();
 if (invoked) main();

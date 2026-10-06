@@ -1,5 +1,5 @@
 {
-  "note": "suggest 是 version 1 老文件的改法；suggestV2 是 version 2 的改法（v2 的 subject 只写「机器人」，place / subject 不许出现材质词）。没有 suggestV2 时两种版本都用 suggest。",
+  "note": "suggest 是 version 1 老文件的改法；suggestV2 是 version 2 的改法（v2 的 subject 只写「机器人」，place / subject 不许出现材质词）。没有 suggestV2 时两种版本都用 suggest。groups.ip 是看图打分（judge）用的作品和品牌名单，这些词也都在 words 里，校验 broll.json 时照旧拦。风格工厂写 style.json 时额外按这一组再查一遍。",
   "words": [
     {"word": "乐高小人", "suggest": "积木小人", "suggestV2": "机器人"},
     {"word": "乐高", "suggest": "积木", "suggestV2": "方块"},
@@ -61,5 +61,8 @@
     {"word": "裸体", "suggest": "删掉这个词"},
     {"word": "血腥", "suggest": "删掉这个词"},
     {"word": "赌博", "suggest": "删掉这个词"}
-  ]
+  ],
+  "groups": {
+    "ip": ["乐高", "LEGO", "Lego", "lego", "Minecraft", "我的世界", "吉卜力", "Ghibli", "宫崎骏", "皮克斯", "Pixar", "迪士尼", "Disney", "Aardman", "阿德曼", "小羊肖恩", "Shaun", "纪念碑谷", "Monument Valley"]
+  }
 }

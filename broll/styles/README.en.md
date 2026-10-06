@@ -84,3 +84,11 @@ Existing images are never overwritten; at most 4 images per run; without `--yes`
 1. Copy an existing folder and change `id` and the fields.
 2. Run `node tests/broll/styles.mjs`. It checks required fields, jobs and camera moves, `pairsWith`, and leak words in prompts and image prompts.
 3. Make the references and pick them by eye before committing. Test a new style once with a small paid run (one 4-second clip) before documenting it.
+
+To skip the handwriting, use the style factory: one sentence makes a draft, the script generates, scores and picks, and a person approves after the review page. Stages, what costs money, and where the vision check is wrong are in [docs/style-factory.en.md](../../docs/style-factory.en.md).
+
+```
+node scripts/broll/new-style.mjs --id <id> --name <name> --desc "<one sentence>"
+```
+
+Without `--yes` it only prints the requests. After reading `broll/styles/_drafts/<id>/review.html`, a person runs `node scripts/broll/approve-style.mjs <id>`. An AI assistant must not run that command.

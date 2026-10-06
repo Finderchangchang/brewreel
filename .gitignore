@@ -16,6 +16,9 @@ template/.render.lock
 # style reference candidates from make-style-refs --n (pick one, rename, then commit)
 broll/styles/*/refs/*.cand-*.jpg
 
+# style factory drafts — approve-style.mjs copies the chosen pack into broll/styles/<id>/
+broll/styles/_drafts/
+
 # env / secrets
 .env
 .env.*

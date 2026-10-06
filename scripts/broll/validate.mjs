@@ -46,6 +46,8 @@ export const loadStyles = (root = ROOT) => {
   const out = {};
   if (!fs.existsSync(dir)) return out;
   for (const name of fs.readdirSync(dir).sort()) {
+    // 下划线开头是草稿（broll/styles/_drafts），不进风格清单。人跑 approve-style 之后才有正式目录。
+    if (name.startsWith('_') || name.startsWith('.')) continue;
     const p = path.join(dir, name, 'style.json');
     if (!fs.existsSync(p)) continue;
     out[name] = JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));

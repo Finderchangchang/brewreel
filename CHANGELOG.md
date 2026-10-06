@@ -2,6 +2,14 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
+## Unreleased
+
+### 新增：风格工厂
+
+- `node scripts/broll/new-style.mjs`：一句话写一个 AI 画面风格的草稿（`broll/styles/_drafts/<id>/`），出参考图、看图打分、挑图、做一张静态试拍。不加 `--yes` 只打印将要发送的请求。视频试拍要同时加 `--video` 和 `--yes`，真调前打印积分和价目。看图打分只是第一道筛，最后要人看。
+- `node scripts/broll/approve-style.mjs <id>`：人看完汇总页之后自己跑，把草稿收进 `broll/styles/<id>/`。AI 助手不许替人运行。做过视频试拍且通过写 `stable`，否则写 `experimental`。
+- 下划线开头的风格目录不进风格清单。说明见 [docs/style-factory.md](docs/style-factory.md)。
+
 ## v0.9.0 · 2026-10-05 · 只放一段口播，自动配画面
 
 口播配画面（实验）这一版大改：只放一段口播视频就能出片，多了免费的动效画面和几种 AI 画面风格。宣传片的用法和画面都没变。v0.8 写的 `broll.json`（version 1）留着 version 1 照常能跑，已经生成过的片段不会重新花钱；改成 version 2 的话，v2 的提示词和请求都变了，已经生成过的 AI 段会重新生成、重新花钱。

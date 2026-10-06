@@ -84,3 +84,11 @@ node scripts/broll/make-style-refs.mjs --style wood-blocks --only refs/material.
 1. 复制一个现有目录，改 `id` 和各字段。
 2. 跑 `node tests/broll/styles.mjs`，它会检查字段齐不齐、job 和运镜写得对不对、`pairsWith` 存不存在、提示词和出图提示里有没有泄漏词。
 3. 出参考图，人挑过再提交。新风格先花一次小钱实测（一段 4 秒），过了再写进文档。
+
+不想手写时，用风格工厂：一句话出草稿，脚本出图、看图、挑图，人最后看汇总页再批准。步骤、花钱分档和看图会错在哪，见 [docs/style-factory.md](../../docs/style-factory.md)。
+
+```
+node scripts/broll/new-style.mjs --id <id> --name <名字> --desc "<一句话>"
+```
+
+不加 `--yes` 只打印请求。看完 `broll/styles/_drafts/<id>/review.html` 之后，人自己运行 `node scripts/broll/approve-style.mjs <id>`。AI 助手不许替人运行这条命令。
