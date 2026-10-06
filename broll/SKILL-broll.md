@@ -222,6 +222,7 @@ AI 画面的 7 种 job：demonstrate、explain、ground、compare、quantify、e
 |---|---|
 | version | 写 `2`（v0.8 的老文件写 `1`，照常能跑，但没有动效画面、副风格和新风格。老文件改成 2 以后，已经生成过的 AI 段会按新提示词重新生成、重新花钱） |
 | style | 主风格，默认 `wood-blocks` |
+| motionTheme | 可选。这一支片子的动效外观名字：`wood`、`clay`、`paper`、`ink`、`cutpaper-meadow`、`cutpaper-dusk`。不写就用主风格里的那套。`llm_broll --motion-look` 会写进这里 |
 | styleAlt | 副风格，可选 |
 | thread | 一句不超过 20 字的主线，可选。只进审片页 |
 | provider | `placeholder`、`local` 或 `minimax-h3`。只管 AI 画面段 |

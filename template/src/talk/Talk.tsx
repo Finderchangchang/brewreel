@@ -3,8 +3,10 @@ import {AbsoluteFill, Audio, OffthreadVideo, Sequence, staticFile, useCurrentFra
 import {FONT, ensureFont} from '../core/font';
 import {pick} from '../core/kit';
 import {CAPTION_LINE, MOTION_PIP_K, SPLIT_TOP, captionFor, captionMinusKeyword, layoutOf, pipCaptionPlacement, uiScale, type PipCaption, type TalkLayout} from './layout';
+import {anchorRelay} from './motion/kit/anchorRelay';
+import {restTiltFor} from './motion/kit/cutShape';
 import {MotionLayer, type MotionClip} from './motion/MotionLayer';
-import {resolvePalette} from './motion/palette';
+import {blend, isCutpaper, resolvePalette} from './motion/palette';
 import {MOTION_FRAMING, VIDEO_FRAMING, edgesOf, panelOffset, transProgress, videoPlacement} from './transition';
 
 ensureFont();
@@ -72,8 +74,31 @@ const activeAt = (slots: Slot[], frame: number, fps: number): {slot: Slot; e: nu
   return {slot, e: transProgress(frame - slot.from, slot.dur, fps, slot.edge)};
 };
 
+/** 上一段动效和这一段接不接同一张锚点卡。中间隔了视频段也按两段动效的窗口间隔算。 */
+const relayFor = (slots: Slot[], index: number) => {
+  const cur = slots[index]?.clip;
+  if (!cur || !isMotion(cur)) return null;
+  let prev: MotionClip | null = null;
+  for (let j = index - 1; j >= 0; j--) {
+    const earlier = slots[j].clip;
+    if (isMotion(earlier)) {
+      prev = earlier;
+      break;
+    }
+  }
+  if (!prev) return null;
+  const a = resolvePalette(prev.look);
+  const b = resolvePalette(cur.look);
+  return anchorRelay({
+    sameLook: a.look === b.look,
+    gapSec: (cur.startMs - prev.endMs) / 1000,
+    prev: {tilt: restTiltFor(a.look), color: a.accent},
+    next: {tilt: restTiltFor(b.look), color: b.accent},
+  });
+};
+
 /** B-roll 面板：视频段是一段 mp4，动效段是 React 组件。split / full 从上方推进来，pip 在人像后面不动。 */
-const PanelLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; band: {top: number; bottom: number} | null}> = ({slot, lay, fps, band}) => {
+const PanelLayer: React.FC<{slot: Slot; slots: Slot[]; index: number; lay: TalkLayout; fps: number; band: {top: number; bottom: number} | null}> = ({slot, slots, index, lay, fps, band}) => {
   const frame = useCurrentFrame();
   const {clip} = slot;
   const e = transProgress(frame, slot.dur, fps, slot.edge);
@@ -81,7 +106,7 @@ const PanelLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; band: {top
   return (
     <AbsoluteFill style={{transform: `translateY(${dy}px)`}}>
       {isMotion(clip) ? (
-        <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={band ? band.top : null} captionBottom={band ? band.bottom : null} />
+        <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={band ? band.top : null} captionBottom={band ? band.bottom : null} relay={relayFor(slots, index)} />
       ) : (
         <div style={{position: 'absolute', left: lay.broll.x, top: lay.broll.y, width: lay.broll.width, height: lay.broll.height, overflow: 'hidden'}}>
           <OffthreadVideo muted src={staticFile(clip.src)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
@@ -145,7 +170,7 @@ const FaceLayer: React.FC<{talkSrc: string; slots: Slot[]}> = ({talkSrc, slots})
   );
 };
 
-/** 画在真人上面的：split 动效段的分界线（主题色细线 + 往下一道软阴影）、视频段的「AI 生成画面」和「未审」角标 */
+/** 画在真人上面的：split 动效段的分界线（细线 + 往下一道软阴影）、视频段的「AI 生成画面」和「未审」角标。剪纸的细线用纸底压暗，强调色只留给锚点 */
 const OverlayLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; draft?: boolean}> = ({slot, lay, fps, draft}) => {
   const frame = useCurrentFrame();
   const {width, height} = useVideoConfig();
@@ -163,7 +188,7 @@ const OverlayLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; draft?: 
     return (
       <AbsoluteFill>
         <div style={{position: 'absolute', left: 0, top: y, width, height: shadow, background: 'linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0) 100%)'}} />
-        <div style={{position: 'absolute', left: 0, top: y - line / 2, width, height: line, background: pal.look === 'ink' ? pal.ink : pal.accent}} />
+        <div style={{position: 'absolute', left: 0, top: y - line / 2, width, height: line, background: isCutpaper(pal.look) ? blend(pal.bg, '#000000', 0.2) : pal.look === 'ink' ? pal.ink : pal.accent}} />
       </AbsoluteFill>
     );
   }
@@ -266,10 +291,12 @@ export const Talk: React.FC<TalkProps> = ({talkSrc, captions, cues, clips, draft
   }));
   return (
     <AbsoluteFill style={{background: '#000'}}>
-      {slots.map((slot) => (
+      {slots.map((slot, i) => (
         <Sequence key={`p-${slot.clip.id}`} from={slot.from} durationInFrames={slot.dur}>
           <PanelLayer
             slot={slot}
+            slots={slots}
+            index={i}
             lay={layoutOf(slot.clip.mode, width, height, 1, pipKOf(slot.clip))}
             fps={fps}
             band={captions === 'add' ? captionBandOf(slot.clip, cues, width, height) : null}

@@ -52,7 +52,7 @@ broll/styles/<id>/
 | `promptExpansion` | 提示词扩写模式：`disabled`、`balanced`、`quality`，或不写。H3 不收 `extra`（2026-10-05 真接口实测，带上就 400），所以目前只校验写法，不发送 |
 | `note` | 可选，写给维护者的备注（为什么是实验风格、哪些字段不能改），不进提示词 |
 | `freezeNoise` | 静帧检测的噪声容差。白底、纯色底的风格要小一点（`0.0005`），默认 `0.003` |
-| `motionTheme` | 同一条片子里动效画面的配色和质感：`{"look": "wood", "bg": "#F3E8D6", …}`。`look` 选 `wood`（木纹桌面 + 刷漆木积木）、`clay`（细颗粒 + 黏土团）、`paper`（纸纤维 + 叠层彩纸）、`ink`（点格白纸 + 墨线涂鸦），决定背景纹理、装饰形状和卡片质感；色号可选，键是 `bg` `bg2` `card` `edge` `ink` `sub` `accent` `cool` `warm` `good` `muted`（`#RRGGBB`），不写用这个 look 的默认色。画面上只有形状和纹理，字仍然只来自原话 |
+| `motionTheme` | 同一条片子里动效画面的配色和质感：`{"look": "wood", "bg": "#F3E8D6", …}`。`look` 选 `wood`（木纹桌面 + 刷漆木积木）、`clay`（细颗粒 + 黏土团）、`paper`（纸纤维 + 叠层彩纸）、`ink`（点格白纸 + 墨线涂鸦），决定背景纹理、装饰形状和卡片质感；色号可选，键是 `bg` `bg2` `card` `edge` `ink` `sub` `accent` `cool` `warm` `good` `muted`（`#RRGGBB`），不写用这个 look 的默认色。画面上只有形状和纹理，字仍然只来自原话。`broll.json` version 2 的顶层 `motionTheme` 可以写成外观名字（含 `cutpaper-meadow`、`cutpaper-dusk`）盖过这里，不写就用本行 |
 
 ## 提示词规则
 

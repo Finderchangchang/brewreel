@@ -8,11 +8,12 @@ Goal: learn a good short video's **method** (structure, rhythm, motion, camera, 
 
 The bar in one line: **same genre, but anyone who knows the reference can tell at a glance it is not the same brand.** Quality must not drop because of the reskin.
 
-Six steps, each with a reusable prompt that any AI coding assistant can follow. The prompts in `prompts/` are written in Chinese; they are plain step lists and translate directly.
+Each step has a reusable prompt that any AI coding assistant can follow. The prompts in `prompts/` are written in Chinese (01b is bilingual); they are plain step lists and translate directly. Step 1b sits after the breakdown: write down why the motion works, in a form the next reference film can reuse, before making a replica.
 
 | Step | Output | Prompt | Who |
 |---|---|---|---|
 | 1. Breakdown | Nine-layer breakdown, beat table, token draft and a numbered **signature list** `signatures.md` (all kept outside the repo) | `prompts/01-breakdown.md` | Strong model, using measurements from `scripts/extract-frames.mjs` |
+| 1b. First principles | `principles.md` outside the repo: for each mechanism, what it is, the evidence, why it works, whether it can be reused without the skin, the parameter range, and what fails if it is dropped; then a table of reusable parts | `prompts/01b-principles.md` | Strong model, using only step 1's measurements, inventing no new numbers |
 | 2. Replica (to learn the skeleton; never published) | A film "in the style" that shows what really drives the look; **not committed, not published** | `prompts/02-replicate.md` | Strong model |
 | 3. **Redesign (reskin)** | Palette, type treatment, characters, signature details, stock phrases and ending all replaced with our own; `styles/<id>/originality.md`; `check-originality` passes | `prompts/redesign.md` | Strong model |
 | 4. Componentize | Tokens, shots and specs in `template/src/styles/<id>/`; docs and rules in `styles/<id>/` | `prompts/03-componentize.md` | Strong model |
@@ -20,6 +21,8 @@ Six steps, each with a reusable prompt that any AI coding assistant can follow. 
 | 6. Review and fix | Score against the reference, including **confusability** (1–10, must be ≤ 3), list problems, fix rules and components | `prompts/04-review.md` | Another model or a person |
 
 Step 2 is for understanding: it may run the skeleton on the measured values first. Step 3 is for making it ours: every palette choice, layout detail and placeholder character from the replica is replaced. Do not start step 4 before step 3 passes, and never set `status` to `stable` before it does.
+
+Parts listed in step 1b go into code apart from the skin. Talk-motion parts live in `template/src/talk/motion/kit/`; promo parts live in that format's component directory. Palette, rest angle and the specific shapes stay in the look or the recipe. A new motion look has to pass `scripts/check-originality.mjs` against the reference tokens and the signature list (both outside the repo) before it is wired to a template.
 
 ## Skeleton vs skin
 

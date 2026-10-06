@@ -16,10 +16,12 @@ import {Checklist} from './Checklist';
 import {Compare} from './Compare';
 import {Counter} from './Counter';
 import {Keyword} from './Keyword';
-import {resolvePalette} from './palette';
+import {CutpaperStage} from './cutpaper';
+import {isCutpaper, resolvePalette} from './palette';
 import {freeRect} from './stage';
 import {Steps} from './Steps';
 import type {MotionClip} from './types';
+import type {RelayDecision} from './kit/anchorRelay';
 
 export type {MotionClip} from './types';
 
@@ -38,9 +40,11 @@ export type MotionLayerProps = {
   captionBottom?: number | null;
   /** 口播小窗（layoutOf(...).face）。pip 的圆窗在框里，会被让开；split 的下半脸在框外，自动忽略 */
   face?: Rect | null;
+  /** 和上一段动效接不接锚点。不传 = 各自入场 */
+  relay?: RelayDecision | null;
 };
 
-export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, captionBottom, face}) => {
+export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, captionBottom, face, relay}) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const t = frame / fps;
@@ -64,17 +68,26 @@ export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, 
   }
   if (face && clip.mode === 'pip') avoid.push({x: (face.x - box.x) / u - FACE_PAD, y: (face.y - box.y) / u - FACE_PAD, width: face.width / u + FACE_PAD * 2, height: face.height / u + FACE_PAD * 2});
   const common = {t, dur, W, H, pal};
+  const cut = isCutpaper(pal.look);
   let body: React.ReactNode = null;
-  if (clip.template === 'keyword') body = <Keyword data={clip.data} marks={clip.marks} {...common} />;
-  else if (clip.template === 'checklist') body = <Checklist data={clip.data} marks={clip.marks} {...common} />;
-  else if (clip.template === 'steps') body = <Steps data={clip.data} marks={clip.marks} {...common} />;
-  else if (clip.template === 'counter') body = <Counter data={clip.data} marks={clip.marks} {...common} />;
-  else if (clip.template === 'compare') body = <Compare data={clip.data} marks={clip.marks} {...common} />;
+  if (!cut) {
+    if (clip.template === 'keyword') body = <Keyword data={clip.data} marks={clip.marks} {...common} />;
+    else if (clip.template === 'checklist') body = <Checklist data={clip.data} marks={clip.marks} {...common} />;
+    else if (clip.template === 'steps') body = <Steps data={clip.data} marks={clip.marks} {...common} />;
+    else if (clip.template === 'counter') body = <Counter data={clip.data} marks={clip.marks} {...common} />;
+    else if (clip.template === 'compare') body = <Compare data={clip.data} marks={clip.marks} {...common} />;
+  }
   return (
     <div style={{position: 'absolute', left: box.x, top: box.y, width: box.width, height: box.height, overflow: 'hidden'}}>
       <div style={{position: 'absolute', left: 0, top: 0, width: bw, height: bh, transformOrigin: '0 0', transform: `scale(${u})`, fontFamily: FONT}}>
-        <Backdrop pal={pal} w={bw} h={bh} t={t} seed={clip.id} focus={{x: fx, y: fy, width: W, height: H}} avoid={avoid} />
-        <div style={{position: 'absolute', left: fx, top: fy, width: W, height: H}}>{body}</div>
+        {cut ? (
+          <CutpaperStage clip={clip} pal={pal} t={t} dur={dur} W={W} H={H} bw={bw} bh={bh} fx={fx} fy={fy} relay={relay ?? null} avoid={avoid} />
+        ) : (
+          <>
+            <Backdrop pal={pal} w={bw} h={bh} t={t} seed={clip.id} focus={{x: fx, y: fy, width: W, height: H}} avoid={avoid} />
+            <div style={{position: 'absolute', left: fx, top: fy, width: W, height: H}}>{body}</div>
+          </>
+        )}
       </div>
     </div>
   );

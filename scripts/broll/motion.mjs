@@ -137,7 +137,7 @@ export const motionModeProblem = (template, mode, slots, ctx = {}) => {
 // ============================================================
 // 配色和质感：风格包 style.json 的 motionTheme。键名和 template/src/talk/motion/palette.ts 一致（测试会对）
 // ============================================================
-export const MOTION_LOOKS = ['wood', 'clay', 'paper', 'ink'];
+export const MOTION_LOOKS = ['wood', 'clay', 'paper', 'ink', 'cutpaper-meadow', 'cutpaper-dusk'];
 export const MOTION_COLOR_KEYS = ['bg', 'bg2', 'card', 'edge', 'ink', 'sub', 'accent', 'cool', 'warm', 'good', 'muted'];
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -161,6 +161,17 @@ export const motionLookOf = (style) => {
   const out = {look: mt.look};
   for (const k of MOTION_COLOR_KEYS) if (typeof mt[k] === 'string' && HEX_RE.test(mt[k])) out[k] = mt[k];
   return out;
+};
+
+/**
+ * 这一支片子用哪套动效外观。
+ * broll.json v2 顶层 motionTheme 是外观名字（字符串）时优先用它，而且只用该外观的默认色，不把主风格的色号盖上来。
+ * 不写、或写了不认识的名字：跟主风格 style.json 的 motionTheme 对象走（motionLookOf）。老文件因此不变。
+ */
+export const resolveMotionLook = (doc, style) => {
+  const name = doc?.motionTheme;
+  if (typeof name === 'string' && MOTION_LOOKS.includes(name)) return {look: name};
+  return motionLookOf(style);
 };
 
 /** 给 llm_broll 的提示词用：模板、配哪些 job、槽位写法、一个正确示例 */

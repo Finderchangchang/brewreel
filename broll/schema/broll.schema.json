@@ -11,6 +11,7 @@
     "style": {"type": "string", "description": "主风格的 id：wood-blocks（默认，积木风）、clay-stopmotion、paper-layers；ink-sketch（参考图未出，只能占位预览）和 brick-diorama 是实验风格"},
     "styleAlt": {"type": "string", "description": "version 2：副风格，可选。必须在主风格 style.json 的 pairsWith 里"},
     "thread": {"type": "string", "maxLength": 20, "description": "version 2：一句主线，只进审片页和日志，不进提示词"},
+    "motionTheme": {"type": "string", "enum": ["wood", "clay", "paper", "ink", "cutpaper-meadow", "cutpaper-dusk"], "description": "version 2 可选。这一支片子的动效外观名字。不写就用主风格 style.json 里的 motionTheme"},
     "provider": {"enum": ["placeholder", "local", "minimax-h3"], "description": "只管 AI 画面段；动效段不花钱"},
     "quality": {"enum": ["768P", "2K"]},
     "budgetYuan": {"type": "number", "minimum": 0},

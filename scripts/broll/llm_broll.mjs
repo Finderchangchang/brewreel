@@ -5,7 +5,8 @@
 //   node scripts/broll/llm_broll.mjs <项目目录> [--style wood-blocks] [--budget 20] [--captions add|none|burned] [--max-ai 2]
 //                                    [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--no-fix] [--dry-run]
 // 退出码：0 写好 / 1 3 轮都没通过校验 / 2 参数错、缺文件、没有 key、横版原片加 burned / 4 接口调用失败（断网、key 不对、余额不足）
-// 顶层的 style、provider、quality、budgetYuan、captions 按命令行定死：模型写别的值，这里直接改回来再校验（version 不动，写错了让校验报）。
+// 顶层的 style、provider、quality、budgetYuan、captions 按命令行定死：模型写别的值，这里直接改回来再校验（没写 --motion-look 时 version 不动）。
+// --motion-look 把外观名字写进顶层 motionTheme，并把 version 改成 2。不调这个参数时老文件行为不变。
 // 转写时拿不准、还没人核对的字（.brewreel/transcribe.json 的 doubts）会在提示里点名，校验时不许它们上动效卡片。
 // 没有 talk.srt 但有 talk.mp4：先自动转写（本地 SenseVoice，见 transcribe.mjs）；已有 talk.srt 永不覆盖。
 // --max-ai：AI 生成画面最多几段（默认 2），其余要配画面的句子用免费的动效画面或留脸。
@@ -23,7 +24,7 @@ import {doubtText, openDoubts} from './asr/doubts.mjs';
 import {CUES_LOCK_NAME, cuesLockOf} from './asr/lock.mjs';
 import {callLlm, estTokens, explainLlmError, extractJson, readLlmEnv, redact} from './llm-client.mjs';
 import {probeMedia} from './media.mjs';
-import {describeTemplates, isMotion} from './motion.mjs';
+import {MOTION_LOOKS, describeTemplates, isMotion} from './motion.mjs';
 import {defaultStyleId, isExperimental, styleMenu} from './prompt.mjs';
 import {ROOT} from './root.mjs';
 import {parseSrt} from './srt.mjs';
@@ -169,7 +170,7 @@ const examplesOf = (styles, styleId, captions, maxAi = DEFAULT_MAX_AI, vertical 
 };
 
 const usage = () => {
-  console.log('用法：node scripts/broll/llm_broll.mjs <项目目录> [--style wood-blocks] [--budget 20] [--captions add|none|burned] [--max-ai 2] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--no-fix] [--dry-run]');
+  console.log('用法：node scripts/broll/llm_broll.mjs <项目目录> [--style wood-blocks] [--budget 20] [--captions add|none|burned] [--max-ai 2] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--motion-look wood|clay|paper|ink|cutpaper-meadow|cutpaper-dusk] [--no-fix] [--dry-run]');
 };
 
 const writeText = (file, text) => {
@@ -177,9 +178,9 @@ const writeText = (file, text) => {
 };
 
 export const parseArgs = (argv) => {
-  const flags = {style: '', budget: '', captions: '', 'max-ai': '', lang: '', terms: '', dryRun: false, noFix: false};
+  const flags = {style: '', budget: '', captions: '', 'max-ai': '', lang: '', terms: '', 'motion-look': '', dryRun: false, noFix: false};
   const positionals = [];
-  const takes = new Set(['--style', '--budget', '--captions', '--max-ai', '--lang', '--terms']);
+  const takes = new Set(['--style', '--budget', '--captions', '--max-ai', '--lang', '--terms', '--motion-look']);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--dry-run') {
@@ -217,12 +218,20 @@ const mediaInfo = (dir) => {
   }
 };
 
-/** 顶层这几个字段由命令行定死：模型写了别的值就改回来（不然它会照报错把 captions 改成 add 混过校验，出片叠两层字幕）。 */
-export const forceTop = (doc, {style, budget, captions}) => {
+/**
+ * 顶层这几个字段由命令行定死：模型写了别的值就改回来（不然它会照报错把 captions 改成 add 混过校验，出片叠两层字幕）。
+ * motionLook 有值时写入 motionTheme，并把 version 改成 2。不传时 version 保持模型写的（或原来的）。
+ */
+export const forceTop = (doc, {style, budget, captions, motionLook} = {}) => {
   if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return {doc, changed: []};
   const want = {style, provider: 'placeholder', quality: '768P', budgetYuan: Number(budget), captions};
+  if (motionLook) want.motionTheme = motionLook;
   const changed = Object.keys(want).filter((k) => doc[k] !== want[k]);
   const rest = Object.fromEntries(Object.entries(doc).filter(([k]) => !(k in want) && k !== 'version'));
+  if (motionLook) {
+    if (doc.version !== 2) changed.push('version');
+    return {doc: {version: 2, ...want, ...rest}, changed};
+  }
   return {doc: {...('version' in doc ? {version: doc.version} : {}), ...want, ...rest}, changed};
 };
 
@@ -304,6 +313,7 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles, doubts =
     '## 这次必须遵守',
     '',
     '- version 写 2',
+    ...(flags['motion-look'] ? [`- motionTheme 写 ${flags['motion-look']}（这一支片子的动效外观，不写就跟着主风格）`] : []),
     `- style 写 ${style}`,
     `- provider 写 placeholder`,
     `- quality 写 768P`,
@@ -408,6 +418,11 @@ const main = async () => {
     console.log(`--lang 只能是 ${LANGS.join('、')}。`);
     return 2;
   }
+  // 外观名字写错就停。放在读字幕和调模型之前，不转写、不联网。
+  if (flags['motion-look'] && !MOTION_LOOKS.includes(flags['motion-look'])) {
+    console.log(`--motion-look 只能是 ${MOTION_LOOKS.join('、')}。`);
+    return 2;
+  }
   const maxAi = flags['max-ai'] ? Number(flags['max-ai']) : DEFAULT_MAX_AI;
   const styles = loadStyles();
   if (flags.style && !styles[flags.style]) {
@@ -476,7 +491,7 @@ const main = async () => {
   const draftPath = path.join(dir, DRAFT_NAME);
   const errPath = path.join(dir, 'broll.llm-error.txt');
   const hadJson = fs.existsSync(jsonPath);
-  const top = {style: flags.style || defaultStyleId(styles), budget: flags.budget || '20', captions: flags.captions || 'add'};
+  const top = {style: flags.style || defaultStyleId(styles), budget: flags.budget || '20', captions: flags.captions || 'add', motionLook: flags['motion-look'] || ''};
   fs.rmSync(draftPath, {force: true});
   const log = [];
   let lastReport = '';

@@ -16,7 +16,7 @@ import {generateClips, redoCommandOf} from './broll/generate.mjs';
 import {sha256File, sha256Text, stableString} from './broll/hash.mjs';
 import {loadLedger, markApproved, saveLedger} from './broll/ledger.mjs';
 import {ffmpeg, ffmpegCheck, ffmpegHelp} from './broll/media.mjs';
-import {motionLookOf, toMotionProps} from './broll/motion.mjs';
+import {resolveMotionLook, toMotionProps} from './broll/motion.mjs';
 import {normalizeTalk, normalizedMediaOf} from './broll/normalize.mjs';
 import {aiClipsOf, buildPlan, writePlan} from './broll/plan.mjs';
 import {costLine, keyKindOf} from './broll/prices.mjs';
@@ -253,8 +253,8 @@ const readJsonSafe = (p) => {
   }
 };
 
-// 动效画面的配色和质感跟着主风格走（style.json 的 motionTheme：look + 色号；积木风是暖木色、米白、浅蓝灰、暖橙，和 AI 段接得上）
-const motionLook = motionLookOf(styles[doc.style]);
+// 动效外观：broll.json 顶层 motionTheme（外观名字）优先，不写就用主风格 style.json 的 motionTheme 对象
+const motionLook = resolveMotionLook(doc, styles[doc.style]);
 
 try {
   const clipFiles = {};

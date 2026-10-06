@@ -2,7 +2,7 @@
 // look 决定背景纹理、装饰形状、卡片质感怎么画；颜色是 11 个色号，style.json 里写了就覆盖，没写用这里的默认。
 // 纯数据和纯函数，没有运行时依赖，节点测试直接引用（scripts/broll/prompt.mjs 的 lintStyle 用同一份键名）。
 
-export const MOTION_LOOKS = ['wood', 'clay', 'paper', 'ink'] as const;
+export const MOTION_LOOKS = ['wood', 'clay', 'paper', 'ink', 'cutpaper-meadow', 'cutpaper-dusk'] as const;
 export type MotionLookName = (typeof MOTION_LOOKS)[number];
 
 /** 色号的键：底色两层、卡片、卡片侧边（积木的厚度 / 纸的阴影层）、正文、副文、重点、冷色、暖色、完成（打勾徽章的底色，按风格取）、未亮 */
@@ -20,6 +20,9 @@ export const DEFAULT_LOOK: MotionLookName = 'wood';
  * clay：暖粉彩，黏土的软
  * paper：米白纸，鼠尾草绿 / 珊瑚 / 芥末黄三层彩纸
  * ink：白纸墨线，一支黄色荧光笔
+ * cutpaper-meadow / cutpaper-dusk：剪纸拼贴。底、锚点强调色、深色三支，碎屑另取，不跟锚点抢。
+ * 纸底是低彩度的灰绿 / 灰紫。强调色是纸能印出来的饱和度：meadow 覆盆子玫红，dusk 翡翠绿。
+ * 碎屑彩度比强调色低一截，仍躲开参考片的有彩色。数值以 check-originality 为准。
  */
 export const LOOK_DEFAULTS: Record<MotionLookName, Record<MotionColorKey, string>> = {
   wood: {
@@ -74,11 +77,39 @@ export const LOOK_DEFAULTS: Record<MotionLookName, Record<MotionColorKey, string
     good: '#FFD84A',
     muted: '#BDB8AE',
   },
+  'cutpaper-meadow': {
+    bg: '#95AFA5',
+    bg2: '#2F4A32',
+    card: '#F6F1E4',
+    edge: '#1C1A24',
+    ink: '#1C1A24',
+    sub: '#4A4654',
+    accent: '#E95788',
+    cool: '#B270AA',
+    warm: '#9C6E33',
+    good: '#E95788',
+    muted: '#6A923B',
+  },
+  'cutpaper-dusk': {
+    bg: '#C6AECB',
+    bg2: '#7E6A96',
+    card: '#F3EEE4',
+    edge: '#231C28',
+    ink: '#231C28',
+    sub: '#4E4656',
+    accent: '#14A86A',
+    cool: '#8479B6',
+    warm: '#E289C2',
+    good: '#14A86A',
+    muted: '#906B34',
+  },
 };
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 export const isHex = (v: unknown): v is string => typeof v === 'string' && HEX_RE.test(v);
 export const isLook = (v: unknown): v is MotionLookName => typeof v === 'string' && (MOTION_LOOKS as readonly string[]).includes(v);
+/** 剪纸拼贴两套外观。模板走 cutpaper.tsx，不走积木 / 黏土 / 纸层 / 墨线那一套卡片 */
+export const isCutpaper = (look: string): boolean => look === 'cutpaper-meadow' || look === 'cutpaper-dusk';
 
 /** props 里的 look（可能缺、可能是 v0.9 早期的字符串主题名）→ 完整配色。不认识的 look 退回 wood，写错的色号用默认 */
 export const resolvePalette = (spec?: unknown): MotionPalette => {

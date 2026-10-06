@@ -8,11 +8,12 @@ English: [README.en.md](README.en.md)
 
 一句话标准：**同一类型，但熟悉参考片的人一眼看得出不是同一家。** 质量不能因为换皮而下降。
 
-六步，每步有一份可复用的提示词，任何 AI 编程助手（Claude Code、Codex、Cursor……）都能照做。
+下面每一步都有一份可复用的提示词，任何 AI 编程助手（Claude Code、Codex、Cursor……）都能照做。第 1 步之后加 1b，把「为什么这样动」写成可以换参考片复用的原理，再进入复刻。
 
 | 步骤 | 产出 | 提示词 | 谁做 |
 |---|---|---|---|
 | 1. 拆解 | 九层拆解 + 逐拍表 + tokens 草稿 + **招牌清单** `signatures.md`（全部放仓库外） | `prompts/01-breakdown.md` | 强模型，配合 `scripts/extract-frames.mjs` 的实测数据 |
+| 1b. 第一性原理 | 仓库外的 `principles.md`：每条机制写清是什么、证据、为什么起作用、能否脱离皮肤复用、参数范围、不复用会怎样；最后一张可复用部件清单 | `prompts/01b-principles.md` | 强模型，只根据第 1 步的实测，不发明新数字 |
 | 2. 复刻（只为学骨架，不发布） | 一支「像它」的示范片，确认哪些东西真正决定观感；**不提交、不发布** | `prompts/02-replicate.md` | 强模型 |
 | 3. **再设计（换皮）** | 配色、字体处理、角色、招牌细节、文案句式、收尾方式全部换成自己的；`styles/<id>/originality.md`；`check-originality` 通过 | `prompts/redesign.md` | 强模型 |
 | 4. 组件化 | `template/src/styles/<id>/` 的令牌、镜头、规格；`styles/<id>/` 的文档和规则 | `prompts/03-componentize.md` | 强模型 |
@@ -20,6 +21,8 @@ English: [README.en.md](README.en.md)
 | 6. 评审修复 | 对照参考片打分（含**混淆度** 1–10，≤ 3 才算过），列问题，修规则和组件 | `prompts/04-review.md` | 另一个模型或人 |
 
 第 2 步和第 3 步的分工：复刻是为了**看懂**，可以先照着实测数值把骨架跑通；再设计是为了**变成自己的**，复刻阶段的配色、版式细节、占位角色在这一步全部换掉。第 3 步没过，不许进第 4 步，更不许把 `status` 改成 `stable`。
+
+1b 列出来的可复用部件，进代码时和皮肤分开：口播动效的部件放 `template/src/talk/motion/kit/`，宣传片的部件放对应的组件目录；配色、静止角、具体形状这些皮肤值只进外观或配方。新的动效外观必须过 `scripts/check-originality.mjs`（对仓库外的参考 tokens 和招牌清单），再接到模板上。
 
 ## 骨架层 vs 皮肤层
 

@@ -373,7 +373,7 @@ const systemPrompt = () => `你给精酿 BrewReel 写一个画面风格包，只
 - pairsWith 写 []。status 写 experimental，default 写 false。promptExpansion 写 disabled。
 - jobs 从 ${ALL_JOBS.join('、')} 里选，不能空。cameras 从 ${ALL_CAMERAS.join('、')} 里选，不能空。camera 里给每个运镜一句中文。
 - materialWords 至少一个，写这个风格自己的材质词。
-- motionTheme.look 只能是 wood、clay、paper、ink 之一。白底、纯色底 freezeNoise 写 0.0005，否则 0.003。
+- motionTheme.look 只能是 wood、clay、paper、ink 之一。剪纸外观 cutpaper-meadow / cutpaper-dusk 不写进风格包，由 broll.json 顶层 motionTheme 选。白底、纯色底 freezeNoise 写 0.0005，否则 0.003。
 - refs 两张，顺序是角色然后材质：file 用 refs/character.jpg（aspect 1:1，role 角色）和 refs/material.jpg（aspect 16:9，role 材质）。不要写 subjectFrom。
 - 要有 name、nameEn、summary、summaryEn、look、character、characterEn、ground。id 用用户给的。`;
 

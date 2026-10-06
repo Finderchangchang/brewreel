@@ -228,6 +228,7 @@ Top level, only these:
 |---|---|
 | version | `2` (v0.8 files with `1` still run, without motion clips, a second style or the new styles. Once an old file is changed to 2, AI clips already generated are generated again with the new prompt and paid again) |
 | style | Main style, default `wood-blocks` |
+| motionTheme | Optional. Motion-look name for this film: `wood`, `clay`, `paper`, `ink`, `cutpaper-meadow`, `cutpaper-dusk`. Omit it to keep the main style's look. `llm_broll --motion-look` writes this field |
 | styleAlt | Second style, optional |
 | thread | One storyline of at most 20 characters, optional. Review sheet only |
 | provider | `placeholder`, `local`, or `minimax-h3`. Applies to AI clips only |

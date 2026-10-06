@@ -10,7 +10,7 @@ import {doubtText, openDoubts} from './asr/doubts.mjs';
 import {CUES_LOCK_NAME, compareCuesLock} from './asr/lock.mjs';
 import {asrTokensOf} from './asr/tokens.mjs';
 import {probeMedia} from './media.mjs';
-import {MOTION_JOBS, MOTION_MAX_MS, MOTION_MIN_MS, checkAiQuantify, checkMotionSequence, isMotion, norm, validateMotionClip} from './motion.mjs';
+import {MOTION_JOBS, MOTION_LOOKS, MOTION_MAX_MS, MOTION_MIN_MS, checkAiQuantify, checkMotionSequence, isMotion, norm, validateMotionClip} from './motion.mjs';
 import {clipCost, costLine, keyKindOf, rateOf} from './prices.mjs';
 import {V2_COST_NOTE, isV2, validateStyles} from './prompt.mjs';
 import {ROOT} from './root.mjs';
@@ -29,7 +29,7 @@ export const SOURCES = ['ai', 'motion'];
 export const CAMERAS = ['static', 'slow-push', 'pull-back', 'pan-left', 'pan-right', 'orbit', 'top-down'];
 export const LIMITS = {plain: 20, place: 12, subject: 12, action: 24, end: 16};
 // styleAlt / thread / look / link 是 version 2 的字段；version 1 写了由 validateStyles 报「改成 version 2」，所以这里放行
-const TOP_KEYS = new Set(['version', 'style', 'styleAlt', 'thread', 'provider', 'quality', 'budgetYuan', 'captions', 'keepFace', 'clips']);
+const TOP_KEYS = new Set(['version', 'style', 'styleAlt', 'thread', 'provider', 'quality', 'budgetYuan', 'captions', 'keepFace', 'clips', 'motionTheme']);
 const CLIP_KEYS = new Set(['id', 'from', 'to', 'source', 'mode', 'job', 'plain', 'place', 'subject', 'action', 'end', 'beats', 'camera', 'file', 'look', 'link']);
 const BEAT_KEYS = new Set(['action', 'end']);
 const PERSON = ['我觉得', '我当时', '说实话', '后悔', '我记得', '我以为'];
@@ -122,9 +122,14 @@ export const validateBroll = (doc, ctx) => {
   for (const k of Object.keys(doc)) {
     if (TOP_KEYS.has(k)) continue;
     if (/reference/i.test(k)) err(k, '不能自带参考图', '删掉这个字段。参考图由风格预设提供，模型不要写');
-    else err(k, `多了一个不认识的字段「${k}」`, `删掉 ${k}。可用字段：version、style、styleAlt、thread、provider、quality、budgetYuan、captions、keepFace、clips`);
+    else err(k, `多了一个不认识的字段「${k}」`, `删掉 ${k}。可用字段：version、style、styleAlt、thread、provider、quality、budgetYuan、captions、keepFace、motionTheme、clips`);
   }
   if (doc.version !== 1 && doc.version !== 2) err('version', `必须是 1 或 2，现在是 ${JSON.stringify(doc.version)}`, `改成 2（动效画面、副风格要用 2；v0.8 的老文件可以留 1。${V2_COST_NOTE}）`);
+  // motionTheme 是可选的外观名字。不写就沿用主风格 style.json 里的 motionTheme 对象。version 1 没有这个字段。
+  if ('motionTheme' in doc) {
+    if (!v2) err('motionTheme', `motionTheme 是 version 2 的写法，现在 version 是 ${JSON.stringify(doc.version)}`, `用不上就删掉 motionTheme；一定要用就把顶层 version 改成 2（${V2_COST_NOTE}）`);
+    else if (typeof doc.motionTheme !== 'string' || !MOTION_LOOKS.includes(doc.motionTheme)) err('motionTheme', `motionTheme 要是动效外观的名字（${MOTION_LOOKS.join('、')}），现在是 ${JSON.stringify(doc.motionTheme)}`, '不写这个字段就跟着主风格；要换外观就写其中一个名字');
+  }
   // version 2 的主风格由 validateStyles 的规则 12 报，避免同一个错报两遍。
   // version 1 只认 v0.8 就有的风格（style.json 里有 references 的那些）：新风格只有 v2 的 refs，v1 的老提示词拼法用不上它们的参考图
   if (!v2) {
