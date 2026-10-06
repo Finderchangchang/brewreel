@@ -2,6 +2,18 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.11.0 · 2026-10-07 · Cut-paper motion look and a reusable motion kit
+
+### New
+- Talking-head motion cards get a cut-paper look in two palettes: `cutpaper-meadow` (sage paper, raspberry cards) and `cutpaper-dusk` (lilac paper, emerald cards). Paper grain, hand-cut cards without outlines, soft shadows; on key words the card tosses up and lands with a perspective tilt and a shadow that grows with height; it keeps a gentle float instead of freezing; paper scraps spin past; adjacent segments hand the same card over; counter cards flip to change content; checklist and steps keep earlier items as small paper tags; compare shows both sides. Free.
+- Choosing a look: top-level `motionTheme` in `broll.json`; `--motion-look` in `llm_broll.mjs` and `talk.mjs`. Without it, cards follow the main style as before.
+- Reusable motion kit in `template/src/talk/motion/kit/`: paper grain, cut shapes, confetti, toss and settle, float, height-driven shadow, anchor relay, three-colour check. New looks only call the kit; see [docs/motion-looks.en.md](docs/motion-looks.en.md).
+- Distill adds step 1b, first principles: after breaking down a reference, write why it works and which mechanisms survive a new skin, ending with a list of reusable parts. Template: `distill/prompts/01b-principles.md`.
+
+### Notes
+- The cut-paper look was distilled from one reference: only the skeleton was kept (anchor, relay, grain, settle, colour structure); palette, shapes and wording were redone, and `check-originality` passes.
+- Big keyword text breaks lines at word boundaries.
+
 ## v0.10.0 · 2026-10-06 · Style factory: one sentence makes a new AI B-roll style
 
 Also: the README front page is reorganized (both workflows side by side, a three-step quick start, details moved into docs), in Chinese and English.

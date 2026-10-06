@@ -6,7 +6,7 @@
 
 **两种玩法，一条命令出片。** 写一份产品简报，出一支竖版宣传片；或者只放一段口播，给讲到的句子配上画面。
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.10.0-1f6feb?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.11.0-1f6feb?style=flat-square)](CHANGELOG.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
@@ -103,6 +103,7 @@ v0.8 先做实验。v0.9 起可以只放一段口播，一条命令出片。项�
 
 - **本机转写**：SenseVoice（FunAudioLLM / 阿里通义实验室），由 sherpa-onnx 运行。已有 `talk.srt` 不会被覆盖。
 - **动效画面**：DeepSeek 逐句选。关键词、清单、步骤、数字、对比五种。字只能照抄原话，脚本逐字核对。这种画面不花钱。
+- **动效外观**（v0.11）：默认跟着主风格配色；加 `--motion-look cutpaper-meadow` 或 `cutpaper-dusk` 换成剪纸拼贴：纸纹底、手剪卡片、说到重点词卡片抛起再落下、纸屑飞过，也不花钱。怎么拼一个新外观见 [动效外观](docs/motion-looks.md)。
 - **AI 画面**：MiniMax H3。正式风格三种，全片共用 `broll/character.json` 里的一个机器人：积木风（木积木，`wood-blocks`，默认）、黏土定格（`clay-stopmotion`）、分层纸艺（`paper-layers`）。手绘线稿（`ink-sketch`）是实验，只能占位预览。默认最多 2 段。
 - **先估价，人审过才出正式片**。`--provider minimax-h3 --dry-run` 只印估价；加上 `--yes` 才生成。人自己跑 `node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>`。`talk.mjs` 不会替你跑。
 

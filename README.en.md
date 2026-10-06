@@ -6,7 +6,7 @@
 
 **Two ways to make a video, each with one command.** Write a product brief and render a vertical promo, or drop in a talking-head clip and add pictures to the lines.
 
-[![Version](https://img.shields.io/badge/version-v0.10.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.11.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
@@ -103,6 +103,7 @@ v0.8 was the experiment. Since v0.9 you can drop in one talk and render with one
 
 - **Local transcription**: SenseVoice (FunAudioLLM / Alibaba Tongyi Lab), run with sherpa-onnx. An existing `talk.srt` is never overwritten.
 - **Motion cards**: DeepSeek picks one per line. Five kinds: keyword, checklist, steps, counter, compare. The words must be copied from the speech, and the script checks them character by character. These cards do not cost money.
+- **Motion looks** (v0.11): cards follow the main style's colours by default; add `--motion-look cutpaper-meadow` or `cutpaper-dusk` for a cut-paper look: paper grain, hand-cut cards that toss up on key words and land, paper scraps flying past. Still free. How to build a new look: [Motion looks](docs/motion-looks.en.md).
 - **AI clips**: MiniMax H3. Three regular styles share one robot, described in `broll/character.json`: wood blocks (`wood-blocks`, the default; still called 积木风 in Chinese), clay stop-motion (`clay-stopmotion`) and layered paper (`paper-layers`). Ink sketch (`ink-sketch`) is experimental and only works as a stand-in preview. At most 2 AI clips by default.
 - **Estimate first. A person approves the final video.** `--provider minimax-h3 --dry-run` only prints the estimate. Add `--yes` to generate. The person runs `node scripts/broll/approve.mjs <project> --out <dir-outside-the-repo>`. `talk.mjs` never runs it for you.
 
