@@ -42,9 +42,11 @@ export type MotionLayerProps = {
   face?: Rect | null;
   /** 和上一段动效接不接锚点。不传 = 各自入场 */
   relay?: RelayDecision | null;
+  /** 下一段会接这张锚点。剪纸不翻出 */
+  hold?: boolean;
 };
 
-export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, captionBottom, face, relay}) => {
+export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, captionBottom, face, relay, hold = false}) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
   const t = frame / fps;
@@ -81,7 +83,7 @@ export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, 
     <div style={{position: 'absolute', left: box.x, top: box.y, width: box.width, height: box.height, overflow: 'hidden'}}>
       <div style={{position: 'absolute', left: 0, top: 0, width: bw, height: bh, transformOrigin: '0 0', transform: `scale(${u})`, fontFamily: FONT}}>
         {cut ? (
-          <CutpaperStage clip={clip} pal={pal} t={t} dur={dur} W={W} H={H} bw={bw} bh={bh} fx={fx} fy={fy} relay={relay ?? null} avoid={avoid} />
+          <CutpaperStage clip={clip} pal={pal} t={t} dur={dur} W={W} H={H} bw={bw} bh={bh} fx={fx} fy={fy} relay={relay ?? null} hold={hold} avoid={avoid} />
         ) : (
           <>
             <Backdrop pal={pal} w={bw} h={bh} t={t} seed={clip.id} focus={{x: fx, y: fy, width: W, height: H}} avoid={avoid} />

@@ -7,13 +7,15 @@ import {fitFont, textEm} from './measure.ts';
 import {luminance, type MotionPalette} from './palette.ts';
 import {SPLIT_TOP} from '../layout.ts';
 import {revealTimes} from './timing.ts';
+import {anchorPose, faceVisibility, PERSPECTIVE} from './kit/anchorMotion.ts';
 import type {RelayDecision} from './kit/anchorRelay.ts';
 import {Confetti} from './kit/Confetti.tsx';
 import {CutShape} from './kit/CutShape.tsx';
 import {cutGeometry, restTiltFor, safeTilt, shadowColor, shadowOffset} from './kit/cutShape.ts';
 import {PaperGrain} from './kit/PaperGrain.tsx';
+import {mapPath, projectPoint} from './kit/project.ts';
 import {hashSeed} from './kit/rng.ts';
-import {settle} from './kit/settle.ts';
+import {shadowByHeight} from './kit/shadowByHeight.ts';
 import {BOTTOM_UNSAFE, TOP_UNSAFE, rectsHit} from './stage.ts';
 import type {MotionClip, MotionNum} from './types.ts';
 
@@ -30,14 +32,17 @@ export type CutpaperProps = {
   fx: number;
   fy: number;
   relay: RelayDecision | null;
+  /** 下一段会接这张锚点，这一段不翻出 */
+  hold?: boolean;
   /** 字幕带、圆窗。纸签和碎屑都躲开 */
   avoid?: Rect[];
 };
 
-/** 锚点色块占框的比例。split 用上方面板，pip / full 用取景框。宽 62–70%、高 40–55% */
+/** 锚点色块占框的比例。split 用上方面板，pip / full 用取景框。宽 62–70%、高 40–55%。
+ * 卡心放在框高正中：上抛 24% 后顶边还在框里。再往上放，抛起会被画面顶裁掉，看起来只是原地晃。 */
 const ANCHOR_WF = 0.66;
 const ANCHOR_HF = 0.47;
-const ANCHOR_LIFT = 0.045;
+const ANCHOR_LIFT = 0;
 /** 1080 宽上的字号下限。720 成片由舞台缩放按比例缩小 */
 const MAIN_MIN = 120;
 const SUB_MIN = 56;
@@ -52,8 +57,7 @@ const EDGE_DARK = 0.1;
 const EDGE_PX = 2;
 /** chunky 毛边会探出排版框（半径约 6%）。水平再让出这些，纸签连毛边也离画面 ≥ 48 */
 const TAG_DECKLE = 12;
-/** 软投影：1080 宽上的像素。右 8、下 42、模糊 21，都落在规定区间 */
-const SOFT = {dx: 8, dy: 42, blur: 21, opacity: 0.45};
+
 
 const contrastRatio = (a: string, b: string) => {
   const hi = Math.max(luminance(a), luminance(b));
@@ -117,16 +121,40 @@ const breakLines = (text: string, maxW: number, maxPx: number, minPx: number): {
   return {font: minPx, lines: [raw.slice(0, pick).join(''), raw.slice(pick).join('')].filter((s) => s.length > 0)};
 };
 
-const Lines: React.FC<{text: string; color: string; maxW: number; maxPx: number; minPx: number}> = ({text, color, maxW, maxPx, minPx}) => {
+const Lines: React.FC<{text: string; color: string; maxW: number; maxPx: number; minPx: number; rotX?: number; rotY?: number; perspective?: number}> = ({
+  text,
+  color,
+  maxW,
+  maxPx,
+  minPx,
+  rotX = 0,
+  rotY = 0,
+  perspective = 1500,
+}) => {
   if (!text) return null;
   const b = breakLines(text, Math.max(40, maxW), maxPx, minPx);
+  const n = b.lines.length;
+  const blockH = n * b.font * 1.05;
+  const pitch = (rotX * Math.PI) / 180;
+  const yaw = (rotY * Math.PI) / 180;
+  const cosY = Math.cos(yaw);
+  const cosX = Math.cos(pitch);
   return (
     <div style={{color, fontWeight: 900, fontSize: b.font, lineHeight: 1.05, width: '100%'}}>
-      {b.lines.map((ln, i) => (
-        <div key={i} style={{whiteSpace: 'nowrap'}}>
-          {ln}
-        </div>
-      ))}
+      {b.lines.map((ln, i) => {
+        const t = n === 1 ? 0 : i / (n - 1) - 0.5;
+        const yRel = t * blockH;
+        const k = perspective / Math.max(40, perspective + yRel * Math.sin(pitch));
+        const scaleX = Math.max(0.5, Math.abs(cosY) * k);
+        const scaleY = Math.max(0.5, Math.abs(cosX));
+        const shift = yRel * Math.sin(yaw) * 0.42;
+        const skew = n === 1 ? rotX * 0.5 : 0;
+        return (
+          <div key={i} style={{whiteSpace: 'nowrap', transform: `translateX(${shift.toFixed(1)}px) skewX(${skew.toFixed(2)}deg) scale(${scaleX.toFixed(3)}, ${scaleY.toFixed(3)})`, transformOrigin: '50% 50%'}}>
+            {ln}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -171,13 +199,33 @@ const currentIndex = (times: number[], t: number): number => {
 
 const TAG_TILT = [3.4, -3.2, 2.2, -3.8, 1.6];
 
-export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H, bw, bh, fx, fy, relay, avoid = []}) => {
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+/** 说到重点的时刻：keyword 的 hot、counter 的数字落定、清单 / 步骤的新条目、compare 的结论。 */
+const tossBeats = (clip: MotionClip, dur: number): number[] => {
+  if (clip.template === 'keyword') {
+    const hot = clip.marks.hot0 ?? clip.marks.hot;
+    return finite(hot) ? [hot] : [];
+  }
+  if (clip.template === 'checklist' || clip.template === 'steps') {
+    return revealTimes(clip.marks.items, clip.data.items.length, dur);
+  }
+  if (clip.template === 'counter') return finite(clip.marks.sayAt) ? [clip.marks.sayAt] : [];
+  const verdict = clip.marks.verdict0 ?? clip.marks.verdict;
+  return finite(verdict) ? [verdict] : [];
+};
+
+/** counter / steps 在新内容上绕 Y 翻一面。第一条从第 0 帧就在正面，不翻。 */
+const flipBeats = (clip: MotionClip, dur: number): number[] => {
+  if (clip.template === 'steps') return revealTimes(clip.marks.items, clip.data.items.length, dur).slice(1);
+  if (clip.template === 'counter') return finite(clip.marks.sayAt) ? [clip.marks.sayAt] : [];
+  return [];
+};
+
+export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H, bw, bh, fx, fy, relay, hold = false, avoid = []}) => {
   const shade = shadowColor(pal.bg);
   const soft = darken(pal.bg, 0.25);
   const restTilt = relay?.relay ? relay.tilt : restTiltFor(pal.look);
-  const stageH = Math.max(H, 1);
-  const curve = settle(stageH, {restTilt});
-  const pose = relay?.relay ? {y: curve.posOver * stageH, tilt: restTilt} : curve.at(t);
   const accent = relay?.relay ? relay.color : pal.accent;
   const fg = inkOn({...pal, accent});
   const grainSeed = hashSeed(pal.look);
@@ -190,33 +238,58 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
   const frameY = usePanel ? 0 : fy;
   const anchorW = frameW * ANCHOR_WF;
   const anchorH = frameH * ANCHOR_HF;
-  const restDy = curve.posOver * stageH;
   const anchorX = frameX + (frameW - anchorW) / 2;
-  const anchorY = frameY + frameH * (0.5 - ANCHOR_LIFT) - anchorH / 2 - restDy;
+  const anchorY = frameY + frameH * (0.5 - ANCHOR_LIFT) - anchorH / 2;
+  // 顶边留 20 屏幕像素。行程取「取景框的 24%」和「画面框的 22%」里更大的那个，但不超过顶边。
+  const marginRef = 20 * (bw / 720);
+  const maxRise = Math.max(frameH * 0.18, anchorY - marginRef);
+  const prefer = Math.max(frameH * 0.24, bh * 0.22);
+  const rise = Math.min(maxRise, prefer);
+  const motionH = rise / 0.24;
   const textW = anchorW * 0.72;
   const mainMax = Math.max(MAIN_MIN, Math.min(168, anchorH * 0.4));
   const subMax = Math.max(SUB_MIN, Math.min(78, anchorH * 0.18));
+  const pose = anchorPose({
+    t,
+    dur,
+    height: frameH,
+    travelHeight: motionH,
+    width: frameW,
+    restTilt,
+    relay: Boolean(relay?.relay),
+    hold,
+    seed: `${pal.look}-${clip.id}`,
+    tossAt: tossBeats(clip, dur),
+    flipAt: flipBeats(clip, dur),
+  });
+  const spin = pose.rotY + pose.flip;
+  const vis = faceVisibility(spin, pose.rotX);
+  const showBack = vis === 'back';
+  const hideFace = vis === 'edge';
+  const faceIndex = showBack ? pose.faceB : pose.faceA;
+  const perspective = Math.round(PERSPECTIVE * (bw / 720));
+  const linePose = {rotX: pose.rotX, rotY: spin, perspective};
 
   let anchorText: React.ReactNode = null;
   let tags: {key: string; text: string}[] = [];
 
   if (clip.template === 'keyword') {
-    anchorText = <Lines text={clip.data.text} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} />;
+    anchorText = <Lines text={clip.data.text} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} {...linePose} />;
   } else if (clip.template === 'checklist' || clip.template === 'steps') {
     const items = clip.data.items;
     const times = revealTimes(clip.marks.items, items.length, dur);
-    const cur = currentIndex(times, t);
-    anchorText = <Lines text={items[cur] ?? ''} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} />;
+    const cur = clip.template === 'steps' ? Math.max(0, Math.min(items.length - 1, faceIndex)) : currentIndex(times, t);
+    anchorText = <Lines text={items[cur] ?? ''} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} {...linePose} />;
     tags = items.flatMap((text, i) => (i !== cur && t + 1e-3 >= times[i] ? [{key: `${clip.id}-t${i}`, text}] : []));
     if (clip.template === 'checklist' && clip.data.title && t + 1e-3 >= (clip.marks.title0 ?? 0)) {
       tags = [{key: `${clip.id}-title`, text: clip.data.title}, ...tags];
     }
   } else if (clip.template === 'counter') {
-    const show = t + 1e-3 >= clip.marks.sayAt;
+    const show = faceIndex >= 1;
     anchorText = (
       <div style={{width: '100%'}}>
-        {show ? <Lines text={numText(clip.data.say)} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} /> : null}
-        <Lines text={clip.data.label} color={fg} maxW={textW} maxPx={subMax} minPx={SUB_MIN} />
+        {show ? <Lines text={numText(clip.data.say)} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} {...linePose} /> : null}
+        <Lines text={clip.data.label} color={fg} maxW={textW} maxPx={subMax} minPx={SUB_MIN} {...linePose} />
       </div>
     );
   } else if (clip.template === 'compare') {
@@ -225,9 +298,9 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
     const said = clip.data.right.filter((_, i) => t + 1e-3 >= rightAt[i]);
     anchorText = (
       <div style={{width: '100%'}}>
-        <Lines text={clip.data.rightTitle} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} />
+        <Lines text={clip.data.rightTitle} color={fg} maxW={textW} maxPx={mainMax} minPx={MAIN_MIN} {...linePose} />
         {said.map((text, i) => (
-          <Lines key={i} text={text} color={fg} maxW={textW} maxPx={subMax} minPx={SUB_MIN} />
+          <Lines key={i} text={text} color={fg} maxW={textW} maxPx={subMax} minPx={SUB_MIN} {...linePose} />
         ))}
       </div>
     );
@@ -247,12 +320,12 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
   const safeT = Math.max(TAG_EDGE, TOP_UNSAFE * fullH);
   const safeR = bw - TAG_EDGE;
   const safeB = Math.min(clip.mode === 'split' ? bh : bh - TAG_EDGE, BOTTOM_UNSAFE * fullH);
-  const travel = 0.25 * stageH;
+  const travel = frameH * 0.28;
   const sweep: Rect = {
-    x: anchorX - 10,
+    x: anchorX - frameW * 0.2,
     y: anchorY - travel,
-    width: anchorW + 20,
-    height: anchorH + travel + restDy + 12,
+    width: anchorW + frameW * 0.4,
+    height: anchorH + travel + frameH * 0.36,
   };
   const blocked: Rect[] = [sweep, ...avoid];
   const placed: {key: string; text: string; x: number; y: number; w: number; h: number; tilt: number; font: number}[] = [];
@@ -310,7 +383,7 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
   const geo = cutGeometry(`${clip.id}-anchor`, {
     width: anchorW,
     height: anchorH,
-    tilt: pose.tilt,
+    tilt: restTilt,
     keepTilt: true,
     shortSide: 1080,
     shadowK: 0.18,
@@ -320,13 +393,32 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
     sidesMin: 6,
     sidesMax: 7,
   });
-  const bb = rotatedBounds(pathPts(geo.d), geo.tilt, anchorW / 2, anchorH / 2);
+  const bb = rotatedBounds(pathPts(geo.d), restTilt, anchorW / 2, anchorH / 2);
   const sx = anchorW / Math.max(1, bb.maxX - bb.minX);
   const sy = anchorH / Math.max(1, bb.maxY - bb.minY);
   const tx = -bb.minX * sx;
   const ty = -bb.minY * sy;
   const filterId = `cpsh-${clip.id}`;
-  const anchorBox = {x: anchorX, y: anchorY + pose.y, width: anchorW, height: anchorH};
+  const shadow = shadowByHeight(pose.h, 1080);
+  const cosY = Math.cos((spin * Math.PI) / 180);
+  const cosX = Math.cos((pose.rotX * Math.PI) / 180);
+  const shape = `translate(${tx} ${ty}) scale(${sx} ${sy}) rotate(${pose.tilt} ${anchorW / 2} ${anchorH / 2})`;
+  const fitPt = (x: number, y: number) => {
+    const cx = anchorW / 2;
+    const cy = anchorH / 2;
+    const a = (pose.tilt * Math.PI) / 180;
+    const c = Math.cos(a);
+    const s = Math.sin(a);
+    const dx = x - cx;
+    const dy = y - cy;
+    return {x: (cx + dx * c - dy * s) * sx + tx, y: (cy + dx * s + dy * c) * sy + ty};
+  };
+  const faceD = mapPath(geo.d, (x, y) => {
+    const p = fitPt(x, y);
+    return projectPoint(p.x, p.y, anchorW / 2, anchorH / 2, pose.rotX, spin, perspective);
+  });
+  const foot = Math.max(0.04, Math.abs(cosY));
+  const anchorBox = {x: anchorX + pose.x, y: anchorY + pose.y, width: anchorW, height: anchorH};
 
   return (
     <div style={{position: 'absolute', left: 0, top: 0, width: bw, height: bh, background: pal.bg, overflow: 'hidden'}}>
@@ -338,8 +430,7 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
         h={bh}
         seed={clip.id}
         colors={[pal.warm, pal.cool, pal.muted]}
-        count={12}
-        avoid={[...avoid, anchorBox]}
+        avoid={[...avoid, {x: anchorX, y: anchorY, width: anchorW, height: anchorH}]}
       />
       {placed.map((tag) => {
         const padTop = Math.max(TAG_PAD, -tag.y + 8);
@@ -366,18 +457,40 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
         );
       })}
       <div style={{position: 'absolute', left: anchorBox.x, top: anchorBox.y, width: anchorW, height: anchorH, overflow: 'visible'}}>
-        <svg width={anchorW} height={anchorH} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible'}}>
+        <svg width={anchorW} height={anchorH} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible', pointerEvents: 'none'}}>
           <defs>
-            <filter id={filterId} x="-40%" y="-30%" width="180%" height="190%" colorInterpolationFilters="sRGB">
-              <feDropShadow dx={SOFT.dx} dy={SOFT.dy} stdDeviation={SOFT.blur} floodColor={soft} floodOpacity={SOFT.opacity} />
+            <filter id={filterId} x="-70%" y="-70%" width="240%" height="280%" colorInterpolationFilters="sRGB">
+              <feGaussianBlur stdDeviation={Math.max(0.5, shadow.blur)} />
             </filter>
           </defs>
-          <g filter={`url(#${filterId})`}>
-            <g transform={`translate(${tx} ${ty}) scale(${sx} ${sy}) rotate(${geo.tilt} ${anchorW / 2} ${anchorH / 2})`}>
-              <path d={geo.d} fill={accent} stroke={darken(accent, EDGE_DARK)} strokeWidth={EDGE_PX} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+          <g opacity={shadow.opacity} filter={`url(#${filterId})`} transform={`translate(${shadow.dx} ${shadow.dy})`}>
+            <g transform={`translate(${anchorW / 2} ${anchorH / 2}) scale(${foot} 1) translate(${-anchorW / 2} ${-anchorH / 2})`}>
+              <g transform={shape}>
+                <path d={geo.d} fill={soft} />
+              </g>
             </g>
           </g>
         </svg>
+        <svg width={anchorW} height={anchorH} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible'}}>
+          <path d={faceD} fill={accent} stroke={darken(accent, EDGE_DARK)} strokeWidth={EDGE_PX} strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </svg>
+        {Math.abs(cosY) < 0.42 ? (
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '7%',
+              width: Math.max(8, anchorW * 0.045),
+              height: '86%',
+              marginLeft: -Math.max(4, anchorW * 0.022),
+              background: darken(accent, 0.32),
+              transform: `rotate(${pose.tilt}deg) scaleY(${Math.max(0.2, Math.abs(cosX))})`,
+              transformOrigin: '50% 50%',
+              borderRadius: 3,
+              opacity: Math.min(1, (0.42 - Math.abs(cosY)) / 0.28),
+            }}
+          />
+        ) : null}
         <div
           style={{
             position: 'absolute',
@@ -389,6 +502,9 @@ export const CutpaperStage: React.FC<CutpaperProps> = ({clip, pal, t, dur, W, H,
             alignItems: 'center',
             justifyContent: 'center',
             textAlign: 'center',
+            transform: `rotate(${pose.tilt}deg)`,
+            transformOrigin: '50% 50%',
+            opacity: hideFace ? 0 : 1,
           }}
         >
           {anchorText}

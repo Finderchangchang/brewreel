@@ -14,7 +14,12 @@ import {LOOK_DEFAULTS} from '../../template/src/talk/motion/palette.ts';
 import {anchorRelay} from '../../template/src/talk/motion/kit/anchorRelay.ts';
 import {deltaE} from '../../template/src/talk/motion/kit/color.ts';
 import {SHADOW_720, TILT_AVOID, TILT_AVOID_BAND, TILT_MAX, TILT_MIN, cutGeometry, restTiltFor, safeTilt, shadowColor, tiltFromSeed} from '../../template/src/talk/motion/kit/cutShape.ts';
+import {anchorPose, faceVisibility, facingBack, flipPose, pickTosses, placeTosses, TOSS_GAP} from '../../template/src/talk/motion/kit/anchorMotion.ts';
+import {floatMotion, periodsCoprime} from '../../template/src/talk/motion/kit/float.ts';
 import {settle} from '../../template/src/talk/motion/kit/settle.ts';
+import {SHADOW_BY_HEIGHT, shadowByHeight} from '../../template/src/talk/motion/kit/shadowByHeight.ts';
+import {projectPoint} from '../../template/src/talk/motion/kit/project.ts';
+import {ENTRANCE_RANGE, EXIT_RANGE, PERSPECTIVE, entrance, leave, toss} from '../../template/src/talk/motion/kit/toss.ts';
 import {threeColor} from '../../template/src/talk/motion/kit/threeColor.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -80,6 +85,149 @@ check('角度回到静止角，没有第二次过冲', !angleBounce && Math.abs(
 const mid = curve.at(curve.up + curve.down * 0.3);
 const late = curve.at(curve.up + curve.down * 0.92);
 check('下来的末段速度掉下去', mid.speed > late.speed * 8, `${mid.speed} vs ${late.speed}`);
+
+// ---------- toss / entrance / leave ----------
+const lift = toss(1000);
+check('上抛行程 18%–24% 高', lift.travel >= 0.18 && lift.travel <= 0.24, String(lift.travel));
+check('上抛上升 0.5–0.6 秒、下落 0.9–1.1 秒且下落更长', lift.up >= 0.5 && lift.up <= 0.6 && lift.down >= 0.9 && lift.down <= 1.1 && lift.down > lift.up, `${lift.up}/${lift.down}`);
+const liftSamples = [];
+for (let t = 0; t <= lift.duration + 0.05; t += 1 / 60) liftSamples.push(lift.at(Number(t.toFixed(4))));
+const liftMin = liftSamples.reduce((b, s, i) => (s.y < liftSamples[b].y ? i : b), 0);
+check('上抛最高点在 18%–24% 高', liftSamples[liftMin].y <= -180 + 1 && liftSamples[liftMin].y >= -240 - 1, String(liftSamples[liftMin].y));
+const liftEnd = lift.at(lift.duration);
+check('上抛结束回到静止位', Math.abs(liftEnd.y) < 0.5 && Math.abs(liftEnd.tilt - lift.restTilt) < 0.05 && liftEnd.rotX === 0 && liftEnd.rotY === 0, JSON.stringify(liftEnd));
+let posOver = 0;
+for (const s of liftSamples) if (s.y > posOver) posOver = s.y;
+check('位置过冲不超过 1% 高', posOver <= 10.01, String(posOver));
+const tiltPeak = liftSamples.reduce((m, s) => Math.max(m, Math.abs(s.tilt - lift.restTilt)), 0);
+check('角度过冲约 14°（12–16）', tiltPeak >= 12 - 0.05 && tiltPeak <= 16 + 0.05, String(tiltPeak));
+let tiltBumps = 0;
+let tiltUp = false;
+for (let i = 1; i < liftSamples.length; i++) {
+  const prev = Math.abs(liftSamples[i - 1].tilt - lift.restTilt);
+  const now = Math.abs(liftSamples[i].tilt - lift.restTilt);
+  if (!tiltUp && now > prev + 0.02) tiltUp = true;
+  if (tiltUp && now + 0.02 < prev) {
+    tiltBumps += 1;
+    tiltUp = false;
+  }
+}
+check('角度只过冲一次', tiltBumps === 1, String(tiltBumps));
+const fallU = (u) => lift.at(lift.up + lift.down * 0.86 * u);
+check('下落末段速度至少掉一个数量级', fallU(0.12).speed > fallU(0.9).speed * 8, `${fallU(0.12).speed} vs ${fallU(0.9).speed}`);
+const riseU = (u) => lift.at(lift.up * u);
+check('上升是 ease-out', riseU(0.08).speed > riseU(0.92).speed * 3, `${riseU(0.08).speed} vs ${riseU(0.92).speed}`);
+const rotXPeak = liftSamples.reduce((m, s) => Math.max(m, s.rotX), 0);
+const rotYPeak = liftSamples.reduce((m, s) => Math.max(m, Math.abs(s.rotY)), 0);
+check('上抛 rotateX 落在 10–25°', rotXPeak >= 10 - 0.05 && rotXPeak <= 25 + 0.05, String(rotXPeak));
+check('上抛 rotateY 落在 10–20°', rotYPeak >= 10 - 0.05 && rotYPeak <= 20 + 0.05, String(rotYPeak));
+check('落地时 rotateX / rotateY 回到 0', Math.abs(lift.at(lift.up + lift.down).rotX) < 0.05 && Math.abs(lift.at(lift.up + lift.down).rotY) < 0.05);
+
+const fly = entrance(1000, 800, {restTilt: 3, startTilt: -36, from: 'below'});
+check('飞入 0.45–0.6 秒', fly.duration >= ENTRANCE_RANGE.dur[0] && fly.duration <= ENTRANCE_RANGE.dur[1], String(fly.duration));
+check('飞入起始角 ±25–40°', Math.abs(fly.at(0).tilt) >= 25 && Math.abs(fly.at(0).tilt) <= 40, String(fly.at(0).tilt));
+check('飞入从下方开始', fly.at(0).y > 200, String(fly.at(0).y));
+const flySamples = [];
+for (let t = 0; t <= fly.duration; t += 1 / 60) flySamples.push(fly.at(Number(t.toFixed(4))));
+let far = 0;
+for (const s of flySamples) {
+  const past = fly.startTilt >= fly.restTilt ? fly.restTilt - s.tilt : s.tilt - fly.restTilt;
+  if (past > far) far = past;
+}
+check('飞入角度过冲约 14°', far >= 12 - 0.05 && far <= 16 + 0.05, String(far));
+const flyEnd = fly.at(fly.duration);
+check('飞入停在静止位，位置过冲不超过 1% 高', Math.abs(flyEnd.y) < 0.5 && Math.abs(flyEnd.x) < 0.5 && Math.abs(flyEnd.tilt - 3) < 0.05 && flySamples.every((s) => s.y <= 1000), `${flyEnd.y},${flyEnd.tilt}`);
+let flyPos = 0;
+for (const s of flySamples) if (s.y < 0) flyPos = Math.max(flyPos, -s.y);
+check('飞入位置过冲不超过 1% 高', flyPos <= 10.01, String(flyPos));
+const side = entrance(900, 700, {from: 'side', startTilt: 32});
+check('侧面飞入从画面外侧开始', Math.abs(side.at(0).x) > 150, String(side.at(0).x));
+
+const exitMove = leave(1000);
+check('翻出 0.35–0.5 秒，rotateX 到 70–90°', exitMove.duration >= EXIT_RANGE.dur[0] && exitMove.duration <= EXIT_RANGE.dur[1] && exitMove.at(1).rotX >= 70 && exitMove.at(1).rotX <= 90, `${exitMove.duration}/${exitMove.at(1).rotX}`);
+check('翻出往上离开，不在原点', exitMove.at(1).y < -400, String(exitMove.at(1).y));
+check('透视落在 1000–1400', PERSPECTIVE >= 1000 && PERSPECTIVE <= 1400, String(PERSPECTIVE));
+const pcx = 400;
+const pcy = 300;
+const topL = projectPoint(pcx - 180, pcy - 120, pcx, pcy, 0, 55, PERSPECTIVE);
+const botL = projectPoint(pcx - 180, pcy + 120, pcx, pcy, 0, 55, PERSPECTIVE);
+const topR = projectPoint(pcx + 180, pcy - 120, pcx, pcy, 0, 55, PERSPECTIVE);
+const botR = projectPoint(pcx + 180, pcy + 120, pcx, pcy, 0, 55, PERSPECTIVE);
+const hL = Math.abs(botL.y - topL.y);
+const hR = Math.abs(botR.y - topR.y);
+check('绕 Y 时近侧更高，不是左右同高的压扁', Math.abs(hL - hR) / Math.max(hL, hR) > 0.12, `${hL.toFixed(1)}/${hR.toFixed(1)}`);
+const origin = projectPoint(pcx, pcy, pcx, pcy, 22, 40, PERSPECTIVE);
+check('投影中心不动', Math.abs(origin.x - pcx) < 0.05 && Math.abs(origin.y - pcy) < 0.05);
+const flat = projectPoint(pcx + 100, pcy - 40, pcx, pcy, 0, 0, PERSPECTIVE);
+check('零转角不变形', Math.abs(flat.x - (pcx + 100)) < 0.05 && Math.abs(flat.y - (pcy - 40)) < 0.05);
+
+// ---------- float ----------
+const bob = floatMotion(1000);
+check('浮动振幅 1–1.5% 高、倾斜 2–3°', bob.ampY >= 10 - 0.01 && bob.ampY <= 15 + 0.01 && bob.ampTilt >= 2 && bob.ampTilt <= 3, `${bob.ampY}/${bob.ampTilt}`);
+check('浮动周期 1.6–2.4 秒且互质', bob.periodY >= 1.6 && bob.periodY <= 2.4 && bob.periodTilt >= 1.6 && bob.periodTilt <= 2.4 && bob.periodY !== bob.periodTilt && periodsCoprime(bob.periodY, bob.periodTilt), `${bob.periodY}/${bob.periodTilt}`);
+let yLo = Infinity;
+let yHi = -Infinity;
+let tLo = Infinity;
+let tHi = -Infinity;
+for (let t = 0; t <= bob.periodY * bob.periodTilt; t += 1 / 50) {
+  const s = bob.at(t);
+  if (s.y < yLo) yLo = s.y;
+  if (s.y > yHi) yHi = s.y;
+  if (s.tilt < tLo) tLo = s.tilt;
+  if (s.tilt > tHi) tHi = s.tilt;
+}
+check('浮动确实上下、左右倾', yHi - yLo > bob.ampY * 1.8 && tHi - tLo > bob.ampTilt * 1.8, `${yHi - yLo}/${tHi - tLo}`);
+
+// ---------- shadowByHeight ----------
+const sh0 = shadowByHeight(0, 720);
+const sh1 = shadowByHeight(1, 720);
+check('静止投影偏下 36–47、模糊 18–24、不透明度 0.45', sh0.dy >= 36 && sh0.dy <= 47 && sh0.blur >= 18 && sh0.blur <= 24 && Math.abs(sh0.opacity - 0.45) < 0.001 && sh0.dx >= 0 && sh0.dx <= 12, JSON.stringify(sh0));
+check('顶点投影偏下约 +50%、模糊 40–55、不透明度 0.22', Math.abs(sh1.dy - SHADOW_BY_HEIGHT.dyRest * 1.5) < 0.2 && sh1.blur >= 40 && sh1.blur <= 55 && Math.abs(sh1.opacity - 0.22) < 0.001, JSON.stringify(sh1));
+let shadowMono = true;
+let prevSh = shadowByHeight(0, 720);
+for (let h = 0.1; h <= 1.001; h += 0.1) {
+  const sh = shadowByHeight(Number(h.toFixed(2)), 720);
+  if (sh.dy + 1e-6 < prevSh.dy || sh.blur + 1e-6 < prevSh.blur || sh.opacity > prevSh.opacity + 1e-6) shadowMono = false;
+  prevSh = sh;
+}
+check('投影随高度单调：偏下和模糊变大，不透明度变小', shadowMono);
+const shHi = shadowByHeight(1, 1080);
+check('1080 参考像素按短边放大', Math.abs(shHi.dy - sh1.dy * 1.5) < 0.2, String(shHi.dy));
+
+// ---------- anchorPose：任意 0.4 秒都还在动 ----------
+check('两次上抛至少隔 1.2 秒', JSON.stringify(pickTosses([0.4, 1.0, 1.7, 3.2], {dur: 4, enterEnd: 0.52, exitStart: 3.5})) === JSON.stringify([0.52 > 0.4 ? 1.0 : 0.4, 3.2].filter((t) => t >= 0.52 - 1e-3 && t - (t < 1.2 ? 0 : 1) < 99)) || pickTosses([0.4, 1.0, 1.7, 3.2], {dur: 4, enterEnd: 0.52, exitStart: 3.5}).every((t, i, arr) => i === 0 || t - arr[i - 1] >= TOSS_GAP - 1e-6), JSON.stringify(pickTosses([0.4, 1.0, 1.7, 3.2], {dur: 4, enterEnd: 0.52, exitStart: 3.5})));
+const picked = pickTosses([0.2, 0.9, 2.2, 3.5], {dur: 4.2, enterEnd: 0.52, exitStart: 3.7, gap: TOSS_GAP});
+check('飞入期间和退场之后的抛起会被丢掉', picked[0] >= 0.52 - 1e-3 && picked.every((t, i) => i === 0 || t - picked[i - 1] >= 1.2 - 1e-6) && picked.every((t) => t <= 3.7), JSON.stringify(picked));
+check('翻到 180° 看见背面', facingBack(180) && !facingBack(0) && facingBack(120));
+check('60° 以后藏正面，翻过 120° 才露背面', faceVisibility(50) === 'front' && faceVisibility(60) === 'front' && faceVisibility(70) === 'edge' && faceVisibility(90) === 'edge' && faceVisibility(119) === 'edge' && faceVisibility(120) === 'back' && faceVisibility(180) === 'back', `${faceVisibility(70)}/${faceVisibility(120)}`);
+check('口播时刻被裁掉时，抛起落在窗口 35%–50%', (() => {
+  const at = placeTosses([0.1], {dur: 4, enterEnd: 0.52, exitStart: 3.6});
+  const span = 3.6 - 0.52;
+  return at.length === 1 && at[0] >= 0.52 + span * 0.35 - 1e-6 && at[0] <= 0.52 + span * 0.5 + 1e-6;
+})(), JSON.stringify(placeTosses([0.1], {dur: 4, enterEnd: 0.52, exitStart: 3.6})));
+const flipped = flipPose(1.35, [1]);
+check('翻面从正面内容翻到下一条', flipped.flip > 40 && flipped.flip < 180 && flipped.faceA === 0 && flipped.faceB === 1, JSON.stringify(flipped));
+const poseH = 1152;
+const poseDur = 4;
+const poses = [];
+for (let t = 0; t <= poseDur; t += 1 / 30) {
+  poses.push(anchorPose({t, dur: poseDur, height: poseH, width: 1080, restTilt: 2.5, relay: false, hold: false, seed: 'motion-window', tossAt: [1.5], flipAt: []}));
+}
+let quiet = 0;
+const win = 12;
+for (let i = 0; i + win < poses.length; i++) {
+  let path = 0;
+  let ang = 0;
+  for (let k = 0; k < win; k++) {
+    const a = poses[i + k];
+    const b = poses[i + k + 1];
+    path += Math.hypot(b.x - a.x, b.y - a.y);
+    ang += Math.abs(b.tilt - a.tilt) + Math.abs(b.rotX - a.rotX) + Math.abs(b.rotY + b.flip - (a.rotY + a.flip));
+  }
+  const pathPx = path * (720 / 1080);
+  if (pathPx < 6 && ang < 1) quiet += 1;
+}
+check('4 秒样段里任意 0.4 秒窗口都有可见运动', quiet === 0, `安静窗口 ${quiet}`);
 
 // ---------- anchorRelay ----------
 const meadow = '#7EA870';

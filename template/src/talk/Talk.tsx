@@ -106,7 +106,7 @@ const PanelLayer: React.FC<{slot: Slot; slots: Slot[]; index: number; lay: TalkL
   return (
     <AbsoluteFill style={{transform: `translateY(${dy}px)`}}>
       {isMotion(clip) ? (
-        <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={band ? band.top : null} captionBottom={band ? band.bottom : null} relay={relayFor(slots, index)} />
+        <MotionLayer clip={clip} box={lay.broll} face={lay.face} captionTop={band ? band.top : null} captionBottom={band ? band.bottom : null} relay={relayFor(slots, index)} hold={Boolean(relayFor(slots, index + 1)?.relay)} />
       ) : (
         <div style={{position: 'absolute', left: lay.broll.x, top: lay.broll.y, width: lay.broll.width, height: lay.broll.height, overflow: 'hidden'}}>
           <OffthreadVideo muted src={staticFile(clip.src)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
