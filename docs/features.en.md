@@ -83,11 +83,15 @@ Copy an existing industry folder and rename it, fill in `rules.json` following t
 
 ## Talking-head B-roll
 
-Use this (experimental) when a real talking-head video needs explanatory pictures on the lines about a step, a number or a comparison. Put only `talk.mp4` in a project folder and run one command, `node scripts/talk.mjs <project> --out <dir-outside-the-repo>`: it transcribes the talk on your machine, a cheap model writes `broll.json`, and scripts compute timing, price, generation and the final cut.
+Use this when a real talking-head video needs explanatory pictures on the lines about a step, a number or a comparison. v0.8 was the experiment; since v0.9 one command can render from `talk.mp4` alone. The limits remain, and the pages still treat it as experimental. Put only `talk.mp4` in a project folder and run one command, `node scripts/talk.mjs <project> --out <dir-outside-the-repo>`: it transcribes the talk on your machine, a cheap model writes `broll.json`, and scripts compute timing, price, generation and the final cut.
 
 Two kinds of picture. Motion clips are free: five card types (keyword, checklist, steps, counter, compare) whose words are all copied from the speech and checked character by character. AI clips are generated with MiniMax H3, at most 2 per film by default, in three regular styles, wood blocks (the default), clay stop-motion and layered paper (ink sketch is experimental and only works as a stand-in preview), with the same robot throughout; cost is estimated before anything is spent, and a person approves them on the review page.
 
 Three placements: `full` covers the frame, `pip` keeps the face in a circle at the bottom right, `split` puts the picture on the top 60% and the face on the bottom 40% (vertical only). Captions can be added, omitted, or already burned into the talk (burned captions require `split`). Steps, price and limits: [`docs/broll.en.md`](broll.en.md).
+
+## Style factory
+
+Added in v0.10. One sentence describes an AI-picture style for a talk. `node scripts/broll/new-style.mjs --id <id> --name <name> --desc <one sentence>` writes `style.json`, generates reference images, scores them and makes one still. The vision check is only the first screen. After a person looks at `broll/styles/_drafts/<id>/review.html`, they run `node scripts/broll/approve-style.mjs <id>` themselves in a terminal, and only then does the style join the catalog. An AI assistant must not run that command. Pull requests that bring back an approved style are welcome; those files are not the promo-recipe remix described below. Steps, cost and the vision rules: [Style factory](style-factory.en.md).
 
 ## Validation and compliance
 
