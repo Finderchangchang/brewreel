@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 一条命令做口播配画面：转写 → 便宜模型写 broll.json → make-talk 出片。
 //   node scripts/talk.mjs <项目目录> --out <仓库外目录> [--budget 20] [--provider placeholder|local|minimax-h3] [--yes] [--draft]
-//        [--style wood-blocks] [--max-ai 2] [--captions add|none|burned] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--no-fix]
+//        [--style wood-blocks] [--max-ai 2] [--captions add|none|burned] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--motion-look wood|clay|paper|ink|cutpaper-meadow|cutpaper-dusk] [--no-fix]
 //        [--rewrite-broll] [--dry-run] [--only b01] [--concurrency 3] [--force-redo] [--keep] [--allow-in-repo]
 // 项目目录里只放 talk.mp4 就行。前两步做过就跳过，出片每次重做（输入都没变时直接用上次的成片）：一直重复跑同一条命令即可。
 //   第 1/3 步 转写：已有 talk.srt 就跳过（永不覆盖你改过的字幕）。
@@ -26,7 +26,7 @@ const LLM_BROLL = path.join(ROOT, 'scripts', 'broll', 'llm_broll.mjs');
 const MAKE_TALK = path.join(ROOT, 'scripts', 'make-talk.mjs');
 const USAGE = [
   '用法：node scripts/talk.mjs <项目目录> --out <仓库外目录> [--budget 20] [--provider placeholder|minimax-h3] [--yes] [--draft]',
-  '      [--style wood-blocks] [--max-ai 2] [--captions add|none|burned] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--no-fix]',
+  '      [--style wood-blocks] [--max-ai 2] [--captions add|none|burned] [--lang auto|zh|en|yue|ja|ko] [--terms "词1,词2"] [--motion-look wood|clay|paper|ink|cutpaper-meadow|cutpaper-dusk] [--no-fix]',
   '      [--rewrite-broll] [--dry-run] [--only b01] [--concurrency 3] [--force-redo]',
 ].join('\n');
 
@@ -42,6 +42,7 @@ export const VALUE_FLAGS = {
   '--captions': 'llm',
   '--lang': 'asr',
   '--terms': 'asr',
+  '--motion-look': 'llm',
 };
 /** 开关：去哪一步。 */
 export const SWITCHES = {

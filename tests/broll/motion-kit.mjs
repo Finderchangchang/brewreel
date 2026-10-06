@@ -8,6 +8,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {deltaE as libDeltaE} from '../../scripts/lib/color.mjs';
 import {forceTop, parseArgs as parseLlmArgs} from '../../scripts/broll/llm_broll.mjs';
+import {parseTalkArgs} from '../../scripts/talk.mjs';
 import {MOTION_LOOKS, motionLookOf, resolveMotionLook} from '../../scripts/broll/motion.mjs';
 import {loadStyles, validateBroll} from '../../scripts/broll/validate.mjs';
 import {LOOK_DEFAULTS} from '../../template/src/talk/motion/palette.ts';
@@ -21,6 +22,7 @@ import {SHADOW_BY_HEIGHT, shadowByHeight} from '../../template/src/talk/motion/k
 import {projectPoint} from '../../template/src/talk/motion/kit/project.ts';
 import {ENTRANCE_RANGE, EXIT_RANGE, PERSPECTIVE, entrance, leave, toss} from '../../template/src/talk/motion/kit/toss.ts';
 import {threeColor} from '../../template/src/talk/motion/kit/threeColor.ts';
+import {anchorLines} from '../../template/src/talk/motion/anchorLayout.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const failures = [];
@@ -303,6 +305,77 @@ const run = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'broll', 'll
 const out = `${run.stdout || ''}${run.stderr || ''}`;
 check('--motion-look 写错时退出码 2，且不调模型', run.status === 2 && out.includes('--motion-look') && !out.includes('第 1 轮') && !out.includes('api.deepseek.com'), out.slice(0, 400));
 fs.rmSync(dir, {recursive: true, force: true});
+const talked = parseTalkArgs(['proj', '--out', 'out', '--motion-look', 'cutpaper-meadow', '--budget', '20']);
+const lookAt = talked.llmArgs?.indexOf('--motion-look') ?? -1;
+check(
+  'talk.mjs 把 --motion-look 转给写方案，不进出片参数',
+  !talked.error && lookAt >= 0 && talked.llmArgs[lookAt + 1] === 'cutpaper-meadow' && !talked.makeArgs.includes('--motion-look') && talked.llmArgs.includes('--budget'),
+  JSON.stringify(talked.error ? {error: talked.error} : {llm: talked.llmArgs, make: talked.makeArgs}),
+);
+const bare = parseTalkArgs(['proj', '--out', 'out']);
+check('talk.mjs 不传 --motion-look 时不写这个参数', !bare.error && !bare.llmArgs.includes('--motion-look') && !bare.makeArgs.includes('--motion-look'));
+
+// ---------- 锚点卡分词断行 ----------
+const seg = new Intl.Segmenter('zh', {granularity: 'word'});
+const glueRe = /[\s，、；：。！？,;:.!?…·]/;
+const visibleN = (s) => Array.from(s).filter((ch) => !glueRe.test(ch)).length;
+const wordBounds = (text) => {
+  const bounds = new Set([0]);
+  let i = 0;
+  let prev = '';
+  for (const part of seg.segment(text)) {
+    const token = part.segment;
+    if (prev && Array.from(token).every((ch) => glueRe.test(ch))) {
+      i += token.length;
+      bounds.add(i);
+      continue;
+    }
+    i += token.length;
+    bounds.add(i);
+    prev = token;
+  }
+  return bounds;
+};
+const assertBreak = (text, maxW, maxPx, minPx) => {
+  const r = anchorLines(text, maxW, maxPx, minPx);
+  check(`${text} 字还在`, r.lines.join('') === text, JSON.stringify(r));
+  check(`${text} 字号 ≥ ${minPx}`, r.font >= minPx, JSON.stringify(r));
+  if (r.lines.length > 1) {
+    check(`${text} 没有单字行`, r.lines.every((l) => visibleN(l) >= 2), JSON.stringify(r.lines));
+    const bounds = wordBounds(text);
+    let acc = 0;
+    let onBound = true;
+    for (const line of r.lines) {
+      acc += line.length;
+      if (!bounds.has(acc)) onBound = false;
+    }
+    check(`${text} 断在词界`, onBound, JSON.stringify(r.lines));
+    check(`${text} 行首不是标点`, r.lines.every((l) => !glueRe.test(Array.from(l)[0] || '')), JSON.stringify(r.lines));
+  }
+  return r;
+};
+const kw = assertBreak('哪几句适合配画面', 700, 168, 120);
+check('哪几句适合配画面 不拆「适合」', kw.lines.join('/') === '哪几句适合/配画面', JSON.stringify(kw.lines));
+const quote = assertBreak('花钱之前它先报价', 700, 168, 120);
+check('花钱之前它先报价 两行等长', quote.lines.join('/') === '花钱之前/它先报价', JSON.stringify(quote.lines));
+const nod = assertBreak('你点头了才生成', 700, 168, 120);
+check('你点头了才生成 词没拆开', nod.lines.join('/') === '你点头了/才生成', JSON.stringify(nod.lines));
+const punct = assertBreak('花钱之前，它先报价', 700, 168, 120);
+check('逗号留在上一行', punct.lines.join('/') === '花钱之前，/它先报价', JSON.stringify(punct.lines));
+const tight = assertBreak('哪几句适合配画面', 200, 168, 120);
+check('放不下收到 120，仍不拆词', tight.font === 120 && tight.lines.join('/') === '哪几句适合/配画面', JSON.stringify(tight));
+const one = assertBreak('哪几句适合配画面', 2000, 168, 120);
+check('一行放得下就不拆', one.lines.length === 1 && one.font === 168, JSON.stringify(one));
+const word = anchorLines('适合', 80, 168, 120);
+check('一个词不拆成两行', word.lines.length === 1 && word.lines[0] === '适合' && word.font === 120, JSON.stringify(word));
+const stage = fs.readFileSync(path.join(ROOT, 'template', 'src', 'talk', 'motion', 'cutpaper.tsx'), 'utf8');
+check(
+  '五个模板的锚点字都走 anchorLines',
+  stage.includes("from './anchorLayout.ts'") &&
+    !stage.includes('breakLines') &&
+    ["'keyword'", "'checklist'", "'steps'", "'counter'", "'compare'"].every((name) => stage.includes(name)) &&
+    (stage.match(/<Lines /g) || []).length >= 5,
+);
 
 if (failures.length) {
   console.error(`motion-kit: ${failures.length} 失败`);
