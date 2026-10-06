@@ -74,6 +74,16 @@ node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 
 It transcribes the talk on your machine, asks DeepSeek to pick the lines and write `broll.json` (set `DEEPSEEK_API_KEY`), and renders: free motion clips are drawn for real, and AI clips start as solid-color stand-ins at no cost. The first transcription downloads a speech model of about 240 MB. If you are upgrading from v0.8, run `npm install` in `template` again first. Talking-head B-roll needs a full ffmpeg; the `imageio-ffmpeg` in the install step above is for it (the slim build bundled with Remotion is not enough). AI clips come in three regular styles (wood blocks, clay stop-motion, layered paper) whose reference images ship with the repo; ink sketch is experimental, has no reference images yet and only works as a stand-in preview. Real AI clips, price and review: [Talking-head B-roll](broll.en.md).
 
+### Style factory
+
+One sentence drafts an AI-picture style for a talk. Leave off `--yes` to print the requests that would be sent, and call nothing:
+
+```bash
+node scripts/broll/new-style.mjs --id demo-watercolor --name 水彩绘本 --desc "水彩晕染、纸纹、柔和暖色"
+```
+
+A person approves the style. Cost and the vision rules: [Style factory](style-factory.en.md).
+
 ### Use it in DeepSeek Harness
 
 This repository ships a DeepSeek Harness (dsh) plugin in [`integrations/deepseek-harness/`](../integrations/deepseek-harness/README.en.md), package name `dsh-brewreel` (formerly `dsh-distill-video`; to upgrade from it, see "Upgrading from dsh-distill-video" in the plugin README). With it installed, the model writes the storyboard by following the skill, and validates, renders and verifies through the plugin's tools instead of assembling `node scripts/…` commands. Rendering runs in the background with progress, and the plugin restricts output paths and the environment variables child processes receive.

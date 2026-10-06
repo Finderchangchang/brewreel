@@ -2,7 +2,9 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
-## Unreleased
+## v0.10.0 · 2026-10-06 · Style factory: one sentence makes a new AI B-roll style
+
+Also: the README front page is reorganized (both workflows side by side, a three-step quick start, details moved into docs), in Chinese and English.
 
 ### New: style factory
 

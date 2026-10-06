@@ -74,6 +74,16 @@ node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 
 它先在本机转写出字幕，再请 DeepSeek 挑句子写 `broll.json`（要设 `DEEPSEEK_API_KEY`），最后出片：免费的动效画面直接画，AI 画面先用纯色占位，不花钱。第一次转写会下载约 240 MB 的识别模型。从 v0.8 升级的，先在 `template` 目录重新 `npm install`。口播配画面要完整版 ffmpeg，上面装依赖时的 `imageio-ffmpeg` 就是给它用的（Remotion 自带的精简版不够）。AI 画面有三种正式风格（积木风、黏土定格、分层纸艺），参考图随仓库发布；手绘线稿是实验风格，参考图还没出，只能占位预览。真生成 AI 画面、费用和审片见 [口播配画面](broll.md)。
 
+### 风格工厂
+
+一句话造一种口播用的 AI 画面风格。先不加 `--yes`，只看将要发送的请求，不调接口：
+
+```bash
+node scripts/broll/new-style.mjs --id demo-watercolor --name 水彩绘本 --desc "水彩晕染、纸纹、柔和暖色"
+```
+
+人自己批准、花费和看图规则见 [风格工厂](style-factory.md)。
+
 ### 在 DeepSeek Harness 里用
 
 仓库自带一个 DeepSeek Harness（dsh）插件，放在 [`integrations/deepseek-harness/`](../integrations/deepseek-harness/README.md)，包名 `dsh-brewreel`（原名 `dsh-distill-video`，从旧版升级见插件 README 的「从 dsh-distill-video 升级」）。装上后，模型照着 skill 写分镜，校验、出片、核对都调插件的工具完成，不用自己拼 `node scripts/…` 命令；出片在后台跑、报进度，输出路径和子进程拿到的环境变量都受插件限制。

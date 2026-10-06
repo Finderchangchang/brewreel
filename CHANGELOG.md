@@ -2,7 +2,9 @@
 
 [English → CHANGELOG.en.md](CHANGELOG.en.md)
 
-## Unreleased
+## v0.10.0 · 2026-10-06 · 风格工厂：一句话造一个 AI 画面风格
+
+另外：README 首页重排（两种玩法并排、快速开始三步、细节挪进 docs），中英同步。
 
 ### 新增：风格工厂
 
