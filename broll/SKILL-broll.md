@@ -103,14 +103,16 @@ node scripts/make-talk.mjs <项目目录> --out <仓库外目录> --yes
 
 每句先按这张表定 `source` 和 `template`：
 
-| 句子在干嘛 | job | source | template | mode |
-|---|---|---|---|---|
-| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter | split 或 pip |
-| 列两到四样东西 | list | motion | checklist | split 或 pip；3 条以上才可以 full |
-| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps | split 或 pip；3 条以上才可以 full |
-| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare | split 或 pip |
-| 一句要观众记住的话、一个关键词 | stress | motion | keyword | split 或 pip，不许 full |
-| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写，用风格 | full、pip 或 split |
+| 句子在干嘛 | job | source | template | mode | 别选 | 为什么 |
+|---|---|---|---|---|---|---|
+| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter | split 或 pip | checklist、steps、keyword、compare、AI 画面 | 这句就是在报这一个数。拆成清单或步骤，数就没了 |
+| 列两到四样东西 | list | motion | checklist | split 或 pip；3 条以上才可以 full | counter、steps、compare、keyword、AI 画面 | 在列东西，不是报一个数，也没有先后，也不是新旧对比 |
+| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps | split 或 pip；3 条以上才可以 full | checklist、counter、compare、keyword、AI 画面 | 有先有后。清单和对比看不出哪一步先做 |
+| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare | split 或 pip | checklist、steps、counter、keyword、AI 画面 | 只有先说旧的、后说新的才用 compare。先说新的就别用 compare，两栏对调意思会反 |
+| 一句要观众记住的话、一个关键词 | stress | motion | keyword | split 或 pip，不许 full | checklist、steps、counter、compare、AI 画面 | 只要一句原话。不要拆成清单、步骤或两边对比 |
+| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写，用风格 | full、pip 或 split | keyword、checklist、steps、counter、compare | 五种动效卡片盖不住地点、气氛或动作，这一句用 AI 画面 |
+
+一句里只有一个数，用 counter，不要拆成 checklist 或 steps。约数（「大概」「左右」「几十」「上千」这类）不用 counter。counter 的数字落定已自动对齐说出这个数的时刻。
 
 动效段默认写 `split`（上 60% 放画面、下 40% 露脸），横版原片写 `pip`：说话的人要留在画面里。keyword 写 `full` 会被拦；`full` 只给 3 条以上的 checklist、steps。同一个模板全片最多用 2 次，相邻两段动效画面不要用同一个模板。AI 画面超过上限（默认 2 段，命令行 `--max-ai` 可以改，以「这次必须遵守」为准）时，把不那么要紧的改成动效画面或留脸。
 

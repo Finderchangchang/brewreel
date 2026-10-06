@@ -714,6 +714,7 @@ export const parseQuantities = (text, ctx = {}) => {
     if (prevCh === '第') problem = 'ordinal';
     else if (kind === 'cn' && /[一二两三四五六七八九][一二两三四五六七八九]/.test(raw0)) problem = 'approx';
     else if (prevCh === '几' || s[k] === '几') problem = 'approx';
+    else if (prevCh === '上' && /^[百千万亿]/.test(raw0)) problem = 'approx';
     else if (kind === 'cn' && /[百千万亿][一二两三四五六七八九]$/.test(raw0)) problem = 'colloquial';
     else if (s.startsWith('分之', k)) problem = 'fraction';
     else if (!Number.isFinite(value)) problem = 'unknown';
@@ -736,6 +737,9 @@ export const parseQuantities = (text, ctx = {}) => {
     if (!problem && APPROX_AFTER.some((w) => tail.startsWith(w))) problem = 'approx';
     if (!problem && AFTER_QUAL.some((w) => tail.startsWith(w))) problem = 'qualified';
     if (!problem && BEFORE_QUAL.some((w) => ctxBefore.endsWith(w))) problem = 'qualified';
+    // 「大概是三十」「三十秒的左右」：限定词和数字中间隔了一两个字，紧挨着的检查会漏
+    if (!problem && /(大概|大约|差不多|将近|接近|不到|超过|至少|最多|少于|多于)([^\d零〇一二两三四五六七八九十百千万亿]{1,2})$/.test(ctxBefore)) problem = 'qualified';
+    if (!problem && /^([^\d零〇一二两三四五六七八九十百千万亿]{1,2})(左右|上下|以内|之内|以上|以下|出头)/.test(tail)) problem = 'qualified';
     if (!problem && negTail(ctxBefore.replaceAll(SEP, ''))) problem = 'negated';
     if (!problem && !unit && /^[一两]$/.test(raw0)) problem = 'notQuantity';
     if (!problem && !unit && isCjk(s[k] ?? '')) problem = 'unit';
@@ -795,6 +799,30 @@ export const parseSay = (text, ctx = {}) => {
 
 /** 一段文字里能放进 counter 的数（「一个」「一段」这种不算）。给 validate.mjs 查「quantify 却选了 AI」用 */
 export const findNumbers = (text) => parseQuantities(text).filter((q) => !q.problem && !(q.kind === 'cn' && q.raw.replace(/^[¥$]/, '').startsWith('一') && q.value === 1));
+
+const STEP_ORDER_RE = /先|再|然后|接着|最后|first|then|finally/i;
+const COUNT_UNIT_RE = /^(个|样|点|种|件|条|项|步|招|类|things?|items?|steps?|ways?)$/i;
+
+/**
+ * 原句里只有一个确定的数，却选了 checklist 或 steps。
+ * 第几不算这个数。steps 句里已经有序号，或者这个数的单位是「步」并且原句在讲先后，放行。
+ * 这个数是「两个 / 三样」这种个数，并且正好等于条数，放行。
+ * @returns {{problem: string, fix: string} | null}
+ */
+export const loneNumberPickProblem = (sentence, template, items = []) => {
+  if (template !== 'checklist' && template !== 'steps') return null;
+  const definite = findNumbers(sentence);
+  if (definite.length !== 1) return null;
+  const one = definite[0];
+  if (COUNT_UNIT_RE.test(one.suffix ?? '') && Array.isArray(items) && one.value === items.length) return null;
+  if (template === 'steps' && parseQuantities(sentence).some((q) => q.problem === 'ordinal')) return null;
+  const stepUnit = one.suffix === '步' || one.suffix === 'step' || one.suffix === 'steps';
+  if (template === 'steps' && stepUnit && STEP_ORDER_RE.test(sentence)) return null;
+  return {
+    problem: `原句里只有一个数「${one.raw}」，却选了 ${template}`,
+    fix: `改成 counter：job 写 quantify，template 写 counter，say 照抄「${one.raw}」`,
+  };
+};
 
 /** from–to 盖住的句子 */
 export const coveredCues = (cues, from, to) => cues.filter((c) => cueNo(c.id) >= cueNo(from) && cueNo(c.id) <= cueNo(to));
@@ -891,13 +919,15 @@ export const validateMotionClip = (clip, cues, opts = {}) => {
   }
   const sentence = covered.map((c) => c.text.replace(/\s+/g, ' ').trim()).join(' ');
   const lang = langOf(sentence);
+  const lone = loneNumberPickProblem(sentence, clip.template, clip.slots?.items);
+  if (lone) err('template', lone.problem, lone.fix);
 
   const data = {};
   const marksMs = {};
   const located = {};
   const ctxOf = (start, end) => ({
-    before: start > 0 ? displayOf(spoken, Math.max(0, start - 4), start).text : '',
-    after: end < spoken.text.length ? displayOf(spoken, end, Math.min(spoken.text.length, end + 4)).text : '',
+    before: start > 0 ? displayOf(spoken, Math.max(0, start - 8), start).text : '',
+    after: end < spoken.text.length ? displayOf(spoken, end, Math.min(spoken.text.length, end + 8)).text : '',
   });
   const checkLen = (field, text, max, min) => {
     const n = units(text);
