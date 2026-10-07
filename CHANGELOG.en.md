@@ -2,6 +2,14 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.12.1 · 2026-10-07 · Fixes: DeepSeek plugin carries the current skill, one pick table, motion check on skipped renders
+
+- The DeepSeek plugin (npm `dsh-brewreel`) left out the talking-head, style factory and motion-look files, so it still shipped the v0.7.0 skill. The whitelist is complete and the plugin is 0.6.0, carrying the v0.12 skill.
+- The `broll.json` prompt drops an old pick table without "Do not pick" and uses only the one in `broll/SKILL-broll.en.md`.
+- When the render is skipped because nothing changed, the motion check still runs on the existing video.
+- Errors on English sentences keep the space between number and unit ("25 seconds").
+- A sentence with one number and a single ordinal ("25 seconds, this is step one") can no longer use steps.
+
 ## v0.12.0 · 2026-10-07 · Route requests first, "do not pick" in the pick table, automatic freeze and flicker check
 
 ### New

@@ -3,7 +3,7 @@ name: brewreel
 description: BrewReel (精酿) covers three jobs. Promo: a vertical product video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use for a product promo, a marketing short, an app intro, a feature demo, a launch teaser, or a live-selling intro. Six industries (software, food, ecommerce, education, beauty, travel), Chinese and English. You only write storyboard.json; a validator blocks rule and compliance issues, and one command renders the video. Talk pictures: the user has talk.mp4 or asks for pictures on a talking-head video. Read only broll/SKILL-broll.en.md, write only broll.json, run node scripts/talk.mjs, and do not write storyboard.json. AI picture style: the user describes a look in one sentence. Read docs/style-factory.en.md, run node scripts/broll/new-style.mjs, do not generate the images yourself, and do not run approve-style.mjs for them.
 license: Apache-2.0
 metadata:
-  version: 0.12.0
+  version: 0.12.1
 ---
 
 # BrewReel (精酿): Product Promo Video
