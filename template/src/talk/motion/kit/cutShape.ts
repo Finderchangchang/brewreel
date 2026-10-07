@@ -1,4 +1,4 @@
-// 按 seed 生成的手剪不规则圆角多边形。4–7 边，边缘有一点毛糙，投影参数全片统一。
+// 按 seed 生成的手剪不规则多边形。4–7 边，轮廓按步长重采样、种子抖动、直线相连（折线，不是平滑曲线）。投影参数全片统一。
 // 对应原理：锚点是一块自己剪的纸，不是图标；投影偏下、颜色是底色压暗，让纸离开纸面。
 // 静止倾斜默认落在 −7°…+7°。有一个必须躲开的招牌静止角（见 TILT_AVOID），±2° 以内的结果会被推出去。
 // 五边形可以出现，但不会停在那个招牌角度上。
@@ -13,6 +13,18 @@ export const TILT_AVOID_BAND = 2;
 
 /** 720 宽时的投影：偏右 0–12 px、偏下 36–47 px 的中段。1080 参考像素乘 1.5。 */
 export const SHADOW_720 = {dx: 8, dy: 42};
+
+/**
+ * 沿轮廓重采样的步长（这一层的像素）。
+ * 一刀大约这么长：太密会看起来像平滑曲线，太疏会缺一块边。
+ */
+export const CUT_STEP = 22;
+/**
+ * 默认毛边半幅（像素）。每个采样点沿这一刀的法线、在 ±这个值里按种子偏一下。
+ * 对应 roughness 0.055。调用方把 roughness 调小（锚点字块）时，抖动按同样比例收。
+ */
+export const CUT_JITTER = 3.2;
+const ROUGH_BASE = 0.055;
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
@@ -98,27 +110,29 @@ export type CutOpts = {
 
 type Pt = {x: number; y: number};
 
-const roundedPath = (pts: Pt[], rad: number): string => {
-  const n = pts.length;
-  const parts: string[] = [];
+/**
+ * 闭合折线：每条边按 CUT_STEP 重采样，采样点沿法线做种子抖动，点与点之间只连直线。
+ * 路径里只有 M / L / Z，没有二次或三次曲线。
+ */
+const cutPolyline = (verts: Pt[], rng: () => number, jitter: number): string => {
+  const n = verts.length;
+  const out: Pt[] = [];
   for (let i = 0; i < n; i++) {
-    const prev = pts[(i + n - 1) % n];
-    const cur = pts[i];
-    const next = pts[(i + 1) % n];
-    const v1x = prev.x - cur.x;
-    const v1y = prev.y - cur.y;
-    const v2x = next.x - cur.x;
-    const v2y = next.y - cur.y;
-    const l1 = Math.hypot(v1x, v1y) || 1;
-    const l2 = Math.hypot(v2x, v2y) || 1;
-    const r = Math.min(rad, l1 * 0.32, l2 * 0.32);
-    const p1x = cur.x + (v1x / l1) * r;
-    const p1y = cur.y + (v1y / l1) * r;
-    const p2x = cur.x + (v2x / l2) * r;
-    const p2y = cur.y + (v2y / l2) * r;
-    parts.push(`${i === 0 ? 'M' : 'L'} ${p1x.toFixed(1)} ${p1y.toFixed(1)}`);
-    parts.push(`Q ${cur.x.toFixed(1)} ${cur.y.toFixed(1)} ${p2x.toFixed(1)} ${p2y.toFixed(1)}`);
+    const a = verts[i];
+    const b = verts[(i + 1) % n];
+    const dx = b.x - a.x;
+    const dy = b.y - a.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+    const steps = Math.max(1, Math.round(len / CUT_STEP));
+    for (let s = 0; s < steps; s++) {
+      const u = s / steps;
+      const j = (rng() - 0.5) * 2 * jitter;
+      out.push({x: a.x + dx * u + nx * j, y: a.y + dy * u + ny * j});
+    }
   }
+  const parts = out.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`);
   parts.push('Z');
   return parts.join(' ');
 };
@@ -151,22 +165,8 @@ export const cutGeometry = (seed: string | number, opts: CutOpts = {}): CutGeome
     const wobble = (opts.wobbleMin ?? 0.72) + rng() * (opts.wobbleSpan ?? 0.42);
     verts.push({x: cx + Math.cos(ang) * rx * wobble, y: cy + Math.sin(ang) * ry * wobble});
   }
-  const amp = (opts.roughness ?? 0.055) * Math.min(rx, ry);
-  const rough: Pt[] = [];
-  for (let i = 0; i < verts.length; i++) {
-    const a = verts[i];
-    const b = verts[(i + 1) % verts.length];
-    rough.push(a);
-    const mx = (a.x + b.x) / 2;
-    const my = (a.y + b.y) / 2;
-    const dx = b.x - a.x;
-    const dy = b.y - a.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const j = (rng() - 0.5) * 2 * amp;
-    rough.push({x: mx + (-dy / len) * j, y: my + (dx / len) * j});
-  }
-  const rad = Math.min(rx, ry) * 0.12;
-  const d = roundedPath(rough, rad);
+  const jitter = CUT_JITTER * ((opts.roughness ?? ROUGH_BASE) / ROUGH_BASE);
+  const d = cutPolyline(verts, rng, jitter);
   const innerW = rx * 1.15;
   const innerH = ry * 1.05;
   return {

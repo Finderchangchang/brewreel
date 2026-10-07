@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 口播配 B-roll：校验 → 计划 → 估价闸门 → 原片归一化 → 生成 AI 画面 → 审片（minimax-h3）→ 合成 → 交付。
 //   node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3] [--force-redo]
-// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里、缺参考图、缺完整版 ffmpeg、会盖掉付费片段 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查、转码或渲染失败 / 5 还没审片
+// 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里、缺参考图、缺完整版 ffmpeg、会盖掉付费片段 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查、转码或渲染失败，或动效检查有 ✗（成片改名 video.rejected.mp4，不能交付） / 5 还没审片
 // 合成的输入（原片、字幕、计划、生成片、合成代码）和上次交付时完全一样时，不重新渲染，直接用上次的成片（删掉 video.mp4 就会重出）。
 // --out 不许落在仓库里（promo/ 除外，或人手动加 --allow-in-repo）。--dry-run 只校验、写计划和估价，不生成。
 // 动效画面（source:"motion"）不花钱、不进账本、不审片、不加「AI 生成画面」标，合成时直接画；
@@ -16,6 +16,7 @@ import {generateClips, redoCommandOf} from './broll/generate.mjs';
 import {sha256File, sha256Text, stableString} from './broll/hash.mjs';
 import {loadLedger, markApproved, saveLedger} from './broll/ledger.mjs';
 import {ffmpeg, ffmpegCheck, ffmpegHelp} from './broll/media.mjs';
+import {checkTalkMotion} from './broll/motion-check.mjs';
 import {resolveMotionLook, toMotionProps} from './broll/motion.mjs';
 import {normalizeTalk, normalizedMediaOf} from './broll/normalize.mjs';
 import {aiClipsOf, buildPlan, writePlan} from './broll/plan.mjs';
@@ -359,12 +360,34 @@ try {
     stop(4, `拼图失败。\n${tail}`);
   }
 
+  let motion;
+  try {
+    motion = await checkTalkMotion({video: videoPath, width: plan.width, height: plan.height, clips: plan.clips, jsonPath: path.join(outDir, 'motion-check.json')});
+  } catch (e) {
+    stop(4, e.message);
+  }
+  for (const line of motion.lines) console.log(line);
+  const motionFailed = motion.failCount > 0;
+  let deliverVideo = videoPath;
+  let deliverSheet = sheetPath;
+  if (motionFailed) {
+    deliverVideo = path.join(outDir, 'video.rejected.mp4');
+    deliverSheet = path.join(outDir, 'sheet.rejected.png');
+    if (fs.existsSync(deliverVideo)) fs.rmSync(deliverVideo);
+    fs.renameSync(videoPath, deliverVideo);
+    if (fs.existsSync(sheetPath)) {
+      if (fs.existsSync(deliverSheet)) fs.rmSync(deliverSheet);
+      fs.renameSync(sheetPath, deliverSheet);
+    }
+  }
+
   const finishedAt = new Date().toISOString();
   for (const clip of aiClips) ledger.clips[clip.id] = markApproved(ledger.clips[clip.id], finishedAt);
   if (aiClips.length) saveLedger(ledgerPath, ledger);
   const meta = readTranscribeMeta(projectDir);
   const manifest = {
-    status: 'delivered',
+    status: motionFailed ? 'rejected' : 'delivered',
+    motionCheck: {ok: motion.ok, fail: motion.failCount, warn: motion.warnCount, lines: motion.lines},
     renderKey,
     provider: doc.provider,
     quality: doc.quality,
@@ -411,7 +434,12 @@ try {
     finishedAt,
   };
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
-  console.log(`交付：${videoPath}`);
+  if (motionFailed) {
+    const first = motion.lines.find((l) => l.includes('✗')) || motion.lines[0];
+    console.log(`动效检查有 ${motion.failCount} 处 ✗（成片已改名 ${path.basename(deliverVideo)}，只给人看哪里坏了，不能交付）`);
+    stop(4, `动效检查有 ${motion.failCount} 处 ✗：${first}`);
+  }
+  console.log(`交付：${deliverVideo}`);
 } catch (e) {
   if (e?.skipRender) exitCode = 0;
   else {

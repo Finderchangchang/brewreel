@@ -36,6 +36,11 @@ export type FloatOpts = {
   ampTilt?: number;
   periodY?: number;
   periodTilt?: number;
+  /**
+   * 相对默认振幅的倍数，夹在 0.05–1。
+   * 1 是剪纸。非剪纸落定后的主卡片用 0.5，不超过剪纸默认的一半。
+   */
+  ampScale?: number;
 };
 
 export type FloatSample = {x: number; y: number; tilt: number; rotX: number; rotY: number; h: number};
@@ -68,18 +73,20 @@ export const floatMotion = (height: number, opts: FloatOpts = {}): FloatMotion =
   const ampTilt = clamp(opts.ampTilt ?? 3, FLOAT_RANGE.tilt[0], FLOAT_RANGE.tilt[1]);
   const periodY = clamp(opts.periodY ?? 1.6, FLOAT_RANGE.period[0], FLOAT_RANGE.period[1]);
   const periodTilt = nudgeCoprime(opts.periodTilt ?? 1.7, periodY);
+  const ampScale = clamp(opts.ampScale ?? 1, 0.05, 1);
   const H = Math.max(1, height);
-  const ampY = ampFrac * H;
+  const ampY = ampFrac * H * ampScale;
+  const tiltAmp = ampTilt * ampScale;
   const at = (t: number): FloatSample => {
     const w = (2 * Math.PI * t) / periodY;
     // 水平与上下差 90°。纯上下在波峰会停大约 0.4 秒；绕一小圈之后速度几乎不变。
     const x = ampY * Math.cos(w);
     const y = ampY * Math.sin(w);
-    const tilt = ampTilt * Math.sin((2 * Math.PI * t) / periodTilt);
+    const tilt = tiltAmp * Math.sin((2 * Math.PI * t) / periodTilt);
     const rotX = 3.2 * Math.sin((2 * Math.PI * t) / 2.1 + 0.4);
     const rotY = 2.8 * Math.sin((2 * Math.PI * t) / 1.9 + 1.1);
     const h = Math.min(0.2, Math.abs(y) / Math.max(1, ampY) * 0.16);
     return {x, y, tilt, rotX, rotY, h};
   };
-  return {ampY, ampTilt, periodY, periodTilt, at};
+  return {ampY, ampTilt: tiltAmp, periodY, periodTilt, at};
 };

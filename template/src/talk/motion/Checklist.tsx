@@ -4,7 +4,7 @@
 import React from 'react';
 import {Easing} from 'remotion';
 import {blend, rgba, shapeColors, type MotionPalette} from './palette';
-import {Card, Check, Pill, fitFont, listGeom, prog, riseIn, springAt} from './parts';
+import {Card, Check, Pill, fitFont, listGeom, prog, quietFloat, riseIn, springAt} from './parts';
 import {LAST_BEFORE_END, revealTimes} from './timing';
 import type {ChecklistData, ListMarks} from './types';
 
@@ -19,7 +19,7 @@ export const Checklist: React.FC<{data: ChecklistData; marks: ListMarks; t: numb
   const titleSize = g.titleH / 1.7;
   const ink = pal.look === 'ink';
   return (
-    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H}}>
+    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, ...quietFloat(t, H)}}>
       {data.title ? (
         <div style={{position: 'absolute', left: g.x0, top: g.y0, height: g.titleH, display: 'flex', alignItems: 'center', opacity: Math.min(1, titleP * 1.6), transform: `translateY(${(1 - titleP) * -24}px) rotate(${ink ? -1.5 : -1}deg)`, transformOrigin: '0 50%'}}>
           <Pill text={data.title} size={Math.min(titleSize, fitFont(data.title, g.contentW * 0.8 - titleSize * 2, titleSize, 30))} bg={pal.accent} color={pal.ink} pal={pal} />

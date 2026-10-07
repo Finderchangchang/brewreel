@@ -2,6 +2,7 @@
 // 只画形状，不画字：屏幕上的字只来自模板槽位（原话）。
 import React from 'react';
 import {Easing, interpolate, spring} from 'remotion';
+import {floatMotion} from './kit/float.ts';
 import {badgeOf, blend, rgba, shapeColors, type MotionPalette} from './palette';
 
 export const FPS = 30;
@@ -21,6 +22,19 @@ export const bump = (t: number, t0: number, dur = 0.45) => {
 };
 /** 慢慢漂：周期 period 秒，振幅 amp */
 export const drift = (t: number, period: number, amp: number, phase = 0) => Math.sin((t / period) * Math.PI * 2 + phase) * amp;
+
+/**
+ * 非剪纸主卡片落定后的轻浮动。振幅是剪纸 float 默认的一半，只用平移和平面倾斜，不加剪纸的 rotateX / rotateY。
+ */
+export const quietShift = (t: number, height: number): {x: number; y: number; tilt: number} => {
+  const s = floatMotion(height, {ampScale: 0.5}).at(t);
+  return {x: s.x, y: s.y, tilt: s.tilt};
+};
+
+export const quietFloat = (t: number, height: number, origin = '50% 45%'): React.CSSProperties => {
+  const s = quietShift(t, height);
+  return {transform: `translate(${s.x.toFixed(2)}px, ${s.y.toFixed(2)}px) rotate(${s.tilt.toFixed(2)}deg)`, transformOrigin: origin};
+};
 
 /**
  * 条目入场：从下方 60 参考像素（720 宽时 40 像素）滑上来、淡入，0.22 秒走完，同时回弹一下（0.96 → 1.04 → 1）。

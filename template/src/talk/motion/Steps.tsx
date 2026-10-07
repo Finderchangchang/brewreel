@@ -5,7 +5,7 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {blend, rgba, shapeColors, type MotionPalette} from './palette';
-import {Card, DoneBadge, Pips, bump, fitFont, listGeom, prog, riseIn, springAt} from './parts';
+import {Card, DoneBadge, Pips, bump, fitFont, listGeom, prog, quietFloat, riseIn, springAt} from './parts';
 import {doneTime, revealTimes, stepCheckTimes} from './timing';
 import type {ListMarks, StepsData} from './types';
 
@@ -36,7 +36,7 @@ export const Steps: React.FC<{data: StepsData; marks: ListMarks; t: number; dur:
   const travel = 0.32;
 
   return (
-    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H}}>
+    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, ...quietFloat(t, H)}}>
       {/* 连线：只画走过的那一截 + 正在滚的小球（还没轮到的那一段不画） */}
       {items.slice(1).map((_, k) => {
         const i = k + 1;

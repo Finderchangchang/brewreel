@@ -7,7 +7,7 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {rgba, type MotionPalette} from './palette';
-import {Card, Confetti, bump, fitFont, isTall, prog, springAt, textEm} from './parts';
+import {Card, Confetti, bump, fitFont, isTall, prog, quietFloat, springAt, textEm} from './parts';
 import {visualTop} from './stage';
 import {FLIP, counterClock, counterValue, isMoney} from './timing';
 import type {CounterData, CounterMarks} from './types';
@@ -82,7 +82,7 @@ export const Counter: React.FC<{data: CounterData; marks: CounterMarks; t: numbe
   const bigSuffix = flip && !landed ? from!.suffix || suffix : suffix;
 
   return (
-    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H}}>
+    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, ...quietFloat(t, H)}}>
       <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: Math.min(1, enter * 1.6), transform: `translateY(${(1 - enter) * 50}px) scale(${0.94 + 0.06 * enter})`, transformOrigin: `${W / 2}px ${H / 2}px`}}>
         {/* 彩纸在卡片后面，从卡片边上往外飞 */}
         <Confetti t={t} at={clock.land} dur={dur} rect={{x: cx, y: cy, w: cardW, h: cardH}} pal={pal} count={14} />

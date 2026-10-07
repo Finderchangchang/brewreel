@@ -14,7 +14,7 @@ import {loadStyles, validateBroll} from '../../scripts/broll/validate.mjs';
 import {LOOK_DEFAULTS} from '../../template/src/talk/motion/palette.ts';
 import {anchorRelay} from '../../template/src/talk/motion/kit/anchorRelay.ts';
 import {deltaE} from '../../template/src/talk/motion/kit/color.ts';
-import {SHADOW_720, TILT_AVOID, TILT_AVOID_BAND, TILT_MAX, TILT_MIN, cutGeometry, restTiltFor, safeTilt, shadowColor, tiltFromSeed} from '../../template/src/talk/motion/kit/cutShape.ts';
+import {CUT_JITTER, CUT_STEP, SHADOW_720, TILT_AVOID, TILT_AVOID_BAND, TILT_MAX, TILT_MIN, cutGeometry, restTiltFor, safeTilt, shadowColor, tiltFromSeed} from '../../template/src/talk/motion/kit/cutShape.ts';
 import {anchorPose, faceVisibility, facingBack, flipPose, pickTosses, placeTosses, TOSS_GAP} from '../../template/src/talk/motion/kit/anchorMotion.ts';
 import {floatMotion, periodsCoprime} from '../../template/src/talk/motion/kit/float.ts';
 import {settle} from '../../template/src/talk/motion/kit/settle.ts';
@@ -58,6 +58,12 @@ check('同一外观的静止角稳定且在默认范围', (() => {
 check('投影参数落在原理区间', SHADOW_720.dx >= 0 && SHADOW_720.dx <= 12 && SHADOW_720.dy >= 36 && SHADOW_720.dy <= 47, JSON.stringify(SHADOW_720));
 const shade = shadowColor('#7EA870');
 check('投影色不是纯黑也不是那支青绿', shade !== '#000000' && shade.toLowerCase() !== '#4b8481' && /^#[0-9a-f]{6}$/i.test(shade), shade);
+const poly = cutGeometry('polyline-check', {width: 420, height: 300});
+check('手剪边只有直线', !/[QqCcAaSsTt]/.test(poly.d) && poly.d.startsWith('M ') && poly.d.endsWith('Z'), poly.d.slice(0, 60));
+const polyPts = poly.d.match(/-?\d+(?:\.\d+)?/g);
+check('沿轮廓按步长重采样，点比边数多', Boolean(polyPts) && polyPts.length / 2 > poly.sides * 2, `${polyPts ? polyPts.length / 2 : 0}/${poly.sides}`);
+check('同一种子折线相同', cutGeometry('seed-a', {width: 300, height: 200}).d === cutGeometry('seed-a', {width: 300, height: 200}).d);
+check('步长和抖动是写死的正数', CUT_STEP >= 8 && CUT_STEP <= 40 && CUT_JITTER > 0 && CUT_JITTER < CUT_STEP / 2, `${CUT_STEP}/${CUT_JITTER}`);
 
 // ---------- settle ----------
 const curve = settle(1000);
@@ -179,6 +185,8 @@ for (let t = 0; t <= bob.periodY * bob.periodTilt; t += 1 / 50) {
   if (s.tilt > tHi) tHi = s.tilt;
 }
 check('浮动确实上下、左右倾', yHi - yLo > bob.ampY * 1.8 && tHi - tLo > bob.ampTilt * 1.8, `${yHi - yLo}/${tHi - tLo}`);
+const half = floatMotion(1000, {ampScale: 0.5});
+check('轻浮动不超过剪纸默认的一半', half.ampY <= bob.ampY * 0.5 + 0.02 && half.ampTilt <= bob.ampTilt * 0.5 + 0.02 && half.ampY >= bob.ampY * 0.5 - 0.02, `${half.ampY}/${half.ampTilt} vs ${bob.ampY}/${bob.ampTilt}`);
 
 // ---------- shadowByHeight ----------
 const sh0 = shadowByHeight(0, 720);

@@ -6,7 +6,7 @@
 import React from 'react';
 import {Easing, interpolate} from 'remotion';
 import {blend, oldCardOf, rgba, type MotionPalette} from './palette';
-import {Card, Cross, DoneBadge, MarkerSwipe, Pill, fitFont, isTall, prog, riseIn, springAt} from './parts';
+import {Card, Cross, DoneBadge, MarkerSwipe, Pill, fitFont, isTall, prog, quietFloat, riseIn, springAt} from './parts';
 import {visualTop} from './stage';
 import {LEAD, revealTimes} from './timing';
 import type {CompareData, CompareMarks} from './types';
@@ -134,7 +134,7 @@ export const Compare: React.FC<{data: CompareData; marks: CompareMarks; t: numbe
   const strike = wrongRight ? 0 : prog(t, R0 + 0.15, 0.3, Easing.out(Easing.quad));
 
   return (
-    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H}}>
+    <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, ...quietFloat(t, H)}}>
       {/* 旧做法：说到新做法后换成旧卡片的样子（不透明），轻轻缩一点 */}
       <div style={{position: 'absolute', left: 0, top: 0, width: W, height: H, opacity: Math.min(1, enterL * 1.6), transform: `translateY(${(1 - enterL) * -40}px) scale(${1 - 0.03 * dimP})`, transformOrigin: `${A.x + A.w / 2}px ${A.y + A.h / 2}px`}}>
         <Column pal={pal} box={A} title={data.leftTitle} items={left} at={la} t={t} tone={dimP > 0.5 ? 'old' : 'normal'} strike={strike} index={0} font={font} titleSize={titleSize} titleBg={ink ? '#FFFFFF' : blend(pal.muted, pal.card, 0.2)} />

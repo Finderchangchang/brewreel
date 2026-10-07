@@ -34,7 +34,7 @@ export const CutShape: React.FC<CutShapeProps> = ({seed, w, h, fill, stroke, sha
     <div style={{position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `rotate(${g.tilt}deg)`, transformOrigin: '50% 50%'}}>
       <svg width={w} height={h} style={{position: 'absolute', left: 0, top: 0, overflow: 'visible'}}>
         <path d={g.d} fill={shade} transform={`translate(${g.shadow.dx} ${g.shadow.dy})`} />
-        <path d={g.d} fill={fill} stroke={stroke ?? fill} strokeWidth={sw} strokeLinejoin="round" />
+        <path d={g.d} fill={fill} stroke={stroke ?? fill} strokeWidth={sw} strokeLinejoin="miter" />
       </svg>
       <div
         style={{
