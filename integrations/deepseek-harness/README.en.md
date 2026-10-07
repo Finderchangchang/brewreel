@@ -10,7 +10,7 @@ Package name `dsh-brewreel`. From 0.2.0 the plugin follows the project's new nam
 
 ## What it does and does not do
 
-- **Does**: the model only writes `storyboard.json` (pick shots, fill in text); ready-made Remotion shot components draw the frames; the validator blocks rule violations and Chinese advertising-law / industry compliance problems; one call runs validation → machine checks → music → render → layout checks → delivery manifest.
+- **Does**: the model only writes `storyboard.json` (pick shots, fill in text); ready-made Remotion shot components draw the frames; the validator blocks rule violations and Chinese advertising-law / industry compliance problems; one call runs validation → machine checks → music → render → layout checks → delivery manifest. The same skill also covers two more jobs: pictures on a talking-head video (when there is a `talk.mp4`, write only `broll.json` and run `scripts/talk.mjs`), and the style factory (describe a look in one sentence, read `docs/style-factory.md`, run `scripts/broll/new-style.mjs`).
 - **Does not**: generate arbitrary video, or decide compliance grey areas for the user (human-review items are handed to the user as they are).
 - The plugin is "7 tools + one skill": the skill teaches the model how to write a storyboard; the tools validate, render and verify, and keep output paths, child processes and environment variables in check.
 

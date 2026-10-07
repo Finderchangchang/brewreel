@@ -46,6 +46,8 @@ expectLone('一个数用 checklist', '整条视频只用了二十五秒', 'check
 expectLone('一个数用 steps', '整条视频只用了二十五秒', 'steps', 'explain', {items: ['整条视频', '二十五秒']}, '二十五秒');
 expectLone('金额用 checklist', '单价只要 3.5 元就够', 'checklist', 'list', {items: ['单价只要', '3.5 元']}, '3.5元');
 expectLone('倍数用 steps', '这一条快了十二倍', 'steps', 'explain', {items: ['这一条', '十二倍']}, '十二倍');
+expectLone('一个序号盖不住报出的数', '二十五秒，这是第一步', 'steps', 'explain', {items: ['二十五秒', '这是第一步']}, '二十五秒');
+expectLone('英文句子保留数字和单位之间的空格', 'The whole video took only 25 seconds', 'steps', 'explain', {items: ['took only', '25 seconds']}, '25 seconds');
 
 // 个数和条数对不上，仍然是在报一个数
 expectLone('个数对不上条数', '我们一共服务了三个客户', 'checklist', 'list', {items: ['我们一共服务了', '客户']}, '三个');

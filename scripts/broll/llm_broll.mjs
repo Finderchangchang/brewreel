@@ -87,17 +87,6 @@ source 是 ai 的段另外写：
 
 不要写 file。不要写毫秒、秒数、比例、分辨率、提示词、参考图、模型名。`;
 
-const CHOOSE_TABLE = `| 句子在干嘛 | job | source | template | mode |
-|---|---|---|---|---|
-| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter | split 或 pip |
-| 列两到四样东西 | list | motion | checklist | split 或 pip；3 条以上才可以 full |
-| 讲先后（先…再…最后） | explain 或 demonstrate | motion | steps | split 或 pip；3 条以上才可以 full |
-| 前后、两种做法对比，原句先说旧的、后说新的（先说新的别用 compare） | compare | motion | compare | split 或 pip |
-| 一句要观众记住的话、一个关键词 | stress | motion | keyword | split 或 pip，不许 full |
-| 点一个地方或物件、只给气氛、动手做事、把两件事连起来 | ground、evoke、demonstrate、connect | ai | 不写 template，用风格 | full、pip 或 split |
-
-动效段默认写 split（上 60% 放画面、下 40% 露脸），横版原片写 pip：说话的人要留在画面里。同一个模板全片最多用 2 次，相邻两段动效画面不要用同一个模板。开场句、收尾句、讲自己感受的句子留脸。`;
-
 const pickFirst = (list, allowed) => list.find((x) => (allowed ?? []).includes(x));
 
 /**
@@ -282,7 +271,7 @@ export const buildMessages = ({skill, cuesText, picture, flags, styles, doubts =
     '',
     '## 选择表：每句先定 source 和 template',
     '',
-    CHOOSE_TABLE,
+    '用上面「怎么挑句子」里的那张表（含「别选」和「为什么」）。不要另造一张没有这两列的表。',
     '',
     '## 动效模板（source 是 motion 时用）',
     '',

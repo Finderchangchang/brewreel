@@ -333,7 +333,9 @@ const cliTests = () => {
   const skill = fs.readFileSync(path.join(ROOT, 'broll', 'SKILL-broll.md'), 'utf8');
   const cuesText = fs.readFileSync(path.join(DEMO, 'talk.srt'), 'utf8');
   const msg = buildMessages({skill, cuesText, picture: '竖版', flags: {...parseLlmArgs(['x']).flags}, styles})[1].content;
-  check('提示词：v2、选择表、模板、风格清单、AI 上限', msg.includes('version 写 2') && msg.includes('style 写 wood-blocks') && msg.includes('| 报一个确定的数') && msg.includes('- counter：') && msg.includes('积木风（wood-blocks）') && msg.includes('分层纸艺（paper-layers）') && msg.includes('最多 2 段'), msg.slice(-1500));
+  const chooseMarker = '| 报一个确定的数（钱、时长、个数、倍数），原句里有这个数 | quantify | motion | counter | split 或 pip |';
+  const chooseParts = msg.split(chooseMarker);
+  check('提示词：v2、选择表、模板、风格清单、AI 上限', msg.includes('version 写 2') && msg.includes('style 写 wood-blocks') && chooseParts.length === 2 && chooseParts[1].trimStart().startsWith('checklist、steps') && msg.includes('| 别选 |') && msg.includes('- counter：') && msg.includes('积木风（wood-blocks）') && msg.includes('分层纸艺（paper-layers）') && msg.includes('最多 2 段'), `rows=${chooseParts.length - 1} tail=${JSON.stringify(chooseParts[1].slice(0, 40))} ${msg.slice(-400)}`);
   // 实验风格（brick-diorama、ink-sketch）不进风格清单和示例；SKILL-broll 的风格表里只当实验风格提一句
   const menuPart = msg.split('## 风格清单')[1].split('## 正确示例 1')[0];
   const examplePart = msg.split('## 正确示例 1')[1].split('## 这次必须遵守')[0];

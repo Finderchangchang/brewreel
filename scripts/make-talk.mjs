@@ -2,7 +2,7 @@
 // 口播配 B-roll：校验 → 计划 → 估价闸门 → 原片归一化 → 生成 AI 画面 → 审片（minimax-h3）→ 合成 → 交付。
 //   node scripts/make-talk.mjs <项目目录> --out <输出目录> [--dry-run] [--provider placeholder|local|minimax-h3] [--yes] [--draft] [--only b01] [--concurrency 3] [--force-redo]
 // 退出码：0 交付 / 1 校验没过 / 2 参数或输出目录在仓库里、缺参考图、缺完整版 ffmpeg、会盖掉付费片段 / 3 超预算、没加 --yes、或重做次数到顶 / 4 生成、检查、转码或渲染失败，或动效检查有 ✗（成片改名 video.rejected.mp4，不能交付） / 5 还没审片
-// 合成的输入（原片、字幕、计划、生成片、合成代码）和上次交付时完全一样时，不重新渲染，直接用上次的成片（删掉 video.mp4 就会重出）。
+// 合成的输入（原片、字幕、计划、生成片、合成代码）和上次交付时完全一样时，不重新渲染，直接用上次的成片，但仍对现有成片跑动效检查（结果写入 manifest，有 ✗ 就拒收）。删掉 video.mp4 就会重出。
 // --out 不许落在仓库里（promo/ 除外，或人手动加 --allow-in-repo）。--dry-run 只校验、写计划和估价，不生成。
 // 动效画面（source:"motion"）不花钱、不进账本、不审片、不加「AI 生成画面」标，合成时直接画；
 // 只有 AI 画面段才走 --yes、预算、审片这几道关。全片都是动效时不用 --yes。
@@ -301,8 +301,45 @@ try {
   const manifestPath = path.join(outDir, 'manifest.json');
   const prev = readJsonSafe(manifestPath);
   if (prev?.status === 'delivered' && prev.renderKey === renderKey && fs.existsSync(videoPath) && fs.existsSync(sheetPath)) {
-    console.log('合成的输入和上次交付时一样（原片、字幕、broll.json、生成片、合成代码都没变），不重新渲染，直接用上次的成片。要强制重出，删掉输出目录里的 video.mp4。');
-    console.log(`交付：${videoPath}`);
+    console.log('合成的输入和上次交付时一样（原片、字幕、broll.json、生成片、合成代码都没变），不重新渲染，直接用上次的成片。仍对现有成片做动效检查。要强制重出，删掉输出目录里的 video.mp4。');
+    let skipped;
+    try {
+      skipped = await checkTalkMotion({video: videoPath, width: plan.width, height: plan.height, clips: plan.clips, jsonPath: path.join(outDir, 'motion-check.json')});
+    } catch (e) {
+      stop(4, e.message);
+    }
+    for (const line of skipped.lines) console.log(line);
+    const skippedFail = skipped.failCount > 0;
+    let skippedVideo = videoPath;
+    if (skippedFail) {
+      skippedVideo = path.join(outDir, 'video.rejected.mp4');
+      const skippedSheet = path.join(outDir, 'sheet.rejected.png');
+      if (fs.existsSync(skippedVideo)) fs.rmSync(skippedVideo);
+      fs.renameSync(videoPath, skippedVideo);
+      if (fs.existsSync(sheetPath)) {
+        if (fs.existsSync(skippedSheet)) fs.rmSync(skippedSheet);
+        fs.renameSync(sheetPath, skippedSheet);
+      }
+    }
+    fs.writeFileSync(
+      manifestPath,
+      JSON.stringify(
+        {
+          ...prev,
+          status: skippedFail ? 'rejected' : 'delivered',
+          motionCheck: {ok: skipped.ok, fail: skipped.failCount, warn: skipped.warnCount, lines: skipped.lines},
+        },
+        null,
+        2,
+      ) + '\n',
+      'utf8',
+    );
+    if (skippedFail) {
+      const first = skipped.lines.find((l) => l.includes('✗')) || skipped.lines[0];
+      console.log(`动效检查有 ${skipped.failCount} 处 ✗（成片已改名 ${path.basename(skippedVideo)}，只给人看哪里坏了，不能交付）`);
+      stop(4, `动效检查有 ${skipped.failCount} 处 ✗：${first}`);
+    }
+    console.log(`交付：${skippedVideo}`);
     throw Object.assign(new Error(''), {exitCode: 0, skipRender: true});
   }
   fs.mkdirSync(runDir, {recursive: true});

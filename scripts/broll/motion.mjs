@@ -645,6 +645,29 @@ const UNITS = [
 const UNIT_SHOW = {块: '元', 块钱: '元', 秒钟: '秒', 美金: '美元'};
 const NUM_HEAD = /^(?:\d+(?:,\d{3})*(?:\.\d+)?|[零〇一二两三四五六七八九十百千万亿]+(?:点[零〇一二三四五六七八九]+)?|半)/;
 
+/** 数在原文里的写法。贴着汉字的空格去掉（「3.5 元」仍显示「3.5元」），英文单词之间的空格留下（「25 seconds」）。 */
+const showSpan = (orig, map, from, to) => {
+  if (!(to > from)) return '';
+  const a = map[from] ?? 0;
+  const b = (map[to - 1] ?? a) + 1;
+  const chars = orig.slice(a, b);
+  const out = [];
+  for (let n = 0; n < chars.length; n++) {
+    const ch = chars[n];
+    if (!/\s/.test(ch)) {
+      out.push(ch);
+      continue;
+    }
+    let m = n + 1;
+    while (m < chars.length && /\s/.test(chars[m])) m++;
+    const prev = out.length ? out[out.length - 1] : '';
+    const next = chars[m] ?? '';
+    n = m - 1;
+    if (prev && next && !isWide(prev) && !isWide(next)) out.push(' ');
+  }
+  return out.join('');
+};
+
 const unitAt = (s, i) => {
   const rest = s.slice(i).toLowerCase();
   for (const u of UNITS) {
@@ -750,7 +773,7 @@ export const parseQuantities = (text, ctx = {}) => {
     if (s.slice(j + raw0.length).startsWith('个半')) lastNum = j + raw0.length + 1;
     else if (s[k - 1] === '半') lastNum = k - 1;
     out.push({
-      raw: s.slice(i, k),
+      raw: showSpan(orig, map, i, k) || s.slice(i, k),
       numAt: map[j] ?? 0,
       numLastAt: map[lastNum] ?? map[map.length - 1] ?? 0,
       value,
@@ -805,7 +828,7 @@ const COUNT_UNIT_RE = /^(个|样|点|种|件|条|项|步|招|类|things?|items?|
 
 /**
  * 原句里只有一个确定的数，却选了 checklist 或 steps。
- * 第几不算这个数。steps 句里已经有序号，或者这个数的单位是「步」并且原句在讲先后，放行。
+ * 第几不算这个数。steps 只有序号至少两个（第一…第二…），或者这个数的单位是「步」并且原句在讲先后，才放行。
  * 这个数是「两个 / 三样」这种个数，并且正好等于条数，放行。
  * @returns {{problem: string, fix: string} | null}
  */
@@ -815,7 +838,8 @@ export const loneNumberPickProblem = (sentence, template, items = []) => {
   if (definite.length !== 1) return null;
   const one = definite[0];
   if (COUNT_UNIT_RE.test(one.suffix ?? '') && Array.isArray(items) && one.value === items.length) return null;
-  if (template === 'steps' && parseQuantities(sentence).some((q) => q.problem === 'ordinal')) return null;
+  const ordinals = parseQuantities(sentence).filter((q) => q.problem === 'ordinal');
+  if (template === 'steps' && ordinals.length >= 2) return null;
   const stepUnit = one.suffix === '步' || one.suffix === 'step' || one.suffix === 'steps';
   if (template === 'steps' && stepUnit && STEP_ORDER_RE.test(sentence)) return null;
   return {

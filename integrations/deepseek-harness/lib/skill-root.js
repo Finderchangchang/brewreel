@@ -13,8 +13,12 @@ export const PLUGIN_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.ur
 
 /** Files and folders that make up a runnable skill. Everything else in the repository stays out. */
 export const WHITELIST = Object.freeze({
-  files: ['SKILL.md', 'SKILL.en.md', 'shots.md', 'shots.en.md', 'brief-template.md', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.md'],
-  dirs: ['scripts', 'styles', 'industries', 'examples', 'docs/shots', 'docs/images', 'template'],
+  files: [
+    'SKILL.md', 'SKILL.en.md', 'shots.md', 'shots.en.md', 'brief-template.md', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.md',
+    // 分流表点名的文档：风格工厂、动效外观。口播步骤在 broll/，不把 tests、参考片、任务书带进来。
+    'docs/style-factory.md', 'docs/style-factory.en.md', 'docs/motion-looks.md', 'docs/motion-looks.en.md',
+  ],
+  dirs: ['scripts', 'styles', 'industries', 'examples', 'docs/shots', 'docs/images', 'template', 'broll'],
   exclude: ['template/node_modules', 'template/public/_run', 'template/public/_dev', 'template/out', 'template/.render.lock', 'scripts/__pycache__', 'docs/images/contact'],
 });
 
