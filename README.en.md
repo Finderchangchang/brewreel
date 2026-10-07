@@ -6,7 +6,7 @@
 
 **Two ways to make a video, each with one command.** Write a product brief and render a vertical promo, or drop in a talking-head clip and add pictures to the lines.
 
-[![Version](https://img.shields.io/badge/version-v0.11.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.12.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
@@ -216,4 +216,5 @@ If BrewReel saved you an evening of video editing, feel free to buy me a coffee.
 - The talking-head B-roll idea comes from [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator): our way of reading the captions and picking lines for explainer shots is a rewrite of its method.
 - Local transcription uses [SenseVoice](https://github.com/FunAudioLLM/SenseVoice) (FunAudioLLM / Alibaba Tongyi Lab), run with [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx).
 - Videos are composed with [Remotion](https://www.remotion.dev/).
+- Three v0.12 changes borrow ideas from [alchaincyf/huashu-art-motion](https://github.com/alchaincyf/huashu-art-motion): route the request at the top of the skill, list what not to pick next to each choice, and use frame differences to catch motion that freezes or flickers. Ideas only; the code is our own.
 - Licenses: [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md).

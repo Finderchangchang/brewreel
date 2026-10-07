@@ -6,7 +6,7 @@
 
 **两种玩法，一条命令出片。** 写一份产品简报，出一支竖版宣传片；或者只放一段口播，给讲到的句子配上画面。
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.11.0-1f6feb?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.12.0-1f6feb?style=flat-square)](CHANGELOG.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
@@ -216,4 +216,5 @@ Copyright © 2026 Finderchangchang。代码以 [Apache-2.0](LICENSE) 协议开�
 - 口播配画面的思路来自 [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator)（抖音「耳朵」）：「读字幕、挑哪几句配解释画面」的方法参考了它，代码是重写的。
 - 本地转写用 [SenseVoice](https://github.com/FunAudioLLM/SenseVoice)（FunAudioLLM / 阿里通义实验室），由 [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 运行。
 - 视频合成基于 [Remotion](https://www.remotion.dev/)。
+- v0.12 的三处改进借鉴了 [alchaincyf/huashu-art-motion](https://github.com/alchaincyf/huashu-art-motion)（花叔）的思路：技能开头先分流、选型写明「别选」、用帧差查动效有没有停住和闪。只借思路，代码是自己写的。
 - 各自的许可见 [THIRD_PARTY_LICENSES.md](THIRD_PARTY_LICENSES.md)。

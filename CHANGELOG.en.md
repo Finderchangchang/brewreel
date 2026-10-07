@@ -2,6 +2,17 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.12.0 · 2026-10-07 · Route requests first, "do not pick" in the pick table, automatic freeze and flicker check
+
+### New
+- The skill routes the request first: a table at the top of `SKILL.md` sends `talk.mp4` or "add pictures to my talking head" to `broll/SKILL-broll.en.md` (write only `broll.json`), one-sentence styles to the style factory, and everything else to the promo flow. Asked DeepSeek 4 times with the old and new skill: before, talking-head requests were refused or turned into a promo storyboard; after, all 4 took the right path.
+- Each row of the talking-head pick table gains "Do not pick" and "Why". Validation now rejects a checklist or steps when the sentence holds one definite number ("25 seconds", "3.5 yuan") and asks for a counter; a count that equals the number of items ("two things: A and B") passes. Approximate words one or two characters away from the number no longer slip through.
+- After rendering, motion segments are checked by frame difference inside the motion panel (round face and caption band masked out). A segment whose quietest 0.4 s barely moves (below 0.2) or that flashes a single frame is rejected (`video.rejected.mp4`); merely quiet segments (0.2-0.4) get a warning. Script: `scripts/broll/motion-check.mjs`, also runnable on its own.
+
+### Changes
+- Default-look checklist, steps, counter and compare cards keep a gentle float after landing (half the cut-paper amplitude). Steps used to stand still for 2.9 s.
+- Cut-paper card edges are sharp-cornered polylines (resampled along the outline, seeded jitter, straight segments), closer to scissor cuts. The same frame renders byte-identical twice.
+
 ## v0.11.0 · 2026-10-07 · Cut-paper motion look and a reusable motion kit
 
 ### New
