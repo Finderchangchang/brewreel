@@ -1,12 +1,22 @@
 ---
 name: brewreel
-description: BrewReel (精酿) — make a vertical product promo video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use when the user wants a product promo, a marketing short, an app intro video, a feature-demo clip, a launch teaser, or a live-selling intro. Supports six industries (software, food, ecommerce, education, beauty, travel) and both Chinese and English. You only write one storyboard JSON file (storyboard.json); shots are drawn by ready-made components, a validator blocks rule and compliance violations, and one command renders the finished video with original music and sound effects (optional MiniMax / Alibaba Cloud / Volcengine voice-over).
+description: BrewReel (精酿) covers three jobs. Promo: a vertical product video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use for a product promo, a marketing short, an app intro, a feature demo, a launch teaser, or a live-selling intro. Six industries (software, food, ecommerce, education, beauty, travel), Chinese and English. You only write storyboard.json; a validator blocks rule and compliance issues, and one command renders the video. Talk pictures: the user has talk.mp4 or asks for pictures on a talking-head video. Read only broll/SKILL-broll.en.md, write only broll.json, run node scripts/talk.mjs, and do not write storyboard.json. AI picture style: the user describes a look in one sentence. Read docs/style-factory.en.md, run node scripts/broll/new-style.mjs, do not generate the images yourself, and do not run approve-style.mjs for them.
 license: Apache-2.0
 metadata:
   version: 0.11.0
 ---
 
 # BrewReel (精酿): Product Promo Video
+
+## Which job is this
+
+| What the user gave | What you read | The only file you write | The command you run |
+|---|---|---|---|
+| A `talk.mp4`, or they ask for pictures on a talking-head video | Only `<SKILL>/broll/SKILL-broll.en.md` | Only `broll.json`. Do not write `storyboard.json` | `node <SKILL>/scripts/talk.mjs <project> --out <dir outside the repo>` |
+| A one-sentence AI picture style | `<SKILL>/docs/style-factory.en.md` | Do not write a storyboard or `style.json` yourself. Do not generate images. Do not run `scripts/broll/approve-style.mjs` for them | `node <SKILL>/scripts/broll/new-style.mjs --id <id> --name <name> --desc "<one sentence>"` (do not add `--yes`) |
+| Anything else: a product promo | Keep reading this file | `promo/<english-slug>/storyboard.json` | `node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name>` |
+
+If you are not sure which row it is, ask the user. Do not guess. `<SKILL>` = the folder this file is in.
 
 You do exactly two things: **pick shots** and **fill in text**. Don't write code, don't edit anything under `template/`, `scripts/`, or `industries/`, don't write coordinates, frame numbers, or color values.
 
@@ -363,4 +373,4 @@ All 9 examples pass validation and render as-is; the products and numbers are fi
 
 ## Talking-head B-roll
 
-When the user already has a talking-head video (`talk.mp4`; `talk.srt` is optional, the scripts transcribe locally without it) and wants explanatory pictures on the lines that need them, do not write a promo storyboard. Read `<SKILL>/broll/SKILL-broll.en.md` and write only `broll.json`, or have the user run the one command `node scripts/talk.mjs <project> --out <dir-outside-the-repo>`. Pictures are free motion clips or paid AI clips; scripts handle timing, cost and the cut.
+When the user already has a talking-head video (`talk.mp4`; `talk.srt` is optional, the scripts transcribe locally without it) and wants explanatory pictures on the lines that need them, do not write a promo storyboard. Read `<SKILL>/broll/SKILL-broll.en.md` and write only `broll.json`, or have the user run the one command `node <SKILL>/scripts/talk.mjs <project> --out <dir-outside-the-repo>`. Pictures are free motion clips or paid AI clips; scripts handle timing, cost and the cut.

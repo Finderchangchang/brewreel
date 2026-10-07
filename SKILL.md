@@ -1,12 +1,22 @@
 ---
 name: brewreel
-description: 精酿 · BrewReel：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写一份分镜 JSON（storyboard.json），画面由现成镜头组件画，校验脚本拦规则和行业合规，一条命令出片（带原创配乐和音效，可选 MiniMax / 阿里云 / 火山引擎配音）。
+description: 精酿 · BrewReel：三种玩法。宣传片：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写 storyboard.json，校验拦规则和行业合规，一条命令出片。口播配画面：用户有 talk.mp4，或要给口播配画面时，只读 broll/SKILL-broll.md，只写 broll.json，跑 node scripts/talk.mjs，不要写 storyboard.json。造 AI 画面风格：用户用一句话描述画面风格时，读 docs/style-factory.md，跑 node scripts/broll/new-style.mjs，不要自己出图，不要替人跑 approve-style.mjs。
 license: Apache-2.0
 metadata:
   version: 0.11.0
 ---
 
 # 精酿 · BrewReel：产品宣传短片
+
+## 先看用户要的是哪一种
+
+| 用户给了什么 | 你读哪份 | 你只写哪个文件 | 跑哪条命令 |
+|---|---|---|---|
+| 目录里有 `talk.mp4`，或用户说给口播配画面 | 只读 `<SKILL>/broll/SKILL-broll.md` | 只写 `broll.json`。不要写 `storyboard.json` | `node <SKILL>/scripts/talk.mjs <项目目录> --out <仓库外目录>` |
+| 用户要一句话造一种 AI 画面风格 | `<SKILL>/docs/style-factory.md` | 不写分镜，也不要自己写 `style.json`。不要自己出图，不要替人跑 `scripts/broll/approve-style.mjs` | `node <SKILL>/scripts/broll/new-style.mjs --id <id> --name <名字> --desc "<一句话>"`（不要加 `--yes`） |
+| 其余：产品宣传片、推广短视频、功能演示 | 往下读这份 | `promo/<片名英文>/storyboard.json` | `node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名>` |
+
+拿不准是哪种就问用户，不要猜。`<SKILL>` = 本文件所在目录。
 
 你只做两件事：**挑镜头**、**填文字**。不写代码，不改 `template/`、`scripts/`、`industries/` 里的任何文件，不写坐标、帧数、颜色值。
 
@@ -389,4 +399,4 @@ npx remotion still src/index.ts Screen <分镜目录绝对路径>/screen.png --f
 
 ## 口播配画面
 
-用户给的是一段真人口播（`talk.mp4`，`talk.srt` 可选，没有就脚本本地转写），要在讲解的句子上加解释画面时，不要写宣传片分镜。改读 `<SKILL>/broll/SKILL-broll.md`，只写 `broll.json`；也可以直接让用户跑 `node scripts/talk.mjs <项目目录> --out <仓库外目录>` 一条命令做完。画面分免费的动效画面和花钱的 AI 画面，时间、费用和合成由脚本做。
+用户给的是一段真人口播（`talk.mp4`，`talk.srt` 可选，没有就脚本本地转写），要在讲解的句子上加解释画面时，不要写宣传片分镜。改读 `<SKILL>/broll/SKILL-broll.md`，只写 `broll.json`；也可以直接让用户跑 `node <SKILL>/scripts/talk.mjs <项目目录> --out <仓库外目录>` 一条命令做完。画面分免费的动效画面和花钱的 AI 画面，时间、费用和合成由脚本做。

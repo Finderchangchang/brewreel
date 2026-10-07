@@ -103,14 +103,16 @@ Never cover `c1`, the last cue, or any id in `keepFace`. Leave at least 1 second
 
 Decide `source` and `template` for each sentence with this table:
 
-| What the sentence does | job | source | template | mode |
-|---|---|---|---|---|
-| States one exact number (money, time, count, multiple) that is in the sentence | quantify | motion | counter | split or pip |
-| Lists two to four things | list | motion | checklist | split or pip; full only with 3 or more items |
-| Gives an order (first… then… finally) | explain or demonstrate | motion | steps | split or pip; full only with 3 or more items |
-| Contrasts before and after, or two ways, saying the old way first and the new way second (if the new way comes first, do not use compare) | compare | motion | compare | split or pip |
-| A line or keyword the viewer should remember | stress | motion | keyword | split or pip, never full |
-| Points at a place or object, sets a mood, does something by hand, links two things | ground, evoke, demonstrate, connect | ai | none, use the style | full, pip or split |
+| What the sentence does | job | source | template | mode | Do not pick | Why |
+|---|---|---|---|---|---|---|
+| States one exact number (money, time, count, multiple) that is in the sentence | quantify | motion | counter | split or pip | checklist, steps, keyword, compare, AI picture | The sentence is that one number. A list or steps drops the number |
+| Lists two to four things | list | motion | checklist | split or pip; full only with 3 or more items | counter, steps, compare, keyword, AI picture | It lists things. It is not one number, not an order, and not old versus new |
+| Gives an order (first… then… finally) | explain or demonstrate | motion | steps | split or pip; full only with 3 or more items | checklist, counter, compare, keyword, AI picture | There is an order. A list or a compare does not show which step comes first |
+| Contrasts before and after, or two ways, saying the old way first and the new way second (if the new way comes first, do not use compare) | compare | motion | compare | split or pip | checklist, steps, counter, keyword, AI picture | compare is only when the old way is spoken first. If the new way comes first, do not use compare; swapping the columns reverses the meaning |
+| A line or keyword the viewer should remember | stress | motion | keyword | split or pip, never full | checklist, steps, counter, compare, AI picture | Keep one spoken line. Do not split it into a list, steps, or two columns |
+| Points at a place or object, sets a mood, does something by hand, links two things | ground, evoke, demonstrate, connect | ai | none, use the style | full, pip or split | keyword, checklist, steps, counter, compare | The five motion cards cannot show a place, a mood, or an action. Use an AI picture |
+
+If the sentence has only one number, use counter. Do not split it into checklist or steps. Approximate amounts (大概, 左右, 几十, 上千, and the same kind of hedge) are not counter. The counter landing is already aligned to the moment that number is spoken.
 
 Motion clips default to `split` (picture on the top 60%, face on the bottom 40%); on a horizontal talk use `pip`. The speaker stays on screen. A keyword clip in `full` is rejected; `full` is only for a checklist or steps with 3 or more items. Use the same template at most twice per film, and never in two motion clips in a row. If you go over the AI clip limit (2 by default; `--max-ai` can change it, follow the "must follow this time" section), turn the less important ones into motion clips or keep the face.
 
