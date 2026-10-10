@@ -1,0 +1,82 @@
+{
+  "reviewer": "内部测试",
+  "license_no": "内部测试",
+  "reviewed_at": "2026-10-04T05:27:40.810Z",
+  "decision": "approved",
+  "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+  "test": true,
+  "history": [
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-01T07:17:24.524Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-02T05:08:05.023Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-02T07:50:36.347Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-02T09:05:02.071Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-03T04:40:32.624Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-03T05:30:23.803Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-03T06:27:00.347Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-03T07:50:06.354Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    },
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-04T03:36:05.391Z",
+      "decision": "approved",
+      "script_sha256": "702eba90f2a46aea5db2b1475d0c70ee3e7c045b4ab5e5264fc2af029531f595",
+      "test": true
+    }
+  ]
+}

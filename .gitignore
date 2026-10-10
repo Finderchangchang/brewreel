@@ -34,6 +34,7 @@ tests/*
 !tests/validate/
 !tests/originality/
 !tests/broll/
+!tests/lesson/
 tests/**/video.mp4
 tests/**/*.log
 *.rejected.mp4
@@ -41,3 +42,10 @@ tests/**/*.log
 # OS / editor
 .DS_Store
 Thumbs.db
+
+# Remotion 渲染时在仓库里下载的浏览器缓存
+.remotion/
+
+# 讲课角色档案和成片默认写在仓库外；若被放进仓库，不要提交
+/brewreel-studio-data/
+/brewreel-studio-out/

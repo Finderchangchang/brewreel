@@ -1,0 +1,15 @@
+{
+  "layout": "case",
+  "revealTargets": ["第 1 句", "第 2 句", "第 3 句", "第 4 句", "结论"],
+  "fields": {
+    "roles": {"type": "object[]", "required": true, "min": 2, "max": 2, "hint": "两个角色。name 最多 4 字，role 最多 6 字，look 是不同于讲解员的 Open Peeps 预设，pose 是八个姿势之一"},
+    "lines": {"type": "object[]", "required": true, "min": 2, "max": 4, "hint": "2–4 句。who 为 0 或 1，左右交替；text 最多 16 字"},
+    "payLabel": {"type": "text", "max": 4, "hint": "转账小条的名称，可省略"},
+    "payAmount": {"type": "text", "max": 8, "hint": "转账小条的金额，和名称一起省略或一起写"},
+    "verdictIcon": {"type": "text", "required": true, "hint": "结论卡图标"},
+    "verdictLabel": {"type": "text", "required": true, "max": 4, "hint": "结论标签最多 4 字"},
+    "verdictText": {"type": "text", "required": true, "max": 20, "hint": "结论最多 20 字"},
+    "verdictEmphasis": {"type": "text", "max": 8, "hint": "结论里要强调的一段，可省略"}
+  },
+  "copy": {"nameMax": 4, "roleMax": 6, "lineMax": 16, "verdictMax": 20}
+}

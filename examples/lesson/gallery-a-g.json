@@ -1,0 +1,171 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "借条没写利息怎么办",
+    "domain": "legal",
+    "lang": "zh",
+    "voice": {
+      "provider": "minimax",
+      "subtitles": "line",
+      "voiceId": "presenter_female"
+    },
+    "mascot": {
+      "id": "counsel",
+      "enabled": true
+    },
+    "brand": "hengchuan@1",
+    "episode": 3,
+    "facts": [],
+    "sources": [
+      "《中华人民共和国民法典》第六百八十条（自2021-01-01起施行）",
+      "《中华人民共和国民法典》第六百七十五条（自2021-01-01起施行）"
+    ],
+    "disclaimer": "虚构示例，未经律师审核，不构成法律意见"
+  },
+  "chapters": [
+    {
+      "title": "借条里的利息",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "借条没写利息怎么办",
+          "subtitle": "利息、凭证和期限",
+          "smallText": "虚构示例，未经律师审核，不构成法律意见",
+          "narration": [
+            {"text": "今天顺着一张借条，把利息、凭据和还款期限这三块讲明白。", "reveal": 0, "pose": "wave"}
+          ]
+        },
+        {
+          "layout": "quote",
+          "title": "没写利息，就是没有利息",
+          "quote": "借款合同对支付利息没有约定的，视为没有利息。",
+          "source": "《民法典》第六百八十条（2021-01-01）",
+          "emphasis": "没有约定的，视为没有利息",
+          "tag": "自然人之间",
+          "tagText": "约定不明，也按没有利息算",
+          "narration": [
+            {"text": "卡片上是原文，荧光笔只标后半句。", "reveal": 0, "pose": "point"},
+            {"text": "条文和日期写在上方，回头能对上全文。", "reveal": 1, "pose": "explain"},
+            {"text": "底下红字说的是，约定不清楚时怎么看。", "reveal": 2, "pose": "explain"}
+          ]
+        },
+        {
+          "layout": "points",
+          "title": "借条里最容易忽略的三件事",
+          "items": [
+            {"icon": "percent", "title": "利息", "text": "没写就视为没有利息"},
+            {"icon": "card", "title": "交付", "text": "银行转账并写上借款"},
+            {"icon": "document", "title": "凭证", "text": "记录和原件都留下"}
+          ],
+          "narration": [
+            {"text": "三张卡分开看，先看利息这一张。", "reveal": 0, "pose": "explain"},
+            {"text": "钱要走银行，用途写在备注里。", "reveal": 1, "pose": "point"},
+            {"text": "记录和原件放在一起，以后才找得到。", "reveal": 2, "pose": "check"}
+          ]
+        },
+        {
+          "layout": "statement",
+          "title": "利息栏空着会怎样",
+          "lines": ["利息这一栏", "空着", "就是没有利息"],
+          "alertLast": true,
+          "basis": "《民法典》第六百八十条",
+          "prop": "iou",
+          "propTitle": "借条",
+          "propLines": [
+            "今借到李华",
+            "人民币伍万元整",
+            "用于资金周转",
+            "约定期限内归还",
+            "利息一栏空白",
+            "借款人王明"
+          ],
+          "circle": 5,
+          "annotation": "空着即无利息",
+          "narration": [
+            {"text": "左边三行把结论说完，最后一行用红色。", "reveal": 0, "pose": "explain"},
+            {"text": "依据写在大字下面，不另起一页。", "reveal": 1, "pose": "point"},
+            {"text": "右边这张纸转了一点，红圈圈住空白的那一行。", "reveal": 2, "pose": "point"}
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "写没写利率，结果完全不同",
+          "leftTitle": "借条写了利率",
+          "left": ["利率：已写明", "双方都签字"],
+          "leftVerdict": "按约定利率算",
+          "leftTone": "ok",
+          "rightTitle": "借条没写利息",
+          "right": ["利息：这一栏空", "没有另作约定"],
+          "rightVerdict": "视为没有利息",
+          "rightTone": "alert",
+          "narration": [
+            {"text": "左边是写清楚之后，按条子上的约定处理。", "reveal": 0, "pose": "explain"},
+            {"text": "右边留空，结论就落到另一边。", "reveal": 1, "pose": "warn"}
+          ]
+        },
+        {
+          "layout": "flow",
+          "title": "出借四步，一步都别漏",
+          "steps": [
+            {"icon": "document", "title": "写借条", "points": ["金额", "利率", "还款日"]},
+            {"icon": "bank", "title": "银行转账", "points": ["备注写借款"]},
+            {"icon": "card", "title": "留凭证", "points": ["转账记录", "聊天记录"]},
+            {"icon": "chat", "title": "到期催收", "points": ["发消息留痕"]}
+          ],
+          "narration": [
+            {"text": "先把条子写下来，金额和还款日都要有。", "reveal": 0, "pose": "explain"},
+            {"text": "接着走银行，备注里写明这是借款。", "reveal": 1, "pose": "point"},
+            {"text": "转账和聊天都留下来。", "reveal": 2, "pose": "check"},
+            {"text": "到期再发消息，话也留在记录里。", "reveal": 3, "pose": "warn"}
+          ]
+        },
+        {
+          "layout": "timeline",
+          "title": "约定期限到了要还",
+          "nodes": [
+            {"label": "到期日"},
+            {"label": "约定期"},
+            {"label": "应还日"}
+          ],
+          "segments": [
+            {"label": "期限内", "tone": "accent"},
+            {"label": "到期即还", "tone": "alert"}
+          ],
+          "captions": [
+            {"icon": "bank", "text": "按期把钱还"},
+            {"icon": "shield", "text": "约好了再催"}
+          ],
+          "quote": "借款人应当按照约定的期限返还借款。",
+          "source": "《民法典》第六百七十五条（2021-01-01）",
+          "emphasis": "约定的期限",
+          "narration": [
+            {"text": "时间从到期那天看起。", "reveal": 0, "pose": "explain"},
+            {"text": "中间这一段还在约好的期限内。", "reveal": 1, "pose": "point"},
+            {"text": "过了这个点，就该把钱还回去。", "reveal": 2, "pose": "warn"},
+            {"text": "下面这张卡片是同一件事的原文。", "reveal": 3, "pose": "explain"}
+          ]
+        },
+        {
+          "layout": "checklist",
+          "title": "一张合格的借条，要有这 6 项",
+          "items": [
+            "出借人和借款人身份信息",
+            "借款金额（大小写）",
+            "利率",
+            "还款日期",
+            "借款人签名按手印",
+            "出具日期"
+          ],
+          "narration": [
+            {"text": "身份先对上。", "reveal": 0, "pose": "explain"},
+            {"text": "金额用大写再写一遍。", "reveal": 1, "pose": "point"},
+            {"text": "利率有没有写，单独看一眼。", "reveal": 2, "pose": "explain"},
+            {"text": "还款日期写具体的一天。", "reveal": 3, "pose": "point"},
+            {"text": "签名和手印都要有。", "reveal": 4, "pose": "check"},
+            {"text": "最后补上出具的日子，这张单子才齐。", "reveal": 5, "pose": "affirm"}
+          ]
+        }
+      ]
+    }
+  ]
+}

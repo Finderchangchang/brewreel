@@ -1,0 +1,1 @@
+{"layout":"cover","revealTargets":[],"fields":{"title":{"type":"text","required":true,"max":50,"hint":"封面标题最多 50 字"},"subtitle":{"type":"text","required":true,"max":80,"hint":"副标题最多 80 字"},"smallText":{"type":"text","max":30,"hint":"小字最多 30 字"}},"copy":{"titleMax":12,"subtitleMax":16}}

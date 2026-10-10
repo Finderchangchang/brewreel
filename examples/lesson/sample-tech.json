@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "什么是 Codex",
+    "domain": "tech",
+    "lang": "zh",
+    "voice": {
+      "provider": "mock",
+      "subtitles": "line"
+    },
+    "mascot": {
+      "id": "default",
+      "enabled": true
+    },
+    "brand": {
+      "name": "Codex 学习笔记",
+      "primary": "#2563EB"
+    }
+  },
+  "chapters": [
+    {
+      "title": "认识 Codex",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "什么是 Codex",
+          "subtitle": "从需求到代码修改的 AI 编程代理",
+          "smallText": "概念介绍",
+          "narration": [
+            {
+              "text": "Codex 是面向软件开发工作的人工智能编程代理。你可以用自然语言描述目标，让它协助理解代码、规划修改，并在获准的环境中执行开发任务。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "它不是单独的一种编程语言，也不意味着每次生成的结果都正确。实际能力取决于所用模型、配置和项目上下文。",
+              "reveal": 1,
+              "pose": "point"
+            }
+          ]
+        },
+        {
+          "layout": "flow",
+          "title": "它如何参与开发",
+          "steps": [
+            "读取项目与任务说明",
+            "提出并实施代码修改",
+            "运行检查并说明结果"
+          ],
+          "narration": [
+            {
+              "text": "首先，代理会结合当前工作目录里的文件和任务要求，寻找相关实现与约束。给它清楚的目标和可复现的错误信息，通常更容易得到有用的改动。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "接着，它可以编辑文件、调用开发工具，并根据反馈继续调整。能调用哪些工具以及哪些操作需要批准，由运行环境的配置决定。",
+              "reveal": 1,
+              "pose": "point"
+            },
+            {
+              "text": "最后，检查结果要如实说明。代码生成和测试通过都不能替代对行为、边界条件与实际产品效果的人工复核。",
+              "reveal": 2,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "上下文为什么重要",
+          "leftTitle": "项目上下文",
+          "left": [
+            "代码结构与依赖版本",
+            "仓库中的约定和限制"
+          ],
+          "rightTitle": "任务上下文",
+          "right": [
+            "用户描述的目标",
+            "过程中的反馈与验证"
+          ],
+          "narration": [
+            {
+              "text": "编程代理需要理解任务所处的项目环境。代码结构、依赖版本和已有设计会影响它应该修改什么，以及怎样保持与项目一致。",
+              "reveal": 1,
+              "pose": "explain"
+            },
+            {
+              "text": "仓库说明和目录内的规则也会约束工作方式；用户补充的反馈则帮助代理及时修正理解和实现方向。",
+              "reveal": 1,
+              "pose": "point"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "使用与复核",
+      "pages": [
+        {
+          "layout": "quote",
+          "title": "适合交给代理的工作",
+          "quote": "把目标说清楚，再让每个阶段都留下可以检查的结果。",
+          "source": "Codex 协作建议 · 概念示例",
+          "emphasis": "可以检查的结果",
+          "narration": [
+            {
+              "text": "它可以协助搜索代码、解释调用关系、起草小型修改，或把分散的实现线索整理成可阅读的摘要。",
+              "reveal": 1,
+              "pose": "explain"
+            },
+            {
+              "text": "清晰且边界明确的任务更方便复核。说明预期行为、相关文件和不能触碰的部分，可以减少不必要的改动。",
+              "reveal": 1,
+              "pose": "point"
+            }
+          ]
+        },
+        {
+          "layout": "code",
+          "title": "哪些事情需要检查",
+          "language": "JavaScript",
+          "code": "const diff = inspectChanges();\nconst tests = await runChecks();\nif (!tests.ok) explainFailure(tests);\nreturn reviewBeforeDelivery(diff);",
+          "highlightLines": [
+            2,
+            3
+          ],
+          "narration": [
+            {
+              "text": "审查差异时，要确认修改确实解决目标问题，也没有意外改变相邻功能。自动生成的代码仍可能包含遗漏或错误假设。",
+              "reveal": 1,
+              "pose": "explain"
+            },
+            {
+              "text": "测试应覆盖重要输入、失败分支和用户实际会走的路径。测试通过只说明这些检查通过，不能证明所有情形都没有问题。",
+              "reveal": 1,
+              "pose": "point"
+            }
+          ]
+        },
+        {
+          "layout": "recap",
+          "title": "把它作为协作工具",
+          "items": [
+            "明确任务与上下文",
+            "分步查看实际改动",
+            "验证后再交付结果"
+          ],
+          "narration": [
+            {
+              "text": "可以把 Codex 看作能够使用开发工具的协作代理：它帮助推进工作，但它的判断和输出都需要结合真实项目来评估。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "明确目标、检查实际变化、运行适当验证，并由负责人决定是否交付，构成了可靠使用编程代理的基本流程。",
+              "reveal": 2,
+              "pose": "point"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

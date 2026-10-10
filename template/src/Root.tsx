@@ -2,11 +2,17 @@ import React from 'react';
 import {Composition} from 'remotion';
 import type {Storyboard} from './schema';
 import {ensureFont} from './core/font';
+import {pick} from './core/kit';
 import {FPS, H, W} from './core/safe';
 import {LabProps, Promo, ShotLab, ShotScreen, framesOf, labStoryboard, sizeOf} from './Promo';
 import {IllustLab} from './IllustLab';
 import {Sheet, SheetProps, sheetSize} from './Sheet';
 import {Talk, type TalkProps} from './talk/Talk';
+import {Lesson, type LessonProps} from './lesson/Lesson';
+import {LessonVertical} from './lesson/LessonVertical';
+import {CoverStill, coverSize, type CoverStillProps} from './lesson/CoverStill';
+import {LessonSheet, type LessonSheetProps, lessonSheetSize} from './lesson/LessonSheet';
+import {CharacterCard, type CharacterCardProps} from './lesson/CharacterCard';
 import demo from './demo.json';
 
 ensureFont();
@@ -86,6 +92,58 @@ export const RemotionRoot: React.FC = () => (
           durationInFrames: Math.max(1, Math.round(durationSec * fps)),
         };
       }}
+    />
+    <Composition
+      id="Lesson"
+      component={Lesson as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1920}
+      height={1080}
+      durationInFrames={30}
+      defaultProps={{title: 'Lesson', timeline: {fps: 30, width: 1920, height: 1080, totalFrames: 30, durationMs: 1000, chapters: [], pages: [], subtitles: []}} as unknown as LessonProps}
+      calculateMetadata={({props}) => ({durationInFrames: (props as unknown as LessonProps).timeline.totalFrames})}
+    />
+    <Composition
+      id="LessonVertical"
+      component={LessonVertical as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1080}
+      height={1920}
+      durationInFrames={30}
+      defaultProps={{title: 'Lesson', orientation: 'vertical', timeline: {fps: 30, width: 1080, height: 1920, totalFrames: 30, durationMs: 1000, chapters: [], pages: [], subtitles: []}} as unknown as LessonProps}
+      calculateMetadata={({props}) => ({durationInFrames: Math.max(1, (props as unknown as LessonProps).timeline.totalFrames), width: 1080, height: 1920})}
+    />
+    <Composition
+      id="LessonCover"
+      component={CoverStill as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1920}
+      height={1080}
+      durationInFrames={1}
+      defaultProps={{aspect: '16x9', title: 'Cover', subtitle: 'Subtitle', theme: 'lecture', presenterKind: 'cartoon'} as CoverStillProps}
+      calculateMetadata={({props}) => {
+        const size = coverSize((props as unknown as CoverStillProps).aspect ?? '16x9');
+        return {durationInFrames: 1, width: size.w, height: size.h};
+      }}
+    />
+    <Composition
+      id="CharacterCard"
+      component={CharacterCard as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1920}
+      height={1080}
+      durationInFrames={90}
+      defaultProps={{look: {preset: 'male', hair: 'ShortVolumed', accessory: 'GlassRound', facialHair: 'None', outfit: 'darkSweater'}, theme: 'lecture', name: pick('zh', '讲解员', 'Presenter')} as CharacterCardProps}
+    />
+    <Composition
+      id="LessonSheet"
+      component={LessonSheet as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1920}
+      height={135}
+      durationInFrames={1}
+      defaultProps={{images: []} as LessonSheetProps}
+      calculateMetadata={({props}) => lessonSheetSize(props as unknown as LessonSheetProps)}
     />
     {/* IllustLab：行业插画网格自检（props: {industry?, theme?}），不是正式镜头，见 IllustLab.tsx */}
     <Composition

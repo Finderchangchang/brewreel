@@ -1,0 +1,12 @@
+{
+  "layout": "saying",
+  "revealTargets": ["引号与观点", "署名"],
+  "fields": {
+    "lines": {"type": "text[]", "required": true, "min": 1, "max": 2, "itemMax": 12, "hint": "观点 1–2 行，每行最多 12 字，两行合计最多 24 字"},
+    "emphasis": {"type": "text", "max": 8, "hint": "观点里用 alert 色强调的一段，可省略"},
+    "name": {"type": "text", "required": true, "max": 8, "hint": "署名姓名最多 8 字"},
+    "org": {"type": "text", "required": true, "max": 16, "hint": "机构最多 16 字"},
+    "logo": {"type": "text", "max": 120, "hint": "律所标记图片路径，可省略；没有就不画"}
+  },
+  "copy": {"lineMax": 12, "totalMax": 24, "nameMax": 6, "orgMax": 16}
+}

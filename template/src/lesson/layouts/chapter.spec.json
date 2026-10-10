@@ -1,0 +1,11 @@
+{
+  "layout": "chapter",
+  "revealTargets": [],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 40, "hint": "章节标题最多 40 字"},
+    "kicker": {"type": "text", "max": 24, "hint": "章节提示最多 24 字"},
+    "subtitle": {"type": "text", "max": 60, "hint": "生成新稿时必填，一句不超过 60 字，说明这一章要讲什么；校验已有讲稿时可以不填"},
+    "points": {"type": "object[]", "min": 2, "max": 3, "hint": "可选。本章要点 2–3 条，每条含 icon 和 text（最多 8 字）"}
+  },
+  "copy": {"titleMax": 6, "subtitleMax": 14, "pointMax": 8}
+}

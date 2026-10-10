@@ -1,0 +1,24 @@
+{
+  "domain": "tech",
+  "lang": "zh",
+  "title": "什么是 Codex",
+  "audience": "刚接触 AI 编程工具的产品和工程同学",
+  "minutes": 3,
+  "points": [
+    "Codex 是 OpenAI 的编程代理，能在你的代码仓库里读代码、改文件、运行命令。",
+    "Codex 有三种用法：终端里的 Codex CLI、通过 codex app 启动的桌面 App，以及 Codex Cloud 云端任务；云端任务可以在云端运行，再用 codex apply 把改动拉回本地。",
+    "可以使用 ChatGPT 账号登录，命令是 codex login。",
+    "交互模式可以直接对话；codex exec 非交互地运行任务，适合脚本和自动化；codex review 用于代码审查。",
+    "命令在沙箱里执行；常用的 workspace-write 只允许写当前工作区，需要更多权限时要显式放开。",
+    "可以在仓库里放 AGENTS.md 写项目规矩，Codex 开工前会读取。",
+    "可以通过 codex mcp 接入 MCP 服务器扩展工具。",
+    "会话可以用 resume 继续，也可以用 fork 分叉。",
+    "人要给清楚的任务书、检查改动和测试结果，并决定要不要合并。"
+  ],
+  "sources": [
+    "Codex CLI 0.155.1 `codex --help` 本机输出",
+    "github.com/openai/codex 仓库说明"
+  ],
+  "facts": [],
+  "mascot": {"id": "default", "enabled": true}
+}

@@ -1,0 +1,37 @@
+/// <reference types="react" />
+export declare const Face: {
+    Angry: import("react").FC<import("../types").PieceType>;
+    Blank: import("react").FC<import("../types").PieceType>;
+    Calm: import("react").FC<import("../types").PieceType>;
+    Cheeky: import("react").FC<import("../types").PieceType>;
+    Concerned: import("react").FC<import("../types").PieceType>;
+    Contempt: import("react").FC<import("../types").PieceType>;
+    Cute: import("react").FC<import("../types").PieceType>;
+    Driven: import("react").FC<import("../types").PieceType>;
+    EatingHappy: import("react").FC<import("../types").PieceType>;
+    EyesClosed: import("react").FC<import("../types").PieceType>;
+    OldAged: import("react").FC<import("../types").PieceType>;
+    Serious: import("react").FC<import("../types").PieceType>;
+    Smile: import("react").FC<import("../types").PieceType>;
+    Solemn: import("react").FC<import("../types").PieceType>;
+    Suspicious: import("react").FC<import("../types").PieceType>;
+    Tired: import("react").FC<import("../types").PieceType>;
+    VeryAngry: import("react").FC<import("../types").PieceType>;
+    Awe: import("react").FC<import("../types").PieceType>;
+    ConcernedFear: import("react").FC<import("../types").PieceType>;
+    Cyclops: import("react").FC<import("../types").PieceType>;
+    Explaining: import("react").FC<import("../types").PieceType>;
+    Fear: import("react").FC<import("../types").PieceType>;
+    Hectic: import("react").FC<import("../types").PieceType>;
+    LoveGrin: import("react").FC<import("../types").PieceType>;
+    LoveGrinTeeth: import("react").FC<import("../types").PieceType>;
+    Monster: import("react").FC<import("../types").PieceType>;
+    Rage: import("react").FC<import("../types").PieceType>;
+    SmileBig: import("react").FC<import("../types").PieceType>;
+    SmileLol: import("react").FC<import("../types").PieceType>;
+    SmileTeeth: import("react").FC<import("../types").PieceType>;
+    CalmNM: import("react").FC<import("../types").PieceType>;
+    SmileNM: import("react").FC<import("../types").PieceType>;
+    CheersNM: import("react").FC<import("../types").PieceType>;
+};
+export declare type FaceType = 'Angry' | 'Blank' | 'Calm' | 'Cheeky' | 'Concerned' | 'Contempt' | 'Cute' | 'Driven' | 'EatingHappy' | 'EyesClosed' | 'OldAged' | 'Serious' | 'Smile' | 'Solemn' | 'Suspicious' | 'Tired' | 'VeryAngry' | 'Awe' | 'ConcernedFear' | 'Cyclops' | 'Explaining' | 'Fear' | 'Hectic' | 'LoveGrin' | 'LoveGrinTeeth' | 'Monster' | 'Rage' | 'SmileBig' | 'SmileLol' | 'SmileTeeth' | 'CalmNM' | 'SmileNM' | 'CheersNM';

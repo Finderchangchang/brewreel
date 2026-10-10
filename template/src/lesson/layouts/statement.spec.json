@@ -1,0 +1,16 @@
+{
+  "layout": "statement",
+  "revealTargets": ["左侧大字", "依据", "道具纸"],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 50, "hint": "标题最多 50 字"},
+    "lines": {"type": "text[]", "required": true, "min": 2, "max": 3, "itemMax": 7, "hint": "左侧 2–3 行大字，每行最多 7 字"},
+    "alertLast": {"type": "bool", "hint": "可选。true 时最后一行用 alert 色"},
+    "basis": {"type": "text", "required": true, "max": 24, "hint": "依据小字，最多 24 字，不要自己写「依据」二字"},
+    "prop": {"type": "text", "required": true, "hint": "道具种类：iou（借条）、contract（合同条款）或 notice（通知）"},
+    "propTitle": {"type": "text", "required": true, "max": 8, "hint": "道具标题，最多 8 字"},
+    "propLines": {"type": "text[]", "required": true, "min": 2, "max": 6, "itemMax": 16, "hint": "道具正文 2–6 行，每行最多 16 字"},
+    "circle": {"type": "int", "required": true, "hint": "要圈出的行号，从 1 开始，不能超过正文行数"},
+    "annotation": {"type": "text", "required": true, "max": 10, "hint": "圈旁批注，最多 10 字"}
+  },
+  "copy": {"lineMax": 7, "basisMax": 24, "propLineMax": 16, "noteMax": 10}
+}

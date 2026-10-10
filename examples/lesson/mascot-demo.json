@@ -1,0 +1,40 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "把复杂问题讲清楚",
+    "domain": "tech",
+    "lang": "zh",
+    "voice": {"provider": "mock", "subtitles": "line"},
+    "mascot": {
+      "id": "mentor",
+      "enabled": true,
+      "palette": {"skin": "#D99B78", "hair": "#26364A", "primary": "#287A78", "secondary": "#F0B35B"},
+      "hair": "ShortVolumed",
+      "outfit": "sweater",
+      "pageOverrides": [
+        {"pageIndex": 1, "wardrobe": {"id": "counsel", "enabled": true, "palette": {"skin": "#E4AD91", "hair": "#443248", "primary": "#675080", "secondary": "#E7B75E"}, "hair": "Bun", "outfit": "tee"}},
+        {"pageIndex": 2, "wardrobe": {"id": "buddy", "enabled": true, "palette": {"skin": "#F6F2E7", "hair": "#26364A", "primary": "#4B8AA0", "secondary": "#F0B35B"}}}
+      ]
+    },
+    "brand": {"name": "讲解课演示", "primary": "#287A78"}
+  },
+  "chapters": [
+    {"title": "表达结构", "pages": [
+      {"layout": "cover", "title": "把复杂问题讲清楚", "subtitle": "先建立路径，再逐步解释", "smallText": "三位原创讲解员姿态演示", "narration": [
+        {"text": "先从全貌开始，明确听众接下来会看到什么，再解释每一段之间的关系，让新信息拥有清楚的起点。", "reveal": 0, "pose": "explain", "note": "先看全貌"},
+        {"text": "接下来把视线引到画面左侧的核心内容，说明这部分如何支撑整体结论，并给观众留出阅读时间。", "reveal": 1, "pose": "point"},
+        {"text": "每完成一项，就举起记录板画出一个大勾，再用简短的话总结刚才发生了什么，让步骤保持连贯。", "reveal": 2, "pose": "check", "note": "逐项确认"}
+      ]},
+      {"layout": "steps", "title": "把提醒和思考讲清楚", "items": ["明确需要留意的条件", "停下来接住关键问题", "给出可以核实的依据"], "narration": [
+        {"text": "遇到需要留意的条件时，举起掌心提醒观众放慢一点，并说明这个条件会如何影响后面的选择。", "reveal": 0, "pose": "warn", "note": "留意条件"},
+        {"text": "随后托住下巴停一拍，让关键问题留在画面里，再一起梳理哪些信息已经明确、哪些还要验证。", "reveal": 1, "pose": "think"},
+        {"text": "思考之后再列出核实依据，帮助听众跟上推理过程，也知道遇到类似问题时可以从哪里开始。", "reveal": 2, "pose": "explain"}
+      ]},
+      {"layout": "recap", "title": "带着方法继续前进", "items": ["步骤已逐一核对", "条件与问题已说明", "方法可以迁移到新任务"], "narration": [
+        {"text": "答案明确后，小机器人竖起拇指表示肯定，同时轻轻点头，让这个动作与前面的勾选板明显不同。", "reveal": 0, "pose": "affirm", "note": "结论明确"},
+        {"text": "一段内容讲清楚后，双手举高迎接进展，彩色纸屑落下，为观众庆祝刚刚完成的学习任务。", "reveal": 1, "pose": "cheer"},
+        {"text": "最后张开手掌挥手道别，并指向接下来要处理的内容，让注意力自然跟随课程进入新主题。", "reveal": 2, "pose": "wave", "note": "继续出发"}
+      ]}
+    ]}
+  ]
+}

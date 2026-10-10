@@ -1,0 +1,15 @@
+{
+  "layout": "document",
+  "revealTargets": ["示意图", "高亮与放大", "关键句"],
+  "fields": {
+    "kind": {"type": "text", "required": true, "hint": "transfer 转账详情，或 chat 聊天记录。不要写真实品牌"},
+    "screenTitle": {"type": "text", "max": 6, "hint": "示意页标题，可省略"},
+    "status": {"type": "text", "max": 6, "hint": "转账状态，可省略"},
+    "amount": {"type": "text", "max": 12, "hint": "转账金额，聊天记录不写"},
+    "rows": {"type": "object[]", "required": true, "min": 3, "max": 6, "hint": "3–6 行。每行 name 最多 6 字、value 最多 16 字"},
+    "highlight": {"type": "integer", "required": true, "hint": "高亮行，从 1 开始"},
+    "point": {"type": "text", "required": true, "max": 18, "hint": "放大框上方的关键句，最多 18 字"},
+    "emphasis": {"type": "text", "max": 8, "hint": "关键句里要强调的一段，可省略"}
+  },
+  "copy": {"rowNameMax": 4, "rowValueMax": 12, "pointMax": 18}
+}

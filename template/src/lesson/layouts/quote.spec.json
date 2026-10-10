@@ -1,0 +1,13 @@
+{
+  "layout": "quote",
+  "revealTargets": ["原文及随原文绘出的强调线", "出处", "底部关键句"],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 50, "hint": "标题最多 50 字"},
+    "quote": {"type": "text", "required": true, "max": 180, "hint": "引用原文最多 180 字"},
+    "source": {"type": "text", "required": true, "max": 80, "hint": "必须带出处，最多 80 字"},
+    "emphasis": {"type": "text", "max": 24, "hint": "重点词最多 24 字，须出现在原文里"},
+    "tag": {"type": "text", "max": 6, "hint": "可选。底部红色标签，最多 6 字，如「自然人之间」。不写则没有第三段揭示"},
+    "tagText": {"type": "text", "max": 16, "hint": "可选。标签后的关键句，最多 16 字。和 tag 至少写一个才会出现底部关键句"}
+  },
+  "copy": {"quoteMax": 100, "sourceMax": 30}
+}

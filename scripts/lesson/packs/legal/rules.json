@@ -1,0 +1,22 @@
+{
+  "id": "legal",
+  "name": "律所普法",
+  "version": "2026-09-27",
+  "patterns": [
+    {"id":"legal-promise","level":"block","regex":"承诺.{0,6}(结果|胜诉|赔偿|挽回)|胜诉率|保证.{0,6}(胜诉|赢|结果)|包赢|包胜诉|保证胜诉|百分之百|百分百|100%","message":"律师业务推广不得承诺办案结果、宣示胜诉率或保证胜诉","source":"全国律协《律师业务推广行为规则（试行）》第十条（条号未逐字核对；来自 refs/D/analysis/00-report.md 第4节及04-business.md 第1节）"},
+    {"id":"legal-expert","level":"block","regex":"自称.{0,8}(专家|最权威|权威律师)|最权威|权威专家","message":"不得自称专家或最权威","source":"全国律协《律师业务推广行为规则（试行）》第十条（条号未逐字核对；来自 refs/D/analysis/00-report.md 第4节及04-business.md 第1节）"},
+    {"id":"legal-judicial-relation","level":"block","regex":"(法院|检察院|公安|司法机关).{0,8}(关系|熟人|有人)|有关系|关系硬|司法关系","message":"不得暗示与司法机关有特殊关系","source":"全国律协《律师业务推广行为规则（试行）》第十条（条号未逐字核对；来自 refs/D/analysis/00-report.md 第4节及04-business.md 第1节）"},
+    {"id":"legal-rival","level":"block","regex":"贬低同行|同行.{0,8}(不专业|不行|不靠谱)|其他律师.{0,8}(差|不行)|同行都不","message":"不得贬低同行","source":"全国律协《律师业务推广行为规则（试行）》第十条（条号未逐字核对；来自 refs/D/analysis/00-report.md 第4节及04-business.md 第1节）"},
+    {"id":"legal-extreme-words","level":"block","regex":"最(好|佳|强|大|高|低|快|专业|权威)|第一|顶级|国家级|世界级|百分之百|100%","message":"疑似《广告法》第九条绝对化用语，沿用现有词表并提示复核","source":"《中华人民共和国广告法》第九条；复用 industries/_base/rules.json 中 B-state、B-lowest 及同类极限词规则口径"},
+    {"id":"legal-flag-emblem","level":"block","regex":"国旗|国徽","message":"出现国旗或国徽用语，需拦截检查画面与素材","source":"《中华人民共和国广告法》第九条；复用 industries/_base/rules.json 第九条相关规则口径"},
+    {"id":"legal-old-statutes","level":"block","regex":"《?(合同法|婚姻法|继承法|侵权责任法|物权法|民法通则|民法总则)》?","message":"出现已被《民法典》取代的旧法名；沿革讲述可设置 meta.allowHistorical=true 降为 warn","source":"《中华人民共和国民法典》第一千二百六十条；自2021-01-01施行"},
+    {"id":"legal-honor-date-body","level":"warn","regex":"(荣誉|荣获|获奖|奖项|先进|优秀律师|优秀律所|十佳律师|十佳律所)","message":"荣誉类表述请核对是否同时注明授予机构和时间","source":"全国律协《律师业务推广行为规则（试行）》第十条（条号未逐字核对；荣誉标注要求来自 refs/D/analysis/04-business.md 第1节）"}
+  ],
+  "checks": [
+    {"id":"legal-case-privacy","level":"human","message":"案例隐私需人工复核：姓名、手机号、身份证号、详细住址或具体金额可能暴露当事人信息","source":"《中华人民共和国律师法》第三十八条；《中华人民共和国个人信息保护法》（匿名化标准在 refs/D/analysis/04-business.md 第1节注明未核实）"},
+    {"id":"legal-quote-corpus","level":"block","message":"quote 引用必须与本地《民法典》语料逐字匹配，条号和出处（法规名、条号、施行日期）须对应","source":"scripts/lesson/packs/legal/corpus/README.txt；语料逐字来源为国家市场监督管理总局公布的《中华人民共和国民法典》"},
+    {"id":"legal-conclusion-source","level":"warn","message":"法律结论所在页须在该页 source 或 meta.sources 标注出处","source":"refs/D/analysis/00-report.md 第4节；refs/D/analysis/04-business.md 第1节：法条准确、版本有效及结论挂出处"},
+    {"id":"legal-shared-absolute-claims","level":"warn","message":"命中现有绝对化承诺词表，请人工改成可核实的具体说法","source":"沿用 scripts/lib/typo-list.mjs 的 ABS_CLAIM_ZH 与 ABS_CLAIM_ZH_PATTERNS（旧规则为 warn）"},
+    {"id":"legal-disclaimer","level":"block","message":"legal 内容固定片尾声明：普法内容，不构成法律意见","source":"refs/D/analysis/00-report.md 第4节第2项（产品要求）"}
+  ]
+}

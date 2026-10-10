@@ -1,0 +1,8 @@
+{
+  "layout": "levels",
+  "revealTargets": ["第 1 档", "第 2 档", "第 3 档"],
+  "fields": {
+    "items": {"type": "object[]", "required": true, "min": 2, "max": 3, "hint": "2–3 张。每张含 tone（high / mid / low）、label（最多 4 字）、icon、text（最多 16 字）"}
+  },
+  "copy": {"minItems": 2, "maxItems": 3, "labelMax": 4, "textMax": 16}
+}

@@ -42,7 +42,8 @@ const ALLOW = [
   {fileIncludes: path.join('integrations', 'deepseek-harness', 'lib', 'run.js'), textIncludes: 'C:\\\\Windows'},
 ];
 
-const EXCLUDE_DIRS = new Set(['.git', 'node_modules', 'out', '.render.lock']);
+// .remotion 是渲染时下载的浏览器缓存，已在 .gitignore；二进制里的盘符误报不算仓库内容。
+const EXCLUDE_DIRS = new Set(['.git', 'node_modules', 'out', '.render.lock', '.remotion']);
 const STYLE_DRAFTS = 'broll/styles/_drafts';
 // 本工具自身的规则源码天然会包含这些关键词/示例文本，不算真实泄露。
 // DeepSeek Harness 插件打包时（npm run sync / npm pack）会把本文件复制进 skill/ 快照，那份副本同理豁免；

@@ -1,0 +1,233 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "借钱给别人，借条里最容易忽略的三件事",
+    "domain": "legal",
+    "lang": "zh",
+    "voice": {
+      "provider": "minimax",
+      "subtitles": "line",
+      "voiceId": "presenter_female"
+    },
+    "mascot": {
+      "id": "counsel",
+      "enabled": true
+    },
+    "brand": {
+      "name": "普法课堂",
+      "primary": "#2563EB"
+    },
+    "facts": [],
+    "sources": [
+      "《中华人民共和国民法典》第六百七十条、第六百七十九条、第六百八十条"
+    ],
+    "disclaimer": "虚构示例，未经律师审核，不构成法律意见"
+  },
+  "chapters": [
+    {
+      "title": "借钱给别人：借条里的三个关键点",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "借钱给别人，借条里最容易忽略的三件事",
+          "subtitle": "利息、交付、凭证，一个都不能少",
+          "smallText": "虚构示例，未经律师审核，不构成法律意见",
+          "narration": [
+            {
+              "text": "借钱给别人，借条里三件事最容易忽略。",
+              "reveal": 0,
+              "pose": "wave",
+              "note": "开场"
+            },
+            {
+              "text": "利息、交付、凭证都要留意。",
+              "reveal": 1,
+              "pose": "point",
+              "note": "关键点"
+            }
+          ]
+        },
+        {
+          "layout": "chapter",
+          "title": "三个容易忽略的细节",
+          "kicker": "利息 · 扣除 · 成立",
+          "subtitle": "利息约定、扣除、合同成立。",
+          "narration": [
+            {
+              "text": "说三个容易忽略的细节。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "利息约定、扣除、合同成立。",
+              "reveal": 1,
+              "pose": "point",
+              "note": "三个细节"
+            }
+          ]
+        },
+        {
+          "layout": "steps",
+          "title": "借条里三个容易忽略的细节",
+          "items": [
+            "利息要写明：没约定或约定不明，视为没有利息",
+            "利息别先扣：预先扣除的，按实际借款数额计算",
+            "钱到账合同才成立：自然人借款自提供借款时成立"
+          ],
+          "narration": [
+            {
+              "text": "利息要写明；没约定或约定不明，法律上视为没有利息。",
+              "reveal": 0,
+              "pose": "point",
+              "note": "利息写清"
+            },
+            {
+              "text": "利息别预先扣除，先扣就按实际借款数额算；钱到账，借款合同才成立。",
+              "reveal": 1,
+              "pose": "warn",
+              "note": "别预扣"
+            }
+          ]
+        },
+        {
+          "layout": "quote",
+          "title": "法条原文：没约定利息",
+          "quote": "借款合同对支付利息没有约定的，视为没有利息。",
+          "source": "《中华人民共和国民法典》第六百八十条（自2021-01-01起施行）",
+          "emphasis": "视为没有利息",
+          "narration": [
+            {
+              "text": "民法典第六百八十条写得很清楚：借款合同对支付利息没有约定的，视为没有利息。",
+              "reveal": 0,
+              "pose": "point",
+              "note": "第六百八十条"
+            }
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "借条写清楚 vs 没写清楚",
+          "leftTitle": "写清楚",
+          "left": [
+            "利息、利率、期限、还款方式都写明",
+            "银行转账并备注“借款”，保留凭证"
+          ],
+          "rightTitle": "没写清楚",
+          "right": [
+            "利息视为没有，事后很难主张",
+            "利息被预先扣除，本金按实际借款算"
+          ],
+          "narration": [
+            {
+              "text": "写清楚：利率、期限、还款方式都写明。",
+              "reveal": 0,
+              "pose": "explain",
+              "note": "写清楚"
+            },
+            {
+              "text": "没写清：本金按实际算，事后难主张。",
+              "reveal": 1,
+              "pose": "warn",
+              "note": "没写清"
+            }
+          ]
+        },
+        {
+          "layout": "flow",
+          "title": "借钱给别人的三步操作",
+          "steps": [
+            "第一步：写借条，写明利息、利率、期限",
+            "第二步：银行转账，备注“借款”",
+            "第三步：保存转账凭证、聊天记录、借条原件"
+          ],
+          "narration": [
+            {
+              "text": "操作分三步。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "写借条，写明利息、利率、期限。",
+              "reveal": 1,
+              "pose": "point"
+            },
+            {
+              "text": "转账备注借款，保存凭证。",
+              "reveal": 2,
+              "pose": "affirm",
+              "note": "留证据"
+            }
+          ]
+        },
+        {
+          "layout": "question",
+          "title": "借条没写利息，还能要利息吗？",
+          "question": "借条里没有写利息，出借人还能要求借款人支付利息吗？",
+          "options": [
+            "可以，按银行利率算",
+            "不可以，视为没有利息",
+            "可以，双方再商量"
+          ],
+          "openQuestion": false,
+          "answer": "不可以，视为没有利息",
+          "answerText": "民法典第六百八十条第二款规定，没有约定利息的，视为没有利息。",
+          "narration": [
+            {
+              "text": "借条没写利息，还能要利息吗？",
+              "reveal": 0,
+              "pose": "think",
+              "note": "读题"
+            },
+            {
+              "text": "先想一想。",
+              "reveal": 0,
+              "pose": "think",
+              "note": "停顿"
+            },
+            {
+              "text": "答案：不可以。",
+              "reveal": 1,
+              "pose": "affirm",
+              "note": "揭晓"
+            },
+            {
+              "text": "没约定利息，法律就不支持。",
+              "reveal": 1,
+              "pose": "explain",
+              "note": "视为无息"
+            }
+          ]
+        },
+        {
+          "layout": "recap",
+          "title": "记住三件事",
+          "items": [
+            "利息要写明，没约定视为无利息",
+            "利息不得预先扣除，先扣按实际借款算",
+            "自然人借款，提供借款时成立，留凭证",
+            "具体纠纷咨询执业律师"
+          ],
+          "narration": [
+            {
+              "text": "记住三件事。",
+              "reveal": 0,
+              "pose": "affirm"
+            },
+            {
+              "text": "利息写清，利率别违法；不得预先扣除。",
+              "reveal": 1,
+              "pose": "point",
+              "note": "利息"
+            },
+            {
+              "text": "钱到账合同成立，留凭证；具体纠纷咨询律师。",
+              "reveal": 2,
+              "pose": "warn",
+              "note": "咨询律师"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

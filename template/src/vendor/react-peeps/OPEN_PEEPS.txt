@@ -1,0 +1,5 @@
+Open Peeps 人物线稿由 Pablo Stanley 以 CC0 1.0 贡献到公共领域。
+https://www.openpeeps.com/
+
+本目录 peeps/ 下的 React 组件来自 react-peeps 0.1.10（MIT），许可证见同目录 LICENSE。
+只收录编译后的 lib/peeps 源码，供讲解课讲解员在本机渲染，不从 template/node_modules 安装。

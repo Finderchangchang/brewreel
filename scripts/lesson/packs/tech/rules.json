@@ -1,0 +1,12 @@
+{
+  "id": "tech",
+  "name": "技术讲解",
+  "version": "2026-09-27",
+  "patterns": [],
+  "checks": [
+    {"id":"tech-first-term","level":"warn","message":"术语首次出现需紧邻解释，可用“术语（通俗解释）”标注","source":"docs/PLAN.md · M4 tech 包要求"},
+    {"id":"tech-code-block","level":"warn","message":"code 版式代码块须有语言标注，并限制代码行数（建议 2 至 12 行）","source":"docs/PLAN.md · M2 版式目标与 M4 tech 包要求"},
+    {"id":"tech-screenshot","level":"block","message":"screenshot 版式必须有 alt 文字和至少一个标注","source":"docs/PLAN.md · M2 版式目标与 M4 tech 包要求"},
+    {"id":"tech-product-facts","level":"warn","message":"产品名或版本号需在 meta.facts 中提供出处","source":"docs/PLAN.md · M4 tech 包要求"}
+  ]
+}

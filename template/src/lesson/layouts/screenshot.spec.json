@@ -1,0 +1,1 @@
+{"layout":"screenshot","revealTargets":["截图","第 1 个标注","第 2 个标注","第 3 个标注","第 4 个标注"],"fields":{"title":{"type":"text","required":true,"max":50,"hint":"标题最多 50 字"},"image":{"type":"path","required":true,"hint":"请提供存在的截图路径"},"callouts":{"type":"object[]","required":true,"min":1,"max":4,"hint":"提供 1–4 个相对坐标标注框"}},"copy":{"labelMax":12}}

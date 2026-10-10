@@ -1,0 +1,194 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "借条没写利息怎么办",
+    "domain": "legal",
+    "lang": "zh",
+    "voice": {
+      "provider": "minimax",
+      "subtitles": "line",
+      "voiceId": "presenter_female"
+    },
+    "mascot": {
+      "id": "counsel",
+      "enabled": true
+    },
+    "brand": {
+      "name": "普法课堂",
+      "primary": "#1F3A5F"
+    },
+    "facts": [],
+    "sources": [
+      "《中华人民共和国民法典》第六百七十四条（自2021-01-01起施行）",
+      "《中华人民共和国民法典》第六百八十条（自2021-01-01起施行）",
+      "《中华人民共和国民法典》第六百七十条（自2021-01-01起施行）"
+    ],
+    "disclaimer": "虚构示例，未经律师审核，不构成法律意见"
+  },
+  "chapters": [
+    {
+      "title": "利息",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "借条没写利息怎么办",
+          "subtitle": "利息和凭证",
+          "smallText": "虚构示例，未经律师审核，不构成法律意见",
+          "narration": [
+            {"text": "顺着一张借条，把利息怎么看、凭证留在哪，分成两段讲完。", "reveal": 0, "pose": "wave"}
+          ]
+        },
+        {
+          "layout": "bignumber",
+          "title": "届满一年怎么付息",
+          "number": "1",
+          "unit": "年",
+          "name": "届满就付息",
+          "basis": "《民法典》第六百七十四条",
+          "cardIcon": "clock",
+          "cardText": "不满一年到期付",
+          "cardEmphasis": "到期付",
+          "axisFrom": "起算",
+          "axisTo": "满一年",
+          "axisSpan": "一年",
+          "narration": [
+            {"text": "借款期间跨过一整年，利息不用攒到最后一天。", "reveal": 0, "pose": "explain"},
+            {"text": "这一页的依据写在数字下面，只记书名和条目。", "reveal": 1, "pose": "point"},
+            {"text": "右边这张卡说的是，不满一年就放在还本的时候。", "reveal": 2, "pose": "explain"},
+            {"text": "轴的两端是起算和届满，中间这一截就是一年。", "reveal": 3, "pose": "point"}
+          ]
+        },
+        {
+          "layout": "question",
+          "title": "没写利息还能要吗",
+          "question": "没写利息还能要吗",
+          "options": ["按银行利率", "视为没有利息", "双方再商量"],
+          "answer": 1,
+          "answerText": "约定不明同样没有",
+          "narration": [
+            {"text": "题目在标题上，三个选项先同等摆着。", "reveal": 0, "pose": "explain"},
+            {"text": "先想一想。", "reveal": 0, "pose": "think"},
+            {"text": "揭晓之后，对的是中间那一项。", "reveal": 1, "pose": "check"}
+          ]
+        },
+        {
+          "layout": "saying",
+          "title": "写给借钱的人",
+          "lines": ["借钱先把借条写清", "别把证据交给运气"],
+          "emphasis": "交给运气",
+          "name": "陈思远",
+          "org": "衡川律师",
+          "logo": "examples/lesson/assets/mark.svg",
+          "narration": [
+            {"text": "这页没有大标题，只有一句给借钱人的提醒。", "reveal": 0, "pose": "explain"},
+            {"text": "分隔线下面是署名，这是观点，不是条文。", "reveal": 1, "pose": "point"}
+          ]
+        }
+      ]
+    },
+    {
+      "title": "凭证",
+      "pages": [
+        {
+          "layout": "chapter",
+          "title": "怎么留凭证",
+          "kicker": "凭证",
+          "subtitle": "转账和原件",
+          "points": [
+            {"icon": "card", "text": "转账备注"},
+            {"icon": "chat", "text": "聊天记录"},
+            {"icon": "document", "text": "借条原件"}
+          ],
+          "narration": [
+            {"text": "下一章换成留凭证，左边是整片的进度。", "reveal": 0, "pose": "explain"}
+          ]
+        },
+        {
+          "layout": "levels",
+          "title": "借款证据分三档",
+          "items": [
+            {"tone": "high", "label": "高风险", "icon": "warning", "text": "只有聊天没有借条"},
+            {"tone": "mid", "label": "中风险", "icon": "document", "text": "有借条但现金交付"},
+            {"tone": "low", "label": "低风险", "icon": "card", "text": "借条加转账备注"}
+          ],
+          "narration": [
+            {"text": "先看左边那一档，手里只有几句对话。", "reveal": 0, "pose": "warn"},
+            {"text": "中间这一档有字据，可是钱是当面给的。", "reveal": 1, "pose": "explain"},
+            {"text": "右边这一档，字据、转账和备注都在。", "reveal": 2, "pose": "check"}
+          ]
+        },
+        {
+          "layout": "case",
+          "title": "钱转过去了借条呢",
+          "roles": [
+            {"name": "小李", "role": "借款人", "look": "peep-mentor", "pose": "explain"},
+            {"name": "老王", "role": "出借人", "look": "peep-teacher", "pose": "wave"}
+          ],
+          "lines": [
+            {"who": 0, "text": "先借我一笔周转"},
+            {"who": 1, "text": "转过去了"},
+            {"who": 0, "text": "借条回头补"}
+          ],
+          "payLabel": "转账",
+          "payAmount": "伍万",
+          "verdictIcon": "warning",
+          "verdictLabel": "风险",
+          "verdictText": "没有借条，合意难证明",
+          "verdictEmphasis": "合意",
+          "narration": [
+            {"text": "左边先开口，人物都是编的。", "reveal": 0, "pose": "explain"},
+            {"text": "钱已经划走，对话里只有一句收到了。", "reveal": 1, "pose": "point"},
+            {"text": "字据被推到以后，这一页先停在这里。", "reveal": 2, "pose": "warn"},
+            {"text": "右边的结论是，双方到底怎么约定，事后不好说清。", "reveal": 3, "pose": "explain"}
+          ]
+        },
+        {
+          "layout": "document",
+          "title": "转账记录看备注",
+          "kind": "transfer",
+          "screenTitle": "转账详情",
+          "status": "交易成功",
+          "amount": "伍万整",
+          "rows": [
+            {"name": "收款人", "value": "小李"},
+            {"name": "转账日", "value": "三月一日"},
+            {"name": "备注", "value": "借款"}
+          ],
+          "highlight": 3,
+          "point": "备注要写明是借款",
+          "emphasis": "是借款",
+          "narration": [
+            {"text": "左边是一张示意的详情页，不是某个具体应用。", "reveal": 0, "pose": "explain"},
+            {"text": "红框套住最后一行，引线拉到右边的放大框。", "reveal": 1, "pose": "point"},
+            {"text": "放大框上面那句，是这一页要记住的用途。", "reveal": 2, "pose": "check"}
+          ]
+        },
+        {
+          "layout": "table",
+          "title": "利息怎么算",
+          "rows": [
+            {"situation": "借条没约定利息", "result": "视为没有利息", "emphasis": "没有利息"},
+            {"situation": "约定不清楚", "result": "同样没有利息", "emphasis": "没有利息"},
+            {"situation": "利率已经写明", "result": "按约定付息", "emphasis": "约定"}
+          ],
+          "basis": "《民法典》第六百八十条",
+          "narration": [
+            {"text": "开头这一行是字据上留空的情况。", "reveal": 0, "pose": "explain"},
+            {"text": "第二行是写了、但是没写明白。", "reveal": 1, "pose": "point"},
+            {"text": "第三行把利率写清楚，就按写明的来。", "reveal": 2, "pose": "check"}
+          ]
+        },
+        {
+          "layout": "recap",
+          "title": "记住这三句",
+          "items": ["没写就没有利息", "转账备注写借款", "借条原件留着"],
+          "narration": [
+            {"text": "收束的时候，先把利息这一条单独记下。", "reveal": 0, "pose": "explain"},
+            {"text": "然后是转账那一行，把用途写进去。", "reveal": 1, "pose": "point"},
+            {"text": "最后把纸质原件收好，别只留在对话里。", "reveal": 2, "pose": "check"}
+          ]
+        }
+      ]
+    }
+  ]
+}

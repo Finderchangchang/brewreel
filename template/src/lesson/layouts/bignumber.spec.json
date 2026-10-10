@@ -1,0 +1,17 @@
+{
+  "layout": "bignumber",
+  "revealTargets": ["大数字与名称", "依据", "说明卡", "进度轴"],
+  "fields": {
+    "number": {"type": "text", "required": true, "max": 1, "hint": "数字 1 个字符，和单位分开。多位数放不下 380px"},
+    "unit": {"type": "text", "required": true, "max": 2, "hint": "单位最多 2 字，例如年、天"},
+    "name": {"type": "text", "required": true, "max": 8, "hint": "名称一行，最多 8 字"},
+    "basis": {"type": "text", "required": true, "max": 40, "hint": "依据只能写书名和条号，多项用分号隔开"},
+    "cardIcon": {"type": "text", "required": true, "hint": "说明卡图标，必须是图标库里的名字"},
+    "cardText": {"type": "text", "required": true, "max": 14, "hint": "说明卡关键句最多 14 字"},
+    "cardEmphasis": {"type": "text", "max": 8, "hint": "关键句里要强调的一段，可省略"},
+    "axisFrom": {"type": "text", "max": 8, "hint": "进度轴左端标签，可省略；写了就必须和右端、跨度一起写"},
+    "axisTo": {"type": "text", "max": 8, "hint": "进度轴右端标签"},
+    "axisSpan": {"type": "text", "max": 8, "hint": "进度轴中间的跨度"}
+  },
+  "copy": {"numberMax": 1, "unitMax": 2, "nameMax": 8, "basisMax": 24, "cardMax": 14}
+}

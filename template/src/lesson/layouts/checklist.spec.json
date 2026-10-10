@@ -1,0 +1,9 @@
+{
+  "layout": "checklist",
+  "revealTargets": ["第 1 项", "第 2 项", "第 3 项", "第 4 项", "第 5 项", "第 6 项", "第 7 项", "第 8 项"],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 50, "hint": "标题最多 50 字"},
+    "items": {"type": "text[]", "required": true, "min": 4, "max": 8, "itemMax": 16, "hint": "4–8 项，每项最多 16 字。按 reveal 逐项打勾"}
+  },
+  "copy": {"minItems": 4, "maxItems": 8, "itemMax": 16}
+}

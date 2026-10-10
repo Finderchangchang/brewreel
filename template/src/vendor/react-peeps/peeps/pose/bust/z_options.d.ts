@@ -1,0 +1,35 @@
+/// <reference types="react" />
+export declare const BustPose: {
+    BlazerBlackTee: import("react").FC<import("../../types").PieceType>;
+    Shirt: import("react").FC<import("../../types").PieceType>;
+    ButtonShirt: import("react").FC<import("../../types").PieceType>;
+    Dress: import("react").FC<import("../../types").PieceType>;
+    Gaming: import("react").FC<import("../../types").PieceType>;
+    Geek: import("react").FC<import("../../types").PieceType>;
+    Hoodie: import("react").FC<import("../../types").PieceType>;
+    PointingUp: import("react").FC<import("../../types").PieceType>;
+    Selena: import("react").FC<import("../../types").PieceType>;
+    Thunder: import("react").FC<import("../../types").PieceType>;
+    Turtleneck: import("react").FC<import("../../types").PieceType>;
+    ArmsCrossed: import("react").FC<import("../../types").PieceType>;
+    Coffee: import("react").FC<import("../../types").PieceType>;
+    Device: import("react").FC<import("../../types").PieceType>;
+    DotJacket: import("react").FC<import("../../types").PieceType>;
+    Explaining: import("react").FC<import("../../types").PieceType>;
+    FurJacket: import("react").FC<import("../../types").PieceType>;
+    Killer: import("react").FC<import("../../types").PieceType>;
+    Paper: import("react").FC<import("../../types").PieceType>;
+    PocketShirt: import("react").FC<import("../../types").PieceType>;
+    PoloSweater: import("react").FC<import("../../types").PieceType>;
+    ShirtCoat: import("react").FC<import("../../types").PieceType>;
+    ShirtFilled: import("react").FC<import("../../types").PieceType>;
+    SportyShirt: import("react").FC<import("../../types").PieceType>;
+    StripedShirt: import("react").FC<import("../../types").PieceType>;
+    Sweater: import("react").FC<import("../../types").PieceType>;
+    SweaterDots: import("react").FC<import("../../types").PieceType>;
+    Whatever: import("react").FC<import("../../types").PieceType>;
+    SweaterDotsPlain: import("react").FC<import("../../types").PieceType>;
+    PointingUpPlain: import("react").FC<import("../../types").PieceType>;
+    PaperPlain: import("react").FC<import("../../types").PieceType>;
+};
+export declare type BustPoseType = 'BlazerBlackTee' | 'Shirt' | 'ButtonShirt' | 'Dress' | 'Gaming' | 'Geek' | 'Hoodie' | 'PointingUp' | 'Selena' | 'Thunder' | 'Turtleneck' | 'ArmsCrossed' | 'Coffee' | 'Device' | 'DotJacket' | 'Explaining' | 'FurJacket' | 'Killer' | 'Paper' | 'PocketShirt' | 'PoloSweater' | 'ShirtCoat' | 'ShirtFilled' | 'SportyShirt' | 'StripedShirt' | 'Sweater' | 'SweaterDots' | 'Whatever' | 'SweaterDotsPlain' | 'PointingUpPlain' | 'PaperPlain';

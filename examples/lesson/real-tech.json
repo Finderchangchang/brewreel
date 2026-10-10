@@ -1,0 +1,399 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "什么是 Codex",
+    "domain": "tech",
+    "lang": "zh",
+    "voice": {
+      "provider": "minimax",
+      "subtitles": "line"
+    },
+    "mascot": {
+      "id": "buddy",
+      "enabled": true
+    },
+    "brand": {
+      "name": "学习课堂",
+      "primary": "#2563EB"
+    },
+    "facts": [],
+    "sources": [
+      "Codex CLI 0.155.1 `codex --help` 本机输出",
+      "github.com/openai/codex 仓库说明"
+    ]
+  },
+  "chapters": [
+    {
+      "title": "认识 Codex",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "什么是 Codex",
+          "subtitle": "给刚接触 AI 编程工具的产品和工程同学",
+          "smallText": "OpenAI 编程代理入门",
+          "narration": [
+            {
+              "text": "这节三分钟，我们认识 OpenAI 的编程代理 Codex。",
+              "reveal": 0,
+              "pose": "wave"
+            },
+            {
+              "text": "它会在你的代码仓库里工作，而不只是聊天。",
+              "reveal": 1,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "chapter",
+          "title": "认识 Codex",
+          "kicker": "从能力到用法",
+          "subtitle": "先看它能做什么，再看怎么用。",
+          "narration": [
+            {
+              "text": "先看它能做什么，再看怎么用。",
+              "reveal": 0,
+              "pose": "point"
+            },
+            {
+              "text": "Codex 是 OpenAI 的编程代理，工作对象是你的代码仓库。",
+              "reveal": 1,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "steps",
+          "title": "Codex 能做什么？",
+          "items": [
+            "在代码仓库里读代码",
+            "修改文件、生成改动",
+            "运行命令、执行任务",
+            "像编程代理一样协作"
+          ],
+          "narration": [
+            {
+              "text": "在仓库里，Codex 先读代码，理解结构和依赖。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "接着它可以修改文件、生成改动。",
+              "reveal": 1,
+              "pose": "point"
+            },
+            {
+              "text": "也能运行命令、执行任务，最后把结果交给你检查。",
+              "reveal": 2,
+              "pose": "affirm"
+            }
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "三种用法：本地与云端",
+          "leftTitle": "本地",
+          "left": [
+            "终端里的 Codex CLI",
+            "通过 codex app 启动桌面 App"
+          ],
+          "rightTitle": "云端",
+          "right": [
+            "Codex Cloud 云端任务",
+            "用 codex apply 把改动拉回本地"
+          ],
+          "narration": [
+            {
+              "text": "Codex 有三种用法，先分本地和云端。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "本地有终端里的 Codex CLI，和 codex app 桌面 App。",
+              "reveal": 1,
+              "pose": "point"
+            },
+            {
+              "text": "云端任务在 Codex Cloud 跑，再用 codex apply 把改动拉回本地。",
+              "reveal": 1,
+              "pose": "affirm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "开始使用 Codex",
+      "pages": [
+        {
+          "layout": "chapter",
+          "title": "开始使用 Codex",
+          "kicker": "登录、运行与审查",
+          "subtitle": "先登录，再选运行方式。",
+          "narration": [
+            {
+              "text": "接下来看怎么开始用。",
+              "reveal": 0,
+              "pose": "point"
+            },
+            {
+              "text": "先用 ChatGPT 账号登录，再选运行方式。",
+              "reveal": 1,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "code",
+          "title": "用 ChatGPT 账号登录",
+          "language": "bash",
+          "code": "codex login\ncodex --help",
+          "highlightLines": [
+            1,
+            2
+          ],
+          "narration": [
+            {
+              "text": "登录命令是 codex login。",
+              "reveal": 0,
+              "pose": "point"
+            },
+            {
+              "text": "不确定参数时，可以看 codex --help。",
+              "reveal": 1,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "steps",
+          "title": "三种运行方式",
+          "items": [
+            "交互模式：直接对话，适合探索",
+            "codex exec：非交互运行任务，适合脚本和自动化",
+            "codex review：用于代码审查",
+            "resume 继续会话，fork 分叉"
+          ],
+          "narration": [
+            {
+              "text": "交互模式适合边聊边探索。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "codex exec 非交互运行，适合脚本和自动化。",
+              "reveal": 1,
+              "pose": "point"
+            },
+            {
+              "text": "codex review 做代码审查；会话可 resume 或 fork。",
+              "reveal": 2,
+              "pose": "affirm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "安全与项目规矩",
+      "pages": [
+        {
+          "layout": "chapter",
+          "title": "安全与项目规矩",
+          "kicker": "沙箱、AGENTS.md 与 MCP",
+          "subtitle": "这一章看安全边界、项目规矩和工具扩展。",
+          "narration": [
+            {
+              "text": "能力越强，边界越要说清楚。",
+              "reveal": 0,
+              "pose": "warn"
+            },
+            {
+              "text": "这一章看安全边界、项目规矩和工具扩展。",
+              "reveal": 1,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "默认沙箱与显式放开",
+          "leftTitle": "默认沙箱",
+          "left": [
+            "命令在沙箱里执行",
+            "workspace-write 只允许写当前工作区"
+          ],
+          "rightTitle": "显式放开",
+          "right": [
+            "需要更多权限时显式放开",
+            "由人确认后再执行"
+          ],
+          "narration": [
+            {
+              "text": "默认命令在沙箱里执行。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "workspace-write 只允许写当前工作区。",
+              "reveal": 1,
+              "pose": "point"
+            },
+            {
+              "text": "需要更多权限时显式放开，由人确认。",
+              "reveal": 1,
+              "pose": "warn"
+            }
+          ]
+        },
+        {
+          "layout": "steps",
+          "title": "项目规矩与工具扩展",
+          "items": [
+            "在仓库放 AGENTS.md 写项目规矩",
+            "Codex 开工前会读取",
+            "通过 codex mcp 接入 MCP 服务器",
+            "扩展工具能力"
+          ],
+          "narration": [
+            {
+              "text": "仓库里放 AGENTS.md，写下项目规矩。",
+              "reveal": 0,
+              "pose": "point"
+            },
+            {
+              "text": "Codex 开工前会先读取。",
+              "reveal": 1,
+              "pose": "explain"
+            },
+            {
+              "text": "用 codex mcp 接入 MCP 服务器，扩展工具能力。",
+              "reveal": 2,
+              "pose": "affirm"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "人的角色",
+      "pages": [
+        {
+          "layout": "chapter",
+          "title": "人的角色",
+          "kicker": "给任务、检查结果、决定合并",
+          "subtitle": "目标、边界和最终决定，都由你来把握。",
+          "narration": [
+            {
+              "text": "最后回到人的角色。",
+              "reveal": 0,
+              "pose": "point"
+            },
+            {
+              "text": "目标、边界和最终决定，都由你来把握。",
+              "reveal": 1,
+              "pose": "affirm"
+            }
+          ]
+        },
+        {
+          "layout": "flow",
+          "title": "一次协作的流程",
+          "steps": [
+            "给清楚的任务书",
+            "Codex 读代码并改动",
+            "检查改动和测试结果",
+            "决定是否合并",
+            "必要时 resume 或 fork"
+          ],
+          "narration": [
+            {
+              "text": "协作从清楚的任务书开始。",
+              "reveal": 0,
+              "pose": "explain"
+            },
+            {
+              "text": "Codex 读代码并改动，你检查改动和测试结果。",
+              "reveal": 1,
+              "pose": "check"
+            },
+            {
+              "text": "是否合并由你决定，必要时 resume 或 fork。",
+              "reveal": 2,
+              "pose": "affirm"
+            }
+          ]
+        },
+        {
+          "layout": "question",
+          "title": "小测验：Codex 的权限默认在哪里？",
+          "question": "Codex 的权限默认在哪里？",
+          "options": [
+            "直接在本地任意目录写",
+            "在沙箱里执行，权限需显式放开",
+            "云端自动合并，不需要确认",
+            "只读模式，永远不会改动"
+          ],
+          "openQuestion": false,
+          "answer": 1,
+          "answerText": "默认在沙箱里执行；常用 workspace-write 只写当前工作区，要更多权限需显式放开。",
+          "narration": [
+            {
+              "text": "小测验：Codex 的权限默认在哪里？",
+              "reveal": 0,
+              "pose": "check"
+            },
+            {
+              "text": "先想一想。",
+              "reveal": 0,
+              "pose": "think"
+            },
+            {
+              "text": "答案是第二项：默认在沙箱里执行，权限要显式放开。",
+              "reveal": 1,
+              "pose": "affirm"
+            },
+            {
+              "text": "workspace-write 只写当前工作区。",
+              "reveal": 1,
+              "pose": "explain"
+            }
+          ]
+        },
+        {
+          "layout": "recap",
+          "title": "回顾",
+          "items": [
+            "Codex 能读代码、改文件、运行命令",
+            "三种用法：CLI、桌面 App、云端任务",
+            "交互、exec 和 review 对应不同任务",
+            "沙箱与 AGENTS.md 控制边界和规矩",
+            "人负责给任务、检查结果、决定合并"
+          ],
+          "narration": [
+            {
+              "text": "最后回顾。",
+              "reveal": 0,
+              "pose": "point"
+            },
+            {
+              "text": "Codex 能读代码、改文件、运行命令，有 CLI、桌面 App 和云端三种用法。",
+              "reveal": 1,
+              "pose": "explain"
+            },
+            {
+              "text": "交互、exec、review 对应不同任务，沙箱和 AGENTS.md 管边界。",
+              "reveal": 2,
+              "pose": "affirm"
+            },
+            {
+              "text": "人负责给任务、检查结果和决定合并。",
+              "reveal": 3,
+              "pose": "cheer"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

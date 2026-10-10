@@ -1,0 +1,1 @@
+{"layout":"steps","revealTargets":["第 1 条","第 2 条","第 3 条","第 4 条","第 5 条","第 6 条"],"fields":{"title":{"type":"text","required":true,"max":50,"hint":"标题最多 50 字"},"items":{"type":"text[]","required":true,"min":2,"max":6,"itemMax":32,"hint":"提供 2–6 条，每条最多 32 字"}},"copy":{"maxItems":4,"itemMax":14,"totalMax":40}}

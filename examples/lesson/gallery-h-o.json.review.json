@@ -1,0 +1,18 @@
+{
+  "reviewer": "内部测试",
+  "license_no": "内部测试",
+  "reviewed_at": "2026-10-04T07:14:14.847Z",
+  "decision": "approved",
+  "script_sha256": "06cc87af7f8363b4d93900c43f9724a704c9e35bd0605ea4b340b70e877ccaa7",
+  "test": true,
+  "history": [
+    {
+      "reviewer": "内部测试",
+      "license_no": "内部测试",
+      "reviewed_at": "2026-10-04T07:13:52.746Z",
+      "decision": "approved",
+      "script_sha256": "83203344626cf3668169cace7a1c148d72b16cd223a238a413a0b13da55016bb",
+      "test": true
+    }
+  ]
+}

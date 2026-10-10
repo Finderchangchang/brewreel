@@ -1,0 +1,14 @@
+{
+  "layout": "timeline",
+  "revealTargets": ["第 1 个节点", "第 2 个节点", "第 3 个节点", "第 4 个节点", "法条卡"],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 50, "hint": "标题最多 50 字"},
+    "nodes": {"type": "object[]", "required": true, "min": 2, "max": 4, "hint": "2–4 个节点。每项 {label}，节点名最多 6 字。reveal 从 0 按节点顺序，不要跳号"},
+    "segments": {"type": "object[]", "hint": "可选。节点之间的区段，数量必须比节点少 1。每项 {label, tone}，label 最多 8 字，tone 为 accent（实色带）或 alert（虚线箭头）"},
+    "captions": {"type": "object[]", "max": 2, "hint": "可选。轴上方最多两个说明。每项 {icon, text}，text 最多 10 字，icon 必须是图标库里的名字"},
+    "quote": {"type": "text", "max": 180, "hint": "可选。下方法条卡原文，最多 180 字。legal 领域必须逐字来自白名单。有原文时法条卡是最后一个 reveal"},
+    "source": {"type": "text", "max": 80, "hint": "有法条卡时必填。须含法规名、条号和施行日期"},
+    "emphasis": {"type": "text", "max": 24, "hint": "可选。法条卡里要画荧光笔的词，最多 24 字，须出现在原文里"}
+  },
+  "copy": {"nodeMax": 6, "segmentMax": 8, "captionMax": 10, "quoteMax": 100, "sourceMax": 30}
+}

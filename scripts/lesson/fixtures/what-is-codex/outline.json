@@ -1,0 +1,58 @@
+{
+  "chapters": [
+    {
+      "title": "认识 Codex",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "什么是 Codex",
+          "points": [
+            "面向软件开发的 AI 编程代理"
+          ]
+        },
+        {
+          "layout": "flow",
+          "title": "一次任务如何推进",
+          "points": [
+            "理解任务与项目",
+            "协助修改代码",
+            "检查结果"
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "结果为何需要复核",
+          "points": [
+            "模型生成",
+            "工程验证"
+          ]
+        },
+        {
+          "layout": "code",
+          "title": "把验证放进流程",
+          "points": [
+            "检查差异",
+            "运行测试"
+          ]
+        },
+        {
+          "layout": "recap",
+          "title": "稳妥地协作",
+          "points": [
+            "明确目标",
+            "检查改动",
+            "决定交付"
+          ]
+        },
+        {
+          "layout": "question",
+          "title": "测试通过就代表完全正确吗？",
+          "points": [
+            "测试提供有限范围的证据",
+            "答案不能由一次测试概括"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+export const CANVAS: {w: number; h: number};
+export const RIGHT: number;
+export const CONTENT_RIGHT: number;
+export const CONTENT: {x: number; y: number; w: number; h: number};
+export const SUBTITLE: {x: number; y: number; w: number; h: number};
+export const CIRCLE_D: number;
+export const COVER_D: number;
+export const SIDE_RADIUS: number;
+export const MORPH_MS: number;
+export const COVER_MORPH: number;
+export const NOTE_W: number;
+export const NOTE_H: number;
+
+export type PresenterBox = {x: number; y: number; w: number; h: number; radius: number; shape: 'circle' | 'rounded' | 'full'; eyeY: number};
+export type FrameStyle = {background: string; border: string; boxShadow: string; borderRadius: number; overflow: string};
+
+export function cornerBox(): PresenterBox;
+export function coverBox(): PresenterBox;
+export function cartoonBox(pageLayout?: string): PresenterBox;
+export function circleBox(): PresenterBox;
+export function sideBox(): PresenterBox;
+export function fullBox(): PresenterBox;
+export function realBox(page?: {layout?: string; presenter?: {layout?: string; aspectRatio?: number}}): PresenterBox | null;
+export function morphBox(from: PresenterBox | null | undefined, to: PresenterBox | null | undefined, t: number): PresenterBox | null;
+export function objectPosition(box?: {eyeY?: number} | null): string;
+export function cartoonFrameStyle(): FrameStyle;
+export function avatarFrameStyle(tokens?: {surface?: string; accent?: string; accentSoft?: string} | null): FrameStyle;
+export function realFrameStyle(tokens: {pipBorder?: string; pipShadow?: string; bg?: string} | null | undefined, box?: {shape?: string; radius?: number} | null): FrameStyle;
+export function noteBox(anchor?: {x: number; y: number; shape?: string} | null): {x: number; y: number; w: number; h: number} | null;
+export function overlaps(a?: {x: number; y: number; w: number; h: number} | null, b?: {x: number; y: number; w: number; h: number} | null): boolean;

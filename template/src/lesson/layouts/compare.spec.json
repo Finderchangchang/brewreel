@@ -1,0 +1,15 @@
+{
+  "layout": "compare",
+  "revealTargets": ["左栏与 VS 标记", "右栏"],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 50, "hint": "标题最多 50 字"},
+    "leftTitle": {"type": "text", "required": true, "max": 24, "hint": "左栏标题最多 24 字"},
+    "left": {"type": "text[]", "required": true, "min": 2, "max": 4, "itemMax": 42, "hint": "左栏 2–4 条，每条最多 42 字。有 verdict 时第一条画成小样"},
+    "rightTitle": {"type": "text", "required": true, "max": 24, "hint": "右栏标题最多 24 字"},
+    "right": {"type": "text[]", "required": true, "min": 2, "max": 4, "itemMax": 42, "hint": "右栏 2–4 条，每条最多 42 字。有 verdict 时第一条画成小样"},
+    "leftVerdict": {"type": "text", "max": 10, "hint": "可选。左栏结果关键词，最多 10 字。不写则按 left 列表画"},
+    "rightVerdict": {"type": "text", "max": 10, "hint": "可选。右栏结果关键词，最多 10 字。不写则按 right 列表画"},
+    "leftTone": {"type": "text", "hint": "可选。ok、alert 或 neutral，决定左栏结果色和勾叉"},
+    "rightTone": {"type": "text", "hint": "可选。ok、alert 或 neutral，决定右栏结果色和勾叉"}
+  }
+}

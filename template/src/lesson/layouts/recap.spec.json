@@ -1,0 +1,1 @@
+{"layout":"recap","revealTargets":["第 1 条","第 2 条","第 3 条","第 4 条","第 5 条"],"fields":{"title":{"type":"text","required":true,"max":50,"hint":"标题最多 50 字"},"items":{"type":"text[]","required":true,"min":3,"max":5,"itemMax":36,"hint":"回顾 3–5 条，每条最多 36 字"}},"copy":{"maxItems":4,"itemMax":14,"totalMax":40}}

@@ -1,0 +1,239 @@
+{
+  "meta": {
+    "format": "lesson",
+    "title": "版式目录 · 技术课",
+    "domain": "tech",
+    "lang": "zh",
+    "voice": {
+      "provider": "mock",
+      "subtitles": "line"
+    },
+    "mascot": {
+      "id": "default",
+      "enabled": true
+    },
+    "brand": {
+      "name": "Studio",
+      "primary": "#2563EB"
+    }
+  },
+  "chapters": [
+    {
+      "title": "十种讲解场景",
+      "pages": [
+        {
+          "layout": "cover",
+          "title": "把复杂事讲清楚",
+          "subtitle": "十种版式，让知识有画面、有重点，也有节奏",
+          "smallText": "M2 · 版式目录",
+          "narration": [
+            {
+              "text": "好的讲解画面先给观众一个清晰入口，再用结构和视觉重点带着观众理解内容。",
+              "reveal": 0
+            },
+            {
+              "text": "这组样例使用原创的卡片、流程和界面插画，展示不同内容适合的表达方式。",
+              "reveal": 1
+            }
+          ]
+        },
+        {
+          "layout": "steps",
+          "title": "步骤卡 · 逐条拆解",
+          "items": [
+            "先明确要解决的问题",
+            "再拆成能验证的小步",
+            "最后检查实际结果"
+          ],
+          "narration": [
+            {
+              "text": "步骤版式适合讲清楚一个连续过程，每条内容独立出现，观众可以跟上顺序。",
+              "reveal": 0
+            },
+            {
+              "text": "数字标记和大尺寸短句占据主要版心，页面不会只留下标题和稀疏的小字。",
+              "reveal": 1
+            }
+          ]
+        },
+        {
+          "layout": "chapter",
+          "title": "第二节 · 看见结构",
+          "kicker": "章节过场",
+          "subtitle": "用这一页告诉观众，接下来要换一个主题。",
+          "narration": [
+            {
+              "text": "章节过场用大字号标题和明确色块建立停顿，让观众知道主题正在转换。",
+              "reveal": 0
+            },
+            {
+              "text": "它也可以作为视觉呼吸点，把前一段的结论和下一段的新问题连接起来。",
+              "reveal": 1
+            }
+          ]
+        },
+        {
+          "layout": "quote",
+          "title": "引用卡 · 让来源可见",
+          "quote": "清楚表达观点，也要给出可以回到原文核对的出处。",
+          "source": "课程设计原则 · 示例原文",
+          "emphasis": "回到原文核对",
+          "narration": [
+            {
+              "text": "引用卡把原文放在有足够空间的主卡片里，出处单独放在底部，方便观众核对。",
+              "reveal": 0
+            },
+            {
+              "text": "重点词的手绘下划线用路径绘制，能把视线落到需要记住的短语上。",
+              "reveal": 1
+            }
+          ]
+        },
+        {
+          "layout": "compare",
+          "title": "双栏对比 · 看清差别",
+          "leftTitle": "只给结论",
+          "left": [
+            "没有过程信息",
+            "难以确认依据"
+          ],
+          "rightTitle": "展示可检查步骤",
+          "right": [
+            "说明采取了什么行动",
+            "列出验证方式与结果"
+          ],
+          "narration": [
+            {
+              "text": "对比卡将两个选项放在同一视线高度，用色彩和留白帮助观众快速寻找差异。",
+              "reveal": 1
+            },
+            {
+              "text": "每栏控制在少量短句，适合讲策略、前后变化或容易混淆的两个概念。",
+              "reveal": 1
+            }
+          ]
+        },
+        {
+          "layout": "question",
+          "title": "提问卡 · 先想一想",
+          "question": "代码通过测试，就能证明对所有输入都正确吗？",
+          "options": [
+            "能，测试通过就说明正确",
+            "不能，还要看覆盖了哪些情形"
+          ],
+          "answer": 1,
+          "answerText": "测试只提供有限范围内的证据。",
+          "narration": [
+            {
+              "text": "代码通过测试，就能证明对所有输入都正确吗？",
+              "reveal": 0
+            },
+            {
+              "text": "先想一想。",
+              "reveal": 0,
+              "note": "先别急着答"
+            },
+            {
+              "text": "答案是不能，测试通过只说明已覆盖的情形符合预期。",
+              "reveal": 1
+            }
+          ]
+        },
+        {
+          "layout": "flow",
+          "title": "流程卡 · 从目标到交付",
+          "steps": [
+            "明确目标",
+            "查看上下文",
+            "实施修改",
+            "运行检查",
+            "说明结果"
+          ],
+          "narration": [
+            {
+              "text": "流程卡根据步骤数量自动选择方向，少量步骤横排，较多步骤改为竖向阅读。",
+              "reveal": 0
+            },
+            {
+              "text": "每一步都使用大编号和清楚的文字，连接符号把先后关系串联起来。",
+              "reveal": 3
+            }
+          ]
+        },
+        {
+          "layout": "recap",
+          "title": "回顾卡 · 带走三件事",
+          "items": [
+            "目标要具体，边界要清楚",
+            "过程要分步，结果要可查",
+            "结论要诚实，交付要复核"
+          ],
+          "narration": [
+            {
+              "text": "回顾卡把本节最值得记住的内容收在一起，每项用独立的勾选图形承载。",
+              "reveal": 0
+            },
+            {
+              "text": "三到五条短要点适合作为章节结尾，也能帮助观众快速找回关键信息。",
+              "reveal": 2
+            }
+          ]
+        },
+        {
+          "layout": "screenshot",
+          "title": "截图卡 · 标出操作重点",
+          "image": "examples/lesson/layouts/demo-screen.svg",
+          "callouts": [
+            {
+              "x": 0.2,
+              "y": 0.18,
+              "width": 0.36,
+              "height": 0.2,
+              "label": "当前步骤",
+              "type": "box"
+            },
+            {
+              "x": 0.62,
+              "y": 0.53,
+              "width": 0.18,
+              "height": 0.18,
+              "label": "检查结果",
+              "type": "magnify"
+            }
+          ],
+          "narration": [
+            {
+              "text": "截图卡以界面场景作为视觉主体，再按旁白 reveal 逐个显示标注框。",
+              "reveal": 0
+            },
+            {
+              "text": "框的位置使用相对比例，因此换成不同尺寸的截图时仍能保持标注关系。",
+              "reveal": 1
+            }
+          ],
+          "alt": "示意界面：左侧是导航，右侧是当前步骤和检查结果"
+        },
+        {
+          "layout": "code",
+          "title": "代码卡 · 让关键行浮现",
+          "language": "JavaScript",
+          "code": "const result = await runTask();\nif (result.ok) {\n  console.log('完成');\n}\nreturn result;",
+          "highlightLines": [
+            2,
+            3
+          ],
+          "narration": [
+            {
+              "text": "代码卡使用等宽字体和逐行入场，语法色彩区分关键字、字符串和注释。",
+              "reveal": 0
+            },
+            {
+              "text": "高亮行号可以配合讲解逐个指出重点，长代码则应拆成多页再说明。",
+              "reveal": 2
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

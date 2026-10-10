@@ -1,0 +1,9 @@
+{
+  "layout": "table",
+  "revealTargets": ["第 1 行", "第 2 行", "第 3 行", "第 4 行"],
+  "fields": {
+    "rows": {"type": "object[]", "required": true, "min": 2, "max": 4, "hint": "2–4 行。situation 是情形，result 是结果，emphasis 是结果里要加粗的词"},
+    "basis": {"type": "text", "required": true, "max": 40, "hint": "依据只能写书名和条号，多项用分号隔开"}
+  },
+  "copy": {"minRows": 2, "maxRows": 4, "situationMax": 16, "resultMax": 12, "basisMax": 24}
+}

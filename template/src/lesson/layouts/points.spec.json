@@ -1,0 +1,9 @@
+{
+  "layout": "points",
+  "revealTargets": ["第 1 张", "第 2 张", "第 3 张", "第 4 张"],
+  "fields": {
+    "title": {"type": "text", "required": true, "max": 50, "hint": "标题最多 50 字"},
+    "items": {"type": "object[]", "required": true, "min": 2, "max": 4, "hint": "2–4 张卡片。每张含 icon（图标库名字）、title（最多 6 字）、text（最多 20 字）"}
+  },
+  "copy": {"maxItems": 4, "titleMax": 6, "textMax": 20}
+}
