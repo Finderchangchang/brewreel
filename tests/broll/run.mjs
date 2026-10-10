@@ -264,7 +264,7 @@ const ledgerTests = () => {
 
 // v0.9 三个模块各自的单测 + 集成测试：各是一个独立脚本，不下载模型、不联网、不花钱
 const moduleSuites = () => {
-  for (const name of ['asr.mjs', 'motion.mjs', 'motion-kit.mjs', 'motion-check.mjs', 'styles.mjs', 'style-factory.mjs', 'integration.mjs', 'fixes.mjs', 'pick.mjs']) {
+  for (const name of ['asr.mjs', 'motion.mjs', 'motion-kit.mjs', 'motion-check.mjs', 'styles.mjs', 'style-factory.mjs', 'integration.mjs', 'fixes.mjs', 'pick.mjs', 'demo-shots.mjs']) {
     const r = runNode([path.join('tests', 'broll', name)]);
     const out = `${r.stdout || ''}${r.stderr || ''}`;
     const last = out

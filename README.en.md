@@ -6,7 +6,7 @@
 
 **Four ways to make a video, each with one command.** Write a product brief and render a vertical promo, or drop in a talking-head clip and add pictures to the lines. An explainer, a course, a legal-education video, or a tutorial is landscape. See [Lesson video](#lesson-video).
 
-[![Version](https://img.shields.io/badge/version-v0.12.1-1f6feb?style=flat-square)](CHANGELOG.en.md)
+[![Version](https://img.shields.io/badge/version-v0.13.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)

@@ -2,6 +2,28 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.13.0 · 2026-10-10 · Lesson videos are now open source; disclaimers and tags follow the picture
+
+### New: lesson videos (formerly a private edition, now fully open source)
+- 16:9 lesson videos: animated slides with a round presenter in the corner (Open Peeps), 20 layouts (statute card, points, statement, compare, flow, timeline, checklist, big number, quiz, risk levels, case, document markup, table, chapter and more), 4 themes (paper / lecture / product / editorial).
+- Pipeline: a brief → outline → script → `lesson.json`, usable with low-cost models; or write `lesson.json` yourself. Command: `node scripts/lesson/make-lesson.mjs`.
+- Re-render only the page you changed (segment rendering with `lock.json`); vertical clips cut by chapter (≤60 s); 16:9 / 9:16 / 3:4 covers; brand packaging (intro, corner mark, name bar, outro).
+- Legal lessons need a signed review before rendering, and AI assistants may not sign it; the legal pack ships selected Civil Code articles checked word by word against the official text. A tech pack is included too.
+- Presenter from a photo (optional): needs the person's consent and uses MiniMax credits.
+- AIGC visible label and metadata are kept as the national standard requires.
+- The serif and kai fonts are subset to common characters and renamed BrewReel Serif / BrewReel Kai, as the OFL requires.
+- Docs: [docs/lesson.en.md](docs/lesson.en.md); for low-cost models: `lesson/SKILL-lesson.en.md`; the skill's routing table gains a lesson row.
+- License keys, buyer tracing, obfuscation and the commercial license were removed; the lesson code is Apache-2.0 like the rest of the repository.
+
+### Changes: disclaimers and tags follow the picture
+- The top disclaimer (e.g. "demo screens, simulated chat") and the bottom notice bar are no longer a uniform dark pill: colors come from the current theme, the label sits at the top-left of the safe area, and contrast is at least 4.5.
+- The disclaimer shows only on demo shots (UI, chat, message cards, sample data; anything uncertain counts) and fades with the shot; if a video has no demo shot it stays on for the whole video. Validation rules are unchanged.
+- Photo, store and before/after tags and the talking-head "AI-generated" badge use solid theme-aware plates; AI labels stay prominent and never fade.
+- DeepSeek plugin 0.7.0 carries the lesson engine.
+
+### Notes
+- The legal examples (fictional firm and lawyer) are not reviewed by a lawyer and are not legal advice.
+
 ## v0.12.1 · 2026-10-07 · Fixes: DeepSeek plugin carries the current skill, one pick table, motion check on skipped renders
 
 - The DeepSeek plugin (npm `dsh-brewreel`) left out the talking-head, style factory and motion-look files, so it still shipped the v0.7.0 skill. The whitelist is complete and the plugin is 0.6.0, carrying the v0.12 skill.
