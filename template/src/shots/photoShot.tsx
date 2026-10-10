@@ -8,6 +8,8 @@ import {IllustScene, resolveSceneIllust} from '../illust/scene';
 import {pick, type Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, textOnHot, useTheme} from '../core/theme';
+import {labelInk} from '../core/plate';
+import {useStylePalette} from '../styles/context';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -100,26 +102,43 @@ const MediaContent: React.FC<{m?: Media; t: number; dur: number; industry?: stri
   return <Img src={staticFile(m.src)} style={{position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', transform: `scale(${zoom})`}} />;
 };
 
-// ---------- 角标（实拍/示意/AI生成/N月实拍） ----------
-const TagChip: React.FC<{text: string; corner?: 'tl' | 'tr'}> = ({text, corner = 'tr'}) => (
-  <div
-    style={{
-      position: 'absolute',
-      top: 18,
-      [corner === 'tr' ? 'right' : 'left']: 18,
-      padding: '7px 16px',
-      borderRadius: 20,
-      background: alpha('#0B0D14', 0.55),
-      color: '#FFFFFF',
-      fontFamily: FONT,
-      fontWeight: 700,
-      fontSize: 26,
-      whiteSpace: 'nowrap',
-    }}
-  >
-    {text}
-  </div>
-);
+// ---------- 角标（实拍/示意/AI生成/N月实拍）和贴在照片上的短标签 ----------
+// 跟免责小字同一套实色底（labelInk）。「AI生成」字号 28、字重 800，整段不透明。
+const useOverlayPlate = () => labelInk(useTheme(), useStylePalette());
+
+const TagChip: React.FC<{text: string; corner?: 'tl' | 'tr'}> = ({text, corner = 'tr'}) => {
+  const plate = useOverlayPlate();
+  const ai = /AI/.test(text);
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        top: 18,
+        [corner === 'tr' ? 'right' : 'left']: 18,
+        padding: '7px 16px',
+        borderRadius: 8,
+        ...plate,
+        fontFamily: FONT,
+        fontWeight: ai ? 800 : 700,
+        fontSize: ai ? 28 : 26,
+        lineHeight: 1.2,
+        whiteSpace: 'nowrap',
+        opacity: 1,
+      }}
+    >
+      {text}
+    </div>
+  );
+};
+
+const OverlayChip: React.FC<{text: string; size?: number; weight?: number}> = ({text, size = 26, weight = 700}) => {
+  const plate = useOverlayPlate();
+  return (
+    <div style={{padding: '6px 16px', borderRadius: 8, ...plate, fontFamily: FONT, fontWeight: weight, fontSize: size, lineHeight: 1.2, whiteSpace: 'nowrap'}}>
+      {text}
+    </div>
+  );
+};
 
 // ---------- 卡片式圆角外框 ----------
 const Frame: React.FC<{box: {x: number; y: number; w: number; h: number}; radius?: number; style?: React.CSSProperties; children?: React.ReactNode}> = ({box, radius = 40, style, children}) => {
@@ -245,20 +264,11 @@ const HeroLike: React.FC<{p: P; t: number; dur: number; industry?: string; lang?
                 position: 'absolute',
                 left: Math.min(BOX.w - 20, Math.max(20, x - 20)),
                 top: below ? y + 46 : y - 92,
-                padding: '8px 18px',
-                borderRadius: 20,
-                background: '#FFFFFF',
-                color: '#1B1A18',
-                fontFamily: FONT,
-                fontWeight: 800,
-                fontSize: 28,
-                whiteSpace: 'nowrap',
-                boxShadow: '0 10px 22px rgba(0,0,0,0.28)',
                 opacity: Math.min(1, q * 1.8),
                 transform: `scale(${0.7 + 0.3 * q})`,
               }}
             >
-              {c.text}
+              <OverlayChip text={c.text} size={28} weight={800} />
             </div>
           </React.Fragment>
         );
@@ -306,7 +316,9 @@ const Grid: React.FC<{p: P; t: number; dur: number; industry?: string; lang?: La
             <MediaContent m={m} t={t - at} dur={dur} industry={industry} w={boxes[i].w} h={boxes[i].h} texts={[p.title]} variant={i} />
             <TagChip text={tagLabel(m, lang)} corner={i % 2 ? 'tr' : 'tl'} />
             {m.label && (
-              <div style={{position: 'absolute', left: 14, bottom: 12, padding: '6px 16px', borderRadius: 18, background: alpha('#0B0D14', 0.55), color: '#fff', fontFamily: FONT, fontWeight: 700, fontSize: 26, whiteSpace: 'nowrap'}}>{m.label}</div>
+              <div style={{position: 'absolute', left: 14, bottom: 12}}>
+                <OverlayChip text={m.label} />
+              </div>
             )}
           </Frame>
         );
@@ -333,10 +345,14 @@ const Tour: React.FC<{p: P; t: number; dur: number; industry?: string; lang?: La
       </div>
       <TagChip text={tagLabel(m, lang)} />
       {p.roomType && (
-        <div style={{position: 'absolute', left: 20, top: 62, padding: '6px 18px', borderRadius: 18, background: alpha('#0B0D14', 0.5), color: '#fff', fontFamily: FONT, fontWeight: 700, fontSize: 26, whiteSpace: 'nowrap'}}>{p.roomType}</div>
+        <div style={{position: 'absolute', left: 20, top: 62}}>
+          <OverlayChip text={p.roomType} />
+        </div>
       )}
       {m.label && (
-        <div style={{position: 'absolute', left: 20, bottom: 22, padding: '9px 22px', borderRadius: 24, background: alpha('#0B0D14', 0.55), color: '#fff', fontFamily: FONT, fontWeight: 800, fontSize: 32, whiteSpace: 'nowrap'}}>{m.label}</div>
+        <div style={{position: 'absolute', left: 20, bottom: 22}}>
+          <OverlayChip text={m.label} size={32} weight={800} />
+        </div>
       )}
       <div style={{position: 'absolute', right: 24, bottom: 24, display: 'flex', gap: 8}}>
         {items.map((_, i) => (

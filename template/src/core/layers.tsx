@@ -8,7 +8,8 @@ import {CAP, FPS} from './safe';
 import {useGeometry} from './aspect';
 import {fitLine, fitSize} from './fit';
 import {Icon, isIcon} from './icons';
-import {alpha, contrastRatio, mixHex, moodColors, relLuminance, useTheme, type Theme} from './theme';
+import {alpha, mixHex, moodColors, useTheme} from './theme';
+import {labelInk} from './plate';
 import {demoOpacity, type ShotLike} from './demo-shots';
 import {useStylePalette} from '../styles/context';
 import {Illust, isIllust} from '../illust';
@@ -386,40 +387,8 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
   );
 };
 
-// ---------------- 合规小字的取色 ----------------
-// 浅色主题：深色字 + 很淡的同色系纸底。深色主题反过来。底是实色，字和底的对比度先拉到 ≥ 4.5，
-// 再靠 1px 同色描边和轻投影，避免透明黑胶囊在任何底上都长一样。
-// 风格令牌（quiz / journey 的 ink、card、bg）优先于 cards 主题，因为画面底是那张纸，不是 cards 渐变。
-const tunePlate = (text: string, plate: string, lightPlate: boolean) => {
-  let p = plate;
-  let t = text;
-  for (let i = 0; i < 8 && contrastRatio(t, p) < 4.5; i++) p = mixHex(p, lightPlate ? '#FFFFFF' : '#0C0E14', 0.25);
-  if (contrastRatio(t, p) < 4.5) {
-    t = lightPlate ? '#141820' : '#F5F7FB';
-    p = lightPlate ? '#FFFFFF' : '#141820';
-  }
-  return {
-    color: t,
-    background: p,
-    border: `1px solid ${alpha(t, lightPlate ? 0.28 : 0.4)}`,
-    boxShadow: `0 1px 2px ${alpha(t, 0.22)}`,
-  };
-};
-
-const labelInk = (th: Theme, pal: Record<string, string>) => {
-  const ink = pal.ink;
-  const card = pal.card;
-  const bg = pal.bg;
-  if (ink && (card || bg)) {
-    const surface = bg || card;
-    const dark = relLuminance(surface) < 0.4;
-    if (!dark) return tunePlate(ink, mixHex(card || '#FFFCF6', bg || ink, 0.1), true);
-    const light = pal.flapInk || pal.onPrimary || '#F4F1E6';
-    return tunePlate(light, mixHex(card || surface, '#000000', 0.25), false);
-  }
-  if (th.dark) return tunePlate(th.cardText, mixHex(th.card, th.bgBot[0], 0.2), false);
-  return tunePlate(th.cardText, mixHex(th.card, th.bgTop[0], 0.14), true);
-};
+// 合规小字的取色在 core/plate.ts（labelInk）。浅色纸用深字，深色纸用浅字，底是实色，对比度 ≥ 4.5。
+// 风格令牌优先于 cards 主题，因为画面底是那张纸，不是 cards 渐变。
 
 // 安全区左上角。9:16 上沿用 disclaimerY（216，平台顶栏 205 之下、字幕带 260 之上）。
 // 4:5 的 disclaimerY（36）落在平台顶栏里，改贴 bgOnly.top；高度压到 24px，给 journey 顶部车票（y112）留缝。

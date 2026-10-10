@@ -7,6 +7,7 @@ import {anchorRelay} from './motion/kit/anchorRelay';
 import {restTiltFor} from './motion/kit/cutShape';
 import {MotionLayer, type MotionClip} from './motion/MotionLayer';
 import {blend, isCutpaper, resolvePalette} from './motion/palette';
+import {aiBadgePlate} from '../core/plate';
 import {MOTION_FRAMING, VIDEO_FRAMING, edgesOf, panelOffset, transProgress, videoPlacement} from './transition';
 
 ensureFont();
@@ -200,12 +201,11 @@ const OverlayLayer: React.FC<{slot: Slot; lay: TalkLayout; fps: number; draft?: 
             position: 'absolute',
             left: lay.badge.x,
             top: lay.badge.y,
-            opacity: e,
-            background: 'rgba(0,0,0,0.55)',
-            color: '#fff',
+            opacity: 1,
+            ...aiBadgePlate(),
             fontFamily: FONT,
-            fontWeight: 700,
-            fontSize: Math.round(28 * s),
+            fontWeight: 800,
+            fontSize: Math.max(Math.round(24 * s), Math.round(28 * s)),
             lineHeight: 1.2,
             padding: `${Math.round(8 * s)}px ${Math.round(14 * s)}px`,
             borderRadius: Math.round(8 * s),

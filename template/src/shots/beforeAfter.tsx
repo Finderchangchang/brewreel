@@ -8,6 +8,8 @@ import {pick} from '../core/kit';
 import {Illust, isIllust} from '../illust';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, useTheme} from '../core/theme';
+import {labelInk} from '../core/plate';
+import {useStylePalette} from '../styles/context';
 import type {ShotProps, SfxCue} from '../core/types';
 
 // ============================================================
@@ -57,6 +59,7 @@ const Frame: React.FC<{src?: string; label?: string}> = ({src, label}) => {
 
 const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur, meta}) => {
   const th = useTheme();
+  const consentPlate = labelInk(th, useStylePalette());
   const lang = meta?.lang;
   const enter = pop(t, 0, 16, 170);
   const pl = plan(dur);
@@ -107,15 +110,15 @@ const BeforeAfter: React.FC<ShotProps<P>> = ({params: p, t, dur, meta}) => {
             alignItems: 'center',
             gap: 8,
             padding: '8px 20px',
-            borderRadius: 20,
-            background: alpha('#000000', 0.5),
-            color: '#ffffff',
+            borderRadius: 8,
+            ...consentPlate,
             fontWeight: 800,
             fontSize: 26,
+            lineHeight: 1.2,
             whiteSpace: 'nowrap',
           }}
         >
-          <Icon name="shield" size={24} color="#ffffff" stroke={2.4} />
+          <Icon name="shield" size={24} color={consentPlate.color} stroke={2.4} />
           {pick(lang, '顾客授权实拍 · 未修图', 'Client consented · Unretouched')}
         </div>
         {/* 分项小图标 */}
