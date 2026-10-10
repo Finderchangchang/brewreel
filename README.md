@@ -6,7 +6,7 @@
 
 **便宜模型也能出合格视频：给素材，一条命令出片。**
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.13.0-1f6feb?style=flat-square)](CHANGELOG.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.14.0-1f6feb?style=flat-square)](CHANGELOG.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
 
 [为什么是精酿](#为什么是精酿) · [快速开始](#快速开始) · [宣传片](#宣传片) · [口播配画面](#口播配画面) · [讲课视频](#讲课视频) · [文档](#文档) · [English](README.en.md)
 
@@ -128,6 +128,10 @@ node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../br
 ## 让 AI 助手来做
 
 Claude Code 把仓库放到 `~/.claude/skills/brewreel/`，Codex 等放到 `~/.agents/skills/brewreel/`。说要做什么。技能开头按你给的材料分流到宣传片、口播配画面或讲课视频。
+
+- **想改哪里，说一句话**：`node scripts/revise.mjs <分镜/讲稿/broll.json> "第三镜慢一点，开头换成提问"`。便宜模型只改你说的那几处，改完先校验，宣传片先出改动镜头的静帧。见 [安装与上手](docs/quickstart.md)。
+- **可调项**：宣传片分镜写 `meta.tweak` 调节奏、字号、标题字体，每一镜可以换背景图。见 [功能](docs/features.md)。
+- **强模型的自由镜头**：Codex、Claude Code 这类会写代码的模型，可以在宣传片里自己写一镜动画（`custom`），字仍从分镜里读、校验照跑。便宜模型不要用。见 [自由镜头](docs/custom-shot.md)。
 
 ### 在 DeepSeek Harness 里用
 

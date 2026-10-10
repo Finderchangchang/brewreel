@@ -2,6 +2,19 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.14.0 · 2026-10-10 · One-sentence revise, tweaks, and custom shots for strong models
+
+Feedback said BrewReel felt like a few fixed templates. This release opens three layers: low-cost models still fill in forms; say one sentence to change something; models that write code can author a shot themselves.
+
+### New
+- **One-sentence revise** `scripts/revise.mjs` for promo storyboards, lesson scripts and talking-head broll.json. A low-cost model returns a restricted op list (allowed fields only), splits the sentence into requests, and every request must map to a change at the position it names ("the opening", "shot 3"); the result is validated and fed back up to 3 rounds, otherwise the file is untouched. A backup is written first, changes are printed per request, promo stills of changed shots render first, `--render` renders the full video, `--dry-run` writes nothing. With DeepSeek, "slow down shot 3, open with a question" got both changes in one round.
+- **Promo tweaks** `meta.tweak`: `pace` (slow / normal / fast), `textScale` (0.9-1.15), `headingFont` (sans / serif / kai), plus per-shot `bg` images (darkened; provenance rules apply). Without tweaks the output is byte-identical. Text size and font apply to cards only for now; quiz / journey get a warning.
+- **Custom shots** `custom` for strong models such as Codex or Claude Code: write a shot component in the project's `shots/` using the theme, safe area, fonts and the cut-paper motion kit. Visible text comes only from the storyboard's `slots`, so ad-law and number-source checks still run; hard-coded text, type errors, render errors, safe-area overflow, blank frames and frozen motion point to the shot, file and line. The DeepSeek plugin refuses custom shots. See [docs/custom-shot.en.md](docs/custom-shot.en.md).
+
+### Changes
+- Custom shots count as demo shots, so the disclaimer shows on them when the storyboard has one.
+- Skill docs tell models to use revise.mjs instead of rewriting the whole file.
+
 ## v0.13.0 · 2026-10-10 · Lesson videos are now open source; disclaimers and tags follow the picture
 
 ### New: lesson videos (formerly a private edition, now fully open source)

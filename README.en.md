@@ -6,7 +6,7 @@
 
 **Even a cheap model can produce a usable video: give it the material, and one command renders the file.**
 
-[![Version](https://img.shields.io/badge/version-v0.13.0-1f6feb?style=flat-square)](CHANGELOG.en.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
+[![Version](https://img.shields.io/badge/version-v0.14.0-1f6feb?style=flat-square)](CHANGELOG.en.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
 
 [Why BrewReel](#why-brewreel) · [Quick start](#quick-start) · [Promo videos](#promo-videos) · [Talking-head B-roll](#talking-head-b-roll) · [Lesson video](#lesson-video) · [Docs](#docs) · [中文](README.md)
 
@@ -128,6 +128,10 @@ Details → [Lesson video](docs/lesson.en.md)
 ## Let an AI assistant do it
 
 For Claude Code, put the repo at `~/.claude/skills/brewreel/`. For Codex and the others, put it at `~/.agents/skills/brewreel/`. Say what you want. The top of the skill routes the request to a promo, talking-head B-roll, or a lesson.
+
+- **Change something in one sentence**: `node scripts/revise.mjs <storyboard/lesson/broll.json> "slow down shot 3, open with a question"`. A low-cost model changes only what you asked, validates it, and renders stills of the changed promo shots first. See [quickstart](docs/quickstart.en.md).
+- **Tweaks**: `meta.tweak` in a promo storyboard sets pace, text size and heading font; any shot can take a background image. See [features](docs/features.en.md).
+- **Custom shots for strong models**: Codex or Claude Code can write one promo shot as their own animation (`custom`); the text still comes from the storyboard and validation still runs. Low-cost models should not use it. See [custom shots](docs/custom-shot.en.md).
 
 ### Use it in DeepSeek Harness
 
