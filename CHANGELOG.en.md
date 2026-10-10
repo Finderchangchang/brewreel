@@ -2,6 +2,23 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.14.1 · 2026-10-11 · Fixes for nine issues found by a Codex run, plus a news domain
+
+We had Codex plan a promo and render a news-recap lesson with the BrewReel skill, logged where it got stuck, and fixed all of it.
+
+### Fixes
+- Renders no longer download the browser again: lesson renders used to fetch another 113 MB headless Chrome at the repo root; lesson, promo and talking-head renders now reuse the one in `template`.
+- Lesson presenter off: `presenter.kind: "none"` really turns it off (as does `meta.mascot.enabled: false`); unknown values fail validation.
+- The quote layout draws the law mark only in legal lessons; other domains get a neutral quote mark.
+- The lesson timeline no longer clips labels or drops notes with few nodes; clipped text is caught before rendering.
+- Lesson subtitles break at word boundaries; model numbers stay whole.
+- Promo: an industry's `enabledShots` is a recommendation, not a whitelist; only `disabledShots` blocks (docs and plugin catalog updated).
+- Promo: the alcohol rule no longer blocks plain driving phrases, only drink-driving ones.
+
+### New
+- Lesson domain `news`: requires an as-of time and sourced facts, adds a "compiled from public reports as of ..." end page, and warns on loaded words and lopsided compare pages. Tech lessons can add an optional disclaimer tail.
+- Promo `meta.industry: "general"` for products outside the six packs: runs only the base ad-law rules and reminds that passing validation is not compliance.
+
 ## v0.14.0 · 2026-10-10 · One-sentence revise, tweaks, and custom shots for strong models
 
 Feedback said BrewReel felt like a few fixed templates. This release opens three layers: low-cost models still fill in forms; say one sentence to change something; models that write code can author a shot themselves.

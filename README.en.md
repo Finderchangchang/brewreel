@@ -6,7 +6,7 @@
 
 **Even a cheap model can produce a usable video: give it the material, and one command renders the file.**
 
-[![Version](https://img.shields.io/badge/version-v0.14.0-1f6feb?style=flat-square)](CHANGELOG.en.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
+[![Version](https://img.shields.io/badge/version-v0.14.1-1f6feb?style=flat-square)](CHANGELOG.en.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
 
 [Why BrewReel](#why-brewreel) · [Quick start](#quick-start) · [Promo videos](#promo-videos) · [Talking-head B-roll](#talking-head-b-roll) · [Lesson video](#lesson-video) · [Docs](#docs) · [中文](README.md)
 

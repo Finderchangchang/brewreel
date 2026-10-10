@@ -6,7 +6,7 @@
 
 **便宜模型也能出合格视频：给素材，一条命令出片。**
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.14.0-1f6feb?style=flat-square)](CHANGELOG.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.14.1-1f6feb?style=flat-square)](CHANGELOG.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
 
 [为什么是精酿](#为什么是精酿) · [快速开始](#快速开始) · [宣传片](#宣传片) · [口播配画面](#口播配画面) · [讲课视频](#讲课视频) · [文档](#文档) · [English](README.en.md)
 
