@@ -1,0 +1,15 @@
+{
+  "id": "general",
+  "name": "通用（无行业包）",
+  "version": "2026-10-11",
+  "note": "这不是第七个行业包。产品不在 software / food / ecommerce / education / beauty / travel 里时使用。只叠加 industries/_base 的通用广告法规则，没有行业专属合规。校验通过不等于已经合规：汽车辅助驾驶用语、药品、医疗器械、金融等必须人工审核。版式借哪个行业见 SKILL.md「产品不在六个行业里」。",
+  "enabledShots": ["hook", "chat", "phone", "mockApp", "meter", "compare", "counter", "dataChart", "features", "steps", "quickList", "photoShot", "priceCard", "factSheet", "storeCard", "reviewCard", "credCard", "endCard"],
+  "coreAction": {"surface": "none", "note": "没有行业专属演示面。核心动作按所借行业的 recipe 来演。本包不强制 photoShot，也不禁止 mockApp。"},
+  "disabledShots": [],
+  "patterns": [],
+  "checks": [],
+  "requiredNotices": [],
+  "humanReview": [
+    {"text": "这个片子用的是 general：只有通用广告法规则，没有行业专属合规包。汽车辅助驾驶用语、药品、医疗器械、金融、房地产等必须另找具备资质的人审。不能把校验通过当成已经合规。", "source": "SKILL.md「产品不在六个行业里」"}
+  ]
+}

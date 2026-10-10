@@ -131,7 +131,7 @@ export function createToolSpecs(rt) {
     },
     {
       name: TOOL_NAMES.catalog,
-      description: 'List BrewReel styles (cards / quiz / journey …: what each fits, aspects, themes, shots, docs, examples), industries (enabled shots, how the core action is shown) and cards color themes. Read-only.',
+      description: 'List BrewReel styles (cards / quiz / journey …: what each fits, aspects, themes, shots, docs, examples), industries (enabledShots is a recommendation, not a whitelist; validation blocks only disabledShots; general is shared ad-law only, not a seventh compliance pack) and cards color themes. Read-only.',
       parameters: {
         lang: {type: 'string', enum: ['zh', 'en'], description: 'Language of names and summaries.'},
         includeDev: {type: 'boolean', description: 'Also list styles still in development (the validator blocks them).'},

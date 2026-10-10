@@ -7,6 +7,7 @@
 //       · meta.action 根本不是对话/问答类，却用 chat 演成聊天（评审案例：专注计时器被演成和「them」的对话）→ 拦。
 //   physical（餐饮、电商实物、美业、文旅）：用照片或插画场景演示——photoShot（商家实拍或 source:"drawn" 插画）/ beforeAfter；
 //       · mockApp 是模型编出来的 App 界面（点单页、结算页、预订页），一律拦；商家真有小程序/店铺页截图就用 phone 放截图。
+//   none（general：没有专门行业包）：不强制界面演示，也不强制实物照片。核心动作仍按所借行业的 recipe 来演。
 // 全片级的问题 where 用 'shots'（validate.mjs --specs 的单镜自检会跳过 where==='shots' 的整片规则）。
 // ============================================================
 import {where, mkFinding as F} from './util.mjs';
@@ -35,6 +36,9 @@ export function coreActionSurface(sb, ctx, rules) {
 
   if (sm && !styleDemoOk)
     out.push(F('block', 'shots', `「${sm.name?.zh ?? styleId}」风格要有一镜演示核心动作，全片没有 ${(sm.demoShots ?? []).join(' / ') || '演示镜头'}`, `照 styles/${styleId}/recipes.md 加上演示镜头`));
+
+  // general：没有行业专属演示面。cards 仍由 validate.mjs 要求至少一镜 chat/phone/mockApp/photoShot。
+  if (surface === 'none') return out;
 
   if (surface === 'ui') {
     shots.forEach((s, i) => {

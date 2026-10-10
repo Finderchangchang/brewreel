@@ -39,7 +39,7 @@ export function runIndustryChecks(storyboard, ctx) {
 
   const rules = resolveIndustryRules(ROOT, meta);
   if (rules.missing) {
-    push({level: 'block', where: 'meta.industry', problem: `找不到 industries/${industry}/ 目录`, fix: '检查 meta.industry 拼写是否是 software/food/ecommerce/education/beauty/travel 之一；确实是新行业就先补一份 industries/<name>/rules.json'});
+    push({level: 'block', where: 'meta.industry', problem: `找不到 industries/${industry}/ 目录`, fix: '不要编一个不存在的行业名。六个行业包是 software / food / ecommerce / education / beauty / travel。产品不在六个行业里时，先告诉用户没有专门合规规则包；版式可借最接近的行业并写明借了哪个；只跑通用广告法就写 meta.industry 为 general。详见 SKILL.md「产品不在六个行业里」（英文 SKILL.en.md "When the product is not in the six industries"）。'});
     return {errors, warnings, human};
   }
 
@@ -47,7 +47,7 @@ export function runIndustryChecks(storyboard, ctx) {
   const disabled = new Set(rules.disabledShots ?? []);
   (storyboard.shots ?? []).forEach((s, i) => {
     if (s && disabled.has(s.type))
-      push({level: 'block', where: where(i, s.type, ''), problem: `「${industry}」行业不开放镜头 ${s.type}`, fix: s.type === 'beforeAfter' ? '只有美业（beauty）且已获顾客书面授权时才能用；否则换 steps 展示过程' : '换一个本行业允许的镜头类型'});
+      push({level: 'block', where: where(i, s.type, ''), problem: `「${industry}」行业不开放镜头 ${s.type}`, fix: s.type === 'beforeAfter' ? '只有美业（beauty）且已获顾客书面授权时才能用；否则换 steps 展示过程' : '这个类型在合并后的 disabledShots 里。换一个镜头。enabledShots 没写不等于不能用'});
   });
 
   // ---- 2) patterns：正则扫描（先按 §3.5 做文本规范化 + allowlist 占位替换）----

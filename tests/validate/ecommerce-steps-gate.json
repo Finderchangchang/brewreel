@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "title": "电商镜头门",
+    "product": "车载杯",
+    "theme": "warm-emotion",
+    "industry": "ecommerce",
+    "action": "拿起杯子，盖上盖",
+    "durationRange": [3, 60],
+    "facts": [{"id": "f1", "text": "示例", "source": "简报未注明来源"}]
+  },
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "盖子太紧", "params": {"visual": "icon", "icon": "sparkle"}},
+    {"type": "steps", "dur": 4, "caption": "三步盖好", "params": {"title": "用法", "items": [{"title": "打开"}, {"title": "倒入"}, {"title": "盖上"}]}},
+    {"type": "beforeAfter", "dur": 4, "caption": "前后对比", "params": {"before": {"src": "a.jpg"}, "after": {"src": "b.jpg"}}},
+    {"type": "endCard", "dur": 4, "params": {"brand": "车载杯", "slogan": "路上\n{拿得住}"}}
+  ]
+}

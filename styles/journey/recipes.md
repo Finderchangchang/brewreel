@@ -22,7 +22,7 @@
 | `action` | 是 | 用户用它做的一件事（「打开 → 做什么 → 得到什么」），不上屏，给校验看 |
 | `cta` | 否 | 简报「获取方式」原句；没有就不写 |
 | `facts` | 有数字就必填 | 简报里的数字、价格、时间原句，`{id, text, source}`；片尾 stats、钩子里的总量、任何「N 元 / HH:MM / N 小时」都只能从这里抄 |
-| `industry` | 否 | software（默认）/ food / ecommerce / education / beauty / travel |
+| `industry` | 否 | software（默认）/ food / ecommerce / education / beauty / travel / general（没有专门行业包时，见 SKILL.md「产品不在六个行业里」） |
 | `disclaimer` + `demoData` | 示例数据时必填 | 如「演示画面，数据为示例」+ `true` |
 
 **每拍字段与字数**

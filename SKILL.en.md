@@ -40,9 +40,20 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Steps 1–12 below describe `cards`. With another style, its `recipes.md` decides the shots and fields; industry compliance, `meta.facts`, the Don't list and the render command stay the same.
    - **Style shots keep every field inside `params`**; the top level of a shot is only `type`, `dur` and `params`. Example (journey): `{"type": "district", "dur": 4, "params": {"category": "Budget alerts", "title": "Three days before month end, a nudge", "scene": "phone"}}`. `meta.theme` is the cards palette; other styles follow their own recipes. Drop optional fields such as `cta` entirely when unused instead of writing an empty string.
 1. **Set the industry and language.**
-   - `meta.industry`: `software` (default) / `food` / `ecommerce` (physical goods) / `education` / `beauty` / `travel` (travel & lodging). Pick the wrong industry and both the allowed shots and the compliance rules will be wrong.
+   - `meta.industry`: `software` (default) / `food` / `ecommerce` (physical goods) / `education` / `beauty` / `travel` (travel & lodging) / `general` (no dedicated pack; shared ad-law rules only). The wrong industry means the wrong `disabledShots` and the wrong compliance rules. `enabledShots` is a recommendation, not the list of shots you are allowed to use.
    - `meta.lang`: `zh` (default) / `en`. Set `en` when the video needs English captions or the audience is English-speaking (usage details in step 5).
    - Industry other than software → **read `<SKILL>/industries/<industry>/recipe.en.md` first** (`recipe.md` for the Chinese version): it has this industry's recommended shot combos, `brief-template.en.md` (what to ask the client for), and `test-brief.md` / `expected.md` (worked examples of what gets blocked and why). Skipping this step makes it easy to write content that gets blocked later.
+
+### When the product is not in the six industries
+
+The only industry packs are `software`, `food`, `ecommerce`, `education`, `beauty`, and `travel`. When the product is outside that list (cars, real estate, finance, drugs, medical devices, major appliances, and so on):
+
+1. **Tell the user first** that BrewReel has no dedicated compliance pack for this industry. Do not invent a `meta.industry` name, and do not pretend the industry has been reviewed.
+2. **You may borrow the closest pack for layout** (shot structure from that pack's `recipe.md` / `recipe.en.md`) and you must say which pack you borrowed. Borrowed layout is not that industry's full review. A car, for example, may borrow `ecommerce` shot structure, but everyday-goods rules are not an automotive ad review.
+3. **Shared advertising-law rules still run.** To run only `industries/_base` and not a pack's extra blocks, set `meta.industry: "general"`. `general` is not a seventh industry pack. A passing validation is not industry compliance.
+4. **Industry-specific rules must be handed to a qualified reviewer.** Examples: driver-assistance wording for cars, drugs and medical devices, financial promotion. Those are not in the six packs, and the machine does not check them.
+5. Do not describe `general`, or a borrowed industry, as "already compliant."
+
 2. **Read the brief.** Understand it against the matching `brief-template.en.md` sections; if "product name / one-line pitch / pain-point scenario / core action / 2–4 selling points" are missing, ask first — never invent data or features.
    - `meta.product` copies the brief's product name verbatim; the whole video (hook pill, end-card brand) uses only this one name, and the end card's `brand` must match it exactly.
    - `meta.action`: **required**, one sentence — "what the user does → what the product gives back" (e.g. "snap a receipt photo → amount and category filled in automatically"). It never appears on screen. A demo shot (chat/phone/mockApp/photoShot) must show this action in its on-screen text; validation checks for the overlap.
@@ -87,11 +98,11 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
      - `mockApp kind:"form"` is only for products that really are forms; don't use a form in place of the core action.
      - A mockApp dashboard's `input` and `stat.label` must match as question and answer ("new merchants in Guangzhou last month" → stat "New merchants, Guangzhou, last month"); items can't be filler words like "data" or "info".
    - **food, ecommerce, beauty, travel (physical goods / stores)**: **no mockApp** (no made-up ordering or booking screens). Use at least one `photoShot` (real or illustrated fallback) or `beforeAfter`, plus steps / priceCard.
-   `meta.industry` determines which shots you're allowed to use (see `enabledShots` in `industries/<industry>/rules.json`, or just read recipe.en.md) — picking a shot that's not open for this industry is a validation error. 7 industry shots (all closed by default for software):
-   - `photoShot` real photos/short clips (dishes, products, work, rooms, common areas, kitchen)
-   - `priceCard` price list; `storeCard` location/map/booking; `reviewCard` a real customer review (quoted verbatim, never rewritten to sound more impressive)
-   - `factSheet` spec sheet / unboxing list / course syllabus / exam info / color swatches; `credCard` credentials/honors card
-   - `beforeAfter` before/after wipe slider (**beauty industry only**, requires `consent:true` + `retouched:false`)
+   Validation **blocks only the merged `disabledShots`** (`industries/_base/rules.json` plus that industry's `rules.json`). **`enabledShots` is a recommendation, not a whitelist**: a shot that is absent from `enabledShots` is still allowed when it is not in `disabledShots`. Ecommerce does not list `steps`, `meter`, or `storeCard`, and all three are allowed. `enabledShots` also reopens a shot a parent layer disabled. `_base` disables only `beforeAfter`; beauty lists it in `enabledShots`, so beauty may use it. Follow `recipe.en.md` for the recommended structure. Do not drop a shot just because `enabledShots` omits it. Validation reports "doesn't allow" only for a shot that is in `disabledShots`.
+   The industry shots that validation actually disables:
+   - `beforeAfter` before/after wipe: disabled by default, **reopened for beauty only**, and it still requires `consent:true` + `retouched:false`
+   - `reviewCard` a real customer review: education lists it in `disabledShots`; other industries may use it, quoted verbatim, never rewritten to sound more impressive
+   - `photoShot` real or illustrated photos, `priceCard` price list, `storeCard` location/map/booking, `factSheet` spec sheet / syllabus / swatches, `credCard` credentials card: allowed in every industry. Omitting one from `enabledShots` does not block it
    Choose the shots in between based on the product — **don't force a fixed template**, `features` selling-point cards aren't mandatory. Two hard requirements (validation flags these):
    - **At least one middle shot from {compare, steps, phone, meter}**;
    - **Don't use quickList and counter together** (using both makes the video collapse into the same hook → quickList → mockApp → counter → endCard template everyone else uses).
@@ -213,7 +224,7 @@ Turn it on only when the user wants narration / voice-over. Without `meta.voice`
 ## Pre-publish checklist (hand this to the user at delivery — this is not just for your own read-through)
 
 1. **List every "human review" item in full**: copy step 9's `human` list verbatim for the user — don't decide on their behalf that "it's probably fine." Common ones: whether `reviewCard`/`credCard` quotes match the brief word-for-word, whether a platform's rules have changed recently, whether industry-specific credentials/licenses are all in place.
-2. Is `meta.industry` actually correct? (Getting it wrong means both the allowed shots and the compliance rules are wrong.)
+2. Is `meta.industry` actually correct? (Getting it wrong means the disabled shots and the compliance rules are wrong.) If the product is outside the six industries, follow "When the product is not in the six industries" and do not pretend it is already compliant.
 3. For anything involving a real person on camera, a customer review, or a before/after photo — has written consent actually been obtained? (Fields like `consent`/`retouched` only require you to *state* this; actually obtaining consent is the user's responsibility, not something validation can verify.)
 4. Does the platform this will be published to (Douyin/Shipinhao/Xiaohongshu/overseas) match `meta.platform`, and have that platform's specific rules (e.g. no price captions on shopping-cart videos) been confirmed?
 5. For bilingual projects: has a native English speaker actually read the English captions? The machine only checks length and banned words — it can't catch awkward phrasing.
@@ -288,7 +299,7 @@ Turn it on only when the user wants narration / voice-over. Without `meta.voice`
 | Caption contains shot-direction wording (like "cards pop in one by one") | Captions are spoken to the viewer, not editing notes — rewrite from the viewer's point of view |
 | "登陆" is a typo — should be "登录" (Chinese-only check) | Applies to Chinese text only |
 | Absolute claim like "completely clear" | Use a more grounded phrase, e.g. "the key info is visible" |
-| Industry "XX" doesn't allow shot "YY" | Swap in a shot that's actually open for this industry, or double-check that `meta.industry` is set correctly |
+| Industry "XX" doesn't allow shot "YY" | This fires only when the shot is in the merged `disabledShots` (usually `beforeAfter`; education also disables `reviewCard`). A shot missing from `enabledShots` is still allowed. Swap the shot, or check that this industry really disables it |
 | [B-xxx] hit an industry compliance rule | Follow the "how to fix" text in the error; only consider `meta.allowWords` if you truly have evidence (it only works for warn-level rules — block-level rules must be removed, no exceptions) |
 
 ## When there's no real screenshot

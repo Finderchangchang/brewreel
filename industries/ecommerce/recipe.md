@@ -1,5 +1,7 @@
 # 电商实物（ecommerce）推荐结构
 
+推荐结构以本文件为准。`rules.json` 的 `enabledShots` 不是白名单：没写进去的 `steps`、`meter`、`storeCard` 只要不在 `disabledShots` 里就能用。本行业只继承 `_base` 对 `beforeAfter` 的禁用。
+
 ## 1. 适用范围
 普通日用品：日用百货、家居、3C数码、食品零食、生鲜、化妆品、母婴儿童、酒类。
 **不做**（rejectBrief 整份拒绝）：保健食品、药品、医疗器械、特殊医学用途配方食品、烟草、电子烟。

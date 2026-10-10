@@ -55,6 +55,10 @@ Which provider to pick, how to write it, recommended voices and length limits ar
 | `beauty` | Non-medical beauty services |
 | `travel` | Tourism, lodging, homestays |
 
+If the product is outside these six, do not invent `meta.industry`. Tell the user there is no dedicated compliance pack; you may borrow the closest row for layout and must say which one; set `general` to run only the shared advertising-law rules (see `SKILL.en.md`, "When the product is not in the six industries"). `general` is not a seventh pack, and a passing validation is not industry compliance. Driver-assistance wording, drugs, medical devices, and finance need a qualified human review.
+
+In `rules.json`, `enabledShots` is a recommendation and the list that reopens shots `_base` disabled. It is not a whitelist. Validation blocks only the merged `disabledShots`.
+
 `meta.lang`: `zh` (default, Chinese captions) / `en` (English captions).
 
 - 12 general-purpose shots plus 7 industry shots (real photo, price card, store card, review card, before/after, fact sheet, credential card). `shots.en.md` is the parameter reference for all 19 shots; `docs/shots/*.en.md` has one detailed doc per shot.
@@ -68,7 +72,7 @@ Each industry lives under `industries/<id>/`:
 
 ```
 industries/<id>/
-  rules.json            Compliance rules (enabledShots, checks, mediaPolicy, etc.), merged with industries/_base/rules.json
+  rules.json            Compliance rules (only disabledShots bans a shot; enabledShots is a recommendation and a reopen list, not a whitelist; checks, mediaPolicy, etc.), merged with industries/_base/rules.json
   recipe.md             Recommended shot structure and writing notes (required reading before writing a storyboard)
   recipe.en.md          English version
   brief-template.md     The brief template to hand to a merchant

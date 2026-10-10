@@ -88,6 +88,19 @@ export function listStyles(root, {includeDev = false, lang = 'zh'} = {}) {
   return out.sort((a, b) => (a.id === 'cards' ? -1 : b.id === 'cards' ? 1 : a.id.localeCompare(b.id)));
 }
 
+/** 顶层 disabledShots：_base 再叠加本行业，再用本行业 enabledShots 重新开放。不含 sub/platform。 */
+function mergedDisabledShots(root, rules) {
+  let baseDisabled = [];
+  try {
+    baseDisabled = readJson(path.join(root, 'industries', '_base', 'rules.json')).disabledShots ?? [];
+  } catch {
+    /* 没有 _base 时只看本行业 */
+  }
+  const own = Array.isArray(rules?.disabledShots) ? rules.disabledShots : [];
+  const reopen = new Set(Array.isArray(rules?.enabledShots) ? rules.enabledShots : []);
+  return [...new Set([...baseDisabled, ...own])].filter((t) => !reopen.has(t));
+}
+
 /**
  * @param {string} root
  * @param {'zh' | 'en'} [lang]
@@ -112,6 +125,11 @@ export function listIndustries(root, lang = 'zh') {
       name: pick(r.name, lang),
       summary,
       enabledShots: r.enabledShots ?? [],
+      disabledShots: mergedDisabledShots(root, r),
+      shotsNote:
+        lang === 'en'
+          ? 'enabledShots is a recommendation and the list that reopens shots disabled by _base. It is not a whitelist. Validation blocks only disabledShots.'
+          : 'enabledShots 是推荐，也用来重新开放 _base 禁掉的镜头，不是白名单。校验只拦 disabledShots。',
       coreActionSurface: r.coreAction?.surface ?? null,
       docs: {recipe: `industries/${id}/${recipe}`, briefTemplate: `industries/${id}/${brief}`},
     });

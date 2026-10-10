@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "title": "酒类开车语境",
+    "product": "车载杯",
+    "theme": "warm-emotion",
+    "industry": "ecommerce",
+    "action": "拿起杯子，出发上路",
+    "durationRange": [3, 60],
+    "facts": [{"id": "f1", "text": "示例", "source": "简报未注明来源"}]
+  },
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "酒后开车", "params": {"visual": "icon", "icon": "sparkle"}},
+    {"type": "features", "dur": 4, "caption": "喝酒开车", "params": {"title": "卖点", "items": [{"text": "单手拿"}, {"text": "可拆洗"}, {"text": "严禁酒驾"}]}},
+    {"type": "quickList", "dur": 3.5, "caption": "酒驾", "params": {"title": "注意", "items": [{"text": "看路况"}, {"text": "看电量"}, {"text": "看时间"}]}},
+    {"type": "steps", "dur": 4, "caption": "开车去", "params": {"title": "出发", "items": [{"title": "上车"}, {"title": "出发"}, {"title": "到达"}]}},
+    {"type": "compare", "dur": 4, "caption": "开车出发", "params": {"mode": "lr", "left": {"title": "以前", "items": ["慢慢来"]}, "right": {"title": "现在", "items": ["直接走"]}}},
+    {"type": "factSheet", "dur": 4, "caption": "开车也能单手喝", "params": {"title": "用法", "rows": [["场景", "车里"]]}},
+    {"type": "meter", "dur": 3, "caption": "酒后不开车", "params": {"value": 1, "max": 3, "label": "提醒", "unit": "条"}},
+    {"type": "endCard", "dur": 4, "params": {"brand": "车载杯", "slogan": "路上\n{慢一点}"}}
+  ]
+}

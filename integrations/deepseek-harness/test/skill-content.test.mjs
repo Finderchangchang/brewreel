@@ -15,7 +15,7 @@ const {ctx, tools} = fakeCtx();
 applyPlugin(ctx, {skillRoot: REPO_ROOT}, {defineTool: stubDefineTool});
 const tool = (n) => tools.find((t) => t.name === n);
 
-test('U5 catalog: stable styles with fitsFor, six industries, themes', async () => {
+test('U5 catalog: stable styles with fitsFor, industry packs, themes', async () => {
   const c = await tool(TOOL_NAMES.catalog).execute({}, execIn(REPO_ROOT));
   const ids = c.styles.map((s) => s.id);
   assert.equal(ids[0], 'cards');
@@ -25,8 +25,14 @@ test('U5 catalog: stable styles with fitsFor, six industries, themes', async () 
     assert.equal(s.status, 'stable');
     assert.ok(s.shots.length > 0 && s.firstShot && s.lastShot, s.id);
   }
-  assert.deepEqual(c.industries.map((i) => i.id).sort(), ['beauty', 'ecommerce', 'education', 'food', 'software', 'travel']);
-  assert.ok(c.industries.every((i) => i.enabledShots.length && i.summary));
+  assert.deepEqual(c.industries.map((i) => i.id).sort(), ['beauty', 'ecommerce', 'education', 'food', 'general', 'software', 'travel']);
+  assert.ok(c.industries.every((i) => i.enabledShots.length && i.summary && i.shotsNote));
+  const ec = c.industries.find((i) => i.id === 'ecommerce');
+  assert.deepEqual(ec.disabledShots, ['beforeAfter']);
+  assert.equal(ec.enabledShots.includes('steps'), false);
+  assert.deepEqual(c.industries.find((i) => i.id === 'beauty').disabledShots, []);
+  assert.deepEqual(c.industries.find((i) => i.id === 'education').disabledShots, ['beforeAfter', 'reviewCard']);
+  assert.match(c.industries.find((i) => i.id === 'general').summary, /不是第七个行业包|not a seventh industry pack/);
   assert.ok(c.cardsThemes.length > 0);
   assert.ok(c.styles.find((s) => s.id === 'cards').examples.includes('ledger'));
   assert.ok(c.styles.find((s) => s.id === 'quiz').examples.every((e) => e.startsWith('quiz/')));
