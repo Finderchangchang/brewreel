@@ -84,7 +84,7 @@ export type Meta = {
   aspect?: '9:16' | '4:5';
   /** 品牌色，#RRGGBB。只替换主题的「强调色」（按钮、我方气泡、图标、进度条） */
   brandColor?: string;
-  /** 角落常驻免责小字，≤16 字，如「演示场景，对话为模拟」 */
+  /** 免责小字，≤16 字，如「演示场景，对话为模拟」。有演示镜头时只出现在那些镜头上，否则全片显示 */
   disclaimer?: string;
   /** logo 图片路径（相对 storyboard.json 所在目录），png/jpg/webp，建议透明底方图 */
   logo?: string;

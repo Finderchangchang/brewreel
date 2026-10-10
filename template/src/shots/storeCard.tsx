@@ -7,6 +7,8 @@ import {Icon} from '../core/icons';
 import {pick, type Lang} from '../core/kit';
 import {CARD, MAIN} from '../core/safe';
 import {alpha, textOnHot, useTheme} from '../core/theme';
+import {labelInk} from '../core/plate';
+import {useStylePalette} from '../styles/context';
 import type {ShotProps, SfxCue} from '../core/types';
 import {IllustScene} from '../illust/scene';
 
@@ -129,7 +131,7 @@ const PhotoBand: React.FC<{photo?: string; w: number; h: number; t: number; dur:
       ) : (
         <IllustScene name={STORE_ILLUST[industry ?? ''] ?? '_base/store'} w={w} h={h} t={t} dur={dur} industry={industry} />
       )}
-      <div style={{position: 'absolute', top: 14, right: 14, padding: '6px 16px', borderRadius: 18, background: alpha('#0B0D14', 0.55), color: '#FFFFFF', fontSize: 26, fontWeight: 700}}>
+      <div style={{position: 'absolute', top: 14, right: 14, padding: '6px 16px', borderRadius: 8, ...labelInk(useTheme(), useStylePalette()), fontSize: 26, fontWeight: 700, lineHeight: 1.2}}>
         {photo ? pick(lang, '实拍', 'Real photo') : pick(lang, '示意', 'Illustration')}
       </div>
     </div>
@@ -184,7 +186,7 @@ const MapPanel: React.FC<{p: P; routes: Route[]; t: number; w: number; h: number
         })}
       </svg>
       {/* 「示意图」角标放在左侧中上（四个角留给目的地标签） */}
-      <div style={{position: 'absolute', left: 18, top: Math.max(h * 0.17 + 56, pin.y - 100), padding: '6px 16px', borderRadius: 18, background: alpha('#0B0D14', 0.5), color: '#fff', fontSize: 26, fontWeight: 700, whiteSpace: 'nowrap'}}>
+      <div style={{position: 'absolute', left: 18, top: Math.max(h * 0.17 + 56, pin.y - 100), padding: '6px 16px', borderRadius: 8, ...labelInk(useTheme(), useStylePalette()), fontSize: 26, fontWeight: 700, lineHeight: 1.2, whiteSpace: 'nowrap'}}>
         {pick(lang, '示意图', 'Illustrative map')}
       </div>
 

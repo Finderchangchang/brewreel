@@ -114,7 +114,7 @@ const CardsPromo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
         <MoodFlash slots={slots} />
         <Captions slots={slots} beat={beat} lang={sb.meta?.lang} skip={voiceSubs?.shots} />
         {voiceSubs ? <VoiceCaptions plan={vp} slots={slots} sb={sb} lang={sb.meta?.lang} skip={voiceSubs.skip} /> : null}
-        <Disclaimer text={sb.meta?.disclaimer} lang={sb.meta?.lang} />
+        <Disclaimer text={sb.meta?.disclaimer} lang={sb.meta?.lang} slots={slots} />
         <Notices items={sb.meta?.notices} lang={sb.meta?.lang} disclaimer={sb.meta?.disclaimer} />
         <Watermark logo={sb.meta?.logo} slots={slots} />
         </LayoutProbe>
@@ -187,7 +187,7 @@ const StylePromo: React.FC<Storyboard & {__probe?: number[]; def: StyleDef}> = (
               {def.manifest.captionLayer === 'cards' ? <Captions slots={slots} beat={beat} lang={sb.meta?.lang} skip={voiceSubs?.shots} /> : null}
               {voiceSubs ? <VoiceCaptions plan={vp} slots={slots} sb={sb} lang={sb.meta?.lang} skip={voiceSubs.skip} /> : null}
               {Overlay ? <Overlay {...fp} /> : null}
-              <StyleChrome meta={sb.meta} />
+              <StyleChrome meta={sb.meta} slots={slots} />
             </LayoutProbe>
             <SfxTrack cues={cues} />
             <VoiceTrackAudio plan={vp} />

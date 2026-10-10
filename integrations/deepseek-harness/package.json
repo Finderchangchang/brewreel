@@ -1,6 +1,6 @@
 {
   "name": "dsh-brewreel",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "BrewReel (精酿) for DeepSeek Harness: write a storyboard JSON, get a vertical promo video.",
   "type": "module",
   "main": "index.js",

@@ -1,44 +1,35 @@
 <div align="center">
 
-<img src="docs/images/logo.png" width="150" alt="精酿 · BrewReel" />
+<img src="docs/images/logo.png" width="120" alt="精酿 · BrewReel" />
 
 # 精酿 · BrewReel
 
-**四种玩法，一条命令出片。** 写一份产品简报，出一支竖版宣传片；或者只放一段口播，给讲到的句子配上画面。讲解课、课程、普法和教程走横版，见 [讲课视频](#讲课视频)。
+**便宜模型也能出合格视频：给素材，一条命令出片。**
 
-[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.12.1-1f6feb?style=flat-square)](CHANGELOG.md)
-[![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
-[![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
+[![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.13.0-1f6feb?style=flat-square)](CHANGELOG.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
 
-[宣传片](#宣传片) · [口播配画面](#口播配画面) · [风格工厂](#风格工厂) · [讲课视频](#讲课视频) · [快速开始](#快速开始) · [文档](#文档) · [English](README.en.md)
+[为什么是精酿](#为什么是精酿) · [快速开始](#快速开始) · [宣传片](#宣传片) · [口播配画面](#口播配画面) · [讲课视频](#讲课视频) · [文档](#文档) · [English](README.en.md)
 
-<table>
-<tr>
-<td width="50%" align="left">
-<b>宣传片</b>（v0.1 起）<br/>
-<code>node scripts/make.mjs</code><br/>
-<sub>写简报，便宜模型写分镜<br/>3 种配方 · 6 个行业</sub>
-</td>
-<td width="50%" align="left">
-<b>口播配画面</b>（v0.9 起可用）<br/>
-<code>node scripts/talk.mjs</code><br/>
-<sub>只放 talk.mp4<br/>本机转写 · 动效画面或 AI 画面</sub>
-</td>
-</tr>
-</table>
+<img src="docs/images/readme-modes.png" width="860" alt="宣传片、口播配画面、讲课视频" />
 
-v0.10 还可以一句话造一种 AI 画面风格，见 [风格工厂](#风格工厂)。
-
+**宣传片**：一份产品简报 → 竖版宣传片（9:16）
+**口播配画面**：一段口播 `talk.mp4` → 配好画面的口播（动效卡片 / AI 画面）
+**讲课视频**：一份讲稿或 brief → 16:9 讲解课（可切竖版）
 <sub>原名 promo-video-skill / 蒸馏视频，旧地址自动跳转。</sub>
 
 </div>
 
+## 为什么是精酿
+
+**便宜模型只填表，不写代码。** 宣传片填 `storyboard.json`，口播填 `broll.json`，讲课填 `lesson.json`：挑版式、填文字。所以 DeepSeek 这类模型也能出合格片。
+
+**合规和质检先拦一遍。** 广告法、行业规则、数字出处、版式、动效有没有停死，有一项不过就不出片。
+
+**开源，可以商用。** Apache-2.0。分发时注明出处。渲染出的视频不要求署名。
+
 ## 快速开始
 
-需要 Node.js 18+、Python 3.10+；Windows 只支持 x64。平台表、环境变量和完整说明见 [安装与上手](docs/quickstart.md)。
-
-**1. 装依赖。**
+**装依赖。**
 
 ```bash
 git clone https://github.com/Finderchangchang/brewreel.git
@@ -46,134 +37,126 @@ cd brewreel/template && npm install && npx remotion browser ensure
 cd .. && pip install numpy scipy imageio-ffmpeg
 ```
 
-**2. 宣传片：跑一个样例。**
+**宣传片**（`examples/ledger.json`）
 
 ```bash
 node scripts/validate.mjs examples/ledger.json
 node scripts/make.mjs examples/ledger.json --out ../brewreel-out/ledger
 ```
 
-出片要几分钟，终端最后一行是「交付：<mp4 路径>」。`--out` 不能指向仓库里面。
+校验通过后出片，要几分钟，最后一行是「交付：<mp4 路径>」。`--out` 不能指向仓库里面。
 
-要模型写分镜：把仓库放到 `~/.claude/skills/brewreel/` 或 `~/.agents/skills/brewreel/`，把 [`brief-template.md`](brief-template.md) 交给助手，让它照 `SKILL.md` 做。不用助手也可以：`python scripts/llm_make.py path/to/brief.md`。
-
-**3. 口播：只放一段视频。**
-
-把口播改名为 `talk.mp4`，放进一个项目目录：
+**口播配画面**
 
 ```bash
 node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 ```
 
-本机转写，DeepSeek 写 `broll.json`（要先设 `DEEPSEEK_API_KEY` 或 `LLM_API_KEY`）。动效画面直接画。AI 画面先占位，不花钱；真生成要先估价，人审过才出正式片。见 [口播配画面](docs/broll.md)。
+项目目录里放好 `talk.mp4`。本机转写，动效画面直接画；AI 画面先占位，不花钱。
 
-### 在 DeepSeek Harness 里用
+**讲课视频**（`examples/lesson/mascot-demo.json`，mock 配音）
 
-仓库自带插件 `dsh-brewreel`，管宣传片的校验、出片和核对。需要 dsh 0.1.7-rc.2 或更高的 0.1.x。安装命令、7 个工具和许可提醒见 [安装与上手](docs/quickstart.md#在-deepseek-harness-里用)。这一版还没接口播配画面，也还没接真实 DeepSeek 模型实测。
+```bash
+node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-out/first-lesson --voice-provider mock --no-bgm
+```
+
+用占位配音看版式和节奏，不花配音费。成功时最后一行是「交付：」。
+
+需要 Node.js 18+、Python 3.10+；Windows 只支持 x64。平台、环境变量和完整说明见 [安装与上手](docs/quickstart.md)。
 
 ## 宣传片
 
-从 v0.1 起：写产品简报，便宜模型只写一份 `storyboard.json`（挑镜头、填文字，不写代码），一条命令出竖版片。
-
 <p align="center"><img src="docs/images/readme-hero.gif" width="720" alt="cards、数据图表、quiz、journey" /></p>
 
-| 配方 | 什么时候用 |
-|---|---|
-| `cards` 卡片信息流（默认） | 单一卖点、使用流程、界面、实物和价目。9:16 |
-| `quiz` 答题互动 | 能出一道唯一正确答案的选择题。9:16 |
-| `journey` 角色漫游 | 有 4–6 个类别，想挨站逛一遍。默认 4:5，也可 9:16 |
+**你给什么**：一份产品简报。
 
-- **六个行业**：软件、餐饮、电商实物、成人职业培训、生活美容、文旅住宿。各带《广告法》和行业规则、推荐镜头、简报模板。不做医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
-- **配音**（v0.5 起）：MiniMax、阿里云、火山引擎。镜头时长跟着旁白，字幕逐字点亮，配乐在人声处压低。
-- **数据图表**（v0.7）：条形、折线、点图、堆叠、环形。图上的数必须能在引用的事实原文里找到。见 [`docs/shots/dataChart.md`](docs/shots/dataChart.md)。
-- **配色**（v0.7）：cards 默认 6 套，另有 12 套可选。不选的话，老分镜出片不变。见 [`styles/cards/THEMES.md`](styles/cards/THEMES.md)。
-- **配乐和字幕**：配乐由 `scripts/make_bgm.py` 现场合成，卡着镜头切点。字幕可选中文或英文。
+**你得到什么**：竖版宣传片（9:16；`journey` 默认 4:5）。
 
-<p align="center"><img src="docs/images/themes.png" width="720" alt="12 套可选配色" /></p>
+**一条命令**：`node scripts/make.mjs examples/ledger.json --out ../brewreel-out/ledger`
 
-校验自查有 ✗ 的片子不交付。每项说明见 [功能](docs/features.md)，更多画面见 [截图](docs/gallery.md)。
+- 3 种配方：`cards` 卡片信息流（默认，9:16）、`quiz` 答题互动（9:16）、`journey` 角色漫游（默认 4:5，也可 9:16）。
+- 6 个行业：软件、餐饮、电商实物、成人职业培训、生活美容、文旅住宿。各带广告法和行业规则。不做医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
+- 配音可选 MiniMax、阿里云、火山引擎。镜头时长跟着旁白，字幕逐字点亮，配乐在人声处压低。
+- 数据图表有条形、折线、点图、堆叠、环形。图上的数必须能在引用的事实原文里找到。见 [dataChart](docs/shots/dataChart.md)。
+- 校验自查有 ✗ 不出片。配乐现场合成，卡着镜头切点；字幕可选中文或英文。cards 默认 6 套主题，另有 12 套可选，见 [配色](styles/cards/THEMES.md)。
+
+详细说明 → [功能](docs/features.md)
 
 ## 口播配画面
 
-v0.8 先做实验。v0.9 起可以只放一段口播，一条命令出片。项目目录里只要 `talk.mp4`。
-
 <p align="center"><img src="docs/images/talk-intro.png" width="720" alt="口播配画面示意，没有真人出镜" /></p>
 
-<p align="center"><a href="https://github.com/Finderchangchang/brewreel/releases/download/v0.9.0/brewreel-v0.9.0-talk-demo.mp4">看 v0.9.0 演示视频</a></p>
+<p align="center"><a href="https://github.com/Finderchangchang/brewreel/releases/download/v0.9.0/brewreel-v0.9.0-talk-demo.mp4">看演示视频</a></p>
 
-- **本机转写**：SenseVoice（FunAudioLLM / 阿里通义实验室），由 sherpa-onnx 运行。已有 `talk.srt` 不会被覆盖。
-- **动效画面**：DeepSeek 逐句选。关键词、清单、步骤、数字、对比五种。字只能照抄原话，脚本逐字核对。这种画面不花钱。
-- **动效外观**（v0.11）：默认跟着主风格配色；加 `--motion-look cutpaper-meadow` 或 `cutpaper-dusk` 换成剪纸拼贴：纸纹底、手剪卡片、说到重点词卡片抛起再落下、纸屑飞过，也不花钱。怎么拼一个新外观见 [动效外观](docs/motion-looks.md)。
-- **AI 画面**：MiniMax H3。正式风格三种，全片共用 `broll/character.json` 里的一个机器人：积木风（木积木，`wood-blocks`，默认）、黏土定格（`clay-stopmotion`）、分层纸艺（`paper-layers`）。手绘线稿（`ink-sketch`）是实验，只能占位预览。默认最多 2 段。
-- **先估价，人审过才出正式片**。`--provider minimax-h3 --dry-run` 只印估价；加上 `--yes` 才生成。人自己跑 `node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>`。`talk.mjs` 不会替你跑。
+**你给什么**：一段口播 `talk.mp4`。
 
-费用、放法和限制见 [口播配画面](docs/broll.md)。那边的标题仍写着实验：黏土定格和分层纸艺还没真生成过，手绘线稿还没有参考图。
+**你得到什么**：配好画面的口播。动效卡片不花钱；AI 画面要先估价、人审。
 
-## 风格工厂
+**一条命令**：`node scripts/talk.mjs path/to/project --out ../brewreel-out/talk`
 
-v0.10。用一句话描述一种 AI 画面风格。脚本写配置、出参考图、看图打分、做一张静态试拍。看图会看错，最后要人看。
+- 本机用 SenseVoice（FunAudioLLM / 阿里通义实验室，由 sherpa-onnx 运行）转写。已有 `talk.srt` 不会被覆盖。
+- 动效画面五种：关键词、清单、步骤、数字、对比。字只能照抄原话，脚本逐字核对，不花钱。
+- 动效卡片默认跟着主风格配色。加 `--motion-look cutpaper-meadow` 或 `cutpaper-dusk` 换成剪纸拼贴：纸纹底、手剪卡片，说到重点词卡片抛起再落下。也不花钱。见 [动效外观](docs/motion-looks.md)。
+- AI 画面用 MiniMax H3，全片共用 `broll/character.json` 里的一个机器人：积木风（`wood-blocks`，默认）、黏土定格（`clay-stopmotion`）、分层纸艺（`paper-layers`）。手绘线稿（`ink-sketch`）只能占位预览。默认最多 2 段。
 
-先看将要发送的请求，这一步不调接口：
+**风格工厂。** 用一句话描述一种 AI 画面风格。脚本写配置、出参考图、看图打分、做一张静态试拍。看图会看错，最后要人看。人自己跑 `node scripts/broll/approve-style.mjs <id>`，AI 助手不许替人运行。欢迎把批准后的风格用 Pull Request 贡献回来。见 [风格工厂](docs/style-factory.md)。
 
-```bash
-node scripts/broll/new-style.mjs --id demo-watercolor --name 水彩绘本 --desc "水彩晕染、纸纹、柔和暖色"
-```
+**花钱和人审**：AI 画面先加 `--provider minimax-h3 --dry-run` 估价，加上 `--yes` 才生成。正式片要人自己跑 `node scripts/broll/approve.mjs <项目目录> --out <仓库外目录>`。`talk.mjs` 不会替你跑，批准命令只能人跑。
 
-确认后加 `--yes` 真跑。看完 `broll/styles/_drafts/<id>/review.html`，人自己在终端里跑：
-
-```bash
-node scripts/broll/approve-style.mjs <id>
-```
-
-这条只能人跑。AI 助手不许替人运行；不是交互终端会直接拒绝。做过视频试拍且通过，状态写 `stable`，否则写 `experimental`。
-
-欢迎把批准后的风格用 Pull Request 贡献回来。这和宣传片配方的二创不是同一套文件，宣传片配方仍走 [贡献说明](CONTRIBUTING.md)。步骤、花费和看图规则见 [风格工厂](docs/style-factory.md)。
+详细说明 → [口播配画面](docs/broll.md)
 
 ## 讲课视频
 
-横版 16:9，用来做讲解课、课程、普法或教程。二十种版式、四套主题，可以带讲解员和品牌包装，也可以另出竖版切片和封面。改完一页后，用同一个输出目录再跑，没改的页会复用。
+<p align="center"><img src="docs/images/lesson-layouts.webp" width="720" alt="讲课视频四种版式：法条卡、对比、流程、大数字" /></p>
 
-```bash
-node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-studio-out/first-lesson --voice-provider mock --no-bgm
-```
+**你给什么**：一份讲稿 `lesson.json`，或一份 brief。
 
-能做什么、最短三步和限制见 [讲课视频](docs/lesson.md)。
+**你得到什么**：16:9 讲解课。可以另出竖版切片和封面。
 
-## 为什么用它
+**一条命令**：`node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-out/first-lesson --voice-provider mock --no-bgm`
 
-- **便宜模型只做它做得好的事。** 宣传片只写 `storyboard.json`，口播只写 `broll.json`：挑镜头、填文字，不写代码、不算坐标。
-- **配方由强模型先调好。** 每种宣传片风格先做成组件和校验规则，便宜模型照着填。
-- **合规红线先拦一遍。** 报错用中文写清楚哪一镜哪个字段要改。校验 → 配乐 → 渲染 → 检查帧，一条命令走完。
-- **开源、可商用。** Apache-2.0，注明出处即可。渲染出的视频不要求署名。
+- 20 种版式，4 套主题：`paper` 卷宗（普法默认）、`lecture` 讲台（其余默认）、`product` 产品、`editorial` 杂志（只能手选，不能用于普法）。
+- 可以带讲解员和品牌包装。预设卡通不花钱。不写品牌也能出片。
+- 改完一页后用同一个输出目录再跑，没改的页会复用。
+- 普法没有有效审稿记录就不出片。技术课不强制。AI 助手不能替人签字。
+- 领域包：`tech` 技术讲解，`legal` 普法。普法的法条只从已核对的《民法典》语料回填。
+
+**花钱和人审**：照片建角色要本人同意，照片会发给 MiniMax 做识别，会花钱。没有当次明确要求不要跑。未确认的角色不能正式出片，确认只能人跑。
+
+详细说明 → [讲课视频](docs/lesson.md)
+
+## 让 AI 助手来做
+
+Claude Code 把仓库放到 `~/.claude/skills/brewreel/`，Codex 等放到 `~/.agents/skills/brewreel/`。说要做什么。技能开头按你给的材料分流到宣传片、口播配画面或讲课视频。
+
+### 在 DeepSeek Harness 里用
+
+仓库自带插件 `dsh-brewreel`。7 个工具管宣传片的校验、出片和核对。注册进去的技能说明也会分流：口播配画面写 `broll.json`、跑 `scripts/talk.mjs`；风格工厂读 `docs/style-factory.md`、跑 `scripts/broll/new-style.mjs`；讲课视频读 `lesson/SKILL-lesson.md`、跑 `scripts/lesson/make-lesson.mjs`。这三件不走那 7 个工具。安装和版本要求见 [安装与上手](docs/quickstart.md#在-deepseek-harness-里用)。
 
 ## 文档
 
-**开始**
+| 文档 | 讲什么 |
+|---|---|
+| [安装与上手](docs/quickstart.md) | 平台、环境、口播命令、风格工厂、DeepSeek Harness |
+| [功能](docs/features.md) | 配方、配音、行业、校验 |
+| [口播配画面](docs/broll.md) | 只放一段口播，配动效画面或 AI 画面 |
+| [风格工厂](docs/style-factory.md) | 一句话造一种 AI 画面风格，人批准 |
+| [讲课视频](docs/lesson.md) | 讲解课、课程、普法、教程 |
+| [动效外观](docs/motion-looks.md) | 剪纸拼贴等动效卡片外观 |
+| [截图](docs/gallery.md) | 三种宣传片配方的画面 |
+| [它怎么工作](docs/how-it-works.md) | 从简报到成片的步骤 |
+| [常见问题](docs/faq.md) | 配乐、环境、出片时碰到的问题 |
+| [已知限制](docs/limitations.md) | 还不能直接发的原因，和测试方法 |
+| [更新日志](CHANGELOG.md) | 每个版本改了什么 · [历史版本](https://github.com/Finderchangchang/brewreel/releases) |
+| [贡献说明](CONTRIBUTING.md) | 怎么交一份宣传片配方 |
 
-- [安装与上手](docs/quickstart.md)：平台、环境、便宜模型、口播命令、风格工厂、DeepSeek Harness
-- [首次出片指南](https://brewreel.com/guides/first-promo-video.html) · [产品简报模板](https://brewreel.com/guides/product-brief.html)（官网）
-- [简报模板](brief-template.md)（仓库里的通用模板）
-
-**四种玩法**
-
-- [功能](docs/features.md)：配方、配音、行业、口播、风格工厂、校验
-- [讲课视频](docs/lesson.md)
-- [截图](docs/gallery.md)
-- [口播配画面](docs/broll.md)
-- [风格工厂](docs/style-factory.md)
-- [它怎么工作](docs/how-it-works.md)
-
-**参考**
-
-- [常见问题](docs/faq.md)
-- [已知限制](docs/limitations.md)
-- [更新日志](CHANGELOG.md) · [历史版本](https://github.com/Finderchangchang/brewreel/releases) · [贡献说明](CONTRIBUTING.md)
+官网：[首次出片指南](https://brewreel.com/guides/first-promo-video.html) · [产品简报模板](https://brewreel.com/guides/product-brief.html)。仓库里的通用模板：[brief-template.md](brief-template.md)。
 
 ## 已知限制
 
-- **还是预览版**。不建议把成片不经人工修改直接对外发布。当成初稿，看完再改再发。
-- **有的接入还没真实跑过**。阿里云和火山引擎配音还没用真实 key；DeepSeek Harness 插件还没接真实 DeepSeek 模型。MiniMax 配音用真实 key 出过片。
-- **没有实拍就只能插画**。不做医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
+- **还是预览版。** 不建议把成片不经人工修改直接对外发布。当成初稿，看完再改再发。
+- **有的接入还没真实跑过。** 阿里云和火山引擎配音还没用真实 key。DeepSeek Harness 插件还没接真实 DeepSeek 模型。MiniMax 配音用真实 key 出过片。
+- **没有实拍就只能插画。** 不做医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
 
 测试方法和仍存在的问题见 [已知限制](docs/limitations.md)。
 
@@ -186,6 +169,20 @@ node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../br
 **问题反馈走 [GitHub Issues](https://github.com/Finderchangchang/brewreel/issues)**：误伤或漏拦的校验规则、渲染出错、看着别扭的画面，附上分镜 JSON 和报错最好（别贴 API Key）。
 
 想听真实需求：你想给什么产品做片？缺哪种配方、哪个行业？哪条合规规则误伤了你？公众号私信或开 issue 都行。
+
+## ❤️赞助商
+
+> 想出现在这里？加微信 **jskjkf007**，添加时请备注「BrewReel 商务合作」。
+
+## ☕ 请我喝杯咖啡
+
+如果精酿帮你省下了一晚上剪片的时间，欢迎请我喝杯咖啡。每一份配方都是一杯杯咖啡熬出来的：这杯续上，下一份配方就调得快一点；哪天仓库里突然多了一个新风格，多半是这杯起了作用 😄
+
+<p align="center">
+  <img src="docs/images/contact/wechat-donate-v3.png" width="260" alt="微信赞赏码（姓名已隐去）" />
+</p>
+
+<p align="center"><sub>量力而行，不用有压力；点个 Star、提个 issue，或者给我看看你酿的片子，我一样开心。</sub></p>
 
 ## 姊妹项目
 
@@ -204,23 +201,9 @@ Copyright © 2026 Finderchangchang。代码以 [Apache-2.0](LICENSE) 协议开�
 - 不要用「精酿」「BrewReel」名称或 brewreel.com 域名暗示由原作者出品或背书。
 - **渲染出的视频不要求署名。**
 - **Remotion 不是开源软件**：4 人及以上的营利组织需要购买 Remotion 的 Company License，本仓库的 Apache-2.0 不改变这一点，详见 <https://www.remotion.dev/license>。
-- 字体 Noto Sans SC、Cascadia Mono 使用 SIL Open Font License 1.1，许可证全文随字体文件放在 `template/public/fonts/`。
+- 字体 Noto Sans SC、Cascadia Mono，以及讲课用的 BrewReel Serif、BrewReel Kai（Noto Serif SC、LXGW WenKai 的子集），使用 SIL Open Font License 1.1。许可证全文随字体文件放在 `template/public/fonts/`。
 
 **使用边界**：`industries/` 和校验脚本里的规则整理自公开法规和平台规则，只用于辅助自查，**不构成法律意见**，也不保证覆盖所有平台的最新规则。内容是否合规，以监管部门和平台当时的最新规定为准，责任由发布者自行承担。
-
-## ❤️赞助商
-
-> 想出现在这里？加微信 **jskjkf007**，添加时请备注「BrewReel 商务合作」。
-
-## ☕ 请我喝杯咖啡
-
-如果精酿帮你省下了一晚上剪片的时间，欢迎请我喝杯咖啡。每一份配方都是一杯杯咖啡熬出来的：这杯续上，下一份配方就调得快一点；哪天仓库里突然多了一个新风格，多半是这杯起了作用 😄
-
-<p align="center">
-  <img src="docs/images/contact/wechat-donate-v3.png" width="260" alt="微信赞赏码（姓名已隐去）" />
-</p>
-
-<p align="center"><sub>量力而行，不用有压力；点个 Star、提个 issue，或者给我看看你酿的片子，我一样开心。</sub></p>
 
 ## 致谢
 
