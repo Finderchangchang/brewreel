@@ -23,7 +23,7 @@
 export type ThemeName = keyof typeof import('./core/themes.json');
 
 /** 行业（决定读哪个 industries/<name>/rules.json；默认 software，即第一阶段的软件产品片） */
-export type IndustryName = 'software' | 'food' | 'ecommerce' | 'education' | 'beauty' | 'travel';
+export type IndustryName = 'software' | 'food' | 'ecommerce' | 'education' | 'beauty' | 'travel' | 'general';
 
 /** 字幕/文档语言。lang=en 时字幕出英文，文档给中英两版 */
 export type Lang = 'zh' | 'en';
@@ -98,7 +98,7 @@ export type Meta = {
    * 2026-09 起从纯字符串数组改成 {id,text}[]（给 refs 一个可指认的 id）；旧的纯字符串数组分镜要迁移。
    */
   facts?: Fact[];
-  /** 行业（决定读哪个 industries/<name>/rules.json 校验；不写按 software 处理，第一阶段的软件产品片不受影响 */
+  /** 行业（决定读哪个 industries/<name>/rules.json 校验；不写按 software 处理。general 只跑 _base 通用广告法，不是第七个行业包，见 SKILL.md「产品不在六个行业里」） */
   industry?: IndustryName;
   /** 字幕/文档语言；不写按 zh 处理。lang=en 时字幕出英文，其余文案仍按 industry 的中文规则核对（先出片，翻译校验后补） */
   lang?: Lang;

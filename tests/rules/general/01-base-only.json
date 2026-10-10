@@ -1,0 +1,21 @@
+{
+  "name": "general 只跑通用广告法，不套电商酒类规则，也不把 steps 当禁用",
+  "storyboard": {
+    "meta": {"title": "t", "product": "示例车", "theme": "mono-premium", "industry": "general", "action": "坐进车里，出发", "durationRange": [3, 60]},
+    "shots": [
+      {"type": "hook", "dur": 2, "caption": "酒驾", "params": {"visual": "icon", "icon": "sparkle"}},
+      {"type": "steps", "dur": 3, "caption": "开车出发", "params": {"title": "出发", "items": [{"title": "上车"}, {"title": "出发"}, {"title": "到达"}]}},
+      {"type": "features", "dur": 3, "caption": "治疗", "params": {"title": "不要", "items": [{"text": "甲"}, {"text": "乙"}, {"text": "丙"}]}},
+      {"type": "meter", "dur": 3, "caption": "酒后不开车", "params": {"value": 1, "max": 3, "label": "提醒"}},
+      {"type": "mockApp", "dur": 4, "caption": "点一下就出发", "params": {"kind": "editor", "title": "出发", "input": "坐进车里", "items": [{"text": "已出发"}], "done": "已出发"}},
+      {"type": "endCard", "dur": 3, "params": {"brand": "示例车", "slogan": "看清楚"}}
+    ]
+  },
+  "expect": {
+    "block": ["[B-alcohol] 「酒驾」", "[B-medical]"],
+    "human": ["不能把校验通过当成已经合规"],
+    "absent": {
+      "block": ["E-alcohol", "不开放镜头 steps", "实物/门店", "[B-alcohol] 「开车出发」", "[B-alcohol] 「酒后不开车」"]
+    }
+  }
+}

@@ -645,8 +645,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     }
     // industry / lang / platform：枚举值，不写就是默认值，校验按下面的可选值检查
     if (meta.industry !== undefined) {
-      const opts = ['software', 'food', 'ecommerce', 'education', 'beauty', 'travel'];
-      if (typeof meta.industry !== 'string' || !opts.includes(meta.industry)) err('meta.industry', `「${meta.industry}」不是可选值`, `只能从这些里选一个：${opts.join(' / ')}；不写默认 software`);
+      const opts = ['software', 'food', 'ecommerce', 'education', 'beauty', 'travel', 'general'];
+      if (typeof meta.industry !== 'string' || !opts.includes(meta.industry)) err('meta.industry', `「${meta.industry}」不是可选值`, '六个行业包是 software / food / ecommerce / education / beauty / travel，不写默认 software。产品不在六个行业里时不要编行业名：先告诉用户没有专门合规规则包；版式可借最接近的行业并写明借了哪个；只跑通用广告法就写 general。详见 SKILL.md「产品不在六个行业里」（英文 SKILL.en.md "When the product is not in the six industries"）。');
     }
     if (meta.lang !== undefined) {
       const opts = ['zh', 'en'];

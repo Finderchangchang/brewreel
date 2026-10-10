@@ -2,6 +2,8 @@
 
 Full detail in `recipe.md` (Chinese). **Rules are based on Chinese law (Advertising Law, E-commerce Law, price-fraud regulations) and Chinese platform rules (Douyin, Weixin Channels). Not a general e-commerce checklist.**
 
+`enabledShots` in `rules.json` is not a whitelist. `steps`, `meter`, and `storeCard` are allowed here even though that list omits them. This industry only inherits `_base`'s ban on `beforeAfter`. Follow the structures below.
+
 ## Scope
 Everyday physical goods. **Rejected outright**: health-food, pharmaceuticals, medical devices, special medical foods, tobacco, e-cigarettes.
 

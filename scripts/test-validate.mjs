@@ -143,6 +143,30 @@ const CASES = [
   {file: 'brand-light.json', rule: '浅色品牌色配浅色卡片：提醒已自动调暗', level: 'warnings', expect: true, match: '已自动调暗用于卡片上的文字'},
   {file: 'brand-clear.json', rule: '品牌色本来就够清楚时不提醒自动调色', level: 'warnings', expect: false, match: '已自动调'},
   {file: 'brand-dark.json', rule: '对比度不够只提醒，不拦', level: 'errors', expect: false, match: '已自动调'},
+  // 电商 E-alcohol：只拦饮酒驾驶，不拦普通「开车」（T11b）
+  {file: 'ecommerce-alcohol-drive.json', rule: '酒后开车要拦', level: 'errors', expect: true, match: '[E-alcohol] 「酒后开车」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '喝酒开车要拦', level: 'errors', expect: true, match: '[E-alcohol] 「喝酒开车」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '酒驾要拦', level: 'errors', expect: true, match: '[E-alcohol] 「酒驾」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '开车去不拦', level: 'errors', expect: false, match: '[E-alcohol] 「开车去」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '开车出发不拦', level: 'errors', expect: false, match: '[E-alcohol] 「开车出发」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '开车也能单手喝不拦', level: 'errors', expect: false, match: '[E-alcohol] 「开车也能单手喝」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '酒后不开车不拦', level: 'errors', expect: false, match: '[E-alcohol] 「酒后不开车」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '严禁酒驾不拦', level: 'errors', expect: false, match: '[E-alcohol] 「严禁酒驾」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '通用规则同样不拦开车去', level: 'errors', expect: false, match: '[B-alcohol] 「开车去」'},
+  {file: 'ecommerce-alcohol-drive.json', rule: '通用规则同样拦酒驾', level: 'errors', expect: true, match: '[B-alcohol] 「酒驾」'},
+  // enabledShots 不是白名单：电商 steps 可用，beforeAfter 仍禁用
+  {file: 'ecommerce-steps-gate.json', rule: '电商 steps 不因 enabledShots 没写而被禁', level: 'errors', expect: false, match: '不开放镜头 steps'},
+  {file: 'ecommerce-steps-gate.json', rule: '电商 beforeAfter 仍被 disabledShots 拦住', level: 'errors', expect: true, match: '不开放镜头 beforeAfter'},
+  // 不认识的行业指向 SKILL 说明；general 只跑通用广告法
+  {file: 'industry-unknown.json', rule: '不认识的行业报错指向「产品不在六个行业里」', level: 'errors', expect: true, match: '产品不在六个行业里'},
+  {file: 'general-industry.json', rule: 'general 是可选值', level: 'errors', expect: false, match: '不是可选值'},
+  {file: 'general-industry.json', rule: 'general 不套电商 E-alcohol', level: 'errors', expect: false, match: 'E-alcohol'},
+  {file: 'general-industry.json', rule: 'general 仍拦酒驾（通用广告法）', level: 'errors', expect: true, match: '[B-alcohol] 「酒驾」'},
+  {file: 'general-industry.json', rule: 'general 仍拦医疗用语', level: 'errors', expect: true, match: '[B-medical]'},
+  {file: 'general-industry.json', rule: 'general 不拦开车出发', level: 'errors', expect: false, match: '[B-alcohol] 「开车出发」'},
+  {file: 'general-industry.json', rule: 'general 不拦酒后不开车', level: 'errors', expect: false, match: '[B-alcohol] 「酒后不开车」'},
+  {file: 'general-industry.json', rule: 'general 不把 steps 当禁用', level: 'errors', expect: false, match: '不开放镜头 steps'},
+  {file: 'general-industry.json', rule: 'general 不按实物行业禁 mockApp', level: 'errors', expect: false, match: '实物/门店'},
 ];
 
 const flatten = (list) => list.map((e) => `${e.where}｜${e.problem}｜${e.fix}`).join('\n');

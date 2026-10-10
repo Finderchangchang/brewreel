@@ -42,9 +42,20 @@ metadata:
    - 下面第 1–12 步是 `cards` 的写法。用别的风格时，镜头和字段以那个风格的 `recipes.md` 为准；行业合规、`meta.facts`、禁止事项、出片命令照旧。
    - **风格镜头的字段一律写在 `params` 里**，镜头顶层只有 `type`、`dur`、`params`。例（journey）：`{"type": "district", "dur": 4, "params": {"category": "预算提醒", "title": "月底前三天，提醒你收手", "scene": "phone"}}`。`meta.theme` 是 cards 的配色，别的风格按它自己的 recipes 写或不写；`cta` 这类可选字段不需要就整个删掉，不要写空字符串。
 1. **定行业和语言**。
-   - `meta.industry`：`software`（默认）/ `food`（餐饮）/ `ecommerce`（电商实物）/ `education`（教培）/ `beauty`（美业）/ `travel`（文旅住宿）。选错行业，能用的镜头和合规规则都会不对。
+   - `meta.industry`：`software`（默认）/ `food`（餐饮）/ `ecommerce`（电商实物）/ `education`（教培）/ `beauty`（美业）/ `travel`（文旅住宿）/ `general`（没有专门行业包时，只跑通用广告法）。选错行业，禁用镜头（`disabledShots`）和合规规则都会不对。`enabledShots` 是推荐，不是能用镜头的名单。
    - `meta.lang`：`zh`（默认）/ `en`。视频要出英文字幕、用户是英文用户，就写 `en`（用法见第 5 步）。
    - 行业不是 software → **先读 `<SKILL>/industries/<industry>/recipe.md`**（英文项目读 `recipe.en.md`）：里面有这个行业推荐的镜头组合、`brief-template.md`（这个行业简报要问哪些栏目）、`test-brief.md`/`expected.md`（合规红线举例）。跳过这一步很容易写出会被拦的内容。
+
+### 产品不在六个行业里
+
+六个行业包只有 `software` / `food` / `ecommerce` / `education` / `beauty` / `travel`。用户的产品不在里面（汽车、房产、金融、药品、医疗器械、家电整机等）时：
+
+1. **先告诉用户**：精酿没有这个行业的专门合规规则包。不要编一个 `meta.industry` 名字，也不要假装已经按该行业审过。
+2. **版式可以借最接近的行业包**（镜头组合看那个行业的 `recipe.md`），并在方案里写明借了哪个。借来的是版式，不是那个行业的完整审核。例如汽车可以借 `ecommerce` 的实物镜头结构，但电商日用品规则不等于汽车广告审查。
+3. **通用广告法照样查**。要只跑 `industries/_base` 的通用规则、不套某个行业的专属拦截，写 `meta.industry: "general"`。`general` 不是第七个行业包。校验通过也不等于行业合规。
+4. **行业特有的合规必须提醒用户自己找人审**。例如汽车的辅助驾驶用语、药品和医疗器械、金融宣传。这些不在六个包里，机器查不到。
+5. 不许把 `general` 或借来的行业说成「已经合规」。
+
 2. **读简报**。按对应 `brief-template.md` 的栏目理解；缺「产品名 / 一句话卖点 / 痛点场景 / 核心动作 / 2–4 个卖点」就先问，别瞎编数据和功能。
    - `meta.product` 照抄简报的产品名，全片（hook 胶囊、片尾 brand）只用这一个名字，片尾 `brand` 必须和它一字不差。
    - `meta.action`：**必填**，一句话「用户做什么 → 产品给出什么」（如「拍小票 → 自动填好金额和分类」），不上画面。演示类镜头（chat/phone/mockApp/photoShot）的画面文字要体现这个动作，校验会核对。
@@ -89,11 +100,11 @@ metadata:
      - `mockApp kind:"form"` 只给本来就是填表的产品，别拿表单顶替核心动作。
      - mockApp dashboard 的 `input` 和 `stat.label` 要问答对得上（问「上月广州新增多少商户」，stat 就写「上月广州新增商户」）；items 别写「数据」「信息」「内容」这种占位词。
    - **food、ecommerce、beauty、travel（实物/门店类）**：**不许用 mockApp 编 App 界面**（点单页、预订页都不行）。全片至少一镜 `photoShot`（实拍或插画兜底）或 `beforeAfter`，再配 steps / priceCard 讲清楚。
-   `meta.industry` 决定哪些镜头能用（见 `industries/<industry>/rules.json` 的 `enabledShots`，或直接看 recipe.md），选了不开放的镜头校验会报错。7 个行业镜头（software 默认不开）：
-   - `photoShot` 实拍照片/短视频（菜品、商品、作品、房间、公区、后厨）
-   - `priceCard` 价目表；`storeCard` 门店/地图/预订；`reviewCard` 真实顾客评价（原文摘录，不能改写得更夸张）
-   - `factSheet` 参数表/开箱清单/课程大纲/考试信息/色卡；`credCard` 资历/荣誉卡
-   - `beforeAfter` 前后对比滑块（**只有美业开放**，要 `consent:true` + `retouched:false`）
+   校验**只拦**合并后的 `disabledShots`（`industries/_base/rules.json` 叠上该行业的 `rules.json`）。`enabledShots` **是推荐，不是白名单**：没写进去的镜头，只要不在 `disabledShots` 里就能用。例如电商的 `enabledShots` 没有 `steps`、`meter`、`storeCard`，这三镜照样能用。`enabledShots` 还有一个作用：把上层禁掉的镜头重新开放。目前 `_base` 只默认禁用 `beforeAfter`；美业把它写进 `enabledShots` 之后就不再禁用。推荐组合以 `recipe.md` 为准，不要因为 `enabledShots` 没写就不用某个镜头。只有选了 `disabledShots` 里的镜头，校验才会报「不开放」。
+   行业镜头里，真正会被禁用的只有这些：
+   - `beforeAfter` 前后对比滑块：默认禁用，**只有美业重新开放**，还要 `consent:true` + `retouched:false`
+   - `reviewCard` 真实顾客评价：教培写在 `disabledShots` 里，所以教培不能用；其他行业可用，原文摘录，不能改写得更夸张
+   - `photoShot` 实拍/示意图、`priceCard` 价目表、`storeCard` 门店/地图/预订、`factSheet` 参数表/大纲/色卡、`credCard` 资历卡：各行业都能用，不因为 `enabledShots` 没写就被拦
    中间按产品类型选镜头，**别套固定模板**，`features` 卖点卡不是必选。两条硬要求（校验会提醒）：
    - **中段至少 1 镜来自 {compare, steps, phone, meter}**；
    - **quickList 和 counter 不同时用**（两个都用，片子就长成 hook → quickList → mockApp → counter → endCard 那个人人都一样的模板）。
@@ -219,7 +230,7 @@ metadata:
 ## 发布前自查清单（交付时附给用户，不是自己看完就算）
 
 1. **「需人工复核」条目全部列出**：第 9 步校验结果里的 `human` 列表，原样抄给用户，别替用户判断「应该没问题」。常见的有：`reviewCard`/`credCard` 的引用是否和简报原文一字不差、平台规则口径是否有更新、行业资质是否齐全。
-2. `meta.industry` 选对了吗（不对的话开放的镜头和合规规则都会错）。
+2. `meta.industry` 选对了吗（不对的话禁用镜头和合规规则都会错）。产品不在六个行业里时，按「产品不在六个行业里」处理，不要假装已经合规。
 3. 涉及真人出镜、顾客评价、前后对比照片的，是否已经书面取得当事人同意（`consent`/`retouched` 这类字段只是校验要求写，真实取得同意是用户的责任，不是校验能替你核实的）。
 4. 视频要发的平台（抖音/视频号/小红书/海外）是否和 `meta.platform` 一致，对应的平台专属规则（如购物车不能挂价格字幕）是否已经确认。
 5. 中英双语项目：英文字幕是否找母语者看过一遍，机器只查了字数和敏感词，看不出别扭的措辞。
@@ -294,7 +305,7 @@ metadata:
 | 字幕含镜头说明词（如「卡片一张张出」） | 这是说给观众听的字幕，不是给剪辑的说明；换成用户视角的一句话 |
 | 「登陆」是错别字，应为「登录」 | 改成「登录」（「登陆舰/登陆月球」这类不算） |
 | 「一清二楚」是绝对化承诺 | 换成有分寸的说法，如「关键信息看得到」 |
-| 「XX」行业不开放镜头「YY」 | 换一个这个行业开放的镜头，或检查 `meta.industry` 是不是选错了 |
+| 「XX」行业不开放镜头「YY」 | 只有镜头在合并后的 disabledShots 里才会这样报（常见是 beforeAfter，教培还有 reviewCard）。enabledShots 没写不等于不能用。换镜头，或核对这个行业是不是真的禁用了它 |
 | [B-xxx] 命中行业合规规则 | 报错信息里的「怎么改」照做；确有依据的极限词才考虑 `meta.allowWords`（只对 warn 级有效，block 级必须删） |
 
 ## 没有真截图时

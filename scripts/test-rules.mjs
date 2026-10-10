@@ -96,7 +96,7 @@ function runOne(fixture) {
   return {file: fixture.file, name: name ?? fixture.file, ok: fails.length === 0, fails, counts: {block: r.errors.length, warn: r.warnings.length, human: r.human.length}, r};
 }
 
-const INDUSTRIES = ['software', 'food', 'ecommerce', 'education', 'beauty', 'travel'];
+const INDUSTRIES = ['software', 'food', 'ecommerce', 'education', 'beauty', 'travel', 'general'];
 const argIndustries = process.argv.slice(2).filter((x) => !x.startsWith('--'));
 const target = argIndustries.length ? argIndustries : INDUSTRIES;
 const verbose = process.argv.includes('--verbose');

@@ -55,6 +55,10 @@
 | `beauty` | 生活美容（不含医美） |
 | `travel` | 文旅、住宿、民宿 |
 
+产品不在这六类里时，不要编 `meta.industry`。先告诉用户没有专门合规规则包；版式可借最接近的一行并写明借了哪个；只跑通用广告法就写 `general`（见 `SKILL.md`「产品不在六个行业里」）。`general` 不是第七个行业包，校验通过不等于已经合规。汽车辅助驾驶用语、药品、医疗器械、金融必须人工审。
+
+`rules.json` 里的 `enabledShots` 是推荐，并用来重新开放 `_base` 禁掉的镜头，不是白名单。校验只拦合并后的 `disabledShots`。
+
 `meta.lang`：`zh`（默认，中文字幕）/ `en`（英文字幕）。
 
 - 12 个通用镜头 + 7 个行业镜头（实拍、价目表、门店卡、评价、前后对比、参数表、资历卡）。`shots.md` 是 19 个镜头的参数总表，`docs/shots/*.md` 是每个镜头的详细文档。
@@ -68,7 +72,7 @@
 
 ```
 industries/<id>/
-  rules.json            合规规则（enabledShots、checks、mediaPolicy 等，和 industries/_base/rules.json 合并）
+  rules.json            合规规则（disabledShots 才禁用镜头；enabledShots 是推荐并用来重新开放，不是白名单；checks、mediaPolicy 等，和 industries/_base/rules.json 合并）
   recipe.md             推荐的镜头结构、写作要点（AI 助手写分镜前必读）
   recipe.en.md          英文版
   brief-template.md     给商家的简报模板

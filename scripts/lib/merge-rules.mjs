@@ -22,7 +22,7 @@ const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8').replace(/^﻿/, ''
 const ID_ARRAYS = ['patterns', 'checks', 'requiredNotices'];
 const PLAIN_ARRAYS = ['disabledShots', 'enabledShots', 'allowlist', 'humanReview', 'publishChecklist', 'rejectBrief'];
 // flags 之前漏在这张表外：food 的 flags.promoRequiresLimits 合并后丢失，promoHasPeriod 的「促销要有 limits」从没生效（round5 修复）
-// coreAction：核心动作演示面（ui / physical），见 scripts/checks/core-action.mjs
+// coreAction：核心动作演示面（ui / physical / none），见 scripts/checks/core-action.mjs
 const OBJECT_FIELDS = ['mediaPolicy', 'shotRules', 'flags', 'coreAction'];
 
 /** 数组按 id 合并；id 相同的后来者覆盖先来者；{id,off:true} 删掉先来的同 id 条目。checks 没有天然 id，按 fn(+when 摘要) 兜底当 id。 */

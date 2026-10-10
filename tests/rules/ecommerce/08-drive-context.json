@@ -1,0 +1,22 @@
+{
+  "name": "E-alcohol 只拦饮酒驾驶，不拦普通开车",
+  "storyboard": {
+    "meta": {"title": "t", "product": "车载杯", "theme": "warm-emotion", "industry": "ecommerce", "durationRange": [3, 60]},
+    "shots": [
+      {"type": "hook", "dur": 2, "caption": "酒后开车", "params": {"visual": "icon", "icon": "sparkle"}},
+      {"type": "features", "dur": 3, "caption": "喝酒开车", "params": {"title": "卖点", "items": [{"text": "甲"}, {"text": "乙"}, {"text": "严禁酒驾"}, {"text": "不要酒后开车"}]}},
+      {"type": "quickList", "dur": 3, "caption": "酒驾", "params": {"title": "注意", "items": [{"text": "甲"}, {"text": "乙"}, {"text": "丙"}]}},
+      {"type": "steps", "dur": 3, "caption": "开车去", "params": {"title": "出发", "items": [{"title": "上车"}, {"title": "出发"}, {"title": "到达"}]}},
+      {"type": "compare", "dur": 3, "caption": "开车出发", "params": {"left": {"title": "前", "items": ["慢"]}, "right": {"title": "后", "items": ["走"]}}},
+      {"type": "factSheet", "dur": 3, "caption": "开车也能单手喝", "params": {"title": "用法", "rows": [["场景", "车里"]]}},
+      {"type": "meter", "dur": 3, "caption": "酒后不开车", "params": {"value": 1, "max": 3, "label": "提醒"}},
+      {"type": "endCard", "dur": 3, "params": {"brand": "车载杯", "slogan": "慢一点"}}
+    ]
+  },
+  "expect": {
+    "block": ["[E-alcohol] 「酒后开车」", "[E-alcohol] 「喝酒开车」", "[E-alcohol] 「酒驾」"],
+    "absent": {
+      "block": ["[E-alcohol] 「开车去」", "[E-alcohol] 「开车出发」", "[E-alcohol] 「开车也能单手喝」", "[E-alcohol] 「酒后不开车」", "[E-alcohol] 「严禁酒驾」", "[E-alcohol] 「不要酒后开车」"]
+    }
+  }
+}

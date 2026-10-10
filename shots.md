@@ -28,7 +28,7 @@
 
 **常规结构**：hook（0–3 秒）→ 痛点/场景 → 证据（dataChart / compare / meter / counter）→ 产品出场（phone / mockApp / photoShot）→ endCard。dataChart 在一镜内组织标题、核心结论、KPI、图表、旁注和来源。
 
-**行业镜头**（`meta.industry` 决定哪些能用，见各 `industries/<id>/rules.json` 的 `enabledShots`）：photoShot（实拍/示意图）、priceCard（价目表）、storeCard（门店/地图/预订）、reviewCard（真实评价）、factSheet（参数表/大纲/色卡）、credCard（资历/荣誉）、beforeAfter（前后对比，仅美业）。
+**行业镜头**（校验只拦合并后的 `disabledShots`，不把 `enabledShots` 当白名单。`enabledShots` 是推荐，并用来重新开放 `_base` 禁掉的镜头。目前 `_base` 只默认禁用 `beforeAfter`，美业把它写进 `enabledShots` 才重新开放；教培另外禁用 `reviewCard`。推荐组合看各行业 `recipe.md`）：photoShot（实拍/示意图）、priceCard（价目表）、storeCard（门店/地图/预订）、reviewCard（真实评价）、factSheet（参数表/大纲/色卡）、credCard（资历/荣誉）、beforeAfter（前后对比，仅美业）。
 
 **主题**：`warm-emotion` `tech-dark` `fresh-light` `business-blue` `festival-red` `mono-premium` `studio-cream-blue` `studio-neon` `studio-pink-green` `studio-blue-orange` `studio-red-black` `studio-purple-yellow` `studio-cyan` `studio-lime-purple` `studio-indigo` `studio-graphite` `coral-pop` `mint-pop`
 

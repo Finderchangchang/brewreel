@@ -1,0 +1,16 @@
+{
+  "meta": {
+    "title": "不认识的行业",
+    "product": "示例车",
+    "theme": "mono-premium",
+    "industry": "automobile",
+    "action": "坐进车里，出发",
+    "durationRange": [3, 60],
+    "facts": [{"id": "f1", "text": "示例", "source": "简报未注明来源"}]
+  },
+  "shots": [
+    {"type": "hook", "dur": 2.5, "caption": "准备出发", "params": {"visual": "icon", "icon": "sparkle"}},
+    {"type": "steps", "dur": 4, "caption": "开车出发", "params": {"title": "出发", "items": [{"title": "上车"}, {"title": "出发"}, {"title": "到达"}]}},
+    {"type": "endCard", "dur": 4, "params": {"brand": "示例车", "slogan": "路上\n{看清楚}"}}
+  ]
+}

@@ -28,7 +28,7 @@
 
 **Typical structure**: hook (0–3s) → pain point / scene → evidence (dataChart / compare / meter / counter) → product appears (phone / mockApp / photoShot) → endCard. dataChart organizes a title, takeaway, KPIs, chart, annotations, and cited sources in one shot.
 
-**Industry shots** (which ones are allowed depends on `meta.industry`, see `enabledShots` in each `industries/<id>/rules.json`): photoShot (real or illustrated photos), priceCard (price list), storeCard (location/map/booking), reviewCard (real customer reviews), factSheet (spec sheet/syllabus/swatches), credCard (credentials/honors), beforeAfter (before/after slider, beauty industry only).
+**Industry shots** (validation blocks only the merged `disabledShots`. `enabledShots` is a recommendation and the list that reopens shots `_base` disabled — not a whitelist. `_base` disables only `beforeAfter` by default; beauty reopens it by listing it in `enabledShots`. Education also disables `reviewCard`. Recommended structures are in each industry `recipe.md`): photoShot (real or illustrated photos), priceCard (price list), storeCard (location/map/booking), reviewCard (real customer reviews), factSheet (spec sheet/syllabus/swatches), credCard (credentials/honors), beforeAfter (before/after slider, beauty industry only).
 
 **Themes**: `warm-emotion` `tech-dark` `fresh-light` `business-blue` `festival-red` `mono-premium` `studio-cream-blue` `studio-neon` `studio-pink-green` `studio-blue-orange` `studio-red-black` `studio-purple-yellow` `studio-cyan` `studio-lime-purple` `studio-indigo` `studio-graphite` `coral-pop` `mint-pop`
 
