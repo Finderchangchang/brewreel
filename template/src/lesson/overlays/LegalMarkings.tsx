@@ -25,9 +25,11 @@ export const LegalMarkings: React.FC<{
   const bigLabel = pick(lang, 'AI生成合成', 'AI-generated synthetic');
   const disclaimer = pick(lang, '普法内容，不构成法律意见', 'Legal education only; not legal advice');
   const sampleLabel = pick(lang, '内部样片 · 未经律师审核', 'Internal sample · not reviewed by a lawyer');
+  // 国标显式标识：实色 badge，不写 opacity，不许掺淡。四套主题的 badge 对比度由 test-stage 锁在 ≥ 4.5:1。
+  const explicitMark = {background:t.badgeBg, color:t.badgeFg, fontFamily:t.fontBody, fontWeight:t.badgeWeight, fontSize:76, lineHeight:1, padding:'16px 24px', borderRadius:t.badgeRadius};
   return <>
     <div style={{position:'absolute', top:56, right:80, zIndex:40, display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8, pointerEvents:'none'}}>
-      {showOpening ? <div aria-label={bigLabel} style={{background:t.badgeBg, color:t.badgeFg, fontFamily:t.fontBody, fontWeight:t.badgeWeight, fontSize:76, lineHeight:1, padding:'16px 24px', borderRadius:t.badgeRadius}}>{bigLabel}</div> : null}
+      {showOpening ? <div aria-label={bigLabel} style={explicitMark}>{bigLabel}</div> : null}
       {sampleReview ? <div style={{padding:'8px 14px', borderRadius:t.badgeRadius, background:'rgba(140,72,0,.94)', color:'#fff', fontSize:22, fontWeight:700, letterSpacing:1}} aria-label={sampleLabel}>{sampleLabel}</div> : null}
     </div>
     {showEndCard ? <div style={{position:'absolute', left:0, right:0, top:790, zIndex:29, display:'flex', justifyContent:'center', pointerEvents:'none'}}>

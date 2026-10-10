@@ -1,12 +1,12 @@
 # 品牌档案
 
-每个客户一份品牌档案。片子要带律所片头、角标、律师姓名条和片尾时，讲稿引用这一份。不写品牌的片子，画面和以前一样。
+一份品牌单独留一份档案。片子要带律所片头、角标、律师姓名条和片尾时，讲稿引用这一份。不写品牌的片子，画面和以前一样。
 
-档案里的名字、颜色和 logo 都由客户提供。仓库和安装包里不放真实律所、真实律师，也不放 logo 原件。
+档案里的名字、颜色和 logo 都由使用的人提供。仓库和安装包里不放真实律所、真实律师，也不放 logo 原件。
 
 ## 建档
 
-数据目录和角色档案相同。默认是当前工作目录上一级的 `brewreel-studio-data`，也可以用环境变量 `LESSON_DATA_DIR` 或参数 `--data-dir` 改。档案不能放进安装文件夹。
+数据目录和角色档案相同。默认是当前工作目录上一级的 `brewreel-data`，也可以用环境变量 `LESSON_DATA_DIR` 或参数 `--data-dir` 改。档案不能放进安装文件夹。
 
 ```
 node scripts/lesson/brand.mjs create --client <客户id> --firm <律所全称> --column <栏目名> --logo <logo.svg 或 logo.png> --primary <#RRGGBB> [--english <英文名>] [--secondary <#RRGGBB>] [--lawyer <姓名> --title <职称> --department <部门>] [--qr <二维码.png>] [--tip <片尾提示语>]

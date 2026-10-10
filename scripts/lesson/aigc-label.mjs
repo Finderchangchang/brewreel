@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 export const AIGC_METADATA_KEY = 'AIGC';
-export const AIGC_PRODUCER = 'brewreel-studio';
+export const AIGC_PRODUCER = 'BrewReel';
 export const AIGC_NOTE = '字段需对照标准原文复核';
 
 export function aigcPayload(inputHash, when = new Date()) {

@@ -4,14 +4,14 @@
 
 # 精酿 · BrewReel
 
-**两种玩法，一条命令出片。** 写一份产品简报，出一支竖版宣传片；或者只放一段口播，给讲到的句子配上画面。
+**四种玩法，一条命令出片。** 写一份产品简报，出一支竖版宣传片；或者只放一段口播，给讲到的句子配上画面。讲解课、课程、普法和教程走横版，见 [讲课视频](#讲课视频)。
 
 [![Version](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-v0.12.1-1f6feb?style=flat-square)](CHANGELOG.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-%E6%8F%92%E4%BB%B6-4D6BFE?style=flat-square)](#在-deepseek-harness-里用)
 
-[宣传片](#宣传片) · [口播配画面](#口播配画面) · [风格工厂](#风格工厂) · [快速开始](#快速开始) · [文档](#文档) · [English](README.en.md)
+[宣传片](#宣传片) · [口播配画面](#口播配画面) · [风格工厂](#风格工厂) · [讲课视频](#讲课视频) · [快速开始](#快速开始) · [文档](#文档) · [English](README.en.md)
 
 <table>
 <tr>
@@ -129,6 +129,16 @@ node scripts/broll/approve-style.mjs <id>
 
 欢迎把批准后的风格用 Pull Request 贡献回来。这和宣传片配方的二创不是同一套文件，宣传片配方仍走 [贡献说明](CONTRIBUTING.md)。步骤、花费和看图规则见 [风格工厂](docs/style-factory.md)。
 
+## 讲课视频
+
+横版 16:9，用来做讲解课、课程、普法或教程。二十种版式、四套主题，可以带讲解员和品牌包装，也可以另出竖版切片和封面。改完一页后，用同一个输出目录再跑，没改的页会复用。
+
+```bash
+node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-studio-out/first-lesson --voice-provider mock --no-bgm
+```
+
+能做什么、最短三步和限制见 [讲课视频](docs/lesson.md)。
+
 ## 为什么用它
 
 - **便宜模型只做它做得好的事。** 宣传片只写 `storyboard.json`，口播只写 `broll.json`：挑镜头、填文字，不写代码、不算坐标。
@@ -144,9 +154,10 @@ node scripts/broll/approve-style.mjs <id>
 - [首次出片指南](https://brewreel.com/guides/first-promo-video.html) · [产品简报模板](https://brewreel.com/guides/product-brief.html)（官网）
 - [简报模板](brief-template.md)（仓库里的通用模板）
 
-**两种玩法**
+**四种玩法**
 
 - [功能](docs/features.md)：配方、配音、行业、口播、风格工厂、校验
+- [讲课视频](docs/lesson.md)
 - [截图](docs/gallery.md)
 - [口播配画面](docs/broll.md)
 - [风格工厂](docs/style-factory.md)

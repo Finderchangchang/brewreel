@@ -162,11 +162,69 @@ export const SUBTITLE = {
   minFont: MIN_BODY,
   padX: 34,
   padY: 12,
-  radius: 12,
   lineHeight: 1.4,
-  color: '#FFFFFF',
-  background: 'rgba(31,29,26,.78)',
 };
+
+const linChan = (c) => {
+  const v = c / 255;
+  return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+};
+
+const hexRgb = (hex) => {
+  const h = String(hex).replace('#', '');
+  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+};
+
+/** WCAG 对比度。色值要是不透明的 #RRGGBB。折线和 scripts/lib 的品牌对比同一条 0.03928。 */
+export function contrastRatio(fg, bg) {
+  const L = (hex) => {
+    const [r, g, b] = hexRgb(hex).map(linChan);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const a = L(fg);
+  const b = L(bg);
+  const [hi, lo] = a > b ? [a, b] : [b, a];
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+const mixHex = (fg, bg, t) => {
+  const a = hexRgb(fg);
+  const b = hexRgb(bg);
+  const c = a.map((v, i) => Math.round(v + (b[i] - v) * t));
+  return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+};
+
+/** 往底色掺，掺到对比度仍 ≥ min 的最淡一档。讲过的字用原色，没讲到的字用这一档。 */
+function dimKeepContrast(fg, bg, min = 4.5) {
+  let best = fg;
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 20; i += 1) {
+    const mid = (lo + hi) / 2;
+    const mixed = mixHex(fg, bg, mid);
+    if (contrastRatio(mixed, bg) >= min - 1e-6) {
+      best = mixed;
+      lo = mid;
+    } else hi = mid;
+  }
+  return best;
+}
+
+/**
+ * 横版字幕条跟主题走：底和字用该主题的 badge 实色（和片头「AI生成合成」同一对），不用统一的半透明黑底。
+ * 圆角用主题 radius，不用 badge 的胶囊圆角。
+ */
+export function subtitleChrome(token) {
+  const background = token.badgeBg;
+  const color = token.badgeFg;
+  return {
+    background,
+    color,
+    radius: token.radius,
+    karaokeSpoken: color,
+    karaokeRest: dimKeepContrast(color, background, 4.5),
+  };
+}
 
 /** 伸进右下角的那一排，右缘收到这里，不再把整块内容抬到 y=810。 */
 export const RESERVE_ROW_RIGHT = 1580;

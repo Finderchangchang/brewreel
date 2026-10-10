@@ -1,10 +1,10 @@
 import {continueRender, delayRender, staticFile} from 'remotion';
 
 // 中文：思源黑体可变字重（NotoSansSC-VF）；数字：Cascadia Mono。加载失败回退系统字体。
-// 讲课版式另注册思源宋体（PSerif）和霞鹜文楷（PKai）。宣传片仍用原来的 FONT / MONO。
+// 讲课版式另注册衬线（PSerif，OFL 子集，族名 BrewReel Serif）和楷体（PKai，族名 BrewReel Kai）。宣传片仍用原来的 FONT / MONO。
 export const FONT = '"PSans", "Noto Sans SC", "Microsoft YaHei UI", sans-serif';
-export const SERIF = '"PSerif", "Noto Serif SC", serif';
-export const KAI = '"PKai", "LXGW WenKai", serif';
+export const SERIF = '"PSerif", "BrewReel Serif", serif';
+export const KAI = '"PKai", "BrewReel Kai", serif';
 export const MONO = '"PMono", "Cascadia Mono", Consolas, monospace';
 
 let started = false;

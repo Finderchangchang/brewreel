@@ -19,6 +19,8 @@ import {
   layoutContentBoxes,
   nameBarMetrics,
   nameBarReserve,
+  contrastRatio,
+  subtitleChrome,
   subtitleLayout,
 } from '../../template/src/lesson/stage.mjs';
 
@@ -108,9 +110,8 @@ assert.equal(shortBar.lines.length, 1);
 assert.ok(Math.abs(shortBar.x + shortBar.width / 2 - SUBTITLE.centerX) < 1, '字幕条中心在 x 900');
 assert.equal(shortBar.y + shortBar.height, CANVAS.h - SUBTITLE.bottom);
 assert.ok(shortBar.width <= SUBTITLE.maxWidth);
-assert.equal(SUBTITLE.background, 'rgba(31,29,26,.78)');
-assert.equal(SUBTITLE.color, '#FFFFFF');
-assert.equal(SUBTITLE.radius, 12);
+assert.equal(SUBTITLE.background, undefined);
+assert.equal(SUBTITLE.color, undefined);
 
 const answer = subtitleLayout('答案：不可以。');
 assert.equal(answer.lines.length, 1, '答案：不可以。放得下就要一行');
@@ -144,6 +145,27 @@ assert.ok(longBar.x + longBar.width <= AVATAR.x, '字幕条不盖住讲解员圆
 assert.equal(longBar.lines.join('').includes('\u2060'), false);
 
 const tokens = JSON.parse(readFileSync(new URL('../../template/src/lesson/style-tokens.json', import.meta.url), 'utf8'));
+const bgs = new Set();
+for (const id of ['paper', 'lecture', 'product', 'editorial']) {
+  const token = tokens[id];
+  const chrome = subtitleChrome(token);
+  assert.equal(chrome.background, token.badgeBg);
+  assert.equal(chrome.color, token.badgeFg);
+  assert.equal(chrome.radius, token.radius);
+  assert.match(chrome.background, /^#[0-9A-Fa-f]{6}$/);
+  assert.match(chrome.color, /^#[0-9A-Fa-f]{6}$/);
+  assert.ok(contrastRatio(token.badgeFg, token.badgeBg) >= 4.5, `${id} 片头标识 ${contrastRatio(token.badgeFg, token.badgeBg).toFixed(2)}`);
+  assert.ok(contrastRatio(chrome.color, chrome.background) >= 4.5, `${id} 字幕条 ${contrastRatio(chrome.color, chrome.background).toFixed(2)}`);
+  assert.ok(contrastRatio(chrome.karaokeRest, chrome.background) >= 4.5, `${id} 未念字幕 ${contrastRatio(chrome.karaokeRest, chrome.background).toFixed(2)}`);
+  assert.notEqual(chrome.karaokeRest, chrome.karaokeSpoken);
+  bgs.add(chrome.background);
+}
+assert.equal(bgs.size, 4, '四套主题的字幕条底色不能是同一个写死色');
+const markingSource = readFileSync(new URL('../../template/src/lesson/overlays/LegalMarkings.tsx', import.meta.url), 'utf8');
+assert.match(markingSource, /background:t\.badgeBg/);
+assert.match(markingSource, /color:t\.badgeFg/);
+assert.doesNotMatch(markingSource, /rgba\(0,\s*0,\s*0/);
+assert.doesNotMatch(markingSource, /opacity:\s*0\./);
 const colors = {
   paper: {alert: '#B23A2B', ok: '#2F6B4F', hl: '#F1D98A', deco: '#B08D57'},
   lecture: {alert: '#B23A2B', ok: '#2F6B5F', hl: '#F6D9A8', deco: '#2F6B5F'},

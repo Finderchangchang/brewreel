@@ -16,7 +16,7 @@
 
 legal 片尾约 4 秒仍固定显示「普法内容，不构成法律意见」（英文 Legal education only; not legal advice）。这是普法免责声明，不是 AI 角标。
 
-竖版切片用同一句片头大标，字号 76，从第 0 帧起 90 帧，位置改到安全区右缘（x≤900、y≥260），不进右侧按钮区。普法竖版在切片结尾另接 2 秒，画面写同一句免责声明。每条切片的 MP4 写入和横版相同的 `AIGC` 元数据。开源版不写买家追踪字段。封面右上角是小号「AI生成」，不是片头那句长标识。
+竖版切片用同一句片头大标，字号 76，从第 0 帧起 90 帧，位置改到安全区右缘（x≤900、y≥260），不进右侧按钮区。普法竖版在切片结尾另接 2 秒，画面写同一句免责声明。每条切片的 MP4 写入和横版相同的 `AIGC` 元数据。封面右上角是小号「AI生成」，不是片头那句长标识。
 
 `sign-review.mjs --test` 签过的 legal 成片，右上角再加一行「内部样片 · 未经律师审核」（英文 Internal sample · not reviewed by a lawyer）。这行只由测试审稿记录打开，不能在讲稿里关掉。真律师签字后自动没有。
 
@@ -29,13 +29,13 @@ legal 片尾约 4 秒仍固定显示「普法内容，不构成法律意见」�
 | 元数据键 | `AIGC` |
 | 值 | 一行 JSON，没有换行 |
 | `Label` | `"1"`。生成合成标签。按公开材料里的常见写法，`1` 表示确认属于人工智能生成合成内容。**字段需对照标准原文复核** |
-| `ContentProducer` | `brewreel-studio`。内容生成服务提供者名称。这不是登记编码，正式编码要对照标准原文后再换。**字段需对照标准原文复核** |
+| `ContentProducer` | `BrewReel`。内容生成服务提供者名称。这不是登记编码，正式编码要对照标准原文后再换。**字段需对照标准原文复核** |
 | `ProduceID` | 讲稿文件 SHA-256 的前 16 位，加制作时间。内容制作编号。**字段需对照标准原文复核** |
 
 示例（编号里的时间和哈希会随每次出片变化）：
 
 ```json
-{"Label":"1","ContentProducer":"brewreel-studio","ProduceID":"0123456789abcdef-20261001T000000Z"}
+{"Label":"1","ContentProducer":"BrewReel","ProduceID":"0123456789abcdef-20261001T000000Z"}
 ```
 
 同一份值写进 `manifest.json` 的 `aigc`。`legalMarkings` 记显式标识：`aiLabel` 是片头大标。`residentLabel` 和 `realPersonLabel` 现为 `null`，常驻角标不再烧进画面。测试审稿时 `review.kind` 为「测试审稿」。

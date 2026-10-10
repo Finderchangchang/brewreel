@@ -24,7 +24,7 @@ export class BrandError extends Error {
 
 export function assertOutsideRepo(file, root = ROOT) {
   if (isInsideRepo(file, root)) {
-    throw new BrandError('品牌档案不能放在仓库里。数据目录要在仓库外面，默认是当前工作目录上一级的 brewreel-studio-data');
+    throw new BrandError('品牌档案不能放在仓库里。数据目录要在仓库外面，默认是当前工作目录上一级的 brewreel-data');
   }
 }
 

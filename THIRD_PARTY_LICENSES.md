@@ -38,6 +38,34 @@ does not change Remotion's own license terms.
 
 两款字体均通过 `template/src/core/font.ts` 用原生 `FontFace` + `staticFile` 在本地加载，渲染时不需要联网下载字体。
 
+## Noto Serif SC（子集，族名 BrewReel Serif）
+
+- 路径：`template/public/NotoSerifSC-VF.ttf`，许可证全文：`template/public/fonts/NotoSerifSC/OFL.txt`
+- 许可证：SIL Open Font License 1.1
+- 版权声明（保留字体名 "Source"）：Copyright 2017-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+- 这是修改版。字表按 GB 2312 的 6763 个汉字，加上 ASCII、常用标点和全角符号，以及讲课样例和领域包里出现过的字，做了子集，并保留可变字重。
+- 原族名是 Noto Serif SC，不含保留名 Source。子集算修改，主字体名已改为 BrewReel Serif，PostScript 名 BrewReelSerif。代码里的 `PSerif` 回退名与此一致。
+
+## LXGW WenKai（子集，族名 BrewReel Kai）
+
+- 路径：`template/public/LXGWWenKai-Regular.ttf`，许可证全文：`template/public/fonts/LXGWWenKai/OFL.txt`
+- 许可证：SIL Open Font License 1.1
+- 版权声明（保留字体名 "LXGW WenKai"）：Copyright (c) 2021-2024 LXGW (https://github.com/lxgw/LxgwWenKai), with Reserved Font Name 'LXGW WenKai'.
+- 这是修改版。字表与上面的衬线子集相同。原主字体名就是保留名 LXGW WenKai，子集后改为 BrewReel Kai，PostScript 名 BrewReelKai。代码里的 `PKai` 回退名与此一致。
+
+## Open Peeps
+
+- 路径：`template/src/vendor/react-peeps/`，声明：`template/src/vendor/react-peeps/OPEN_PEEPS.txt`
+- 人物线稿：Open Peeps，作者 Pablo Stanley，CC0 1.0，<https://www.openpeeps.com/>
+- React 组件：react-peeps，MIT License，Copyright (c) 2020-present, Emre Çakır。许可证全文：`template/src/vendor/react-peeps/LICENSE`
+
+English: Noto Serif SC and LXGW WenKai ship as SIL OFL 1.1 subsets. Because
+subsetting is a modification and both licenses declare a Reserved Font Name
+(`Source`, and `LXGW WenKai`), the primary family names in the subset files are
+BrewReel Serif and BrewReel Kai. Open Peeps artwork by Pablo Stanley is CC0
+1.0. The React components in `template/src/vendor/react-peeps/` are react-peeps,
+MIT, Copyright (c) 2020-present, Emre Çakır.
+
 ## vidmuse-video-creator
 
 口播里「哪几句该配解释画面」的选段方法，参考了 [erduo1998-cell/vidmuse-video-creator](https://github.com/erduo1998-cell/vidmuse-video-creator)。

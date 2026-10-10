@@ -17,8 +17,13 @@ export const WHITELIST = Object.freeze({
     'SKILL.md', 'SKILL.en.md', 'shots.md', 'shots.en.md', 'brief-template.md', 'LICENSE', 'NOTICE', 'THIRD_PARTY_LICENSES.md',
     // 分流表点名的文档：风格工厂、动效外观。口播步骤在 broll/，不把 tests、参考片、任务书带进来。
     'docs/style-factory.md', 'docs/style-factory.en.md', 'docs/motion-looks.md', 'docs/motion-looks.en.md',
+    'docs/lesson.md', 'docs/lesson.en.md',
+    'lesson/SKILL-lesson.md', 'lesson/SKILL-lesson.en.md',
   ],
-  dirs: ['scripts', 'styles', 'industries', 'examples', 'docs/shots', 'docs/images', 'template', 'broll'],
+  // scripts/ 带上 scripts/lesson/。template/ 带上 template/src/lesson/、template/src/vendor/、
+  // template/public/NotoSerifSC-VF.ttf、template/public/LXGWWenKai-Regular.ttf。
+  // lesson/ 和 docs/lesson/ 是讲课说明。git 未跟踪的新文件要等提交后才会进快照。
+  dirs: ['scripts', 'styles', 'industries', 'examples', 'docs/shots', 'docs/images', 'docs/lesson', 'template', 'broll', 'lesson'],
   exclude: ['template/node_modules', 'template/public/_run', 'template/public/_dev', 'template/out', 'template/.render.lock', 'scripts/__pycache__', 'docs/images/contact'],
 });
 

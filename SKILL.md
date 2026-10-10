@@ -1,6 +1,6 @@
 ---
 name: brewreel
-description: 精酿 · BrewReel：三种玩法。宣传片：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写 storyboard.json，校验拦规则和行业合规，一条命令出片。口播配画面：用户有 talk.mp4，或要给口播配画面时，只读 broll/SKILL-broll.md，只写 broll.json，跑 node scripts/talk.mjs，不要写 storyboard.json。造 AI 画面风格：用户用一句话描述画面风格时，读 docs/style-factory.md，跑 node scripts/broll/new-style.mjs，不要自己出图，不要替人跑 approve-style.mjs。
+description: 精酿 · BrewReel：四种玩法。宣传片：做竖版产品宣传短片（1080x1920，15–45 秒，抖音/视频号/小红书）。用户要做产品宣传片、推广短视频、App 介绍视频、功能演示视频、上新短片、带货片头时使用。支持软件、餐饮、电商实物、教培、美业、文旅住宿六个行业，支持中英双语。你只写 storyboard.json，校验拦规则和行业合规，一条命令出片。口播配画面：用户有 talk.mp4，或要给口播配画面时，只读 broll/SKILL-broll.md，只写 broll.json，跑 node scripts/talk.mjs，不要写 storyboard.json。造 AI 画面风格：用户用一句话描述画面风格时，读 docs/style-factory.md，跑 node scripts/broll/new-style.mjs，不要自己出图，不要替人跑 approve-style.mjs。讲课视频：用户要做讲解课、课程、普法、教程类横版视频时，只读 lesson/SKILL-lesson.md，只写 lesson.json（或 brief），跑 node scripts/lesson/make-lesson.mjs。
 license: Apache-2.0
 metadata:
   version: 0.12.1
@@ -14,9 +14,10 @@ metadata:
 |---|---|---|---|
 | 目录里有 `talk.mp4`，或用户说给口播配画面 | 只读 `<SKILL>/broll/SKILL-broll.md` | 只写 `broll.json`。不要写 `storyboard.json` | `node <SKILL>/scripts/talk.mjs <项目目录> --out <仓库外目录>` |
 | 用户要一句话造一种 AI 画面风格 | `<SKILL>/docs/style-factory.md` | 不写分镜，也不要自己写 `style.json`。不要自己出图，不要替人跑 `scripts/broll/approve-style.mjs` | `node <SKILL>/scripts/broll/new-style.mjs --id <id> --name <名字> --desc "<一句话>"`（不要加 `--yes`） |
+| 要做讲解课、课程、普法、教程类横版视频 | 只读 `<SKILL>/lesson/SKILL-lesson.md` | 只写 `lesson.json`（或 brief）。不要写 `storyboard.json` | `node <SKILL>/scripts/lesson/make-lesson.mjs <lesson.json> --out <仓库外目录>` |
 | 其余：产品宣传片、推广短视频、功能演示 | 往下读这份 | `promo/<片名英文>/storyboard.json` | `node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名>` |
 
-拿不准是哪种就问用户，不要猜。`<SKILL>` = 本文件所在目录。
+拿不准是哪种就问用户，不要猜。`<SKILL>` = 本文件所在目录。讲解课不要继续读下面的宣传片步骤。
 
 你只做两件事：**挑镜头**、**填文字**。不写代码，不改 `template/`、`scripts/`、`industries/` 里的任何文件，不写坐标、帧数、颜色值。
 

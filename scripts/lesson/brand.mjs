@@ -19,7 +19,7 @@ const USAGE = `用法：
   node scripts/lesson/brand.mjs create --client <客户id> --firm <律所全称> --column <栏目名> --logo <svg或png> --primary <#RRGGBB> [--english <英文名>] [--secondary <#RRGGBB>] [--lawyer <姓名> --title <职称> --department <部门>] [--lawyers <lawyers.json>] [--qr <svg或png>] [--tip <提示语>] [--data-dir <目录>]
   node scripts/lesson/brand.mjs update <客户id> [--firm <律所全称>] [--english <英文名>] [--column <栏目名>] [--logo <svg或png>] [--primary <#RRGGBB>] [--secondary <#RRGGBB>] [--qr <svg或png>] [--tip <提示语>] [--lawyer <姓名> --title <职称> --department <部门>] [--lawyers <lawyers.json>] [--no-english] [--no-secondary] [--no-qr] [--data-dir <目录>]
   node scripts/lesson/brand.mjs show <客户id 或 客户id@版本> [--data-dir <目录>]
-改任何一项，版本号加 1，旧版本和当时的 logo 留在档案目录。数据目录默认是仓库外的 brewreel-studio-data，也可用环境变量 LESSON_DATA_DIR。`;
+改任何一项，版本号加 1，旧版本和当时的 logo 留在档案目录。数据目录默认是仓库外的 brewreel-data，也可用环境变量 LESSON_DATA_DIR。`;
 
 function parseArgs(argv) {
   const opts = {lawyer: [], title: [], department: []};

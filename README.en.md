@@ -4,14 +4,14 @@
 
 # BrewReel · 精酿
 
-**Two ways to make a video, each with one command.** Write a product brief and render a vertical promo, or drop in a talking-head clip and add pictures to the lines.
+**Four ways to make a video, each with one command.** Write a product brief and render a vertical promo, or drop in a talking-head clip and add pictures to the lines. An explainer, a course, a legal-education video, or a tutorial is landscape. See [Lesson video](#lesson-video).
 
 [![Version](https://img.shields.io/badge/version-v0.12.1-1f6feb?style=flat-square)](CHANGELOG.en.md)
 [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
 [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
 [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
 
-[Promo videos](#promo-videos) · [Talking-head B-roll](#talking-head-b-roll) · [Style factory](#style-factory) · [Quick start](#quick-start) · [Docs](#docs) · [中文](README.md)
+[Promo videos](#promo-videos) · [Talking-head B-roll](#talking-head-b-roll) · [Style factory](#style-factory) · [Lesson video](#lesson-video) · [Quick start](#quick-start) · [Docs](#docs) · [中文](README.md)
 
 <table>
 <tr>
@@ -129,6 +129,16 @@ Only a person can run it. An AI assistant must not run it for you. A non-interac
 
 Pull requests that bring back an approved style are welcome. That is a different set of files from a promo-recipe remix, which still goes through [Contributing](CONTRIBUTING.en.md). Steps, cost and the vision rules: [Style factory](docs/style-factory.en.md).
 
+## Lesson video
+
+Landscape 16:9, for an explainer, a course, a legal-education video, or a tutorial. Twenty layouts and four themes, with an optional presenter and brand frame. Vertical clips and covers are optional. Run the same output directory again after you edit one page, and unchanged pages are reused.
+
+```bash
+node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-studio-out/first-lesson --voice-provider mock --no-bgm
+```
+
+What it does, the three-step start, and the limits: [Lesson video](docs/lesson.en.md).
+
 ## Why BrewReel
 
 - **The cheap model only does what it is good at.** A promo writes `storyboard.json`. A talk writes `broll.json`. Pick shots, fill in text. No code, no coordinates.
@@ -144,9 +154,10 @@ Pull requests that bring back an approved style are welcome. That is a different
 - [First video guide](https://brewreel.com/guides/first-promo-video.en.html) · [Product brief template](https://brewreel.com/guides/product-brief.en.html) (website)
 - [Brief template](brief-template.md) (the general template in the repo)
 
-**Two ways**
+**Four ways**
 
 - [Features](docs/features.en.md): recipes, voice-over, industries, talking-head B-roll, style factory, validation
+- [Lesson video](docs/lesson.en.md)
 - [Screenshots](docs/gallery.en.md)
 - [Talking-head B-roll](docs/broll.en.md)
 - [Style factory](docs/style-factory.en.md)

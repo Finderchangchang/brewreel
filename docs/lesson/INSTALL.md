@@ -2,9 +2,11 @@
 
 这份说明给第一次使用的人。你不需要会编程，也不需要安装 Claude。写稿用 DeepSeek，配音用 MiniMax，出片在你自己的电脑上完成。
 
-请先把安装包解压到一个你找得到的文件夹，例如「文档」里的 `brewreel-studio`。后面说的「解压文件夹」就是它。命令都在这个文件夹里运行。
+请先把安装包解压到一个你找得到的文件夹，例如「文档」里的 `brewreel`。后面说的「解压文件夹」就是它。命令都在这个文件夹里运行。
 
-成片默认放在解压文件夹的**上一级**，名字是 `brewreel-studio-out`。角色档案默认放在上一级的 `brewreel-studio-data`。这两个位置跟着你打开命令行时所在的文件夹走，不写死在某一台电脑上。
+成片默认放在解压文件夹的**上一级**，名字是 `brewreel-studio-out`。角色档案默认放在上一级的 `brewreel-data`。这两个位置跟着你打开命令行时所在的文件夹走，不写死在某一台电脑上。
+
+如果上一级还没有 `brewreel-data`、只有旧目录 `brewreel-studio-data`，程序仍会读旧目录。
 
 ## 你要准备的
 
@@ -16,7 +18,7 @@
   - `MINIMAX_API_KEY`：配音
 - Python：可装可不装。不装也能出片，只是没有背景音乐。出片时会明确写「本片没有配乐」，配音还在，不会悄悄给你一条没声音的片子。
 
-讲课引擎跟随精酿，使用 Apache-2.0。没有授权文件，也不会因为没买许可而拒绝出片。
+讲课引擎跟随精酿，使用 Apache-2.0。没有单独的许可文件，缺了也不会拒绝出片。
 
 ## Windows
 
@@ -60,7 +62,7 @@ node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ..\br
 ## macOS
 
 1. 打开浏览器，访问 `https://nodejs.org`，下载 **20 LTS** 的 macOS 安装包，装完。
-2. 打开「终端」。把解压文件夹拖进窗口，前面补上 `cd` 和一个空格，回车。例如文件夹在「文稿」里，命令类似 `cd ~/Documents/brewreel-studio`（以你拖进去的路径为准）。
+2. 打开「终端」。把解压文件夹拖进窗口，前面补上 `cd` 和一个空格，回车。例如文件夹在「文稿」里，命令类似 `cd ~/Documents/brewreel`（以你拖进去的路径为准）。
 3. 安装出片程序：
 
 ```bash
@@ -121,4 +123,4 @@ node scripts/lesson/studio.mjs --brief 你的brief.json --out ../brewreel-studio
 
 密钥没设、或者 doctor 里有必需项是 `✗`，先不要正式出片。
 
-DeepSeek 插件用仓库里现有的开源插件，不另带私有安装包。讲课命令行本身不依赖那个插件。
+DeepSeek 插件用仓库里现有的开源插件。讲课命令行本身不依赖那个插件。

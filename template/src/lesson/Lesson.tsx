@@ -35,7 +35,7 @@ import {BrandBug, BrandEnding, BrandNameBar} from './brand/BrandChrome';
 import {Character, POSE_BLEND_MS, blinkAt, mouthOpenAmount, poseAt, talkingAt} from './mascot';
 import type {MascotWardrobe} from './mascot';
 import {avatarFrameStyle, cartoonBox, cartoonFrameStyle, COVER_MORPH, morphBox, objectPosition, realBox, realFrameStyle, MORPH_MS} from './presenter-place.mjs';
-import {chapterLineKey, chapterLineMode, contentMotion, nameBarSlide, sameChapterLine, SUBTITLE, subtitleLayout, turnOutFrames} from './stage.mjs';
+import {chapterLineKey, chapterLineMode, contentMotion, nameBarSlide, sameChapterLine, SUBTITLE, subtitleChrome, subtitleLayout, turnOutFrames} from './stage.mjs';
 import {VERTICAL, chromeTopReserve, shouldShowHook, verticalChromeBoxes, verticalContentBox, verticalNoteBox, verticalPresenterBox, verticalSubtitleBox} from '../../../scripts/lesson/vertical-layout.mjs';
 import {CanvasProvider, useCanvas, type LessonBrandView, type PresenterKind} from './canvas';
 
@@ -131,6 +131,7 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
   const sceneContent = vertical ? verticalContentBox(canvas.pageLayout || page.layout, canvas.presenter, place) : null;
   const sub = vertical ? verticalSubtitleBox(sceneContent) : null;
   const bar = !vertical && currentSubtitle ? subtitleLayout(currentSubtitle.text) : null;
+  const subChrome = subtitleChrome(t);
   const subBottom = brandedCover ? 132 : SUBTITLE.bottom;
   const subSize = vertical ? (typeof currentSubtitle?.fontPx === 'number' ? currentSubtitle.fontPx : Math.max(VERTICAL.subtitleMinPx, t.subtitleSize)) : (bar?.font ?? SUBTITLE.fontPx);
   const chapterTitles = timeline.chapters.map((chapter) => chapter.title);
@@ -188,14 +189,14 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
     {showOverlay && vertical && currentSubtitle && sub ? <div style={{position:'absolute', left:sub.x, top:sub.y, width:sub.width, height:sub.height, zIndex:5, display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:t.fontBody, fontWeight:500, fontSize:subSize, lineHeight:1.2, color:t.subtitleInk, WebkitTextStroke:`4px ${t.subtitleHalo}`, paintOrder:'stroke fill', wordBreak:'normal'}}>
       {protectBreaks(currentSubtitle.text)}
     </div> : null}
-    {showOverlay && bar && currentSubtitle ? <div style={{position:'absolute', left:SUBTITLE.centerX, bottom:subBottom, transform:'translateX(-50%)', width:bar.width, maxWidth:SUBTITLE.maxWidth, zIndex:5, boxSizing:'border-box', padding:`${SUBTITLE.padY}px ${SUBTITLE.padX}px`, borderRadius:SUBTITLE.radius, background:SUBTITLE.background, color:SUBTITLE.color, textAlign:'center', fontFamily:t.fontBody, fontWeight:500, fontSize:bar.font, lineHeight:bar.lineHeight}}>
+    {showOverlay && bar && currentSubtitle ? <div style={{position:'absolute', left:SUBTITLE.centerX, bottom:subBottom, transform:'translateX(-50%)', width:bar.width, maxWidth:SUBTITLE.maxWidth, zIndex:5, boxSizing:'border-box', padding:`${SUBTITLE.padY}px ${SUBTITLE.padX}px`, borderRadius:subChrome.radius, background:subChrome.background, color:subChrome.color, textAlign:'center', fontFamily:t.fontBody, fontWeight:500, fontSize:bar.font, lineHeight:bar.lineHeight}}>
       {bar.lines.map((line, index) => {
         const chars = Array.from(line);
         const take = karaokeOn ? Math.max(0, Math.min(chars.length, spokenVisible)) : chars.length;
         if (karaokeOn) spokenVisible -= take;
         const spoken = chars.slice(0, take).join('');
         const rest = chars.slice(take).join('');
-        return <div key={index} style={{whiteSpace:'nowrap'}}>{karaokeOn ? <><span style={{color:'#FFFFFF'}}>{protectBreaks(spoken)}</span><span style={{color:'rgba(255,255,255,.45)'}}>{protectBreaks(rest)}</span></> : protectBreaks(line)}</div>;
+        return <div key={index} style={{whiteSpace:'nowrap'}}>{karaokeOn ? <><span style={{color:subChrome.karaokeSpoken}}>{protectBreaks(spoken)}</span><span style={{color:subChrome.karaokeRest}}>{protectBreaks(rest)}</span></> : protectBreaks(line)}</div>;
       })}
     </div> : null}
     {showOverlay && !vertical && canvas.brandBug && !brandedCover && !brandedEnding ? <BrandBug theme={theme} /> : null}

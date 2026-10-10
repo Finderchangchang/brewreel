@@ -25,7 +25,7 @@ export class CharacterError extends Error {
 
 export function assertOutsideRepo(file, root = ROOT) {
   if (isInsideRepo(file, root)) {
-    throw new CharacterError('角色档案不能放在仓库里。数据目录要在仓库外面，默认是当前工作目录上一级的 brewreel-studio-data');
+    throw new CharacterError('角色档案不能放在仓库里。数据目录要在仓库外面，默认是当前工作目录上一级的 brewreel-data');
   }
 }
 

@@ -47,5 +47,6 @@ Thumbs.db
 .remotion/
 
 # 讲课角色档案和成片默认写在仓库外；若被放进仓库，不要提交
+/brewreel-data/
 /brewreel-studio-data/
 /brewreel-studio-out/

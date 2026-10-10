@@ -1,6 +1,6 @@
 ---
 name: brewreel
-description: BrewReel (精酿) covers three jobs. Promo: a vertical product video (1080x1920, 15–45s, for TikTok/Douyin/Shipinhao/Xiaohongshu). Use for a product promo, a marketing short, an app intro, a feature demo, a launch teaser, or a live-selling intro. Six industries (software, food, ecommerce, education, beauty, travel), Chinese and English. You only write storyboard.json; a validator blocks rule and compliance issues, and one command renders the video. Talk pictures: the user has talk.mp4 or asks for pictures on a talking-head video. Read only broll/SKILL-broll.en.md, write only broll.json, run node scripts/talk.mjs, and do not write storyboard.json. AI picture style: the user describes a look in one sentence. Read docs/style-factory.en.md, run node scripts/broll/new-style.mjs, do not generate the images yourself, and do not run approve-style.mjs for them.
+description: BrewReel (精酿) covers four jobs. Promo: a vertical product video (1080x1920, 15–45s). Use for a product promo, app intro, feature demo, or launch teaser. Six industries (software, food, ecommerce, education, beauty, travel), Chinese and English. You only write storyboard.json; validation blocks rule and compliance issues, and one command renders the video. Talk pictures: the user has talk.mp4 or wants pictures on a talking-head video. Read only broll/SKILL-broll.en.md, write only broll.json, run node scripts/talk.mjs, and do not write storyboard.json. AI picture style: one sentence describes a look. Read docs/style-factory.en.md, run node scripts/broll/new-style.mjs, do not generate images yourself, and do not run approve-style.mjs for them. Lesson video: an explainer, course, legal-education piece, or landscape tutorial. Read only lesson/SKILL-lesson.en.md, write only lesson.json or a brief, and run node scripts/lesson/make-lesson.mjs.
 license: Apache-2.0
 metadata:
   version: 0.12.1
@@ -14,9 +14,10 @@ metadata:
 |---|---|---|---|
 | A `talk.mp4`, or they ask for pictures on a talking-head video | Only `<SKILL>/broll/SKILL-broll.en.md` | Only `broll.json`. Do not write `storyboard.json` | `node <SKILL>/scripts/talk.mjs <project> --out <dir outside the repo>` |
 | A one-sentence AI picture style | `<SKILL>/docs/style-factory.en.md` | Do not write a storyboard or `style.json` yourself. Do not generate images. Do not run `scripts/broll/approve-style.mjs` for them | `node <SKILL>/scripts/broll/new-style.mjs --id <id> --name <name> --desc "<one sentence>"` (do not add `--yes`) |
+| An explainer, a course, a legal-education video, or a landscape tutorial | Only `<SKILL>/lesson/SKILL-lesson.en.md` | Only `lesson.json` (or a brief). Do not write `storyboard.json` | `node <SKILL>/scripts/lesson/make-lesson.mjs <lesson.json> --out <dir outside the repo>` |
 | Anything else: a product promo | Keep reading this file | `promo/<english-slug>/storyboard.json` | `node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name>` |
 
-If you are not sure which row it is, ask the user. Do not guess. `<SKILL>` = the folder this file is in.
+If you are not sure which row it is, ask the user. Do not guess. `<SKILL>` = the folder this file is in. For a lesson, stop here and read `lesson/SKILL-lesson.en.md`. Do not follow the promo steps below.
 
 You do exactly two things: **pick shots** and **fill in text**. Don't write code, don't edit anything under `template/`, `scripts/`, or `industries/`, don't write coordinates, frame numbers, or color values.
 

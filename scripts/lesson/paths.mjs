@@ -1,11 +1,18 @@
 // 数据目录和出片目录都跟着用户当前工作目录走，不写死某台电脑的盘符。
+import fs from 'node:fs';
 import path from 'node:path';
 
-export const DATA_DIR_NAME = 'brewreel-studio-data';
+export const DATA_DIR_NAME = 'brewreel-data';
+export const LEGACY_DATA_DIR_NAME = 'brewreel-studio-data';
 export const OUT_DIR_NAME = 'brewreel-studio-out';
 
 export function defaultDataDir(cwd = process.cwd()) {
-  return path.resolve(cwd, '..', DATA_DIR_NAME);
+  const next = path.resolve(cwd, '..', DATA_DIR_NAME);
+  const legacy = path.resolve(cwd, '..', LEGACY_DATA_DIR_NAME);
+  try {
+    if (!fs.existsSync(next) && fs.existsSync(legacy)) return legacy;
+  } catch { /* 读不到就用新目录名 */ }
+  return next;
 }
 
 export function defaultOutDir(cwd = process.cwd()) {

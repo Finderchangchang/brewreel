@@ -43,10 +43,16 @@ export const SUBTITLE: {
   minFont: number;
   padX: number;
   padY: number;
-  radius: number;
   lineHeight: number;
-  color: string;
+};
+
+export function contrastRatio(fg: string, bg: string): number;
+export function subtitleChrome(token: {badgeBg: string; badgeFg: string; radius: number}): {
   background: string;
+  color: string;
+  radius: number;
+  karaokeSpoken: string;
+  karaokeRest: string;
 };
 
 export type StageBox = {x: number; y: number; width: number; height: number};

@@ -136,7 +136,7 @@ assert.equal(frameTimeMs('still-10.73s.png'), 10730);
 const payload = aigcPayload('abcdef0123456789', new Date('2026-10-01T00:00:00.000Z'));
 assert.equal(aigcMetadataValue(payload).includes('='), false, 'Remotion metadata 的值里不能有等号');
 assert.equal(payload.Label, '1');
-assert.equal(payload.ContentProducer, 'brewreel-studio');
+assert.equal(payload.ContentProducer, 'BrewReel');
 assert.equal(explicitMarking('tech','zh',false).aiLabel, 'AI生成合成');
 assert.equal(explicitMarking('legal','zh',false).aiLabel, 'AI生成合成');
 assert.equal(explicitMarking('tech','en',false).aiLabel, 'AI-generated synthetic');

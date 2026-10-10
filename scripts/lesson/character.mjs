@@ -34,7 +34,7 @@ const USAGE = `用法：
   node scripts/lesson/character.mjs card <客户id/角色id> --out <目录> [--data-dir <目录>]
   node scripts/lesson/character.mjs approve <客户id/角色id> [--data-dir <目录>]
   node scripts/lesson/character.mjs update <客户id/角色id> [--name <名字>] [--preset male|female | --look <look.json> | --photo <照片>] [--theme ...] [--consent-by <授权人>] [--data-dir <目录>]
-照片建角色必须写 --consent-by。数据目录默认是仓库外的 brewreel-studio-data，也可用环境变量 LESSON_DATA_DIR。`;
+照片建角色必须写 --consent-by。数据目录默认是仓库外的 brewreel-data，也可用环境变量 LESSON_DATA_DIR。`;
 
 function parseArgs(argv) {
   const opts = {};
