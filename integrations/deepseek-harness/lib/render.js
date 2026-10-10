@@ -7,7 +7,7 @@ import path from 'node:path';
 import {describeExit} from './exit-codes.js';
 import {allowedRoots, assertArgPath, assertOutDir, assertOutDirSafe, markOutDir, PathRuleError, resolveUserPath} from './paths.js';
 import {cleanEnv, runProcess} from './run.js';
-import {resolveInputs, spawnValidate} from './validate.js';
+import {customShotBlock, resolveInputs, spawnValidate} from './validate.js';
 
 const LINE_MAX = 500;
 
@@ -79,6 +79,14 @@ const readJsonSafe = (file) => {
  */
 export function planRender(args, {runtimeRoot, roots, cfg, verify = false}) {
   const {storyboard, brief} = resolveInputs(args, roots);
+  let sb = null;
+  try {
+    sb = JSON.parse(fs.readFileSync(storyboard, 'utf8').replace(/^\uFEFF/, ''));
+  } catch {
+    sb = null;
+  }
+  const blocked = customShotBlock(sb);
+  if (blocked) throw new PathRuleError(blocked.problem);
   const outDir = args.outDir ? resolveUserPath(args.outDir, roots.workspace, 'outDir') : path.dirname(storyboard);
   assertOutDir(outDir, roots);
   if (!verify) assertOutDirSafe(outDir, storyboard);

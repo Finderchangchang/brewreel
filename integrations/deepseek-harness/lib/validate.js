@@ -9,6 +9,29 @@ import {cleanEnv, runProcess} from './run.js';
 const STUCK_ROUNDS = 3;
 const LIST_CAP = 30;
 
+/** 插件不运行模型自己写的组件。自由镜头只在本地技能模式开放。 */
+export const CUSTOM_LOCAL_ONLY = '自由镜头只能在本地用，插件里不运行模型自己写的代码';
+
+/** @param {any} sb @returns {{where:string,problem:string,fix:string} | null} */
+export function customShotBlock(sb) {
+  if (!sb || !Array.isArray(sb.shots)) return null;
+  const i = sb.shots.findIndex((s) => s && s.type === 'custom');
+  if (i < 0) return null;
+  return {
+    where: `第 ${i + 1} 镜（custom）`,
+    problem: CUSTOM_LOCAL_ONLY,
+    fix: '删掉 type 为 custom 的镜头，改用模板镜头。自由镜头只在本地技能模式开放',
+  };
+}
+
+const readStoryboard = (file) => {
+  try {
+    return JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Resolve and check storyboard / brief paths.
  * @param {{storyboard: string, brief?: string}} args
@@ -83,6 +106,23 @@ export class StuckTracker {
  */
 export async function runValidate(rt, args) {
   const {storyboard, brief} = resolveInputs(args, rt.roots);
+  const blocked = customShotBlock(readStoryboard(storyboard));
+  if (blocked) {
+    const en = rt.lang === 'en';
+    return {
+      ok: false,
+      storyboard,
+      briefChecked: false,
+      counts: {errors: 1, warnings: 0, human: 0},
+      errors: [blocked],
+      warnings: [],
+      human: [],
+      total: 0,
+      slots: [],
+      stuck: [],
+      nextStep: en ? 'Remove the custom shot. Free shots run only in local skill mode; this plugin does not execute model-written code' : '删掉 custom 镜头。自由镜头只能在本地用，插件里不运行模型自己写的代码',
+    };
+  }
   const raw = await spawnValidate({runtimeRoot: rt.runtimeRoot, storyboard, brief, signal: rt.signal});
   const errors = (raw.errors ?? []).map(item);
   // plugin rule: assets must stay inside the storyboard folder / workspace

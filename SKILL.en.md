@@ -78,7 +78,7 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
    - Premium, minimal, design-forward → `mono-premium`
    Those six are the default themes, and their captions stay outlined. Twelve more optional palettes are listed in `<SKILL>/styles/cards/THEMES.md`.
    If there's a brand color, set `meta.brandColor` (#RRGGBB) — it only swaps the accent color.
-5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, a 19-shot overview table is at the top; with quiz / journey use that style's shots and keep their fields inside `params`, see step 0). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s).
+5. **Pick 5–9 shots** (shot docs in `<SKILL>/shots.en.md`, a 19-shot overview table is at the top; with quiz / journey use that style's shots and keep their fields inside `params`, see step 0). `hook` must be shot 1 (2–3s), `endCard` must be the last shot (4s). Cheap models must not use `custom`. 便宜模型不要用 custom. A `custom` shot is a free shot whose component is written by a strong model, and only in local skill mode; the plugin rejects it. Keep picking shots and filling in text. See `docs/custom-shot.en.md`.
    **At least one shot must demonstrate the core action** (the `meta.action` from step 2). The allowed shots depend on the industry; validation blocks the video otherwise:
    - **software, education (UI products)**: `chat` with messages + panel (question → answer); or `mockApp` with `input` (what the user typed/asked) + a result (dashboard's `stat`, editor's `items`/`done`); use `phone` if you have a screenshot.
      - A messaging/reply product needs chat (or a real phone screenshot); a product that isn't about chatting must not be shown as a chat.

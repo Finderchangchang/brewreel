@@ -1,0 +1,67 @@
+{
+  "meta": {
+    "title": "少步记 自由镜头样例",
+    "product": "少步记",
+    "theme": "fresh-light",
+    "industry": "software",
+    "action": "列出周报步骤 → 标出可以合并的步骤",
+    "facts": [
+      {"id": "f1", "text": "整理一份周报从 12 步变成 4 步", "source": "产品流程说明"}
+    ]
+  },
+  "shots": [
+    {
+      "type": "hook",
+      "dur": 2.5,
+      "caption": "周报写不完，\n步骤{太碎了}",
+      "mood": 0.85,
+      "params": {"visual": "icon", "icon": "sparkle", "text": "步骤太碎", "badge": "先合并再写"}
+    },
+    {
+      "type": "custom",
+      "dur": 4,
+      "caption": "先留这一句，\n{少一步}",
+      "mood": 0.4,
+      "component": "shots/keyword-toss.tsx",
+      "slots": {"keyword": "少一步"}
+    },
+    {
+      "type": "mockApp",
+      "dur": 4.5,
+      "caption": "列出步骤，\n{重复的并掉}",
+      "mood": 0.35,
+      "params": {
+        "kind": "editor",
+        "title": "周报步骤",
+        "input": "列出周报步骤",
+        "button": "标出",
+        "items": [
+          {"text": "收集本周事项"},
+          {"text": "合并重复步骤"},
+          {"text": "删掉来回粘贴"}
+        ],
+        "highlight": 1,
+        "done": "已标好"
+      }
+    },
+    {
+      "type": "custom",
+      "dur": 4,
+      "caption": "步数可以降下来",
+      "mood": 0.2,
+      "component": "shots/grow-bar.tsx",
+      "slots": {"label": "整理周报", "from": 12, "to": 4, "unit": "步"}
+    },
+    {
+      "type": "endCard",
+      "dur": 4,
+      "mood": 0,
+      "params": {
+        "brand": "少步记",
+        "slogan": "少走几步，\n{周报先写完}",
+        "points": ["重复步骤并成一条", "写之前先看清单"],
+        "icon": "doc"
+      }
+    }
+  ]
+}

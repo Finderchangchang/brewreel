@@ -40,6 +40,7 @@ export const storyboardFields = (sb) => {
   (sb?.shots ?? []).forEach((s, i) => {
     walk(s.caption, `shots[${i}].caption`, i);
     walk(s.params, `shots[${i}].params`, i);
+    walk(s.slots, `shots[${i}].slots`, i);
   });
   return out;
 };

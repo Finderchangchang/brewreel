@@ -66,7 +66,8 @@ export type ShotType =
   | 'features' // 2–4 个卖点卡
   | 'steps' // 1-2-3 流程
   | 'quickList' // 快切列表
-  | 'endCard'; // 片尾
+  | 'endCard' // 片尾
+  | 'custom'; // 自由镜头。便宜模型不要用 custom。只有本地强模型自己写组件时才用，见 docs/custom-shot.md
 
 export type Meta = {
   /** 片名（只用于文件名和日志，不上画面） */
@@ -213,6 +214,13 @@ export type Shot = {
   params: Record<string, unknown>;
   /** 给人看的备注，不上画面 */
   note?: string;
+  /**
+   * 自由镜头（type=custom）的组件，相对 storyboard.json：`shots/名字.tsx`。
+   * 文件放在片子目录，不放进 template/。便宜模型不要用 custom。
+   */
+  component?: string;
+  /** 自由镜头上屏的文字和数字。组件里不能写死句子，只能读这里 */
+  slots?: Record<string, unknown>;
   /**
    * 旁白（配音时念的话，meta.voice 开了才生效）。可含 {} 强调；不写 caption 时旁白字幕由它自动生成。
    * 写了 vo 的镜头时长由配音决定（前后留白后取整拍），dur / beats 会被 make.mjs 改写。

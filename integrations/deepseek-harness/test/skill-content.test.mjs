@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import {test} from 'node:test';
+import {normalizeConfig} from '../lib/config.js';
+import {allowedRoots} from '../lib/paths.js';
 import {applyPlugin} from '../lib/plugin.js';
+import {planRender} from '../lib/render.js';
 import {TOOL_NAMES} from '../lib/skill.js';
 import {execIn, fakeCtx, REPO_ROOT, stubDefineTool, tmpDir} from './helpers.mjs';
 
@@ -98,4 +101,23 @@ test('U7 validate: pass, structured errors, JSON syntax, missing brief, escaping
   for (let i = 0; i < 3; i++) last = await v.execute({storyboard: bad}, execIn(ws));
   assert.ok(last.stuck.length > 0, 'same error three rounds in a row → stuck');
   assert.match(last.nextStep, /3 次/);
+});
+
+test('custom shot is rejected in the plugin before any model-written code runs', async () => {
+  const ws = tmpDir('dv-custom-');
+  const dir = path.join(ws, 'promo', 'free');
+  fs.mkdirSync(dir, {recursive: true});
+  const file = path.join(dir, 'storyboard.json');
+  fs.writeFileSync(file, JSON.stringify({meta: {title: 'x'}, shots: [{type: 'custom', component: 'shots/a.tsx', dur: 2, slots: {keyword: 'hi'}}]}));
+  const v = tool(TOOL_NAMES.validate);
+  const r = await v.execute({storyboard: 'promo/free/storyboard.json'}, execIn(ws));
+  assert.equal(r.ok, false);
+  assert.equal(r.errors.length, 1);
+  assert.equal(r.errors[0].problem, '自由镜头只能在本地用，插件里不运行模型自己写的代码');
+  assert.match(r.errors[0].where, /custom/);
+  const roots = allowedRoots({workspace: ws, outputRoot: 'promo', extraWriteRoots: []});
+  assert.throws(
+    () => planRender({storyboard: file}, {runtimeRoot: REPO_ROOT, roots, cfg: normalizeConfig({})}),
+    /自由镜头只能在本地用，插件里不运行模型自己写的代码/,
+  );
 });

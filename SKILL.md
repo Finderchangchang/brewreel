@@ -21,6 +21,8 @@ metadata:
 
 你只做两件事：**挑镜头**、**填文字**。不写代码，不改 `template/`、`scripts/`、`industries/` 里的任何文件，不写坐标、帧数、颜色值。
 
+便宜模型不要用 custom。`custom` 是强模型自己写组件的自由镜头，只在本地技能模式开放，插件里会直接拒绝。便宜模型继续只挑镜头、填文字。写法见 `docs/custom-shot.md`。
+
 下文 `<SKILL>` = 本文件所在目录。命令都用 Node 22 / Python 3.10 跑。English speaker or English video needed → read `<SKILL>/SKILL.en.md` instead.
 
 ## 流程

@@ -9,6 +9,7 @@ import {ThemeProvider, resolveTheme} from './core/theme';
 import {Slot, beatOf, schedule, totalDur} from './core/timeline';
 import {LayoutProbe} from './core/probe';
 import {moduleOf, specOf} from './shots';
+import {CustomShotView} from './shots/custom-host';
 import {VoiceCaptions, VoiceTrackAudio, duckGainOf, planVoice} from './core/voice';
 import {AspectProvider} from './core/aspect';
 import {geometryOf} from './core/safe';
@@ -39,6 +40,16 @@ const OUT = OUT_FRAMES / FPS;
 // 单个镜头的外壳：本地时间 + 统一退场（push / fade 都是 4 帧淡出 + 下移；none 不退场）+ 非首镜的短暂延后显形
 const ShotHost: React.FC<{slot: Slot; beat: number; sb: Storyboard; isLast: boolean; lookup?: ShotLookup}> = ({slot, beat, sb, isLast, lookup = COMMON}) => {
   const t = useCurrentFrame() / FPS;
+  if (slot.shot.type === 'custom') {
+    const p = isLast ? 0 : Math.min(1, Math.max(0, (t - slot.dur) / OUT));
+    const enter = slot.i === 0 ? 1 : Math.min(1, Math.max(0, (t - OUT / 2) / (OUT / 2)));
+    const style: React.CSSProperties = {opacity: enter * (1 - p), transform: `translateY(${p * 48}px)`};
+    return (
+      <AbsoluteFill style={style}>
+        <CustomShotView slot={slot} t={t} beat={beat} sb={sb} />
+      </AbsoluteFill>
+    );
+  }
   const mod = lookup.moduleOf(slot.shot.type);
   const spec = lookup.specOf(slot.shot.type);
   const exit = isLast ? 'none' : spec?.exit ?? 'push';

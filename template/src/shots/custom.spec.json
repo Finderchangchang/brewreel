@@ -1,0 +1,25 @@
+{
+  "type": "custom",
+  "purpose": "自由镜头：强模型自己写一个组件，画这一镜。便宜模型不要用 custom。组件放在片子目录的 shots/ 里，不放进 template/。画面上的字和数字只写在 slots。",
+  "tips": [
+    "只在本地技能模式用。插件会拒绝 custom，因为插件不运行模型自己写的代码",
+    "component 写成 shots/名字.tsx，和 storyboard.json 同级",
+    "slots 里放这一镜要上屏的文字和数字。组件源码里写死中文、英文句子或直接渲染的数字会被拦住",
+    "能 import 的只有 react、remotion 和 ../../custom-api（字体、fitLine、主题、安全区、纸纹、手剪形状、纸屑、抛起落定、浮动、投影）",
+    "params 不要写：字在 slots，params 不会传给组件"
+  ],
+  "dur": {"default": 4, "min": 2, "max": 8},
+  "mood": 0.3,
+  "caption": "optional",
+  "exit": "push",
+  "params": {"type": "object", "properties": {}},
+  "sfx": [],
+  "example": {
+    "caption": "少走几步，\n{周报先摊开}",
+    "dur": 4,
+    "mood": 0.3,
+    "component": "shots/example.tsx",
+    "slots": {"keyword": "关键词"},
+    "params": {}
+  }
+}

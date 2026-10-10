@@ -6,6 +6,7 @@
 // 「有/没有」一条 problem 包含某个关键词（不要求整份 storyboard 干净通过——大多数最小片段
 // 本身还会因为别的不相关规则报别的错，用关键词匹配只盯这条用例要测的那条规则）。
 // ============================================================
+import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -200,6 +201,7 @@ function listStoryboardExamples() {
     }
   };
   take(path.join(ROOT, 'examples'));
+  take(path.join(ROOT, 'examples', 'custom'));
   const stylesDir = path.join(ROOT, 'styles');
   for (const name of fs.readdirSync(stylesDir)) {
     if (name.startsWith('_')) continue;
@@ -234,6 +236,9 @@ for (const x of skips) console.log(x);
 if (fails.length) {
   console.log('\n失败明细：');
   for (const f of fails) console.log(f + '\n');
-  process.exit(1);
 }
+const customTest = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'test-custom.mjs')], {encoding: 'utf8'});
+if (customTest.stdout) process.stdout.write(customTest.stdout.endsWith('\n') ? customTest.stdout : customTest.stdout + '\n');
+if (customTest.stderr) process.stderr.write(customTest.stderr);
+if (fails.length || customTest.status !== 0) process.exit(1);
 process.exit(0);

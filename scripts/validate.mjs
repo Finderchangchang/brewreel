@@ -383,10 +383,11 @@ export function crossCheck(type, p, W, err, warn) {
 /** 「没有简报依据」类错误的统一标记（checkSpecs 单镜自检时按它过滤，单镜示例本来就没有 meta.facts） */
 const NO_BASIS = '没有简报依据';
 const DEMO_HINT_RE = /演示|示例|示意|模拟|虚构|sample|demo|simulated|illustrative/i;
-export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null, allowDraftStyles = false, env = process.env} = {}) {
+export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brief = null, allowDraftStyles = false, env = process.env, skipCustomFiles = false} = {}) {
   const errors = [];
   const warnings = [];
   const texts = []; // [{where, text}] 画面上会出现的字，统一扫网址/极限词
+  const customNums = []; // 自由镜头 slots 里的数字，等 sourceCheck 定义后再核对来源
   const assets = []; // [{where, rel, abs}]
   const where = (i, type, field) => (i < 0 ? field : `第 ${i + 1} 镜（${type ?? '?'}）${field}`);
   const err = (w, problem, fix) => errors.push({where: w, problem, fix});
@@ -719,6 +720,49 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       err('meta.allowWords', '应该是文字数组', '如 ["第一"]；不需要豁免就删掉');
   }
 
+  // 自由镜头 slots：字进 texts（广告法、字数、带单位的数字），纯数字单独记下来对来源
+  const EFFECT_SLOT = new Set(['from', 'to', 'value', 'percent', 'delta']);
+  const SLOT_SKIP = new Set(['refs', 'ref', 'icon', 'src', 'logo', 'note', 'color', 'id', 'illust', 'hex']);
+  const walkCustomSlots = (v, p, depth, W) => {
+    if (depth > 4) {
+      err(W(p), 'slots 嵌套超过 4 层', '把结构展平到 4 层以内');
+      return;
+    }
+    if (typeof v === 'string') {
+      const w = W(p);
+      const key = p.split(/[.[\]]/).filter(Boolean).pop();
+      if (v.includes('\n') || v.includes('{') || v.includes('}')) checkRich(w, v, {maxLines: 2, lineMax: 12});
+      else if (units(v) > 24) err(w, `${fmtN(units(v))} 字，slots 里每段最多 24 字`, '缩短，或拆成几个更短的字段');
+      texts.push({where: w, text: v});
+      if (/^\d+(?:\.\d+)?$/.test(v)) {
+        const numV = Number(v);
+        if (numV !== 0) customNums.push({where: w, value: numV, effect: EFFECT_SLOT.has(key)});
+      }
+      return;
+    }
+    if (typeof v === 'number') {
+      if (!Number.isFinite(v)) err(W(p), '不是有效数字', '写普通数字，别写 NaN 或无穷');
+      else if (v !== 0) {
+        const key = p.split(/[.[\]]/).filter(Boolean).pop();
+        customNums.push({where: W(p), value: v, effect: EFFECT_SLOT.has(key)});
+      }
+      return;
+    }
+    if (typeof v === 'boolean') return;
+    if (Array.isArray(v)) {
+      v.forEach((x, i) => walkCustomSlots(x, `${p}[${i}]`, depth + 1, W));
+      return;
+    }
+    if (v && typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) {
+        if (SLOT_SKIP.has(k)) continue;
+        walkCustomSlots(x, `${p}.${k}`, depth + 1, W);
+      }
+      return;
+    }
+    err(W(p), 'slots 里只能是文字、数字、布尔、数组或对象', '删掉空值这类不能上屏的东西');
+  };
+
   // ---- shots ----
   const shots = sb.shots;
   if (!Array.isArray(shots) || shots.length === 0) {
@@ -740,6 +784,7 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       err(W('caption'), `「${styleId}」风格不用全局字幕，caption 不能写`, '删掉 caption，要上屏的字写进这一镜的 params');
     // 把 params 里的字段写到了镜头顶层（便宜模型常见：{"type":"district","headline":…}）：合并成一条错，不按字段一条条报
     const SHOT_KEYS = ['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note', 'vo'];
+    if (type === 'custom') SHOT_KEYS.push('component', 'slots');
     const paramKeys = Object.keys(spec.params?.properties ?? {});
     const misplaced = Object.keys(shot).filter((k) => !SHOT_KEYS.includes(k) && paramKeys.includes(k));
     for (const k of Object.keys(shot)) if (!SHOT_KEYS.includes(k) && !misplaced.includes(k))
@@ -777,8 +822,25 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       if (est !== null) voEst[i] = est;
       if (typeof shot.vo === 'string' && shot.vo.trim()) texts.push({where: W('vo'), text: shot.vo, caption: true});
     }
-    // 参数
-    if (shot.params === undefined) {
+    // 参数。自由镜头的字在 slots，params 不传给组件
+    if (type === 'custom') {
+      const comp = shot.component;
+      if (typeof comp !== 'string' || !/^shots\/[A-Za-z0-9_-]+\.tsx$/.test(comp))
+        err(W('component'), `组件路径 ${JSON.stringify(comp)} 不对`, '写成 "component": "shots/名字.tsx"。文件放在和 storyboard.json 同级的 shots/ 里，不要写 .. 或绝对路径');
+      else if (!skipCustomFiles) {
+        const abs = path.resolve(baseDir, comp);
+        const root = path.resolve(baseDir);
+        const norm = (p) => (process.platform === 'win32' ? p.toLowerCase() : p);
+        const inside = norm(abs) === norm(root) || norm(abs).startsWith(norm(root + path.sep));
+        if (!inside || !fs.existsSync(abs) || !fs.statSync(abs).isFile())
+          err(W('component'), `找不到组件文件 ${comp}`, '在分镜同一目录下建 shots/名字.tsx（和 storyboard.json 同级，不放进 template/）');
+      }
+      if (shot.slots === undefined || shot.slots === null || typeof shot.slots !== 'object' || Array.isArray(shot.slots))
+        err(W('slots'), '缺少 slots（自由镜头的画面文字和数字只能写在这里）', '补上 "slots": {"keyword": "…"}，组件里不要写死句子');
+      else walkCustomSlots(shot.slots, 'slots', 1, W);
+      if (shot.params !== undefined && (typeof shot.params !== 'object' || shot.params === null || Array.isArray(shot.params) || Object.keys(shot.params).length > 0))
+        err(W('params'), '自由镜头的字写在 slots，params 不会传给组件', '删掉 params，或写成 {}');
+    } else if (shot.params === undefined) {
       if (!misplaced.length) err(W('params'), '缺少 params', '补上 "params": {...}，字段见 shots.md');
     } else if (!misplaced.length) {
       checkValue(spec.params, shot.params, W('params'));
@@ -949,11 +1011,14 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     }
     err(w, `「${what}」在 meta.facts 里找不到来源${facts.length ? '' : '（没写 meta.facts）'}`, noneFix);
   };
+  for (const n of customNums)
+    sourceCheck(n.where, n.value, `数字 ${n.value}`, facts.length ? '简报给了这个数字就把原话抄进 meta.facts（带 source），id 随便起' : '简报没给数字就别编：删掉这个数，或把原话和来源抄进 meta.facts', n.effect);
   const shotTexts = shots.map((sh) => {
     if (!sh || typeof sh !== 'object') return [];
     const out = [];
     for (const c of [sh.caption].flat()) if (typeof c === 'string') out.push({text: c, caption: true, field: 'caption'});
     for (const x of collectStrings(sh.params ?? {}, [])) out.push({text: x, caption: false, field: 'params'});
+    if (sh.slots && typeof sh.slots === 'object') for (const x of collectStrings(sh.slots, [])) out.push({text: x, caption: false, field: 'slots'});
     // 旁白参与全片数字口径核对；不按字幕做「」引用检查（念出来的引号观众看不到）
     if (typeof sh.vo === 'string') out.push({text: sh.vo, caption: false, field: 'vo'});
     return out;
@@ -1309,9 +1374,14 @@ export function checkSpecs(specs = loadSpecs()) {
     if (s.example?.params) {
       const hook = specs.hook?.example;
       const shots = type === 'hook' ? [] : [{type: 'hook', caption: hook?.caption ?? '标题', params: hook?.params ?? {visual: 'icon', icon: 'sparkle'}}];
-      shots.push({type, dur: s.example.dur ?? s.dur?.default, caption: s.example.caption, mood: s.example.mood, params: s.example.params});
+      const one = {type, dur: s.example.dur ?? s.dur?.default, caption: s.example.caption, mood: s.example.mood, params: s.example.params};
+      if (type === 'custom') {
+        one.component = s.example.component;
+        one.slots = s.example.slots;
+      }
+      shots.push(one);
       const ep = s.example.params;
-      const r = validate({meta: {title: 'spec-check', product: typeof ep.brand === 'string' ? ep.brand : 'x', theme: 'warm-emotion', ...(s.example.industry ? {industry: s.example.industry} : {}), ...(s.example.facts ? {facts: s.example.facts} : {}), ...(s.example.demoData ? {demoData: true} : {}), ...(s.example.disclaimer ? {disclaimer: s.example.disclaimer} : {}), ...(typeof ep.cta === 'string' ? {cta: ep.cta} : {})}, shots}, {baseDir: TEMPLATE, specs});
+      const r = validate({meta: {title: 'spec-check', product: typeof ep.brand === 'string' ? ep.brand : 'x', theme: 'warm-emotion', ...(s.example.industry ? {industry: s.example.industry} : {}), ...(s.example.facts ? {facts: s.example.facts} : {}), ...(s.example.demoData ? {demoData: true} : {}), ...(s.example.disclaimer ? {disclaimer: s.example.disclaimer} : {}), ...(typeof ep.cta === 'string' ? {cta: ep.cta} : {})}, shots}, {baseDir: TEMPLATE, specs, skipCustomFiles: type === 'custom'});
       // 单镜示例不要求「全片有演示镜」「meta.action」「meta.facts 数字来源」这类整片才有意义的业务规则，只查 spec/schema 本身对不对
       for (const e of r.errors)
         if (

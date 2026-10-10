@@ -51,6 +51,8 @@ import {runVoiceStep, voiceIntervals, voOf} from './lib/tts/pipeline.mjs';
 import {clearStaleOutputs, mp4Duration, sha256Of, verifyDelivery, writeManifest} from './lib/delivery.mjs';
 import {blankRuns} from './lib/blank-check.mjs';
 import {layoutCheck, parseProbeLog} from './lib/layout-check.mjs';
+import {REGISTRY_STUB, attributeLayoutIssues, attributeRenderFailure, filmHashOf, mainMotionMask, rewriteTscOutput, scanShotDir, stageCustom} from './lib/custom-shot.mjs';
+import {sampleClip, scoreFrames} from './broll/motion-check.mjs';
 import {hasCross, machineCheck, reportTextWrap} from './lib/precheck.mjs';
 import {QueueTimeoutError, acquireRenderLock, pidAlive} from './lib/render-lock.mjs';
 import {DEFAULT_STYLE, aspectOf, bpmOf, geometryOf, loadStyle, specsForStyle, styleIdOf} from './lib/styles.mjs';
@@ -181,7 +183,22 @@ try {
 } catch {}
 
 // ---------------- 收尾：所有出口都走这里（报告最后一行 + manifest + 退出码） ----------------
-const state = {runDir: null, lock: null, child: null, finishing: false, video: null, sheet: null, checkFrames: [], checks: {}, voice: null};
+const state = {runDir: null, lock: null, child: null, finishing: false, video: null, sheet: null, checkFrames: [], checks: {}, voice: null, customDir: null, customRegistry: null, customTouched: false};
+let customCleaned = false;
+const cleanupCustom = () => {
+  if (customCleaned || !state.customTouched) return;
+  customCleaned = true;
+  try {
+    if (state.customRegistry) fs.writeFileSync(state.customRegistry, REGISTRY_STUB, 'utf8');
+  } catch {}
+  try {
+    if (state.customDir) {
+      const st = fs.lstatSync(state.customDir);
+      if (!st.isSymbolicLink() && st.isDirectory()) fs.rmSync(state.customDir, {recursive: true, force: true});
+    }
+  } catch {}
+  state.customDir = null;
+};
 const cleanupRun = () => {
   if (state.runDir && !keep) {
     try {
@@ -195,6 +212,7 @@ const finish = (status, code, reason = null, reasonEn = null) => {
   try {
     state.child?.kill();
   } catch {}
+  cleanupCustom();
   state.lock?.release();
   cleanupRun();
   const delivered = status === 'delivered';
@@ -250,7 +268,10 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
     process.on(sig, () => finish('failed', EXIT.INTERRUPTED, `被中断（${sig}）`, `interrupted (${sig})`));
   } catch {}
 }
-process.on('exit', () => state.lock?.release());
+process.on('exit', () => {
+  cleanupCustom();
+  state.lock?.release();
+});
 
 // ---------------- 1. 校验 ----------------
 const parsed = parseFile(sbPath);
@@ -275,6 +296,18 @@ console.log(report);
 fs.writeFileSync(reportFile, report + '\n', 'utf8');
 state.checks.validate = {errors: r.errors.length, warnings: r.warnings.length, human: r.human?.length ?? 0};
 if (r.errors.length) finish('failed', EXIT.INVALID, `分镜校验没过（${r.errors.length} 个错误，见 report.txt 开头）`, `storyboard validation failed (${r.errors.length} errors)`);
+const customEntries = (parsed.sb.shots ?? []).map((s, i) => ({s, n: i + 1})).filter((x) => x.s?.type === 'custom');
+if (customEntries.length) {
+  const hits = scanShotDir(path.join(path.dirname(sbPath), 'shots'));
+  if (hits.length) {
+    const msg = hits.map((h) => `${h.file}:${h.line}:${h.col}：写死了${h.kind === 'number' ? '数字' : h.kind === 'import' ? '不允许的 import' : '文字'}「${h.text}」\n   → 怎么改：${h.fix}`).join('\n');
+    console.error(msg);
+    try {
+      fs.appendFileSync(reportFile, `自由镜头静态检查：\n${msg}\n`, 'utf8');
+    } catch {}
+    finish('failed', EXIT.INVALID, `自由镜头静态检查没过：${hits[0].file}:${hits[0].line}`, `custom shot static check failed at ${hits[0].file}:${hits[0].line}`);
+  }
+}
 const lang = parsed.sb.meta?.lang === 'en' ? 'en' : 'zh';
 
 // ---------------- 1b. 机器自查 + 文字排版（不靠模型自评） ----------------
@@ -508,9 +541,10 @@ const remotion = async (args, label) => {
 };
 
 const renderFail = (e) => {
-  if (e?.detail) console.error(e.detail);
-  const first = String(e?.detail ?? '').split('\n').filter(Boolean).slice(-1)[0] ?? '';
-  finish('failed', EXIT.RENDER, `${e?.message ?? e}${first ? `：${first.slice(0, 200)}` : ''}`, `Remotion render failed: ${first.slice(0, 200) || e?.message}`);
+  const attributed = attributeRenderFailure(e?.detail ?? '', parsed.sb, path.dirname(sbPath));
+  if (attributed) console.error(attributed);
+  const first = attributed.split('\n').filter(Boolean)[0] ?? '';
+  finish('failed', EXIT.RENDER, `${e?.message ?? e}${first ? `：${first.slice(0, 300)}` : ''}`, `Remotion render failed: ${first.slice(0, 200) || e?.message}`);
 };
 
 try {
@@ -520,6 +554,42 @@ try {
   finish('failed', EXIT.INTERNAL, `拿不到渲染锁：${e.message}`, `could not take the render lock: ${e.message}`);
 }
 log('拿到渲染锁');
+
+const regFile = path.join(TEMPLATE, 'src', 'shots', '_custom', 'registry.ts');
+state.customRegistry = regFile;
+state.customTouched = true;
+try {
+  const cur = fs.readFileSync(regFile, 'utf8').replace(/^\uFEFF/, '').replace(/\r\n/g, '\n');
+  if (cur !== REGISTRY_STUB) fs.writeFileSync(regFile, REGISTRY_STUB, 'utf8');
+} catch {}
+if (customEntries.length) {
+  try {
+    const hash = filmHashOf(fs.readFileSync(sbPath));
+    state.customDir = path.join(TEMPLATE, 'src', 'shots', '_custom', hash);
+    const staged = stageCustom({srcDir: path.join(path.dirname(sbPath), 'shots'), destRoot: path.join(TEMPLATE, 'src', 'shots', '_custom'), hash, registryFile: regFile});
+    state.customDir = staged.dir;
+    const fileToShots = {};
+    for (const x of customEntries) {
+      const base = path.basename(String(x.s.component ?? ''));
+      if (!base) continue;
+      (fileToShots[base] ??= []).push(x.n);
+    }
+    const tscBin = path.join(TEMPLATE, 'node_modules', 'typescript', 'bin', 'tsc');
+    log('自由镜头类型检查…');
+    const tsc = spawnSync(process.execPath, [tscBin, '--noEmit', '--pretty', 'false'], {cwd: TEMPLATE, encoding: 'utf8', maxBuffer: 16 * 1024 * 1024});
+    if (tsc.status !== 0) {
+      const msg = rewriteTscOutput(`${tsc.stdout || ''}\n${tsc.stderr || ''}`, hash, fileToShots);
+      console.error(msg);
+      try {
+        fs.appendFileSync(reportFile, `自由镜头类型检查：\n${msg}\n`, 'utf8');
+      } catch {}
+      const first = msg.split('\n').find((l) => l.trim()) ?? 'tsc';
+      finish('failed', EXIT.INVALID, `自由镜头类型检查没过：${first.slice(0, 300)}`, 'custom shot typecheck failed');
+    }
+  } catch (e) {
+    finish('failed', EXIT.INTERNAL, `自由镜头打包失败：${e.message}`, `custom shot staging failed: ${e.message}`);
+  }
+}
 
 const probeLogs = [];
 try {
@@ -548,6 +618,7 @@ const probed = parseProbeLog(probeLogs.join('\n'));
 // mustShow：镜头 spec 声明「检查帧上必须看得见」的字段（journey 的明信片标题和类别名），看不见就是空卡或错过了时刻
 const mustShow = r.slots.map((s) => ({i: s.i, frame: frameOf(checkSecOf(s)), fields: Array.isArray(specs[s.type]?.mustShow) ? specs[s.type].mustShow : []})).filter((x) => x.fields.length);
 const lc = layoutCheck({frames: probed, slots: r.slots, sb: parsed.sb, checkFrames, fps: FPS, geo: styleId === DEFAULT_STYLE ? null : geo, mustShow});
+lc.layoutIssues = attributeLayoutIssues(lc.layoutIssues, parsed.sb, path.dirname(sbPath));
 fs.writeFileSync(path.join(outDir, 'layout.json'), JSON.stringify([...probed.values()].filter((o) => checkFrames.includes(o.frame)), null, 1), 'utf8');
 const missingProbe = [...new Set(checkFrames)].filter((f) => !probed.has(f));
 const layoutLines = [];
@@ -644,7 +715,30 @@ const blank = blankRuns({
   cmd: (a) => (FF ? [FF, '-hide_banner', '-loglevel', 'error', ...a] : [process.execPath, REMOTION, 'ffmpeg', '-hide_banner', '-loglevel', 'error', ...a]),
 });
 if (blank.error) log(`⚠ 空帧检查没跑成（${blank.error.trim().split('\n').pop()}），跳过`);
-const blankBad = blank.runs.map((b) => `✗ ${b.from.toFixed(2)}–${b.to.toFixed(2)} 秒：连续 ${b.frames} 帧整屏 ${Math.round(b.ratio * 100)}% 是同一个颜色 ${b.color}（空帧）。转场别停在纯色上，这段时间里让下一镜的内容已经在画面上`);
+const blankBad = blank.runs.map((b) => {
+  const hit = r.slots.filter((s) => b.to > s.start + 1e-3 && b.from < s.end - 1e-3);
+  const who = hit.map((s) => `第 ${s.i + 1} 镜（${s.type}）`).join('、');
+  return `✗ ${who ? who + ' ' : ''}${b.from.toFixed(2)}–${b.to.toFixed(2)} 秒：连续 ${b.frames} 帧整屏 ${Math.round(b.ratio * 100)}% 是同一个颜色 ${b.color}（空帧）。转场别停在纯色上，这段时间里让下一镜的内容已经在画面上`;
+});
+const motionBad = [];
+if (!stills) {
+  for (const s of r.slots) {
+    if (s.type !== 'custom') continue;
+    const comp = parsed.sb.shots[s.i]?.component ?? '';
+    const who = `第 ${s.i + 1} 镜（custom）${comp}`;
+    try {
+      const sampled = sampleClip(videoPath, s.start, Math.max(s.start + 0.2, s.end), geo.w, geo.h, {sampleFps: 15, sampleWidth: 270});
+      const mask = mainMotionMask(sampled.w, sampled.h, geo.w, geo.h, {x0: geo.card.x0, x1: geo.card.x1, y0: geo.safe.y0, y1: geo.safe.y1});
+      const scored = scoreFrames(sampled.frames, sampled.w, sampled.h, {mask, sampleFps: 15, startSec: s.start, jumpLevel: 'warn'});
+      if (scored.level === 'fail') motionBad.push(`${who}：动效停死（最安静窗口帧差 ${scored.quietest}，低于 0.2）`);
+      else if (scored.level === 'warn') log(`${who}：动效提醒（不拦截）最安静窗口帧差 ${scored.quietest}`);
+    } catch (e) {
+      motionBad.push(`${who}：动效检查没跑成（${e.message}）`);
+    }
+  }
+}
+state.checks.motion = customEntries.length ? {ok: !motionBad.length, issues: motionBad.map((l) => l.trim())} : {skipped: true, reason: '没有自由镜头'};
+for (const b of motionBad) log(`✗ ${b}`);
 state.checks.blank = {ok: !blankBad.length, scannedFrames: blank.frames, issues: blankBad.map((l) => l.trim()), acceptedByHuman: acceptLayout && blankBad.length > 0};
 for (const b of blankBad) log(b);
 state.lock.release();
@@ -653,7 +747,7 @@ cleanupRun();
 
 // ---------------- 6. 成片和分镜绑定：哈希 + 时长 ----------------
 const dur = mp4Duration(videoPath);
-const blockingAll = [...blocking, ...blankBad.map((l) => l.trim().replace(/^✗\s*/, ''))];
+const blockingAll = [...blocking, ...blankBad.map((l) => l.trim().replace(/^✗\s*/, '')), ...motionBad];
 const rejectedAll = blockingAll.length > 0 && !acceptLayout;
 const finalVideo = rejectedAll ? path.join(outDir, 'video.rejected.mp4') : videoPath;
 if (rejectedAll) fs.renameSync(videoPath, finalVideo);

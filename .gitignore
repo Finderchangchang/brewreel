@@ -4,6 +4,8 @@ template/out/
 out/
 template/public/_run/
 template/public/_dev/
+# 出片时临时复制的自由镜头（跑完删；崩溃残留也不提交）
+template/src/shots/_custom/*/
 template/.render.lock
 
 # rendered videos (don't commit; examples ship as images instead)
