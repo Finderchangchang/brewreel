@@ -4,10 +4,13 @@ import type {Storyboard} from '../schema';
 import {clamp} from './anim';
 import {FONT} from './font';
 import {Lang, glyph, parseRich, repeatsHint} from './kit';
-import {CAP, DISCLAIMER_Y, FPS} from './safe';
+import {CAP, FPS} from './safe';
+import {useGeometry} from './aspect';
 import {fitLine, fitSize} from './fit';
 import {Icon, isIcon} from './icons';
-import {alpha, mixHex, moodColors, useTheme} from './theme';
+import {alpha, contrastRatio, mixHex, moodColors, relLuminance, useTheme, type Theme} from './theme';
+import {demoOpacity, type ShotLike} from './demo-shots';
+import {useStylePalette} from '../styles/context';
 import {Illust, isIllust} from '../illust';
 import type {Slot} from './timeline';
 import {EXIT} from './timeline';
@@ -383,33 +386,86 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
   );
 };
 
-// ---------------- 角落免责小字（全程） ----------------
-export const Disclaimer: React.FC<{text?: string; lang?: Lang}> = ({text, lang = 'zh'}) => {
-  const th = useTheme();
+// ---------------- 合规小字的取色 ----------------
+// 浅色主题：深色字 + 很淡的同色系纸底。深色主题反过来。底是实色，字和底的对比度先拉到 ≥ 4.5，
+// 再靠 1px 同色描边和轻投影，避免透明黑胶囊在任何底上都长一样。
+// 风格令牌（quiz / journey 的 ink、card、bg）优先于 cards 主题，因为画面底是那张纸，不是 cards 渐变。
+const tunePlate = (text: string, plate: string, lightPlate: boolean) => {
+  let p = plate;
+  let t = text;
+  for (let i = 0; i < 8 && contrastRatio(t, p) < 4.5; i++) p = mixHex(p, lightPlate ? '#FFFFFF' : '#0C0E14', 0.25);
+  if (contrastRatio(t, p) < 4.5) {
+    t = lightPlate ? '#141820' : '#F5F7FB';
+    p = lightPlate ? '#FFFFFF' : '#141820';
+  }
+  return {
+    color: t,
+    background: p,
+    border: `1px solid ${alpha(t, lightPlate ? 0.28 : 0.4)}`,
+    boxShadow: `0 1px 2px ${alpha(t, 0.22)}`,
+  };
+};
+
+const labelInk = (th: Theme, pal: Record<string, string>) => {
+  const ink = pal.ink;
+  const card = pal.card;
+  const bg = pal.bg;
+  if (ink && (card || bg)) {
+    const surface = bg || card;
+    const dark = relLuminance(surface) < 0.4;
+    if (!dark) return tunePlate(ink, mixHex(card || '#FFFCF6', bg || ink, 0.1), true);
+    const light = pal.flapInk || pal.onPrimary || '#F4F1E6';
+    return tunePlate(light, mixHex(card || surface, '#000000', 0.25), false);
+  }
+  if (th.dark) return tunePlate(th.cardText, mixHex(th.card, th.bgBot[0], 0.2), false);
+  return tunePlate(th.cardText, mixHex(th.card, th.bgTop[0], 0.14), true);
+};
+
+// 安全区左上角。9:16 上沿用 disclaimerY（216，平台顶栏 205 之下、字幕带 260 之上）。
+// 4:5 的 disclaimerY（36）落在平台顶栏里，改贴 bgOnly.top；高度压到 24px，给 journey 顶部车票（y112）留缝。
+const disclaimerBox = (geo: ReturnType<typeof useGeometry>) => {
+  const left = geo.safe.x0;
+  const maxW = geo.safe.x1 - geo.safe.x0;
+  const minTop = geo.bgOnly.top + 2;
+  const ticketTop = geo.h <= 1400 ? 112 : 272;
+  const ceiling = Math.min(geo.cap.y0, ticketTop) - 2;
+  const band = ceiling - minTop;
+  const compact = band < 40;
+  const fontSize = compact ? 24 : 26;
+  const padY = compact ? 0 : 3;
+  const lineHeight = compact ? 1 : 1.15;
+  const height = fontSize * lineHeight + padY * 2;
+  let top = Math.max(geo.disclaimerY, minTop);
+  if (top + height > ceiling) top = Math.max(minTop, ceiling - height);
+  return {left, maxW, top, fontSize, padY, padX: compact ? 10 : 12, lineHeight};
+};
+
+// ---------------- 免责小字 ----------------
+// 有演示镜头时只在那些镜头上（随镜头淡入淡出）；没有就全片显示。不传 slots 时按全片处理。
+export const Disclaimer: React.FC<{text?: string; lang?: Lang; slots?: {start: number; end: number; shot: ShotLike}[]}> = ({text, lang = 'zh', slots}) => {
+  const geo = useGeometry();
+  const ink = labelInk(useTheme(), useStylePalette());
+  const t = useCurrentFrame() / FPS;
   if (!text) return null;
+  const opacity = slots?.length ? demoOpacity(t, slots) : 1;
+  if (opacity <= 0) return null;
+  const box = disclaimerBox(geo);
+  const size = Math.max(24, Math.min(box.fontSize, fitLine(text, box.maxW - box.padX * 2, box.fontSize, 24)));
   return (
-    <div
-      style={{
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: DISCLAIMER_Y,
-        textAlign: 'center',
-        fontFamily: FONT,
-        fontSize: 26,
-        fontWeight: 600,
-        letterSpacing: lang === 'en' ? 0.4 : 1,
-      }}
-    >
-      {/* 浅色主题上底色太亮，小字会糊：统一垫一层半透明深色胶囊，白字 */}
+    <div style={{position: 'absolute', left: box.left, top: box.top, maxWidth: box.maxW, zIndex: 20, opacity, pointerEvents: 'none'}}>
       <span
         style={{
           display: 'inline-block',
-          padding: '4px 18px',
-          borderRadius: 999,
-          background: th.dark ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.20)',
-          color: 'rgba(255,255,255,0.92)',
-          lineHeight: 1.3,
+          maxWidth: box.maxW,
+          padding: `${box.padY}px ${box.padX}px`,
+          borderRadius: 8,
+          ...ink,
+          fontFamily: FONT,
+          fontSize: size,
+          fontWeight: 600,
+          lineHeight: box.lineHeight,
+          letterSpacing: lang === 'en' ? 0.2 : 0.4,
+          whiteSpace: 'nowrap',
         }}
       >
         {text}
@@ -418,13 +474,13 @@ export const Disclaimer: React.FC<{text?: string; lang?: Lang}> = ({text, lang =
   );
 };
 
-// ---------------- 底部常驻提示条（meta.notices，全程；和角落免责小字分开显示，互不冲突） ----------------
-// 安全位置：y ≥1344（主体区 1340 以下，watermark logo 在 1392 起），字号 ≥26px，半透明深色底衬保证可读。
-// 多条提示合并成一行（用 · 分隔），避免和下方 logo 水印叠高度；单条也够用绝大多数场景。
-// 同一提示不重复出现：和顶部免责小字说的是一回事（原话相同，或都是「演示/示意/模拟」这类演示声明）的条目不再画；
-// 多条之间互相重复的也只留一条（评审：顶部「演示画面，数据为示意」+ 底部「演示数据，以实际为准」每帧各一遍）。
-// disclaimer 由 Promo.tsx 传入（没传时只做条目之间的去重）
+// ---------------- 底部常驻提示条（meta.notices，全程；和免责小字分开显示，互不冲突） ----------------
+// 位置仍用画幅的 noticeY（9:16 为 1344，水印 logo 在 1392 起），只换跟主题走的小标签，不再用统一黑胶囊。
+// 多条提示合并成一行（用 · 分隔）。同一提示不重复出现：和免责小字说的是一回事的条目不再画；
+// 多条之间互相重复的也只留一条。disclaimer 由 Promo.tsx 传入（没传时只做条目之间的去重）。
 export const Notices: React.FC<{items?: string[]; lang?: Lang; disclaimer?: string}> = ({items, lang = 'zh', disclaimer}) => {
+  const geo = useGeometry();
+  const ink = labelInk(useTheme(), useStylePalette());
   const list = (items ?? [])
     .map((s) => (typeof s === 'string' ? s.trim() : ''))
     .filter(Boolean)
@@ -432,24 +488,22 @@ export const Notices: React.FC<{items?: string[]; lang?: Lang; disclaimer?: stri
     .slice(0, 3);
   if (!list.length) return null;
   const text = list.join('   ·   ');
-  // 内容宽度按安全区收窄到 720（和 MAIN/CARD 一致），字号仍有 26px 下限；就算 3 条提示拼满也让它换行，
-  // 不再用 nowrap 硬挤一行——之前 nowrap + 字号到下限还装不下时，整段会溢出安全区（round4 修复）
-  const size = Math.max(26, Math.min(28, fitLine(text, 720, 28, 26)));
+  const w = geo.safe.x1 - geo.safe.x0;
+  const size = Math.max(26, Math.min(28, fitLine(text, w - 36, 28, 26)));
   return (
-    <div style={{position: 'absolute', left: 0, right: 0, top: 1344, display: 'flex', justifyContent: 'center'}}>
+    <div style={{position: 'absolute', left: geo.safe.x0, width: w, top: geo.noticeY, display: 'flex', justifyContent: 'center', zIndex: 20, pointerEvents: 'none'}}>
       <span
         style={{
           display: 'inline-block',
-          maxWidth: 780,
-          padding: '6px 28px',
-          borderRadius: 28,
-          background: 'rgba(0,0,0,0.34)',
-          color: 'rgba(255,255,255,0.94)',
+          maxWidth: w,
+          padding: '4px 14px',
+          borderRadius: 8,
+          ...ink,
           fontFamily: FONT,
           fontSize: size,
           fontWeight: 600,
-          lineHeight: 1.35,
-          letterSpacing: lang === 'en' ? 0.3 : 0.5,
+          lineHeight: 1.3,
+          letterSpacing: lang === 'en' ? 0.2 : 0.4,
           whiteSpace: 'normal',
           textAlign: 'center',
         }}
