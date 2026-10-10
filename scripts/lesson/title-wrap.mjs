@@ -60,8 +60,27 @@ const takeNumber = (raw, start) => {
   return {end, next: j};
 };
 
-/** @returns {{text: string, start: number, end: number}[]} 下标对齐传入的原文 */
-export function titleSpans(text) {
+const singleCjk = (text) => {
+  const chars = Array.from(text);
+  if (chars.length !== 1) return false;
+  const cp = chars[0].codePointAt(0) ?? 0;
+  return isWide(cp) && !CLOSE.test(text) && !OPEN.test(text);
+};
+
+const MODEL = /^(?=.*[A-Za-z])(?=.*[0-9])[A-Za-z0-9.+#_-]+$/u;
+
+/**
+ * @param {string} text
+ * @param {{subtitle?: boolean, mergeLatin?: boolean, glueCjkSingles?: boolean, glueModels?: boolean}} [options]
+ * 默认和以前一样：连续英文词并成一块。subtitle 模式按词断开，不把英文词粘在一起，
+ * 并把分词器拆开的单字（尊|界、工|况）和型号（V800、1612N）粘回去。
+ * @returns {{text: string, start: number, end: number}[]} 下标对齐传入的原文
+ */
+export function titleSpans(text, options = {}) {
+  const subtitle = options.subtitle === true;
+  const mergeLatin = options.mergeLatin !== false && !subtitle;
+  const glueModels = options.glueModels === true || subtitle;
+  const glueCjk = options.glueCjkSingles === true || subtitle;
   const src = String(text);
   const raw = [...segmenter().segment(src)].map((part) => ({
     text: part.segment,
@@ -73,6 +92,10 @@ export function titleSpans(text) {
     const s = raw[i];
     if (s.text.trim() === '') continue;
     if (LATIN.test(s.text)) {
+      if (!mergeLatin) {
+        atoms.push(s);
+        continue;
+      }
       let end = s.end;
       while (i + 2 < raw.length && raw[i + 1].text === ' ' && LATIN.test(raw[i + 2].text)) {
         end = raw[i + 2].end;
@@ -95,8 +118,32 @@ export function titleSpans(text) {
     }
     atoms.push(s);
   }
+  let sequenced = atoms;
+  if (glueModels) {
+    const next = [];
+    for (const atom of sequenced) {
+      const prev = next[next.length - 1];
+      const joined = prev ? prev.text + atom.text : '';
+      if (prev && prev.end === atom.start && MODEL.test(joined)) {
+        next[next.length - 1] = {text: src.slice(prev.start, atom.end), start: prev.start, end: atom.end};
+      } else next.push(atom);
+    }
+    sequenced = next;
+  }
+  if (glueCjk) {
+    const next = [];
+    for (const atom of sequenced) {
+      const prev = next[next.length - 1];
+      const prevChars = prev ? Array.from(prev.text) : [];
+      const prevAllSingle = prevChars.length > 0 && prevChars.length < 4 && prevChars.every((ch) => singleCjk(ch));
+      if (prev && prev.end === atom.start && singleCjk(atom.text) && prevAllSingle) {
+        next[next.length - 1] = {text: src.slice(prev.start, atom.end), start: prev.start, end: atom.end};
+      } else next.push(atom);
+    }
+    sequenced = next;
+  }
   const merged = [];
-  for (const atom of atoms) {
+  for (const atom of sequenced) {
     const prev = merged[merged.length - 1];
     if (CLOSE.test(atom.text) && prev) merged[merged.length - 1] = {text: src.slice(prev.start, atom.end), start: prev.start, end: atom.end};
     else merged.push(atom);
@@ -138,7 +185,7 @@ export function titleLines(text, options = {}) {
   const forceTwo = options.forceTwo === true;
   const maxEm = Number.isFinite(options.maxEm) ? options.maxEm : Number.POSITIVE_INFINITY;
   const maxLines = Math.max(1, Math.floor(options.maxLines ?? 2));
-  const atoms = titleSpans(clean);
+  const atoms = titleSpans(clean, options.subtitle ? {subtitle: true} : {});
   if (maxLines === 1 || atoms.length < 2) return [clean];
   if (!forceTwo && emWidth(clean) <= maxEm + 1e-6) return [clean];
   if (maxLines === 2) {
@@ -209,9 +256,10 @@ export function coverTitleLayout(text, {width, minPx, maxPx, maxLines = 4} = {})
 }
 
 /** 在不可断开的片段内部插入 WORD JOINER，交给 word-break:normal 的容器自动换行。原文空格保留。 */
-export function protectBreaks(text) {
+export function protectBreaks(text, options = {}) {
+  const spanOpts = options.subtitle ? {subtitle: true} : {};
   return String(text ?? '').split('\n').map((line) => {
-    const atoms = titleSpans(line);
+    const atoms = titleSpans(line, spanOpts);
     let out = '';
     let cursor = 0;
     for (const atom of atoms) {

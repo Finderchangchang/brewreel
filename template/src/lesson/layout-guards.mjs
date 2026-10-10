@@ -1,4 +1,5 @@
 /** H–O 版式的纯校验。组件和 validate-lesson 共用这些常量，避免两边各写一套。 */
+export {TIMELINE_FRAME, timelineClipIssues, timelineFrameLayout} from '../../../scripts/lesson/timeline-frame.mjs';
 
 export const CASE_LABEL = '案例 · 人物均为虚构';
 

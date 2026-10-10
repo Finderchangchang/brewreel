@@ -28,9 +28,9 @@ Stop and ask if any of these is missing.
 2. `points`: at least `minutes` × 2 items. A 3-minute lesson needs at least 6. Ask for more. Do not invent a point to fill the list.
 3. `audience`.
 4. `minutes`: an integer from 1 to 8. The finished video must land between 30 seconds and 8 minutes.
-5. `domain`: `tech` or `legal`. A legal lesson is not a tech lesson.
-6. `sources`. A tech lesson needs a doc or a command source. A legal lesson needs the statute name and the article number. If the user did not give them, stop.
-7. Presenter: a preset cartoon, a hand-edited cartoon, a real video, or a cartoon built from a photo. Pick one. The photo path is at the end. Do not run it yourself.
+5. `domain`: `tech`, `legal`, or `news` (a news or current-events recap). A legal lesson is not a tech lesson, and a news recap is not a legal lesson.
+6. `sources`. A tech lesson needs a doc or a command source. A legal lesson needs the statute name and the article number. A news lesson needs the outlet and the date, and every item in `meta.facts` needs a `source`. If the user did not give them, stop.
+7. Presenter: a preset cartoon, a hand-edited cartoon, a real video, or a cartoon built from a photo. Pick one. To show nobody, see Presenter below. The photo path is at the end. Do not run it yourself.
 
 ```json
 {
@@ -46,6 +46,8 @@ Stop and ask if any of these is missing.
 ```
 
 For a legal lesson set `domain` to `legal`. Do not put statute text in the brief. The program fills quote pages only from the checked Civil Code corpus. If the article number is not in that corpus, tell the user it cannot be inserted. Do not write the article yourself.
+
+For a news recap set `domain` to `news`. Also set `meta.asOf` (the cutoff date and time) and `meta.facts`, where each fact has `text` and `source`. The program adds a silent end page: "Compiled from public reports as of <asOf>. This is not a conclusion." The quote layout does not draw the Law badge. Judgment words (造假, 抹黑, 黑幕, 实锤, 造谣, 诬陷, 带节奏, 甩锅) on screen or in narration are a warning, not a block. A `compare` page warns when one side is more than 1.5 times as long as the other. When a source is over the character limit, news and tech say to keep the outlet and the date. Legal says to keep the statute name and the article number.
 
 Samples: `<SKILL>/examples/lesson/briefs/what-is-codex.json`, `<SKILL>/examples/lesson/briefs/iou-basics.json`.
 
@@ -69,7 +71,7 @@ For the legal sample, use `examples/lesson/briefs/iou-basics.json` and `--mock-l
 
 When the user wants to change something already written, run `node <SKILL>/scripts/revise.mjs <lesson.json> "one sentence"` first. Do not rewrite the whole file.
 
-The top level is `meta` and `chapters`. `meta.format` is `lesson`. `meta.domain` is `tech` or `legal`. `meta.lang` is `zh` or `en`. Each page has `layout`, `title`, and `narration`. Layout names are in `<SKILL>/docs/lesson.en.md`. Samples: `<SKILL>/examples/lesson/sample-tech.json`, `<SKILL>/examples/lesson/mascot-demo.json`.
+The top level is `meta` and `chapters`. `meta.format` is `lesson`. `meta.domain` is `tech`, `legal`, or `news`. `meta.lang` is `zh` or `en`. Each page has `layout`, `title`, and `narration`. Layout names are in `<SKILL>/docs/lesson.en.md`. Samples: `<SKILL>/examples/lesson/sample-tech.json`, `<SKILL>/examples/lesson/mascot-demo.json`. A tech lesson can add an optional disclaimer page with a non-empty `meta.disclaimer`, or with `meta.disclaimerTail` set to `true`. A news lesson does not write that page itself.
 
 `meta.theme` can be omitted. When it is omitted, a legal lesson uses `paper`, a lesson whose screenshot and code pages are at least 30% uses `product`, and everything else uses `lecture`. To force one, write `paper`, `lecture`, `product`, or `editorial`. `editorial` is not allowed for a legal lesson.
 
@@ -148,6 +150,13 @@ Empty, 无, 测试, none, and `-` are not valid license numbers. An internal sam
 If the script changes, the old signature is void and the review starts over.
 
 ## Presenter
+
+To turn the presenter off, use either of these. Both leave the cartoon off the picture, and the delivery manifest records `{"kind":"none"}`:
+
+- `meta.presenter.kind` is `"none"`
+- or `meta.mascot.enabled` is `false`
+
+`none` is a real value. Any other word, such as `off`, fails validation. The message says the kind must be `cartoon`, `real`, or `none`.
 
 Preset cartoons do not cost money. Character files default to `brewreel-data` next to the current working directory (`LESSON_DATA_DIR` or `--data-dir` can change that). If `brewreel-data` does not exist yet and the old folder `brewreel-studio-data` does, the program still reads the old folder. Do not put these files in the repo.
 

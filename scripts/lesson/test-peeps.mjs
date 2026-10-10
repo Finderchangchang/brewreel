@@ -3,7 +3,8 @@ import {readFileSync} from 'node:fs';
 import {createRequire} from 'node:module';
 import {fileURLToPath} from 'node:url';
 import {validateLesson} from './validate-lesson.mjs';
-import {CAST, FAMILIES, LEGACY_IDS, OUTFIT_FAMILY, PEEP_FILL, POSE_LOOK, POSES, PRESETS, mouthAnchor, resolveCartoonWardrobe, resolveLook, resolveMascotId} from '../../template/src/lesson/mascot/cast.mjs';
+import {CAST, FAMILIES, LEGACY_IDS, OUTFIT_FAMILY, PEEP_FILL, POSE_LOOK, POSES, PRESETS, cartoonOnScreen, mouthAnchor, resolveCartoonWardrobe, resolveLook, resolveMascotId} from '../../template/src/lesson/mascot/cast.mjs';
+import {presenterRecord} from './segments.mjs';
 import {peepSvg as previewSvg} from './presenter-preview-render.mjs';
 import {peepSvg as cardSvg} from './character-card.mjs';
 import {blinkAt, mouthGeometry, mouthOpenAmount, talkingAt} from '../../template/src/lesson/mascot/motion.mjs';
@@ -105,6 +106,13 @@ assert.equal(resolveCartoonWardrobe({domain: 'tech', presenter: {kind: 'real'}})
 assert.equal(resolveCartoonWardrobe({domain: 'tech', presenter: {kind: 'video'}}), null);
 assert.equal(resolveCartoonWardrobe({domain: 'tech', presenter: {kind: 'none'}}), null);
 assert.equal(resolveCartoonWardrobe({domain: 'tech', mascot: {enabled: false}}), null);
+assert.equal(cartoonOnScreen(null), false);
+assert.equal(cartoonOnScreen(undefined), false);
+assert.equal(cartoonOnScreen({enabled: false}), false);
+assert.equal(cartoonOnScreen(resolveCartoonWardrobe({domain: 'tech'})), true);
+assert.deepEqual(presenterRecord({meta: {presenter: {kind: 'none'}}}), {kind: 'none', id: null, version: null});
+assert.deepEqual(presenterRecord({meta: {domain: 'news', mascot: {enabled: false}}}), {kind: 'none', id: null, version: null});
+assert.equal(presenterRecord({meta: {presenter: {kind: 'cartoon', look: {preset: 'male'}}}}).kind, 'mascot');
 
 const free = {kind: 'cartoon', look: {preset: 'female', outfit: 'darkSweater', hair: 'LongBangs', accessory: 'GlassAviator', facialHair: 'None', skin: '#E0B090'}};
 assert.equal(errors({...sample, meta: {...sample.meta, presenter: free}}), '');

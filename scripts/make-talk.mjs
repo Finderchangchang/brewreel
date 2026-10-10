@@ -27,6 +27,7 @@ import {ROOT, TEMPLATE} from './broll/root.mjs';
 import {readTranscribeMeta, srtSourceOf} from './broll/transcribe.mjs';
 import {formatReport, loadBanned, loadProject, loadStyles, validateBroll} from './broll/validate.mjs';
 import {QueueTimeoutError, acquireRenderLock} from './lib/render-lock.mjs';
+import {ensureTemplateBrowser, withBrowserExecutable} from './lib/remotion-browser.mjs';
 
 const REMOTION = path.join(TEMPLATE, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
 const LOCK = path.join(TEMPLATE, '.render.lock');
@@ -349,8 +350,9 @@ try {
 
   lock = await acquireRenderLock({file: LOCK, id: `talk-${process.pid}`});
   console.log('渲染中…');
+  const browserExe = ensureTemplateBrowser({templateDir: TEMPLATE, log: (line) => console.log(line)});
   const renderOnce = (extra) =>
-    spawnSync(process.execPath, [REMOTION, 'render', 'src/index.ts', 'Talk', videoPath, `--props=${propsPath}`, '--codec=h264', '--overwrite', ...extra], {
+    spawnSync(process.execPath, withBrowserExecutable([REMOTION, 'render', 'src/index.ts', 'Talk', videoPath, `--props=${propsPath}`, '--codec=h264', '--overwrite', ...extra], browserExe), {
       cwd: TEMPLATE,
       encoding: 'utf8',
       windowsHide: true,

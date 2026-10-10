@@ -12,6 +12,7 @@ import {isIconName} from '../../template/src/lesson/icon-names.mjs';
 import {BASIS_RE, CASE_LABEL, basisCitations, collectStrings, documentBrandHit, sayingLawHit} from '../../template/src/lesson/layout-guards.mjs';
 import {resolveCartoonWardrobe, resolveLook} from '../../template/src/lesson/mascot/cast.mjs';
 import {corpusNumbers} from './packs/domain-hooks.mjs';
+import {timelineClipIssues, timelineFrameLayout} from './timeline-frame.mjs';
 
 const SPEC_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../template/src/lesson/layouts');
 export const LAYOUTS = new Set(['cover','steps','chapter','quote','compare','question','flow','recap','screenshot','code','points','statement','timeline','checklist','bignumber','saying','levels','case','document','table']);
@@ -220,7 +221,7 @@ export function validateLesson(x, options = {}) {
   const meta = x.meta;
   if (!meta || meta.format !== 'lesson') err('meta.format', '必须为 lesson');
   if (!isText(meta?.title)) err('meta.title', '必须是非空字符串');
-  if (!['tech', 'legal'].includes(meta?.domain)) err('meta.domain', '必须是 tech 或 legal');
+  if (!['tech', 'legal', 'news'].includes(meta?.domain)) err('meta.domain', '必须是 tech、legal 或 news');
   if (!['zh', 'en'].includes(meta?.lang)) err('meta.lang', '必须是 zh 或 en');
   if (typeof meta?.brand === 'string') {
     if (!parseBrandRef(meta.brand)) err('meta.brand', brandRefProblem(meta.brand));
@@ -238,6 +239,17 @@ export function validateLesson(x, options = {}) {
   }
   for (const k of ['facts','sources']) if (meta?.[k] !== undefined && !Array.isArray(meta[k])) err(`meta.${k}`, '必须是数组');
   if (meta?.disclaimer !== undefined && typeof meta.disclaimer !== 'string') err('meta.disclaimer', '必须是字符串');
+  if (meta?.disclaimerTail !== undefined && typeof meta.disclaimerTail !== 'boolean') err('meta.disclaimerTail', '必须是 true 或 false');
+  if (meta?.asOf !== undefined && typeof meta.asOf !== 'string') err('meta.asOf', '必须是字符串');
+  if (meta?.domain === 'news') {
+    if (!String(meta.asOf ?? '').trim()) err('meta.asOf', '新闻领域要写截至时间，例如 2026-10-10 19:30（北京时间）');
+    if (!Array.isArray(meta.facts) || meta.facts.length === 0) err('meta.facts', '新闻领域要列出事实，每条含 text 和 source');
+    else meta.facts.forEach((fact, i) => {
+      if (!fact || typeof fact !== 'object' || Array.isArray(fact)) { err(`meta.facts[${i}]`, '须为对象，含 text 和 source'); return; }
+      if (!String(fact.text ?? '').trim()) err(`meta.facts[${i}].text`, '事实原文不能为空');
+      if (!String(fact.source ?? '').trim()) err(`meta.facts[${i}].source`, '每条事实都要有出处');
+    });
+  }
   if (meta?.voice !== undefined) {
     if (!meta.voice || typeof meta.voice !== 'object' || Array.isArray(meta.voice)) err('meta.voice', '必须是对象');
     else {
@@ -373,7 +385,16 @@ export function validateLesson(x, options = {}) {
           if (!isText(p.quote)) err(`${at}.quote`, '法条卡须填写原文');
           if (!isText(p.source)) err(`${at}.source`, '法条卡须填写出处');
           if (p.emphasis !== undefined && (!isText(p.emphasis) || count(p.emphasis) > 24)) err(`${at}.emphasis`, '重点词最多 24 字');
-          else if (isText(p.emphasis) && isText(p.quote) && !p.quote.includes(p.emphasis)) warnings.push(`${at}.emphasis：重点词“${p.emphasis}”不在法条原文中，渲染时不会绘制强调`);
+          else if (isText(p.emphasis) && isText(p.quote) && !p.quote.includes(p.emphasis)) warnings.push(`${at}.emphasis：重点词“${p.emphasis}”不在原文中，渲染时不会绘制强调`);
+        }
+        if (Array.isArray(p.nodes) && p.nodes.every((node) => node && typeof node === 'object' && typeof node.label === 'string')) {
+          const clipped = timelineClipIssues(timelineFrameLayout({
+            nodes: p.nodes.map((node) => node.label),
+            segments: Array.isArray(p.segments) ? p.segments : [],
+            captions: Array.isArray(p.captions) ? p.captions : [],
+            hasQuote: isText(p.quote),
+          }));
+          for (const message of clipped) err(at, `时间轴文字会被裁切：${message}`);
         }
       }
       if (p.layout === 'checklist') list('items', 4, 8, '核对项', (v, i) => { if (!isText(v) || count(v) > 16) err(`${at}.items[${i}]`, '每项须非空且最多 16 字'); });

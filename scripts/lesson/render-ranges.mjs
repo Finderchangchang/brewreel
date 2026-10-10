@@ -14,8 +14,9 @@ import {
   segmentDecision,
   segmentLog,
 } from './segments.mjs';
+import {chromeModeForExecutable, ensureTemplateBrowser} from '../lib/remotion-browser.mjs';
 
-export async function openLessonRenderer({template, log = () => {}}) {
+export async function openLessonRenderer({template, log = () => {}, browserExecutable = null}) {
   const require = createRequire(path.join(template, 'package.json'));
   const {bundle} = require('@remotion/bundler');
   const {renderMedia, selectComposition, openBrowser} = require('@remotion/renderer');
@@ -27,7 +28,8 @@ export async function openLessonRenderer({template, log = () => {}}) {
     enableCaching: true,
     webpackOverride: (config) => config,
   });
-  const browser = await openBrowser('chrome');
+  const exe = browserExecutable || ensureTemplateBrowser({templateDir: template, log});
+  const browser = await openBrowser('chrome', {browserExecutable: exe, chromeMode: chromeModeForExecutable(exe), logLevel: 'error'});
   const compositions = new Map();
   return {
     serveUrl,

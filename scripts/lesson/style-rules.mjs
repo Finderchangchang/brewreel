@@ -158,8 +158,13 @@ export function copyContractTable() {
   return lines.join('\n');
 }
 
+function sourceHint(domain) {
+  return domain === 'legal' ? '请只留法律全称和条号' : '请只留媒体名和日期';
+}
+
 /** 四套共用的稿件字数上限。默认给旧稿当警告；新稿（meta.generatedBy）或 strict 时当错误。 */
 export function copyLimitIssues(lesson) {
+  const domain = lesson?.meta?.domain;
   const issues = [];
   for (const {page, at} of pagesOf(lesson)) {
     if (!page || typeof page !== 'object') continue;
@@ -182,7 +187,7 @@ export function copyLimitIssues(lesson) {
     }
     if (page.layout === 'quote') {
       if (chars(page.quote) > copy.quoteMax) issues.push(issue(`${at}.quote`, `引用原文现在 ${chars(page.quote)} 字，超过 ${copy.quoteMax} 字。请按意群拆成两页，每页仍用 quote`));
-      if (chars(page.source) > copy.sourceMax) issues.push(issue(`${at}.source`, `出处现在 ${chars(page.source)} 字，超过 ${copy.sourceMax} 字。请只留法律全称和条号`));
+      if (chars(page.source) > copy.sourceMax) issues.push(issue(`${at}.source`, `出处现在 ${chars(page.source)} 字，超过 ${copy.sourceMax} 字。${sourceHint(domain)}`));
     }
     if (page.layout === 'question') {
       if (chars(page.question) > copy.questionMax) issues.push(issue(`${at}.question`, `题干现在 ${chars(page.question)} 字，超过 ${copy.questionMax} 字。请收成不超过 ${copy.questionMax} 字`));
@@ -222,7 +227,7 @@ export function copyLimitIssues(lesson) {
       (Array.isArray(page.segments) ? page.segments : []).forEach((seg, i) => { if (chars(seg?.label) > copy.segmentMax) issues.push(issue(`${at}.segments[${i}].label`, `区段 ${chars(seg?.label)} 字，超过 ${copy.segmentMax} 字`)); });
       (Array.isArray(page.captions) ? page.captions : []).forEach((cap, i) => { if (chars(cap?.text) > copy.captionMax) issues.push(issue(`${at}.captions[${i}].text`, `说明 ${chars(cap?.text)} 字，超过 ${copy.captionMax} 字`)); });
       if (page.quote && chars(page.quote) > copy.quoteMax) issues.push(issue(`${at}.quote`, `法条原文现在 ${chars(page.quote)} 字，超过 ${copy.quoteMax} 字`));
-      if (page.source && chars(page.source) > copy.sourceMax) issues.push(issue(`${at}.source`, `出处现在 ${chars(page.source)} 字，超过 ${copy.sourceMax} 字`));
+      if (page.source && chars(page.source) > copy.sourceMax) issues.push(issue(`${at}.source`, `出处现在 ${chars(page.source)} 字，超过 ${copy.sourceMax} 字。${sourceHint(domain)}`));
     }
     if (page.layout === 'checklist') {
       const items = Array.isArray(page.items) ? page.items : [];
@@ -427,18 +432,18 @@ function splitOnce(page) {
   return null;
 }
 
-function issuesOf(page) {
-  return copyLimitIssues({chapters: [{pages: [page]}]});
+function issuesOf(page, domain) {
+  return copyLimitIssues({meta: {domain}, chapters: [{pages: [page]}]});
 }
 
-function expandPage(page, depth) {
-  const issues = issuesOf(page);
+function expandPage(page, depth, domain) {
+  const issues = issuesOf(page, domain);
   if (!issues.length) return {pages: [page], blocked: []};
   if (depth > 8) return {pages: [page], blocked: issues};
   const pair = splitOnce(page);
   if (!pair) return {pages: [page], blocked: issues};
-  const left = expandPage(pair[0], depth + 1);
-  const right = expandPage(pair[1], depth + 1);
+  const left = expandPage(pair[0], depth + 1, domain);
+  const right = expandPage(pair[1], depth + 1, domain);
   if (left.blocked.length || right.blocked.length) return {pages: [page], blocked: [...left.blocked, ...right.blocked]};
   return {pages: [...left.pages, ...right.pages], blocked: []};
 }
@@ -449,12 +454,13 @@ function expandPage(page, depth) {
  */
 export function splitCopyOverflow(lesson) {
   const next = structuredClone(lesson);
+  const domain = lesson?.meta?.domain;
   let changed = false;
   for (const chapter of next.chapters ?? []) {
     if (!Array.isArray(chapter?.pages)) continue;
     const pages = [];
     for (const page of chapter.pages) {
-      const expanded = expandPage(page, 0);
+      const expanded = expandPage(page, 0, domain);
       if (expanded.blocked.length) return {lesson, blocked: copyLimitIssues(lesson), changed: false};
       if (expanded.pages.length !== 1) changed = true;
       pages.push(...expanded.pages);

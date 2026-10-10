@@ -33,6 +33,8 @@ export function resolveLook(wardrobe?: {id?: string; preset?: string; hair?: str
   facialHair: FacialHairType;
   skin: string | null;
 };
+/** null、未传、enabled:false 都不画卡通。 */
+export function cartoonOnScreen(mascot?: {enabled?: boolean} | null): boolean;
 export function resolveCartoonWardrobe(meta?: {domain?: string; mascot?: {id?: string; enabled?: boolean; hair?: string; accessory?: string; facialHair?: string; outfit?: string; pageOverrides?: unknown[]}; presenter?: {kind?: string; look?: {preset?: string; hair?: string; accessory?: string; facialHair?: string; outfit?: string; skin?: string}}} | null): {
   enabled: boolean;
   preset: string;

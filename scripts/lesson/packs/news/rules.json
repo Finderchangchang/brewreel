@@ -1,0 +1,21 @@
+{
+  "id": "news",
+  "name": "新闻复盘",
+  "version": "2026-10-11",
+  "patterns": [],
+  "checks": [
+    {
+      "id": "news-judgment",
+      "level": "warn",
+      "message": "画面或旁白出现定性词。新闻复盘只转述公开报道，不要下结论",
+      "words": ["造假", "抹黑", "黑幕", "实锤", "造谣", "诬陷", "带节奏", "甩锅"],
+      "source": "讲课视频新闻领域"
+    },
+    {
+      "id": "news-balance",
+      "level": "warn",
+      "message": "双方观点篇幅差超过 1.5 倍。请把两边写得差不多长",
+      "source": "讲课视频新闻领域"
+    }
+  ]
+}

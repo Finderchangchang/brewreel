@@ -8,6 +8,7 @@ const PACKS = path.dirname(fileURLToPath(import.meta.url));
 const readPack = (domain) => readJsonResource(path.join(PACKS, domain, 'rules.json'));
 const legalRules = readPack('legal');
 const techRules = readPack('tech');
+const newsRules = readPack('news');
 const legalRoot = path.join(PACKS, 'legal');
 const corpusDir = path.join(legalRoot, 'corpus');
 
@@ -134,6 +135,49 @@ function techHook(lesson) {
   return {block, warn, human, summary: {domain: 'tech', ruleCount: techRules.patterns.length + techRules.checks.length}};
 }
 
-export const domainHooks = {legal: legalHook, tech: techHook};
+const judgmentWords = () => newsRules.checks.find((item) => item.id === 'news-judgment')?.words ?? [];
+const sideChars = (value) => {
+  const list = Array.isArray(value) ? value : [];
+  return list.reduce((sum, item) => sum + Array.from(typeof item === 'string' ? item : item?.text ?? '').length, 0);
+};
+
+function newsHook(lesson) {
+  const block = [];
+  const warn = [];
+  const human = [];
+  const words = judgmentWords();
+  const balance = newsRules.checks.find((item) => item.id === 'news-balance');
+  const judgment = newsRules.checks.find((item) => item.id === 'news-judgment');
+  for (const row of pagesOf(lesson)) {
+    const extra = [];
+    for (const key of ['left', 'right']) {
+      const value = row.page?.[key];
+      if (!Array.isArray(value)) continue;
+      for (const item of value) {
+        if (typeof item === 'string') extra.push(item);
+        else if (item && typeof item.text === 'string') extra.push(item.text);
+      }
+    }
+    const blob = [...row.texts, ...extra].join('\n');
+    for (const word of words) {
+      if (word && blob.includes(word)) warn.push(`${row.where}：${judgment.message}（命中「${word}」；${judgment.id}）`);
+    }
+    if (row.page?.layout === 'compare') {
+      const left = sideChars(row.page.left);
+      const right = sideChars(row.page.right);
+      const short = Math.min(left, right);
+      const long = Math.max(left, right);
+      if (long > 0 && (short === 0 || long > short * 1.5)) warn.push(`${row.where}：${balance.message}（${left} 字对 ${right} 字；${balance.id}）`);
+    }
+  }
+  return {block, warn, human, summary: {domain: 'news', ruleCount: newsRules.checks.length, disclaimerForced: true}};
+}
+
+export const domainHooks = {legal: legalHook, tech: techHook, news: newsHook};
 export function hookForDomain(domain) { return domainHooks[domain] ?? null; }
-export function getDomainRules(domain) { return domain === 'legal' ? legalRules : domain === 'tech' ? techRules : null; }
+export function getDomainRules(domain) {
+  if (domain === 'legal') return legalRules;
+  if (domain === 'tech') return techRules;
+  if (domain === 'news') return newsRules;
+  return null;
+}

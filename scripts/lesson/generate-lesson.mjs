@@ -27,7 +27,7 @@ catch (e) { fail(`brief JSON 解析失败：${e.message}`); }
 function validateBrief(b) {
   const errors = [];
   if (!b || typeof b !== 'object' || Array.isArray(b)) return ['根节点必须是对象'];
-  if (!['tech','legal'].includes(b.domain)) errors.push('domain 必须是 tech 或 legal');
+  if (!['tech','legal','news'].includes(b.domain)) errors.push('domain 必须是 tech、legal 或 news');
   if (!['zh','en'].includes(b.lang)) errors.push('lang 必须是 zh 或 en');
   for (const k of ['title','audience']) if (typeof b[k] !== 'string' || !b[k].trim()) errors.push(`${k} 必须是非空字符串`);
   if (!Number.isInteger(b.minutes) || b.minutes < 1 || b.minutes > 8) errors.push('minutes 必须是 1–8 的整数');

@@ -56,6 +56,7 @@ import {sampleClip, scoreFrames} from './broll/motion-check.mjs';
 import {hasCross, machineCheck, reportTextWrap} from './lib/precheck.mjs';
 import {QueueTimeoutError, acquireRenderLock, pidAlive} from './lib/render-lock.mjs';
 import {DEFAULT_STYLE, aspectOf, bpmOf, geometryOf, loadStyle, specsForStyle, styleIdOf} from './lib/styles.mjs';
+import {ensureTemplateBrowser, withBrowserExecutable} from './lib/remotion-browser.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REMOTION = path.join(TEMPLATE, 'node_modules', '@remotion', 'cli', 'remotion-cli.js');
@@ -494,8 +495,12 @@ const runRemotion = (args) =>
       }
     };
     let p;
+    const head = args[0];
     try {
-      p = spawn(process.execPath, [REMOTION, ...args], {cwd: TEMPLATE, windowsHide: true});
+      const renderArgs = head === 'render' || head === 'still'
+        ? withBrowserExecutable(args, ensureTemplateBrowser({templateDir: TEMPLATE, log: (line) => console.log(line)}))
+        : args;
+      p = spawn(process.execPath, [REMOTION, ...renderArgs], {cwd: TEMPLATE, windowsHide: true});
     } catch (e) {
       resolve({status: -1, probe: '', tail: [String(e.message)], progress: () => ''});
       return;

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {emWidth} from './title-wrap.mjs';
+import {emWidth, titleLines, titleSpans} from './title-wrap.mjs';
 import {mapSentences, narrationText, subtitleLineEm, subtitleScreens} from './timeline.mjs';
 import {SUBTITLE, subtitleLayout} from '../../template/src/lesson/stage.mjs';
 
@@ -88,5 +88,32 @@ assert.ok(fast[0].endMs - fast[0].startMs >= 800);
 
 const vertical = subtitleScreens(timeline, {maxHan: 14, maxLen: 14});
 assert.ok(vertical.some((screen) => screen.text === '利息、'), '竖版仍按逗号切屏');
+
+const atomsOf = (text) => titleSpans(text, {subtitle: true}).map((span) => span.text);
+const modelAtoms = atomsOf('三台尊界V800');
+assert.ok(modelAtoms.some((atom) => atom.includes('尊界')), `尊和界被拆开：${modelAtoms.join('|')}`);
+assert.ok(modelAtoms.some((atom) => atom.includes('V800')), `V800 被拆开：${modelAtoms.join('|')}`);
+assert.equal(modelAtoms.includes('尊') || modelAtoms.includes('界'), false);
+const workAtoms = atomsOf('非标准极端工况');
+assert.ok(workAtoms.some((atom) => atom.includes('工况')), `工况被拆开：${workAtoms.join('|')}`);
+assert.equal(workAtoms.includes('工') || workAtoms.includes('况'), false);
+assert.ok(atomsOf('制动踏板1612N').some((atom) => atom.includes('1612N')), atomsOf('制动踏板1612N').join('|'));
+const english = titleLines('brake test is basic', {subtitle: true, maxEm: 8, maxLines: 2});
+const englishWords = new Set(['brake', 'test', 'is', 'basic']);
+for (const line of english) for (const word of line.split(' ')) assert.ok(englishWords.has(word), `英文断进了词里：${line}`);
+const modelScreens = screensOf([{text: '三台尊界V800在非标准极端工况下做了测试。', startMs: 0, endMs: 5000}]);
+assert.ok(modelScreens.some((screen) => screen.text.includes('尊界')), modelScreens.map((screen) => screen.text).join(' / '));
+assert.ok(modelScreens.some((screen) => screen.text.includes('工况')), modelScreens.map((screen) => screen.text).join(' / '));
+assert.ok(modelScreens.some((screen) => screen.text.includes('V800')), modelScreens.map((screen) => screen.text).join(' / '));
+for (let i = 0; i < modelScreens.length - 1; i += 1) {
+  const edge = modelScreens[i].text.slice(-1) + modelScreens[i + 1].text.slice(0, 1);
+  assert.notEqual(edge, '尊界', modelScreens.map((screen) => screen.text).join(' / '));
+  assert.notEqual(edge, '工况', modelScreens.map((screen) => screen.text).join(' / '));
+}
+const wrapped = subtitleLayout('三台尊界V800在非标准极端工况下刹车');
+for (const line of wrapped.lines) {
+  assert.equal(line.endsWith('尊') || line.endsWith('工'), false, line);
+  assert.equal(line.startsWith('界') || line.startsWith('况'), false, line);
+}
 
 console.log(`✓ 横版字幕 ${screens.length} 屏：real-legal 全旁白无碎屏，竖版切法未改`);

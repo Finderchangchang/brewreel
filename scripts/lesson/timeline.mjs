@@ -238,7 +238,7 @@ export function packSubtitleChars(chars, options = {}) {
     ranges.push({start, end: offset, ch});
   }
   const take = (start, end) => ranges.filter((range) => range.start >= start && range.end <= end).map((range) => range.ch);
-  const atoms = titleSpans(src).map((span) => ({
+  const atoms = titleSpans(src, {subtitle: true}).map((span) => ({
     text: span.text,
     chars: take(span.start, span.end),
     hard: HARD_END.test(span.text),

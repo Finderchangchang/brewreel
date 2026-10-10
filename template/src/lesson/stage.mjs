@@ -296,7 +296,7 @@ export function subtitleLayout(text) {
     if (!raw) return [''];
     const maxEm = innerMax / px;
     if (emWidth(raw) <= maxEm + 1e-6) return [raw];
-    const lines = titleLines(raw, {maxEm, maxLines: 2});
+    const lines = titleLines(raw, {maxEm, maxLines: 2, subtitle: true});
     return lines.length ? lines : [raw];
   };
   let font = SUBTITLE.fontPx;

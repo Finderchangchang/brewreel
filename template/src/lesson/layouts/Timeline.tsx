@@ -1,10 +1,11 @@
 import React from 'react';
 import {TYPE} from '../stage.mjs';
+import {timelineFrameLayout} from '../../../../scripts/lesson/timeline-frame.mjs';
 import type {LayoutProps} from './shared';
 import {ContentFrame, PageBody, Reveal, colorsOf, protectBreaks, showFor, textOf, useBlockWidth, useFrame, useOrientation} from './shared';
 import {Icon, LawCard, timelineCaptions, timelineNodes, timelineSegments, toneOf} from './pro';
 
-export const Timeline: React.FC<LayoutProps> = ({page, fields, theme, lang}) => {
+export const Timeline: React.FC<LayoutProps> = ({page, fields, theme, lang, domain}) => {
   const frame = useFrame();
   const vert = useOrientation() === 'vertical';
   const t = colorsOf(theme);
@@ -14,11 +15,12 @@ export const Timeline: React.FC<LayoutProps> = ({page, fields, theme, lang}) => 
   const quote = textOf(fields.quote);
   const cardW = useBlockWidth(quote ? 400 : 0, 590);
   const open = (index: number) => showFor(page, index, frame, vert && index === 0, true) > 0.02 || (!vert && index === 0);
-  return <ContentFrame>
+  const layout = timelineFrameLayout({nodes, segments, captions, hasQuote: Boolean(quote)});
+  if (vert) return <ContentFrame>
     <PageBody>
       <div style={{width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16}}>
-        <div style={{flex: vert ? '1 1 46%' : '0 0 auto', width: '100%', height: vert ? undefined : 280, minHeight: vert ? 160 : 280, position: 'relative'}}>
-          {vert ? <div style={{height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
+        <div style={{flex: '1 1 46%', width: '100%', minHeight: 160, position: 'relative'}}>
+          <div style={{height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between'}}>
             {nodes.map((label, index) => {
               const seg = segments[index - 1];
               const cap = captions[index] ?? captions[index - 1];
@@ -35,39 +37,44 @@ export const Timeline: React.FC<LayoutProps> = ({page, fields, theme, lang}) => 
                 </div>
               </React.Fragment>;
             })}
-          </div> : <div style={{position: 'absolute', inset: 0}}>
-            {nodes.map((label, index) => {
-              const pad = 10;
-              const span = 80;
-              const left = nodes.length === 1 ? 50 : pad + (index / (nodes.length - 1)) * span;
-              const seg = segments[index];
-              const nextLeft = nodes.length === 1 ? 90 : pad + ((index + 1) / (nodes.length - 1)) * span;
-              const seen = open(index);
-              const cap = captions[index];
-              return <React.Fragment key={label + index}>
-                {seg && index < nodes.length - 1 ? <div style={{position: 'absolute', left: `${left}%`, width: `${nextLeft - left}%`, top: 78, height: 48, opacity: open(index + 1) ? 1 : 0.4}}>
-                  {seg.tone === 'alert'
-                    ? <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: t.alert, fontFamily: t.fontHeading, fontWeight: 800, fontSize: 44}}>
-                      <span style={{borderTop: `4px dashed ${t.alert}`, flex: 1, marginRight: 8}} />
-                      {protectBreaks(seg.label)}
-                      <span style={{marginLeft: 8}}>→</span>
-                    </div>
-                    : <div style={{height: '100%', borderRadius: 24, background: t.accent, color: t.surface, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: t.fontHeading, fontWeight: 800, fontSize: TYPE.timelineSeg}}>{protectBreaks(seg.label)}</div>}
-                </div> : null}
-                {cap ? <div style={{position: 'absolute', left: `${left}%`, width: `${Math.max(12, nextLeft - left)}%`, top: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: seg?.tone === 'alert' ? t.alert : t.accent, fontFamily: t.fontHeading, fontWeight: 800, fontSize: 34, opacity: seen ? 1 : 0.4}}>
-                  <Icon name={cap.icon} size={36} color="currentColor" />
-                  {protectBreaks(cap.text)}
-                </div> : null}
-                <div style={{position: 'absolute', left: `${left}%`, top: 86, width: 28, height: 28, marginLeft: -14, borderRadius: 14, background: t.surface, border: `7px solid ${index > 0 && segments[index - 1]?.tone === 'alert' ? t.alert : t.accent}`, opacity: seen ? 1 : 0.35, zIndex: 1}} />
-                <div style={{position: 'absolute', left: `${left}%`, top: 140, width: 220, marginLeft: -110, textAlign: 'center', fontFamily: t.fontHeading, fontWeight: 800, fontSize: TYPE.timelineNode, color: t.ink, opacity: seen ? 1 : 0.35, wordBreak: 'normal'}}>{protectBreaks(label)}</div>
-              </React.Fragment>;
-            })}
-          </div>}
+          </div>
         </div>
-        {quote ? <Reveal page={page} index={nodes.length} frame={frame} fallbackAtEnd style={{width: vert ? '100%' : cardW, flex: '0 0 auto'}}>
-          <LawCard page={page} frame={frame} theme={theme} lang={lang} quote={quote} source={textOf(fields.source)} emphasis={textOf(fields.emphasis)} bundleIndex={nodes.length} compact quoteSize={vert ? 32 : TYPE.timelineQuote} />
+        {quote ? <Reveal page={page} index={nodes.length} frame={frame} fallbackAtEnd style={{width: '100%', flex: '0 0 auto'}}>
+          <LawCard page={page} frame={frame} theme={theme} lang={lang} domain={domain} quote={quote} source={textOf(fields.source)} emphasis={textOf(fields.emphasis)} bundleIndex={nodes.length} compact quoteSize={32} />
         </Reveal> : null}
       </div>
     </PageBody>
+  </ContentFrame>;
+  return <ContentFrame>
+    <div style={{position: 'relative', width: '100%', height: '100%'}}>
+      {layout.bars.map((bar) => {
+        const seen = open(bar.index + 1);
+        const color = bar.tone === 'alert' ? t.alert : t.accent;
+        return <React.Fragment key={`bar-${bar.index}`}>
+          {bar.labelBox ? <div style={{position: 'absolute', left: bar.labelBox.x, top: bar.labelBox.y, width: bar.labelBox.w, height: bar.labelBox.h, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontFamily: t.fontHeading, fontWeight: 800, fontSize: bar.labelBox.font, opacity: seen ? 1 : 0.4, lineHeight: 1.15}}>{protectBreaks(bar.label)}</div> : null}
+          <div style={{position: 'absolute', left: bar.x, top: bar.y, width: bar.w, height: bar.h, borderRadius: bar.h / 2, background: bar.tone === 'alert' ? 'transparent' : t.accent, border: bar.tone === 'alert' ? `3px dashed ${t.alert}` : undefined, opacity: seen ? 1 : 0.4, boxSizing: 'border-box'}} />
+        </React.Fragment>;
+      })}
+      {layout.captions.map((cap) => {
+        const seen = open(cap.index);
+        const seg = segments[cap.index];
+        return <div key={`cap-${cap.index}`} style={{position: 'absolute', left: cap.x, top: cap.y, width: cap.w, height: cap.h, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: seg?.tone === 'alert' ? t.alert : t.accent, fontFamily: t.fontHeading, fontWeight: 800, fontSize: cap.font, opacity: seen ? 1 : 0.4, lineHeight: 1.15}}>
+          <Icon name={cap.icon} size={Math.round(cap.font)} color="currentColor" />
+          {protectBreaks(cap.text)}
+        </div>;
+      })}
+      {layout.nodes.map((node) => {
+        const seen = open(node.index);
+        const prev = node.index > 0 ? segments[node.index - 1] : null;
+        const color = prev?.tone === 'alert' ? t.alert : t.accent;
+        return <React.Fragment key={`node-${node.index}`}>
+          <div style={{position: 'absolute', left: node.cx - 14, top: node.cy - 14, width: 28, height: 28, borderRadius: 14, background: t.surface, border: `7px solid ${color}`, opacity: seen ? 1 : 0.35, zIndex: 1, boxSizing: 'border-box'}} />
+          <div style={{position: 'absolute', left: node.x, top: node.y, width: node.w, height: node.h, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', fontFamily: t.fontHeading, fontWeight: 800, fontSize: node.font, color: t.ink, opacity: seen ? 1 : 0.35, lineHeight: 1.15, wordBreak: 'normal'}}>{protectBreaks(node.text)}</div>
+        </React.Fragment>;
+      })}
+      {quote ? <Reveal page={page} index={nodes.length} frame={frame} fallbackAtEnd style={{position: 'absolute', left: 0, top: layout.quoteTop, width: cardW}}>
+        <LawCard page={page} frame={frame} theme={theme} lang={lang} domain={domain} quote={quote} source={textOf(fields.source)} emphasis={textOf(fields.emphasis)} bundleIndex={nodes.length} compact quoteSize={TYPE.timelineQuote} />
+      </Reveal> : null}
+    </div>
   </ContentFrame>;
 };

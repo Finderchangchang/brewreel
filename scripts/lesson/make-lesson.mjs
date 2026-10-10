@@ -16,7 +16,7 @@ import {checkReview} from './review.mjs';
 import {aigcMetadataValue, aigcPayload, embedAigcMetadata, explicitMarking, findFullFfmpeg, findRemotionFfprobe, AIGC_METADATA_KEY, AIGC_NOTE} from './aigc-label.mjs';
 import {internalLeaks} from './text-quality.mjs';
 import {preparePresenterMedia, resolvePresenterSource} from './presenter-media.mjs';
-import {resolveCartoonWardrobe} from '../../template/src/lesson/mascot/cast.mjs';
+import {cartoonOnScreen, resolveCartoonWardrobe} from '../../template/src/lesson/mascot/cast.mjs';
 import {judgeBgmRun, probePythonBgm, skippedByFlag} from '../lib/bgm.mjs';
 import {CharacterError, bindLessonCharacter, resolveDataDir} from './character-store.mjs';
 import {resolveOutDir, showPath} from './paths.mjs';
@@ -24,6 +24,9 @@ import {coverCopy, coverTextIssues, planClips, publishForClip, sliceTimeline} fr
 import {BGM_PARAMS, buildLockDocument, createFfmpegRunner, decideEngineChange, externalBrandChange, planVerticalClip, presenterRecord, readEngineFingerprint, readFrameCount, readGitState, readLock, readPackageVersion, readRemotionVersion, verticalLog, writeLock} from './segments.mjs';
 import {BrandError, bindLessonBrand} from './brand-store.mjs';
 import {appendBrandTail, brandFingerprint, disclaimerFor, nameBarPageOf, openingCredit, seriesLine} from './brand-render.mjs';
+import {appendDisclaimerPage} from './disclaimer-page.mjs';
+import {timelineClipIssues, timelineFrameLayout} from './timeline-frame.mjs';
+import {ensureTemplateBrowser, withBrowserExecutable} from '../lib/remotion-browser.mjs';
 import {openLessonRenderer, renderLessonFilm} from './render-ranges.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -187,6 +190,8 @@ try {
     brandTimeline = appendBrandTail(timeline, lesson.meta.title);
     timeline = brandTimeline.timeline;
   }
+  const disclaimerTail = appendDisclaimerPage(timeline, lesson.meta);
+  timeline = disclaimerTail.timeline;
   if (timeline.durationMs < 30000 || timeline.durationMs > 480000) {
     throw new LessonError(EXIT.INVALID, `成片时长 ${Math.round(timeline.durationMs / 1000)} 秒不在 30 秒–8 分钟范围内`);
   }
@@ -214,6 +219,10 @@ try {
   const sampleReview = review?.test === true;
   const trial = false;
   const markings = explicitMarking(lesson.meta.domain, lesson.meta.lang, sampleReview, trial);
+  if (disclaimerTail.added) {
+    markings.disclaimer = disclaimerTail.body;
+    markings.forcedEndCard = true;
+  }
   const aigc = aigcPayload(inputHash);
   const validatedTheme = validation.lesson.meta.theme;
   const sheetOverride = process.env.BREWREEL_SHEET_THEME;
@@ -285,10 +294,25 @@ try {
   const runFfmpeg = createFfmpegRunner({ffmpeg: ffmpegBin, remotion: REMOTION, template: TEMPLATE});
   const ffprobe = findRemotionFfprobe(TEMPLATE);
   const fingerprintInput = {theme: themeId, mascot: props.mascot, domain: lesson.meta.domain, lang: lesson.meta.lang, sampleReview, trial, characterUnconfirmed: props.characterUnconfirmed === true, brand: brandFingerprint(props.brand)};
+  const timelineProblems = [];
+  for (const page of validation.lesson.chapters.flatMap((chapter) => chapter.pages ?? [])) {
+    if (page?.layout !== 'timeline') continue;
+    const issues = timelineClipIssues(timelineFrameLayout({
+      nodes: (page.nodes ?? []).map((node) => node?.label ?? node),
+      segments: page.segments ?? [],
+      captions: page.captions ?? [],
+      hasQuote: Boolean(page.quote),
+    }));
+    for (const issue of issues) timelineProblems.push(`${page.title || '时间轴'}：${issue}`);
+  }
+  if (timelineProblems.length) throw new LessonError(EXIT.REJECTED, `时间轴文字会被裁切：\n${timelineProblems.map((line) => `  ✗ ${line}`).join('\n')}`);
+  let browserExe;
+  try { browserExe = ensureTemplateBrowser({templateDir: TEMPLATE, log}); }
+  catch (e) { throw new LessonError(EXIT.RENDER, e.message); }
   log(`渲染 ${timeline.totalFrames} 帧（${(timeline.durationMs / 1000).toFixed(1)} 秒），按页分段…`);
   let film;
   try {
-    renderer = await openLessonRenderer({template: TEMPLATE, log});
+    renderer = await openLessonRenderer({template: TEMPLATE, log, browserExecutable: browserExe});
     film = await renderLessonFilm({
       renderer,
       timeline,
@@ -327,7 +351,7 @@ try {
   const stillValues = stillsArg ? stillsArg.split(',').map(Number) : [];
   for (const at of stillValues) {
     const png = path.join(outDir,'check',`still-${at.toFixed(2)}s.png`);
-    const still = await runChild(process.execPath,[REMOTION,'still','src/index.ts','Lesson',png,`--frame=${Math.min(timeline.totalFrames-1, Math.max(0,Math.round(at*timeline.fps)))}`,`--props=${propsPath}`],{cwd:TEMPLATE});
+    const still = await runChild(process.execPath, withBrowserExecutable([REMOTION,'still','src/index.ts','Lesson',png,`--frame=${Math.min(timeline.totalFrames-1, Math.max(0,Math.round(at*timeline.fps)))}`,`--props=${propsPath}`], browserExe),{cwd:TEMPLATE});
     if (still.code !== 0) throw new LessonError(EXIT.RENDER, `Remotion still 失败（${at}s）：${still.output.slice(-500)}`);
   }
   const sheetPath = path.join(outDir, 'sheet.png');
@@ -340,7 +364,7 @@ try {
   });
   const sheetProps = path.join(outDir, 'sheet-props.json');
   fs.writeFileSync(sheetProps, JSON.stringify({images:sheetImages}), 'utf8');
-  const sheet = await runChild(process.execPath,[REMOTION,'still','src/index.ts','LessonSheet',sheetPath,`--props=${sheetProps}`],{cwd:TEMPLATE});
+  const sheet = await runChild(process.execPath, withBrowserExecutable([REMOTION,'still','src/index.ts','LessonSheet',sheetPath,`--props=${sheetProps}`], browserExe),{cwd:TEMPLATE});
   if (sheet.code !== 0 || !fs.existsSync(sheetPath)) throw new LessonError(EXIT.RENDER, `拼图生成失败（退出码 ${sheet.code}）：${sheet.error ?? sheet.output.slice(-1000)}`);
   fs.rmSync(propsPath,{force:true});
   fs.rmSync(sheetProps,{force:true});
@@ -373,7 +397,7 @@ try {
         if (issues.length) throw new LessonError(EXIT.INVALID, `封面文字未过领域规则：${clip.id}\n${issues.map((e) => `  ✗ ${e}`).join('\n')}`);
       }
     }
-    const coverPresenter = timeline.pages.some((p) => p.presenter) ? 'real' : (props.mascot?.enabled === false ? 'none' : 'cartoon');
+    const coverPresenter = timeline.pages.some((p) => p.presenter) ? 'real' : (cartoonOnScreen(props.mascot) ? 'cartoon' : 'none');
     let presenterImage = null;
     if (coverPresenter === 'real') {
       const src = timeline.pages.find((p) => p.presenter)?.presenter?.src;
@@ -386,7 +410,7 @@ try {
     const stillOf = async (dest, stillProps) => {
       const propsFile = path.join(outDir, `${path.basename(dest, '.png')}-props.json`);
       fs.writeFileSync(propsFile, JSON.stringify(stillProps), 'utf8');
-      const still = await runChild(process.execPath, [REMOTION, 'still', 'src/index.ts', 'LessonCover', dest, `--props=${propsFile}`], {cwd: TEMPLATE});
+      const still = await runChild(process.execPath, withBrowserExecutable([REMOTION, 'still', 'src/index.ts', 'LessonCover', dest, `--props=${propsFile}`], browserExe), {cwd: TEMPLATE});
       fs.rmSync(propsFile, {force: true});
       if (still.code !== 0 || !fs.existsSync(dest)) throw new LessonError(EXIT.RENDER, `封面渲染失败：${path.basename(dest)}：${(still.error || still.output || '').slice(-800)}`);
     };
@@ -448,7 +472,8 @@ try {
     }
   }
   const artifacts = ['video.mp4','subtitles.srt','chapters.txt','chapters-platforms.txt','timeline.json','manifest.json','sheet.png',...fs.readdirSync(path.join(outDir,'check')).filter((x)=>x.endsWith('.png')).map((x)=>`check/${x}`), ...extraArtifacts];
-  const manifest = {status: draft ? 'draft' : 'delivered', input:{path:inputPath,sha256:inputHash}, domain:lesson.meta.domain, theme:themeId, presenter:renderMeta.presenter ?? null, review:review ? {reviewer:review.review.reviewer,license_no:review.review.license_no,reviewed_at:review.review.reviewed_at,script_sha256:review.hash,decision:review.review.decision,test:review.test === true,kind:review.test ? '测试审稿' : '律师审稿'} : null, domainChecks:{warnings:validation.warnings,human:validation.human,summary:validation.domainSummary}, legalMarkings:markings, aigc:{metadataKey:AIGC_METADATA_KEY,Label:aigc.Label,ContentProducer:aigc.ContentProducer,ProduceID:aigc.ProduceID,value:aigcMetadataValue(aigc),note:AIGC_NOTE}, durationSec, chapters:timeline.chapters.map((c)=>({title:c.title,startMs:c.startMs,endMs:c.endMs})), pages:timeline.pages.map((p)=>({index:p.index+1,title:p.title,chapter:p.chapterTitle,startMs:p.startMs,endMs:p.endMs})), voice:{provider:cfg.provider,voiceId:cfg.voiceId,model:cfg.model,billedCharacters,synthesizedPages,cachePages:audioPages.filter((x)=>x.cacheHit).length}, music:bgmStatus, musicNote:bgmNote, checks:{contentAwareBlank:{ok:true,frames:blank.frames,method:'192x108 area-resampled RGB; dominant-color ratio >=95% is blank only when fewer than 0.3% pixels differ from quantized background by RGB-L1 >=70'}}, video:{path:videoPath,sha256:sha256Of(videoPath),bytes:fs.statSync(videoPath).size,durationSec}, artifacts, generatedAt:new Date().toISOString()};
+  const onScreenPresenter = presenterRecord({characterBind, meta: renderMeta});
+  const manifest = {status: draft ? 'draft' : 'delivered', input:{path:inputPath,sha256:inputHash}, domain:lesson.meta.domain, theme:themeId, presenter:onScreenPresenter, review:review ? {reviewer:review.review.reviewer,license_no:review.review.license_no,reviewed_at:review.review.reviewed_at,script_sha256:review.hash,decision:review.review.decision,test:review.test === true,kind:review.test ? '测试审稿' : '律师审稿'} : null, domainChecks:{warnings:validation.warnings,human:validation.human,summary:validation.domainSummary}, legalMarkings:markings, aigc:{metadataKey:AIGC_METADATA_KEY,Label:aigc.Label,ContentProducer:aigc.ContentProducer,ProduceID:aigc.ProduceID,value:aigcMetadataValue(aigc),note:AIGC_NOTE}, durationSec, chapters:timeline.chapters.map((c)=>({title:c.title,startMs:c.startMs,endMs:c.endMs})), pages:timeline.pages.map((p)=>({index:p.index+1,title:p.title,chapter:p.chapterTitle,startMs:p.startMs,endMs:p.endMs})), voice:{provider:cfg.provider,voiceId:cfg.voiceId,model:cfg.model,billedCharacters,synthesizedPages,cachePages:audioPages.filter((x)=>x.cacheHit).length}, music:bgmStatus, musicNote:bgmNote, checks:{contentAwareBlank:{ok:true,frames:blank.frames,method:'192x108 area-resampled RGB; dominant-color ratio >=95% is blank only when fewer than 0.3% pixels differ from quantized background by RGB-L1 >=70'}}, video:{path:videoPath,sha256:sha256Of(videoPath),bytes:fs.statSync(videoPath).size,durationSec}, artifacts, generatedAt:new Date().toISOString()};
   if (draft) manifest.draft = true;
   if (verticalList) manifest.vertical = verticalList;
   if (coverList) manifest.covers = coverList;
@@ -466,7 +491,7 @@ try {
     git: gitState,
     remotionVersion: readRemotionVersion(ROOT),
     theme: themeId,
-    presenter: presenterRecord({characterBind, meta: renderMeta}),
+    presenter: onScreenPresenter,
     voice: presenterManifest ? {provider: 'source-video', model: null, voiceId: null} : {provider: cfg.provider, model: cfg.model, voiceId: cfg.voiceId},
     music: {status: bgmStatus, bpm: BGM_PARAMS.bpm, theme: BGM_PARAMS.theme, duckDb: BGM_PARAMS.duckDb, duckAttack: BGM_PARAMS.duckAttack, duckRelease: BGM_PARAMS.duckRelease, lufs: BGM_PARAMS.lufs, volume: BGM_PARAMS.volume},
     engine,
@@ -476,7 +501,8 @@ try {
   }));
   log(`配音计费 ${presenterManifest ? 0 : billedCharacters} 字`);
   log(`本次出片 ${((Date.now() - runStarted) / 1000).toFixed(1)} 秒`);
-  log(`交付清单：风格 ${themeId}，讲解员 ${renderMeta.presenter ? JSON.stringify(renderMeta.presenter) : '未指定'}`);
+  if (onScreenPresenter.kind === 'none') log('讲解员已关闭');
+  log(`交付清单：风格 ${themeId}，讲解员 ${onScreenPresenter.kind === 'none' ? '已关闭' : JSON.stringify(renderMeta.presenter ?? onScreenPresenter)}`);
   log(`交付：${videoPath}`);
 } catch (e) {
   safeExit(e instanceof LessonError ? e.code : EXIT.RENDER, e instanceof LessonError ? e.message : `讲解课渲染失败：${e?.stack ?? e}`);

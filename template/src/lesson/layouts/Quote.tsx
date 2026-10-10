@@ -4,7 +4,7 @@ import type {LayoutProps} from './shared';
 import {ContentFrame, textOf, useBlockWidth, useFrame, useOrientation} from './shared';
 import {LawCard} from './pro';
 
-export const Quote: React.FC<LayoutProps> = ({page, fields, theme, lang}) => {
+export const Quote: React.FC<LayoutProps> = ({page, fields, theme, lang, domain}) => {
   const frame = useFrame();
   const vert = useOrientation() === 'vertical';
   const quote = textOf(fields.quote);
@@ -18,7 +18,7 @@ export const Quote: React.FC<LayoutProps> = ({page, fields, theme, lang}) => {
     : TYPE.quote;
   return <ContentFrame>
     <div style={{width: vert ? '100%' : blockW, alignSelf: 'flex-start'}}>
-      <LawCard page={page} frame={frame} theme={theme} lang={lang} quote={quote} source={source} emphasis={textOf(fields.emphasis)} tag={tag} tagText={tagText} quoteSize={size} />
+      <LawCard page={page} frame={frame} theme={theme} lang={lang} domain={domain} quote={quote} source={source} emphasis={textOf(fields.emphasis)} tag={tag} tagText={tagText} quoteSize={size} />
     </div>
   </ContentFrame>;
 };

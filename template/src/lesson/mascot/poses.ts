@@ -1,5 +1,5 @@
 export type {MascotPose, PeepFamily, IconKind} from './cast.mjs';
-export {POSES, FAMILIES, OUTFITS, OUTFIT_FAMILY, OUTFIT_NAMES, PRESETS, PRESET_NAMES, CAST, POSE_LOOK, LEGACY_IDS, resolveMascotId, resolveLook, resolveCartoonWardrobe, defaultPreset, poseLook, mouthAnchor, FRAME, PEEP_FILL} from './cast.mjs';
+export {POSES, FAMILIES, OUTFITS, OUTFIT_FAMILY, OUTFIT_NAMES, PRESETS, PRESET_NAMES, CAST, POSE_LOOK, LEGACY_IDS, resolveMascotId, resolveLook, resolveCartoonWardrobe, cartoonOnScreen, defaultPreset, poseLook, mouthAnchor, FRAME, PEEP_FILL} from './cast.mjs';
 
 export type MascotPalette = {skin: string; hair: string; primary: string; secondary: string};
 

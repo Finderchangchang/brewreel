@@ -25,6 +25,7 @@ import {CaseStudy} from './layouts/CaseStudy';
 import {DocumentMark} from './layouts/DocumentMark';
 import {TableCompare} from './layouts/TableCompare';
 import {BrandEnd} from './layouts/BrandEnd';
+import {Disclaimer} from './layouts/Disclaimer';
 import type {LessonPage, LessonPresenterClip, LessonTimeline} from './types';
 import {subtitleScreenAtFrame} from '../../../scripts/lesson/timeline.mjs';
 import {protectBreaks, WORD_JOINER} from '../../../scripts/lesson/title-wrap.mjs';
@@ -33,13 +34,14 @@ import {pick} from '../core/kit';
 import {LegalMarkings, VerticalChrome} from './overlays/LegalMarkings';
 import {BrandBug, BrandEnding, BrandNameBar} from './brand/BrandChrome';
 import {Character, POSE_BLEND_MS, blinkAt, mouthOpenAmount, poseAt, talkingAt} from './mascot';
+import {cartoonOnScreen} from './mascot/cast.mjs';
 import type {MascotWardrobe} from './mascot';
 import {avatarFrameStyle, cartoonBox, cartoonFrameStyle, COVER_MORPH, morphBox, objectPosition, realBox, realFrameStyle, MORPH_MS} from './presenter-place.mjs';
 import {chapterLineKey, chapterLineMode, contentMotion, nameBarSlide, sameChapterLine, SUBTITLE, subtitleChrome, subtitleLayout, turnOutFrames} from './stage.mjs';
 import {VERTICAL, chromeTopReserve, shouldShowHook, verticalChromeBoxes, verticalContentBox, verticalNoteBox, verticalPresenterBox, verticalSubtitleBox} from '../../../scripts/lesson/vertical-layout.mjs';
 import {CanvasProvider, useCanvas, type LessonBrandView, type PresenterKind} from './canvas';
 
-const lessonLayouts: Record<string, React.FC<LayoutProps>> = {cover:Cover, steps:Steps, chapter:Chapter, quote:Quote, compare:Compare, question:Question, flow:Flow, recap:Recap, screenshot:Screenshot, code:Code, points:Points, statement:Statement, timeline:Timeline, checklist:Checklist, bignumber:BigNumber, saying:Saying, levels:Levels, case:CaseStudy, document:DocumentMark, table:TableCompare, brandEnd:BrandEnd};
+const lessonLayouts: Record<string, React.FC<LayoutProps>> = {cover:Cover, steps:Steps, chapter:Chapter, quote:Quote, compare:Compare, question:Question, flow:Flow, recap:Recap, screenshot:Screenshot, code:Code, points:Points, statement:Statement, timeline:Timeline, checklist:Checklist, bignumber:BigNumber, saying:Saying, levels:Levels, case:CaseStudy, document:DocumentMark, table:TableCompare, brandEnd:BrandEnd, disclaimer:Disclaimer};
 const GRAIN = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.55'/></svg>")`;
 
 export type LessonProps = {timeline: LessonTimeline; title: string; bgm?: string | null; theme?: LessonTheme; mascot?: MascotWardrobe | null; domain?: string; lang?: 'zh' | 'en'; sampleReview?: boolean; characterUnconfirmed?: boolean; trial?: boolean; orientation?: 'horizontal' | 'vertical'; hookTitle?: string; legalTailFrames?: number; brand?: LessonBrandView | null};
@@ -114,14 +116,14 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
   };
   const brandedCover = Boolean(canvas.brand) && page.layout === 'cover' && !vertical;
   const brandedEnding = Boolean(canvas.brand) && (page.layout === 'brandEnd' || page.index === canvas.brandRecapIndex);
-  const hidePresenter = brandedCover || page.layout === 'brandEnd' || brandedEnding;
+  const hidePresenter = brandedCover || page.layout === 'brandEnd' || page.layout === 'disclaimer' || brandedEnding;
   const realLive = !hidePresenter && page.presenter ? (vertical ? verticalPresenterBox('real', place) : morphBox(prevPage?.presenter ? realBox(prevPage) : null, realBox(page), morphT)) : null;
   const cartoonTarget = cartoonBox(page.layout);
   const cartoonFrom = !vertical && prevPage?.layout === 'cover' && !canvas.brand ? cartoonBox('cover') : cartoonTarget;
   const coverT = frame / Math.max(1, (COVER_MORPH / 1000) * timeline.fps);
-  const cartoonLive = !hidePresenter && !page.presenter && mascot?.enabled !== false ? (vertical ? verticalPresenterBox('cartoon', place) : morphBox(cartoonFrom, cartoonTarget, coverT)) : null;
+  const cartoonLive = !hidePresenter && !page.presenter && cartoonOnScreen(mascot) ? (vertical ? verticalPresenterBox('cartoon', place) : morphBox(cartoonFrom, cartoonTarget, coverT)) : null;
   const wardrobe = mascot?.pageOverrides?.find((variant) => variant.pageIndex === page.index)?.wardrobe ?? mascot;
-  const mascotEnabled = !page.presenter && mascot?.enabled !== false && wardrobe?.enabled !== false && !!cartoonLive;
+  const mascotEnabled = !page.presenter && cartoonOnScreen(mascot) && cartoonOnScreen(wardrobe) && !!cartoonLive;
   const cartoonChrome = vertical ? cartoonFrameStyle() : avatarFrameStyle(t);
   const bubbleAnchor = realLive ?? cartoonLive;
   const bubble = vertical && sentence?.note && elapsedMs < sentence.endMs ? verticalNoteBox(bubbleAnchor) : null;
@@ -139,7 +141,7 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
   let spokenVisible = 0;
   if (karaokeOn && currentSubtitle && currentSubtitle.endMs > currentSubtitle.startMs) {
     const ratio = Math.max(0, Math.min(1, (elapsedMs - currentSubtitle.startMs) / (currentSubtitle.endMs - currentSubtitle.startMs)));
-    const chars = Array.from(protectBreaks(currentSubtitle.text)).filter((ch) => ch !== WORD_JOINER);
+    const chars = Array.from(protectBreaks(currentSubtitle.text, {subtitle: true})).filter((ch) => ch !== WORD_JOINER);
     spokenVisible = Math.round(chars.length * ratio);
   }
   const showContent = part !== 'overlay';
@@ -187,7 +189,7 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
     </div> : null}
     {showOverlay && bubble && sentence?.note ? <div style={{position:'absolute', left:bubble.x, top:bubble.y, width:bubble.w, zIndex:4, padding:'12px 14px', borderRadius:t.radius, background:t.surface, color:t.ink, border:t.cardBorder, boxShadow:t.cardShadow === 'none' ? undefined : t.cardShadow, fontFamily:t.fontBody, fontWeight:t.headingWeight > 500 ? 700 : 600, fontSize:28, textAlign:'center'}}>{sentence.note}</div> : null}
     {showOverlay && vertical && currentSubtitle && sub ? <div style={{position:'absolute', left:sub.x, top:sub.y, width:sub.width, height:sub.height, zIndex:5, display:'flex', alignItems:'center', justifyContent:'center', textAlign:'center', fontFamily:t.fontBody, fontWeight:500, fontSize:subSize, lineHeight:1.2, color:t.subtitleInk, WebkitTextStroke:`4px ${t.subtitleHalo}`, paintOrder:'stroke fill', wordBreak:'normal'}}>
-      {protectBreaks(currentSubtitle.text)}
+      {protectBreaks(currentSubtitle.text, {subtitle: true})}
     </div> : null}
     {showOverlay && bar && currentSubtitle ? <div style={{position:'absolute', left:SUBTITLE.centerX, bottom:subBottom, transform:'translateX(-50%)', width:bar.width, maxWidth:SUBTITLE.maxWidth, zIndex:5, boxSizing:'border-box', padding:`${SUBTITLE.padY}px ${SUBTITLE.padX}px`, borderRadius:subChrome.radius, background:subChrome.background, color:subChrome.color, textAlign:'center', fontFamily:t.fontBody, fontWeight:500, fontSize:bar.font, lineHeight:bar.lineHeight}}>
       {bar.lines.map((line, index) => {
@@ -196,7 +198,7 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
         if (karaokeOn) spokenVisible -= take;
         const spoken = chars.slice(0, take).join('');
         const rest = chars.slice(take).join('');
-        return <div key={index} style={{whiteSpace:'nowrap'}}>{karaokeOn ? <><span style={{color:subChrome.karaokeSpoken}}>{protectBreaks(spoken)}</span><span style={{color:subChrome.karaokeRest}}>{protectBreaks(rest)}</span></> : protectBreaks(line)}</div>;
+        return <div key={index} style={{whiteSpace:'nowrap'}}>{karaokeOn ? <><span style={{color:subChrome.karaokeSpoken}}>{protectBreaks(spoken, {subtitle: true})}</span><span style={{color:subChrome.karaokeRest}}>{protectBreaks(rest, {subtitle: true})}</span></> : protectBreaks(line, {subtitle: true})}</div>;
       })}
     </div> : null}
     {showOverlay && !vertical && canvas.brandBug && !brandedCover && !brandedEnding ? <BrandBug theme={theme} /> : null}
@@ -208,7 +210,7 @@ const Page: React.FC<{page: LessonPage; timeline: LessonTimeline; theme: LessonT
 
 const presenterKindOf = (timeline: LessonTimeline, mascot?: MascotWardrobe | null): PresenterKind => {
   if (timeline.pages.some((page) => page.presenter)) return 'real';
-  if (mascot?.enabled === false) return 'none';
+  if (!cartoonOnScreen(mascot)) return 'none';
   return 'cartoon';
 };
 

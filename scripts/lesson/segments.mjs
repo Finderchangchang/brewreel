@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import {sha256Of} from '../lib/delivery.mjs';
+import {cartoonOnScreen} from '../../template/src/lesson/mascot/cast.mjs';
 
 /** LegalMarkings.tsx 里片尾声明是 totalFrames - 4 * 30，片头大标是 frame < 90。 */
 export const END_CARD_FRAMES = 4 * 30;
@@ -216,7 +217,7 @@ function freezePresenter(presenter, publicDir) {
 /** 与 Lesson.tsx 的 presenterKindOf 同一规则。 */
 export function presenterKindOf(timeline, mascot) {
   if ((timeline?.pages || []).some((page) => page.presenter)) return 'real';
-  if (mascot?.enabled === false) return 'none';
+  if (!cartoonOnScreen(mascot)) return 'none';
   return 'cartoon';
 }
 
@@ -431,6 +432,7 @@ export function presenterRecord({characterBind, meta}) {
   if (characterBind?.manifest) return {kind: 'character', id: characterBind.manifest.id, version: characterBind.manifest.version ?? null};
   const presenter = meta?.presenter;
   if (presenter?.kind === 'video' || presenter?.kind === 'real') return {kind: presenter.kind, id: presenter.src || null, version: null};
+  if (presenter?.kind === 'none' || meta?.mascot?.enabled === false) return {kind: 'none', id: null, version: null};
   return {kind: 'mascot', id: meta?.mascot?.id || presenter?.look?.preset || null, version: meta?.mascot?.version ?? null};
 }
 

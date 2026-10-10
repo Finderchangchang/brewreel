@@ -156,6 +156,11 @@ export function resolveLook(wardrobe, domain) {
  * kind none，或旧稿 enabled:false，返回 null。
  * 不写 look、也不写角色 id 时，legal 用 female，其他用 male。
  */
+/** 画面上要不要画卡通。null / 未传 / enabled:false 都是关。kind none 时 resolveCartoonWardrobe 已经返回 null。 */
+export function cartoonOnScreen(mascot) {
+  return mascot != null && mascot.enabled !== false;
+}
+
 export function resolveCartoonWardrobe(meta) {
   const presenter = meta?.presenter;
   const mascot = meta?.mascot && typeof meta.mascot === 'object' ? meta.mascot : null;

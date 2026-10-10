@@ -28,9 +28,9 @@ brief 是 UTF-8 JSON。中文 Windows 不要用 `echo >` 写文件。
 2. `points` 要点。条数不少于 `minutes` × 2。3 分钟至少 6 条。不够就问，不要为了凑数编一条。
 3. `audience` 受众。
 4. `minutes` 时长，1 到 8 的整数。成片要落在 30 秒到 8 分钟。
-5. `domain`：`tech` 技术讲解，或 `legal` 普法。普法不能当成技术课。
-6. `sources` 出处。技术课要有文档或命令出处。普法要有法律名称和条号。用户没给就停。
-7. 讲解员：预设卡通、手改卡通、真人视频，或用照片建卡通。四选一。照片见文末，不要自己跑。
+5. `domain`：`tech` 技术讲解，`legal` 普法，或 `news` 新闻 / 时事复盘。普法不能当成技术课，新闻也不能写成普法。
+6. `sources` 出处。技术课要有文档或命令出处。普法要有法律名称和条号。新闻要有媒体名和日期，并且 `meta.facts` 里每条事实都写 `source`。用户没给就停。
+7. 讲解员：预设卡通、手改卡通、真人视频，或用照片建卡通。四选一。不要讲解员就关掉，写法见文末「讲解员」。照片见文末，不要自己跑。
 
 ```json
 {
@@ -46,6 +46,8 @@ brief 是 UTF-8 JSON。中文 Windows 不要用 `echo >` 写文件。
 ```
 
 普法把 `domain` 写成 `legal`。法条正文不要写进 brief。程序只从已核对的《民法典》语料回填。要的条号不在语料里，就告诉用户现在插不进去，不要自己写条文。
+
+新闻 / 时事复盘把 `domain` 写成 `news`。还要写 `meta.asOf`（截至哪一天、什么时间）和 `meta.facts`（每条都有 `text` 和 `source`）。程序会在片尾自动加一页：「据公开报道整理，截至 <asOf>，不构成任何结论」。引用版式不画「法」字。画面或旁白里出现造假、抹黑、黑幕、实锤、造谣、诬陷、带节奏、甩锅时，校验只提醒、不拦片。`compare` 两边字数差超过 1.5 倍时也只提醒，把两边写得差不多长。出处超字数时，新闻和技术课的提示是「只留媒体名和日期」，普法才是「只留法律全称和条号」。
 
 样例：`<SKILL>/examples/lesson/briefs/what-is-codex.json`、`<SKILL>/examples/lesson/briefs/iou-basics.json`。
 
@@ -69,7 +71,7 @@ node <SKILL>/scripts/lesson/generate-lesson.mjs --brief <SKILL>/examples/lesson/
 
 用户想改已经写好的某一处时，先跑 `node <SKILL>/scripts/revise.mjs <lesson.json> "一句话"`，不要整份重写。
 
-顶层是 `meta` 和 `chapters`。`meta.format` 为 `lesson`，`meta.domain` 为 `tech` 或 `legal`，`meta.lang` 为 `zh` 或 `en`。每一页有 `layout`、`title`、`narration`。版式名见 `<SKILL>/docs/lesson.md` 的清单。样例：`<SKILL>/examples/lesson/sample-tech.json`、`<SKILL>/examples/lesson/mascot-demo.json`。
+顶层是 `meta` 和 `chapters`。`meta.format` 为 `lesson`，`meta.domain` 为 `tech`、`legal` 或 `news`，`meta.lang` 为 `zh` 或 `en`。每一页有 `layout`、`title`、`narration`。版式名见 `<SKILL>/docs/lesson.md` 的清单。样例：`<SKILL>/examples/lesson/sample-tech.json`、`<SKILL>/examples/lesson/mascot-demo.json`。技术课可以选加免责片尾：`meta.disclaimer` 写一句，或 `meta.disclaimerTail` 写 `true`。新闻的免责页不用自己写。
 
 `meta.theme` 可以不写。不写时：普法用 `paper`，截图和代码页占比高用 `product`，其余用 `lecture`。要指定就写 `paper`、`lecture`、`product`、`editorial`。`editorial` 不能用于普法。
 
@@ -148,6 +150,13 @@ node <SKILL>/scripts/lesson/sign-review.mjs <lesson.json> --reviewer <姓名> --
 讲稿若改过，旧签字作废，要重新审。
 
 ## 讲解员
+
+关掉讲解员，用下面两种写法之一。两种都会真的不画卡通，出片清单里记成 `{"kind":"none"}`：
+
+- `meta.presenter.kind` 写 `"none"`
+- 或 `meta.mascot.enabled` 写 `false`
+
+`none` 是合法值。写成 `off` 或其他不认识的词，校验会报错，并提示只能用 `cartoon`、`real` 或 `none`。只把 `kind` 写成 `none` 却仍然看到卡通，是旧引擎的问题；这一版已经按 `none` 关掉。
 
 预设卡通不花钱。角色档案默认放在当前工作目录上一级的 `brewreel-data`（环境变量 `LESSON_DATA_DIR` 或 `--data-dir` 可改）。若只有旧目录 `brewreel-studio-data`、还没有 `brewreel-data`，程序仍读旧目录。档案不能放进仓库。
 

@@ -53,7 +53,8 @@ export const LawCard: React.FC<{
   compact?: boolean;
   quoteSize?: number;
   lang?: string;
-}> = ({page, frame, theme, quote, source, emphasis, tag = '', tagText = '', quoteIndex = 0, sourceIndex = 1, tagIndex = 2, bundleIndex, compact = false, quoteSize, lang = 'zh'}) => {
+  domain?: string;
+}> = ({page, frame, theme, quote, source, emphasis, tag = '', tagText = '', quoteIndex = 0, sourceIndex = 1, tagIndex = 2, bundleIndex, compact = false, quoteSize, lang = 'zh', domain}) => {
   const vert = useOrientation() === 'vertical';
   const t = colorsOf(theme);
   const fitted = quoteSize ?? (compact ? (vert ? 32 : TYPE.timelineQuote) : (vert ? 40 : TYPE.quote));
@@ -65,9 +66,10 @@ export const LawCard: React.FC<{
     if (index !== 0 && showFor(page, index, frame, false, false) <= 0) return null;
     return <Reveal page={page} index={index} frame={frame}>{node}</Reveal>;
   };
+  const legalMark = domain === 'legal';
   const body = <>
     {piece(sourceIndex, <div style={{display: 'flex', alignItems: 'center', gap: 14, marginBottom: compact ? 12 : 18, fontFamily: t.fontBody, fontSize: sourcePx, fontWeight: 700, color: t.accent, letterSpacing: 1}}>
-      <span style={{width: 40, height: 40, borderRadius: Math.min(6, Number(t.badgeRadius) || 6), background: t.accent, color: '#FFFFFF', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: t.fontHeading, fontSize: 22, flex: '0 0 auto'}}>{pick(lang, '法', 'Law')}</span>
+      <span style={{width: legalMark ? 40 : 36, height: legalMark ? 40 : 36, borderRadius: Math.min(6, Number(t.badgeRadius) || 6), background: legalMark ? t.accent : 'transparent', color: legalMark ? '#FFFFFF' : t.accent, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontFamily: t.fontHeading, fontSize: legalMark ? 22 : 32, flex: '0 0 auto', border: legalMark ? undefined : `2px solid ${t.accent}`}}>{legalMark ? pick(lang, '法', 'Law') : '“'}</span>
       <span style={{wordBreak: 'normal'}}>{protectBreaks(source)}</span>
     </div>)}
     {piece(quoteIndex, <div style={{fontFamily: t.fontHeading, fontWeight: t.headingWeight, fontSize: fitted, lineHeight: vert ? 1.45 : 1.55, color: t.ink, wordBreak: 'normal'}}>
