@@ -7,8 +7,8 @@
 //   --out <目录>       宣传片静帧 / --render 的输出目录（必须在仓库外）
 //   --max-rounds <n>   校验回喂轮数，默认 3
 //
-// 模型返回 {"ops":[{"op":"set"|"insert"|"remove","path":"shots[2].dur","value":4.5}]}
-// 假模型文件可以是这一对象，或按轮次排的数组。
+// 模型返回 {"asks":[{"ask":"第三镜慢一点","ops":[0]},{"ask":"开头换成提问","ops":[1]}],"ops":[{"op":"set"|"insert"|"remove","path":"shots[2].dur","value":4.5}]}
+// asks 把用户的话拆开，ops 下标指向为这件事做的修改。假模型文件可以是这一对象，或按轮次排的数组。
 import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -363,6 +363,259 @@ export const describeChange = (change, doc) => {
   return `${p} ${short(before)}→${short(after)}`;
 };
 
+const CN_DIGIT = {零: 0, 〇: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9};
+
+export const parseCnInt = (raw) => {
+  const s = String(raw).replace(/\s/g, '');
+  if (/^\d+$/.test(s)) {
+    const n = Number(s);
+    return n >= 1 && n <= 999 ? n : null;
+  }
+  if (!s || [...s].some((ch) => ch !== '十' && ch !== '百' && CN_DIGIT[ch] == null)) return null;
+  let rest = s;
+  let n = 0;
+  const bai = rest.indexOf('百');
+  if (bai >= 0) {
+    const head = rest.slice(0, bai);
+    if (head.length > 1) return null;
+    const h = head ? CN_DIGIT[head] : 1;
+    if (!h) return null;
+    n += h * 100;
+    rest = rest.slice(bai + 1);
+    if (rest.startsWith('零')) rest = rest.slice(1);
+  }
+  if (!rest) return n || null;
+  const shi = rest.indexOf('十');
+  if (shi >= 0) {
+    const head = rest.slice(0, shi);
+    const tail = rest.slice(shi + 1);
+    if (head.length > 1 || tail.length > 1) return null;
+    const tens = head ? CN_DIGIT[head] : 1;
+    if (!tens) return null;
+    const ones = tail ? CN_DIGIT[tail] : 0;
+    if (tail && ones == null) return null;
+    return n + tens * 10 + ones;
+  }
+  if (rest.length === 1 && CN_DIGIT[rest] != null) return n + CN_DIGIT[rest];
+  return null;
+};
+
+export const splitClauses = (sentence) => String(sentence)
+  .split(/[，,；;。！？!?]+|(?:并且|同时|还要|另外|以及)/)
+  .map((s) => s.trim())
+  .filter((s) => [...s].length >= 2);
+
+const normAsk = (s) => String(s).replace(/\s+/g, '').replace(/[，,。；;、！？!?]/g, '');
+
+const findLocations = (text) => {
+  const locs = [];
+  const re = /第\s*([0-9]+|[零〇一二两三四五六七八九十百]+)\s*(镜|页|段)/g;
+  let m;
+  while ((m = re.exec(text))) {
+    const n = parseCnInt(m[1]);
+    if (n) locs.push({kind: m[2], n});
+  }
+  if (text.includes('开头')) locs.push({kind: 'start'});
+  if (text.includes('最后一镜')) locs.push({kind: 'end-shot'});
+  else if (text.includes('结尾')) locs.push({kind: 'end'});
+  if (text.includes('最后一页')) locs.push({kind: 'end-page'});
+  if (text.includes('最后一段')) locs.push({kind: 'end-clip'});
+  if (text.includes('片尾')) locs.push({kind: 'credits'});
+  return locs;
+};
+
+const END_TYPES = new Set(['endCard', 'finale', 'brandEnd']);
+
+const onParts = (path, head, index) => {
+  const parts = parsePath(path);
+  return !!(parts && parts[0] === head && parts[1] === index);
+};
+
+const pageList = (doc) => {
+  const out = [];
+  (doc?.chapters ?? []).forEach((ch, ci) => {
+    (ch?.pages ?? []).forEach((_, pi) => out.push({ci, pi}));
+  });
+  return out;
+};
+
+const resolveLoc = (loc, doc, kind) => {
+  const shots = Array.isArray(doc?.shots) ? doc.shots : [];
+  const clips = Array.isArray(doc?.clips) ? doc.clips : [];
+  const pages = pageList(doc);
+  const shotLabel = (index, name) => `${name}是第 ${index + 1} 镜 shots[${index}]`;
+  if (kind === 'storyboard') {
+    if (loc.kind === '页' || loc.kind === 'end-page') return {error: '宣传片没有页，位置写成 shots[N]'};
+    if (loc.kind === '段' || loc.kind === 'end-clip') return {error: '宣传片没有段，位置写成 shots[N]'};
+    if (!shots.length) return {error: '这份分镜没有镜头'};
+    let index = -1;
+    let label = '';
+    if (loc.kind === '镜') {
+      if (loc.n > shots.length) return {error: `点了第 ${loc.n} 镜，但这份只有 ${shots.length} 镜`};
+      index = loc.n - 1;
+      label = `第 ${loc.n} 镜 shots[${index}]`;
+    } else if (loc.kind === 'start') {
+      index = 0;
+      label = shotLabel(0, '开头');
+    } else if (loc.kind === 'end-shot' || loc.kind === 'end') {
+      index = shots.length - 1;
+      label = shotLabel(index, '结尾');
+    } else if (loc.kind === 'credits') {
+      for (let i = shots.length - 1; i >= 0; i -= 1) if (END_TYPES.has(shots[i]?.type)) index = i;
+      if (index < 0) index = shots.length - 1;
+      const type = shots[index]?.type ? `（${shots[index].type}）` : '';
+      label = `片尾是第 ${index + 1} 镜 shots[${index}]${type}`;
+    }
+    if (index < 0) return {error: '没有可以对应的镜头'};
+    return {label, hit: (path) => onParts(path, 'shots', index)};
+  }
+  if (kind === 'lesson') {
+    if (loc.kind === '镜' || loc.kind === 'end-shot' || loc.kind === '段' || loc.kind === 'end-clip') return {error: '讲课稿没有镜头或段，位置写成 chapters[i].pages[j]'};
+    if (!pages.length) return {error: '这份讲课稿没有页'};
+    let page = null;
+    let label = '';
+    if (loc.kind === '页') {
+      if (loc.n > pages.length) return {error: `点了第 ${loc.n} 页，但这份只有 ${pages.length} 页`};
+      page = pages[loc.n - 1];
+      label = `第 ${loc.n} 页 chapters[${page.ci}].pages[${page.pi}]`;
+    } else if (loc.kind === 'start') {
+      page = pages[0];
+      label = `开头是第 1 章第 1 页 chapters[${page.ci}].pages[${page.pi}]`;
+    } else if (loc.kind === 'end' || loc.kind === 'end-page' || loc.kind === 'credits') {
+      page = pages[pages.length - 1];
+      label = `结尾是 chapters[${page.ci}].pages[${page.pi}]`;
+    }
+    if (!page) return {error: '没有可以对应的页'};
+    return {label, hit: (path) => {
+      const parts = parsePath(path);
+      return !!(parts && parts[0] === 'chapters' && parts[1] === page.ci && parts[2] === 'pages' && parts[3] === page.pi);
+    }};
+  }
+  if (loc.kind === '镜' || loc.kind === 'end-shot' || loc.kind === '页' || loc.kind === 'end-page') return {error: '口播没有镜头或页，位置写成 clips[N]'};
+  if (!clips.length) return {error: '这份口播没有段'};
+  let index = -1;
+  let label = '';
+  if (loc.kind === '段') {
+    if (loc.n > clips.length) return {error: `点了第 ${loc.n} 段，但这份只有 ${clips.length} 段`};
+    index = loc.n - 1;
+    label = `第 ${loc.n} 段 clips[${index}]`;
+  } else if (loc.kind === 'start') {
+    index = 0;
+    label = '开头是第 1 段 clips[0]';
+  } else if (loc.kind === 'end' || loc.kind === 'end-clip' || loc.kind === 'credits') {
+    index = clips.length - 1;
+    label = `结尾是第 ${clips.length} 段 clips[${index}]`;
+  }
+  if (index < 0) return {error: '没有可以对应的段'};
+  return {label, hit: (path) => onParts(path, 'clips', index)};
+};
+
+const locHint = (text, doc, kind) => {
+  const bits = [];
+  for (const loc of findLocations(text)) {
+    const resolved = resolveLoc(loc, doc, kind);
+    bits.push(resolved.label || resolved.error);
+  }
+  return bits.filter(Boolean).join('；');
+};
+
+const missAsk = (text, doc, kind, extra) => {
+  const hint = locHint(text, doc, kind);
+  const head = hint ? `『${text}』没有对应的修改，${hint}` : `『${text}』没有对应的修改`;
+  return extra ? `${head}。${extra}` : head;
+};
+
+const asIndex = (v) => {
+  if (typeof v === 'number' && Number.isInteger(v)) return v;
+  if (typeof v === 'string' && /^\d+$/.test(v)) return Number(v);
+  return null;
+};
+
+const ASK_FORMAT = '返回里要有 asks。把用户的话按逗号拆开，每件事一条。格式：{"asks":[{"ask":"第三镜慢一点","ops":[0]},{"ask":"开头换成提问","ops":[1]}],"ops":[{"op":"set","path":"shots[2].dur","value":5.5},{"op":"set","path":"shots[0].caption","value":"…"}]}。asks[i].ops 是 ops 的下标。开头是第 1 镜 shots[0]，不能把开头的修改写进别的镜。';
+
+/** 用户的话里每件事都要有修改；点了名的位置，对应 op 必须落在那里 */
+export const checkAsks = (sentence, asks, ops, doc, kind) => {
+  const errors = [];
+  const seen = new Set();
+  const push = (line) => {
+    if (!line || seen.has(line)) return;
+    seen.add(line);
+    errors.push(line);
+  };
+  const list = Array.isArray(asks) ? asks : [];
+  if (!list.length) push(ASK_FORMAT);
+  const opList = Array.isArray(ops) ? ops : [];
+  list.forEach((ask, i) => {
+    const text = ask && typeof ask.ask === 'string' ? ask.ask.trim() : '';
+    if (!text) {
+      push(`asks[${i}] 缺少要改的那句话`);
+      return;
+    }
+    if (!ask.ops || !Array.isArray(ask.ops) || !ask.ops.length) {
+      push(missAsk(text, doc, kind));
+      return;
+    }
+    const idxs = [];
+    for (const raw of ask.ops) {
+      const at = asIndex(raw);
+      if (at == null || at < 0 || at >= opList.length) push(missAsk(text, doc, kind, `ops 下标 ${JSON.stringify(raw)} 不在这 ${opList.length} 条修改里`));
+      else idxs.push(at);
+    }
+    if (!idxs.length) return;
+    const locs = findLocations(text);
+    if (!locs.length) return;
+    const hits = [];
+    for (const loc of locs) {
+      const resolved = resolveLoc(loc, doc, kind);
+      if (!resolved.hit) {
+        push(missAsk(text, doc, kind));
+        continue;
+      }
+      const landed = idxs.filter((at) => resolved.hit(opList[at]?.path));
+      if (!landed.length) push(missAsk(text, doc, kind, `这一条写到了 ${idxs.map((at) => opList[at]?.path).filter(Boolean).join('、') || '别处'}`));
+      else hits.push(resolved);
+    }
+    if (!hits.length) return;
+    for (const at of idxs) {
+      const path = opList[at]?.path;
+      if (hits.some((h) => h.hit(path))) continue;
+      push(`『${text}』的 ${path ?? ''} 不在点名的位置上，${hits.map((h) => h.label).join('；')}`);
+    }
+  });
+  for (const clause of splitClauses(sentence)) {
+    const covered = list.some((ask) => {
+      if (typeof ask?.ask !== 'string') return false;
+      const wrote = normAsk(ask.ask);
+      const want = normAsk(clause);
+      return wrote === want || wrote.includes(want);
+    });
+    if (!covered) push(missAsk(clause, doc, kind));
+  }
+  return errors;
+};
+
+const groupLines = (asks, changes, doc) => {
+  const used = new Set();
+  const lines = [];
+  const list = Array.isArray(asks) ? asks : [];
+  for (const ask of list) {
+    const text = ask && typeof ask.ask === 'string' ? ask.ask.trim() : '';
+    const idxs = Array.isArray(ask?.ops) ? ask.ops : [];
+    const parts = [];
+    for (const raw of idxs) {
+      const at = asIndex(raw);
+      if (at == null || !changes[at]) continue;
+      used.add(at);
+      parts.push(describeChange(changes[at], doc));
+    }
+    if (text && parts.length) lines.push(`${text} → ${parts.join('；')}`);
+  }
+  changes.forEach((change, i) => {
+    if (!used.has(i)) lines.push(describeChange(change, doc));
+  });
+  return lines;
+};
+
 const skillExcerpt = (kindName) => {
   const text = fs.readFileSync(path.join(ROOT, SKILL_FILE[kindName]), 'utf8');
   if (text.length <= 14000) return text;
@@ -375,12 +628,30 @@ const allowHint = {
   broll: '口播可改：thread、style、styleAlt、motionTheme、captions、budgetYuan、quality、keepFace；每一段的 plain、place、subject、action、end、camera、mode、job、from、to、look、link、template、source、slots、beats。不能改 provider、file、version、id。',
 };
 
+const placeLine = (kindName, doc) => {
+  if (kindName === 'storyboard' && Array.isArray(doc?.shots)) {
+    const list = doc.shots.map((s, i) => `第 ${i + 1} 镜 shots[${i}] ${s?.type ?? ''}`).join('；');
+    return `镜头位置：${list}。开头 = 第 1 镜 shots[0]。结尾 = 最后一镜。片尾 = endCard、finale 或 brandEnd 那一镜。`;
+  }
+  if (kindName === 'lesson') return '讲课位置：第 1 页一般是 chapters[0].pages[0]。开头改这一页，不要改到后面的页。';
+  if (kindName === 'broll' && Array.isArray(doc?.clips)) {
+    const list = doc.clips.map((c, i) => `第 ${i + 1} 段 clips[${i}] ${c?.id ?? ''}`).join('；');
+    return `段落位置：${list}。开头 = 第 1 段 clips[0]。`;
+  }
+  return '';
+};
+
 const promptFor = (kindName, doc, note) => {
   const lines = [
-    '你是改稿助手。用户用一句话要求改一处。你只返回一个 JSON 对象，不要解释，不要整份重写。',
-    '格式：{"ops":[{"op":"set","path":"shots[2].dur","value":4.5}]}',
+    '你是改稿助手。用户一句话里可能有好几件事。你只返回一个 JSON 对象，不要解释，不要整份重写。',
+    '格式：{"asks":[{"ask":"第三镜慢一点","ops":[0]},{"ask":"开头换成提问","ops":[1]}],"ops":[{"op":"set","path":"shots[2].dur","value":5.5},{"op":"set","path":"shots[0].caption","value":"还在靠毅力记账？\\n{别跟自己较劲}"}]}',
+    '先按逗号把用户的话拆成 asks。asks[i].ask 照抄那半句，不要改写，不要合并，不要漏。',
+    'asks[i].ops 是 ops 数组的下标，每条至少 1 个，而且这些修改必须就是在做这件事。',
     'op 只能是 set、insert、remove。path 用 shots[2].dur、chapters[0].pages[1].title、clips[0].plain 这种写法。',
     'set 改已有的值。insert 往数组里插（path 指到下标，或指到数组本身表示追加）。remove 删掉 path 那一项。',
+    '点了名的位置必须改那个位置：第 N 镜是 shots[N-1]；开头和第一镜是 shots[0]；结尾和最后一镜是最后一条 shots；片尾是 endCard、finale 或 brandEnd。第 N 页是讲课的那一页。第 N 段是 clips[N-1]。',
+    '「开头换成提问」要改第 1 镜的字幕或旁白，让它变成问句。不能把提问写进第 3 镜就算交差。',
+    '同一句字幕停超过 5 秒会被校验打回。要加长某一镜时，caption 改成 2 到 3 句的数组，或把时长留在 5 秒以内。',
     allowHint[kindName],
     '宣传片：用户说节奏快一点写 meta.tweak.pace = fast（慢 slow，不变 normal）；字大一点写 meta.tweak.textScale（0.9 到 1.15）；标题换楷体写 meta.tweak.headingFont = kai（衬线 serif，黑体 sans）；某一镜换背景写这一镜的 bg 为项目目录里的图片相对路径。',
     '不要编造数字来源，不要把没登记的图说成实拍，不要改 provider 去触发付费生成。',
@@ -392,7 +663,9 @@ const promptFor = (kindName, doc, note) => {
     JSON.stringify(doc),
   ];
   if (note) lines.push('', '上一轮没通过。按下面的原文改清单，不要复述无关内容：', note);
-  lines.push('', `用户的话：${sentence}`);
+  const where = placeLine(kindName, doc);
+  if (where) lines.push('', where);
+  lines.push('', `用户的话：${sentence}`, '按逗号拆开，每件事一条 ask，每条都要有落到对应位置的修改。只输出 JSON。');
   return lines.join('\n');
 };
 
@@ -401,11 +674,11 @@ const parseModel = (content) => {
   try {
     data = JSON.parse(extractJson(content));
   } catch {
-    return {error: '模型返回的不是 JSON 对象。要 {"ops":[...]}'};
+    return {error: '模型返回的不是 JSON 对象。要 {"asks":[...],"ops":[...]}'};
   }
-  if (Array.isArray(data)) return {ops: data};
-  if (data && Array.isArray(data.ops)) return {ops: data.ops};
-  if (data && Array.isArray(data.changes)) return {ops: data.changes};
+  if (Array.isArray(data)) return {ops: data, asks: undefined};
+  if (data && Array.isArray(data.ops)) return {ops: data.ops, asks: data.asks};
+  if (data && Array.isArray(data.changes)) return {ops: data.changes, asks: data.asks};
   return {error: 'JSON 里没有 ops 数组'};
 };
 
@@ -429,7 +702,7 @@ const askModel = async (round, note) => {
   const cfg = readLlmEnv();
   if (!cfg.key) fail('没有 DeepSeek 密钥。设 DEEPSEEK_API_KEY 或 LLM_API_KEY，或加 --mock-llm。不要把密钥写进命令。');
   const messages = [
-    {role: 'system', content: '你只输出 JSON 对象，键是 ops。'},
+    {role: 'system', content: '你只输出 JSON 对象，键是 asks 和 ops。asks 把用户的话拆开，每条 ask 的 ops 是修改下标。'},
     {role: 'user', content: promptFor(kind, doc0, note)},
   ];
   try {
@@ -603,6 +876,7 @@ const main = async () => {
   let lastNote = '';
   let applied = null;
   let validated = null;
+  let acceptedAsks = null;
   for (let round = 1; round <= maxRounds; round++) {
     const asked = await askModel(round, lastNote);
     if (asked.error && !asked.content) {
@@ -634,9 +908,12 @@ const main = async () => {
       }
       continue;
     }
+    const askErrors = checkAsks(sentence, parsed.asks, parsed.ops, doc0, kind);
     const check = validateDoc(result.doc);
-    if (!check.ok) {
-      lastNote = formatValidate(check.errors);
+    const problems = [...askErrors];
+    if (!check.ok) problems.push(formatValidate(check.errors));
+    if (problems.length) {
+      lastNote = problems.join('\n');
       console.error(lastNote);
       if (round === maxRounds) {
         console.error(`没写文件。校验 ${maxRounds} 轮后仍不过：`);
@@ -648,13 +925,14 @@ const main = async () => {
     }
     applied = result;
     validated = check;
+    acceptedAsks = parsed.asks;
     break;
   }
   if (!applied) {
     console.error('没写文件。');
     process.exit(1);
   }
-  const lines = applied.changes.map((c) => describeChange(c, applied.doc));
+  const lines = groupLines(acceptedAsks, applied.changes, applied.doc);
   console.log('修改清单：');
   console.log(JSON.stringify(applied.changes.map(({op, path: p, before, after}) => ({op, path: p, before, after})), null, 2));
   console.log('改了：');

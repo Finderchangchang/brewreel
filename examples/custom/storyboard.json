@@ -4,6 +4,7 @@
     "product": "少步记",
     "theme": "fresh-light",
     "industry": "software",
+    "disclaimer": "演示画面，内容为模拟",
     "action": "列出周报步骤 → 标出可以合并的步骤",
     "facts": [
       {"id": "f1", "text": "整理一份周报从 12 步变成 4 步", "source": "产品流程说明"}

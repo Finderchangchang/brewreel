@@ -88,9 +88,11 @@ A promo storyboard may set `meta.tweak` for pace, type size, and the heading fac
 | Field | Values | Effect |
 |---|---|---|
 | `meta.tweak.pace` | `slow` / `normal` / `fast` | Multiply each shot's length by 1.15 / 1 / 0.88, then snap to a beat. `normal` is the same as omitting it: no multiply. Each shot's min and max duration still apply |
-| `meta.tweak.textScale` | 0.9–1.15 | Scales the caption band, the end-card big type, and the hook hero type. Omitting it, or writing `1`, does not scale. Crop, safe-area, and overlap checks still block |
-| `meta.tweak.headingFont` | `sans` / `serif` / `kai` | Face for titles and big type. `sans` is Noto Sans SC (the default), `serif` is BrewReel Serif, `kai` is BrewReel Kai. `sans` matches omitting the field |
+| `meta.tweak.textScale` | 0.9–1.15 | Scales the caption band, the end-card big type, and the hook hero type. Omitting it, or writing `1`, does not scale. Crop, safe-area, and overlap checks still block. On quiz and journey, writing this warns: these two fields currently apply to cards only |
+| `meta.tweak.headingFont` | `sans` / `serif` / `kai` | Face for titles and big type. `sans` is Noto Sans SC (the default), `serif` is BrewReel Serif, `kai` is BrewReel Kai. `sans` matches omitting the field. On quiz and journey, writing this warns: these two fields currently apply to cards only |
 | shot `bg` | png / jpg / webp, relative path | Drawn over that shot's gradient and darkened so type stays readable. The file must sit in the project folder and be at least 1KB. Copy must not say 「实拍」 unless the file is registered in `meta.assets` with `source: merchant` |
+
+`textScale` and `headingFont` currently apply to cards only. Quiz and journey draw their own titles, so those two fields do not change them. Writing either field on those styles produces a warning and does not block. `pace` and per-shot `bg` still apply to quiz and journey.
 
 When the user says "a bit faster", "larger type", "kai for the title", or "a new background on this shot", a cheap model writes the fields above and does not edit the template. To change one thing in a film that already exists, run `node scripts/revise.mjs <storyboard.json> "one sentence"` instead of rewriting the file.
 

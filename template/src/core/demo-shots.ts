@@ -24,6 +24,7 @@
 // 7. quickList：params.quote===true 时每行是头像+气泡；任一 item.score 是数字时是打分。否则是图标清单，不算。
 // 8. compare：left/right 写了 stat（非空字符串）或 level（数字）才算数据对比。纯文字两栏不算。
 //    beforeAfter 镜头、endCard、reviewCard 是实拍滑杆或落版/评价摘录，不算界面演示。
+// 9. custom 自由镜头：组件是项目自己写的，清单看不出画的是不是界面。拿不准的一律算演示镜头。
 //
 // 出现规则：
 // - 分镜里有上面任一镜头：只在这些镜头上显示，并随镜头淡入淡出（相邻演示镜头合并，中间不闪一下）
@@ -92,6 +93,7 @@ export const resolvedDemoScene = (shot: ShotLike, shots: ShotLike[]): string => 
 
 export const isDemoShot = (shot: ShotLike | undefined, shots: ShotLike[]): boolean => {
   if (!shot) return false;
+  if (shot.type === 'custom') return true;
   if ((DEMO_UI_TYPES as readonly string[]).includes(shot.type)) return true;
   if (shot.type === 'hook') return hookIsDemo(shot.params);
   if (shot.type === 'meter' || shot.type === 'counter' || shot.type === 'commentCta') return true;

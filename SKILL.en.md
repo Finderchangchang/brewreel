@@ -148,9 +148,11 @@ When the user asks for a faster pace, larger type, a kai heading, or a different
 | The user says | Write |
 |---|---|
 | A bit faster | `meta.tweak.pace`: `fast` (slower is `slow`, back to the current pace is `normal`). Shot length is multiplied by 0.88 / 1.15 / 1. Each shot's min and max duration still apply |
-| Larger type | `meta.tweak.textScale`: 1.05–1.15 (smaller is 0.9–1). This scales the caption band, the end-card big type, and the hook hero type |
-| Kai for the title | `meta.tweak.headingFont`: `kai` (serif is `serif`, gothic/sans is `sans`). The faces already in the repo are BrewReel Kai, BrewReel Serif, and Noto Sans SC. Titles and big type only |
+| Larger type | `meta.tweak.textScale`: 1.05–1.15 (smaller is 0.9–1). This scales the caption band, the end-card big type, and the hook hero type. Quiz and journey ignore this field |
+| Kai for the title | `meta.tweak.headingFont`: `kai` (serif is `serif`, gothic/sans is `sans`). The faces already in the repo are BrewReel Kai, BrewReel Serif, and Noto Sans SC. Titles and big type only. Quiz and journey ignore this field |
 | A new background on this shot | Add `"bg": "photos/desk.jpg"` on that shot (png / jpg / webp relative to storyboard.json; the picture is darkened automatically). Do not write 「实拍」 unless that file is registered in `meta.assets` with `"source": "merchant"` |
+
+`textScale` and `headingFont` currently apply to cards only. Quiz and journey draw their own titles. Writing either field on those styles warns and does not block. `pace` and per-shot `bg` still apply.
 
 To change an existing storyboard, prefer `revise.mjs` and touch only these fields. Do not rewrite the whole file.
 

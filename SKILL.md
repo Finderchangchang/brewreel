@@ -150,9 +150,11 @@ metadata:
 | 用户说 | 怎么写 |
 |---|---|
 | 节奏快一点 | `meta.tweak.pace` 写 `fast`（慢一点 `slow`，改回原来 `normal`）。拍长分别乘 0.88 / 1.15 / 1。每种镜头的最短、最长时长照样生效 |
-| 字大一点 | `meta.tweak.textScale` 写 1.05–1.15（字小一点写 0.9–1）。只缩放字幕带、片尾大字和 hook 主视觉大字 |
-| 标题换楷体 | `meta.tweak.headingFont` 写 `kai`（衬线 `serif`，黑体 `sans`）。字体用仓库里的 BrewReel Kai、BrewReel Serif、Noto Sans SC，只影响标题和大字 |
+| 字大一点 | `meta.tweak.textScale` 写 1.05–1.15（字小一点写 0.9–1）。只缩放字幕带、片尾大字和 hook 主视觉大字。quiz、journey 目前不吃这项 |
+| 标题换楷体 | `meta.tweak.headingFont` 写 `kai`（衬线 `serif`，黑体 `sans`）。字体用仓库里的 BrewReel Kai、BrewReel Serif、Noto Sans SC，只影响标题和大字。quiz、journey 目前不吃这项 |
 | 这一镜换张背景图 | 这一镜加 `"bg": "photos/desk.jpg"`（相对 storyboard.json 的 png / jpg / webp，出片时自动压暗）。没在 `meta.assets` 里登记 `"source": "merchant"` 的图，画面文字不能写「实拍」 |
+
+`textScale` 和 `headingFont` 这两项目前只对 cards 生效。quiz、journey 的标题是风格自己画的，不跟着这两项变。这两种风格写了这两项，校验提醒一句，不拦截。`pace` 和镜头 `bg` 仍然生效。
 
 改已经写好的分镜时，优先用 `revise.mjs` 只改这几个字段，不要整份重写。
 

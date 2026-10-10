@@ -66,6 +66,10 @@ try {
     const file = copyStory('sb-ok.json');
     const before = readText(file);
     const r = run(file, '第三镜改到 5 秒，开头换成提问', {
+      asks: [
+        {ask: '第三镜改到 5 秒', ops: [0]},
+        {ask: '开头换成提问', ops: [1]},
+      ],
       ops: [
         {op: 'set', path: 'shots[2].dur', value: 5},
         {op: 'set', path: 'shots[0].caption', value: '这个月的钱，\n{去向对不上}'},
@@ -74,7 +78,7 @@ try {
     const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (r.status !== 0) bad('宣传片改时长和字幕', r.out);
     else if (doc.shots[2].dur !== 5 || !String(doc.shots[0].caption).includes('去向对不上')) bad('宣传片改时长和字幕', '文件内容没改对');
-    else if (!r.out.includes('第 3 镜 时长') || !r.out.includes('第 1 镜 字幕')) bad('宣传片改时长和字幕', '中文说明不全：' + r.out);
+    else if (!r.out.includes('第三镜改到 5 秒 → 第 3 镜 时长') || !r.out.includes('开头换成提问 → 第 1 镜 字幕')) bad('宣传片改时长和字幕', '中文说明不全：' + r.out);
     else if (!fs.existsSync(path.join(tmp, 'sb-ok.bak.json'))) bad('宣传片改时长和字幕', '没有 .bak.json');
     else if (readText(path.join(tmp, 'sb-ok.bak.json')).equals(before)) ok('宣传片改时长和字幕');
     else bad('宣传片改时长和字幕', '备份不是原文件');
@@ -82,13 +86,13 @@ try {
 
   {
     const file = copyStory('sb-pace.json');
-    const r1 = run(file, '节奏快一点', {ops: [{op: 'set', path: 'meta.tweak.pace', value: 'fast'}]});
+    const r1 = run(file, '节奏快一点', {asks: [{ask: '节奏快一点', ops: [0]}], ops: [{op: 'set', path: 'meta.tweak.pace', value: 'fast'}]});
     const doc1 = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (r1.status !== 0 || doc1.meta?.tweak?.pace !== 'fast') bad('宣传片节奏', r1.out);
     else if (!r1.out.includes('节奏')) bad('宣传片节奏', '没印节奏');
     else if (!fs.existsSync(path.join(tmp, 'sb-pace.bak.json'))) bad('宣传片节奏', '没有第一次备份');
     else {
-      const r2 = run(file, '第 2 镜情绪再平静一点', {ops: [{op: 'set', path: 'shots[1].mood', value: 0.4}]});
+      const r2 = run(file, '第 2 镜情绪再平静一点', {asks: [{ask: '第 2 镜情绪再平静一点', ops: [0]}], ops: [{op: 'set', path: 'shots[1].mood', value: 0.4}]});
       const doc2 = JSON.parse(fs.readFileSync(file, 'utf8'));
       if (r2.status !== 0 || doc2.shots[1].mood !== 0.4) bad('宣传片第二次备份', r2.out);
       else if (!fs.existsSync(path.join(tmp, 'sb-pace.bak.1.json'))) bad('宣传片第二次备份', '没有 .bak.1.json');
@@ -98,7 +102,7 @@ try {
 
   {
     const file = copyLesson('lesson-a.json');
-    const r = run(file, '封面标题改成提问', {ops: [{op: 'set', path: 'meta.title', value: 'Codex 到底是什么'}]});
+    const r = run(file, '封面标题改成提问', {asks: [{ask: '封面标题改成提问', ops: [0]}], ops: [{op: 'set', path: 'meta.title', value: 'Codex 到底是什么'}]});
     const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (r.status !== 0 || doc.meta.title !== 'Codex 到底是什么') bad('讲课改标题', r.out);
     else if (!r.out.includes('标题')) bad('讲课改标题', '没印标题');
@@ -107,7 +111,7 @@ try {
 
   {
     const file = copyLesson('lesson-b.json');
-    const r = run(file, '封面副标题改短', {ops: [{op: 'set', path: 'chapters[0].pages[0].subtitle', value: '它替谁改代码'}]});
+    const r = run(file, '封面副标题改短', {asks: [{ask: '封面副标题改短', ops: [0]}], ops: [{op: 'set', path: 'chapters[0].pages[0].subtitle', value: '它替谁改代码'}]});
     const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (r.status !== 0 || doc.chapters[0].pages[0].subtitle !== '它替谁改代码') bad('讲课改副标题', r.out);
     else if (!r.out.includes('副标题')) bad('讲课改副标题', r.out);
@@ -116,7 +120,7 @@ try {
 
   {
     const before = readText(brollFile);
-    const r = run(brollFile, '第一段说明改短一点', {ops: [{op: 'set', path: 'clips[0].plain', value: '先写再做'}]});
+    const r = run(brollFile, '第一段说明改短一点', {asks: [{ask: '第一段说明改短一点', ops: [0]}], ops: [{op: 'set', path: 'clips[0].plain', value: '先写再做'}]});
     const doc = JSON.parse(fs.readFileSync(brollFile, 'utf8'));
     if (r.status !== 0 || doc.clips[0].plain !== '先写再做') bad('口播改说明', r.out);
     else if (!r.out.includes('b01') || !r.out.includes('说明')) bad('口播改说明', r.out);
@@ -125,7 +129,7 @@ try {
   }
 
   {
-    const r = run(brollFile, '第二段镜头改成不动', {ops: [{op: 'set', path: 'clips[1].camera', value: 'static'}]});
+    const r = run(brollFile, '第二段镜头改成不动', {asks: [{ask: '第二段镜头改成不动', ops: [0]}], ops: [{op: 'set', path: 'clips[1].camera', value: 'static'}]});
     const doc = JSON.parse(fs.readFileSync(brollFile, 'utf8'));
     if (r.status !== 0 || doc.clips[1].camera !== 'static') bad('口播改镜头', r.out);
     else if (!r.out.includes('镜头')) bad('口播改镜头', r.out);
@@ -173,7 +177,7 @@ try {
   {
     const file = copyStory('sb-bad.json');
     const before = readText(file);
-    const r = run(file, '第一镜改成 0.2 秒', {ops: [{op: 'set', path: 'shots[0].dur', value: 0.2}]});
+    const r = run(file, '第一镜改成 0.2 秒', {asks: [{ask: '第一镜改成 0.2 秒', ops: [0]}], ops: [{op: 'set', path: 'shots[0].dur', value: 0.2}]});
     if (r.status === 0 || !readText(file).equals(before) || !noBak(file)) bad('宣传片校验三轮放弃', r.out);
     else if (!r.out.includes('校验 3 轮后仍不过') || !r.out.includes('没写文件')) bad('宣传片校验三轮放弃', r.out);
     else ok('宣传片校验三轮放弃');
@@ -182,7 +186,7 @@ try {
   {
     const file = copyLesson('lesson-bad.json');
     const before = readText(file);
-    const r = run(file, '封面标题清空', {ops: [{op: 'set', path: 'chapters[0].pages[0].title', value: ''}]});
+    const r = run(file, '封面标题清空', {asks: [{ask: '封面标题清空', ops: [0]}], ops: [{op: 'set', path: 'chapters[0].pages[0].title', value: ''}]});
     if (r.status === 0 || !readText(file).equals(before) || !noBak(file)) bad('讲课校验三轮放弃', r.out);
     else if (!r.out.includes('校验 3 轮后仍不过') || !r.out.includes('没写文件')) bad('讲课校验三轮放弃', r.out);
     else ok('讲课校验三轮放弃');
@@ -192,7 +196,7 @@ try {
     const file = path.join(brollDir, 'broll-bad.json');
     fs.copyFileSync(path.join(motion, 'broll.json'), file);
     const before = readText(file);
-    const r = run(file, '说明写很长', {ops: [{op: 'set', path: 'clips[0].plain', value: '这句话一共有三十个汉字用来测试超长说明文字啊'}]});
+    const r = run(file, '说明写很长', {asks: [{ask: '说明写很长', ops: [0]}], ops: [{op: 'set', path: 'clips[0].plain', value: '这句话一共有三十个汉字用来测试超长说明文字啊'}]});
     if (r.status === 0 || !readText(file).equals(before) || !noBak(file)) bad('口播校验三轮放弃', r.out);
     else if (!r.out.includes('校验 3 轮后仍不过') || !r.out.includes('没写文件')) bad('口播校验三轮放弃', r.out);
     else ok('口播校验三轮放弃');
@@ -201,10 +205,60 @@ try {
   {
     const file = copyStory('sb-dry.json');
     const before = readText(file);
-    const r = run(file, '节奏快一点', {ops: [{op: 'set', path: 'meta.tweak.pace', value: 'fast'}]}, ['--dry-run']);
+    const r = run(file, '节奏快一点', {asks: [{ask: '节奏快一点', ops: [0]}], ops: [{op: 'set', path: 'meta.tweak.pace', value: 'fast'}]}, ['--dry-run']);
     if (r.status !== 0 || !readText(file).equals(before) || !noBak(file)) bad('干跑', r.out);
     else if (!r.out.includes('干跑') || !r.out.includes('修改清单')) bad('干跑', r.out);
     else ok('干跑不写文件');
+  }
+
+  {
+    const file = copyStory('sb-miss-ask.json');
+    const before = readText(file);
+    const sentence = '第三镜慢一点，开头换成提问';
+    const r = run(file, sentence, {
+      asks: [{ask: '第三镜慢一点', ops: [0]}],
+      ops: [{op: 'set', path: 'shots[2].dur', value: 5}],
+    });
+    if (r.status === 0 || !readText(file).equals(before) || !noBak(file)) bad('漏掉一个要求', r.out);
+    else if (!r.out.includes('『开头换成提问』没有对应的修改，开头是第 1 镜 shots[0]') || !r.out.includes('校验 3 轮后仍不过') || !r.out.includes('没写文件')) bad('漏掉一个要求', r.out);
+    else ok('漏掉一个要求会被打回');
+  }
+
+  {
+    const file = copyStory('sb-wrong-place.json');
+    const before = readText(file);
+    const r = run(file, '第三镜慢一点，开头换成提问', {
+      asks: [
+        {ask: '第三镜慢一点', ops: [0]},
+        {ask: '开头换成提问', ops: [1]},
+      ],
+      ops: [
+        {op: 'set', path: 'shots[2].dur', value: 5},
+        {op: 'set', path: 'shots[2].caption', value: '还在靠毅力记账？\n{别跟自己较劲}'},
+      ],
+    });
+    if (r.status === 0 || !readText(file).equals(before) || !noBak(file)) bad('位置对不上', r.out);
+    else if (!r.out.includes('『开头换成提问』没有对应的修改，开头是第 1 镜 shots[0]') || !r.out.includes('没写文件')) bad('位置对不上', r.out);
+    else ok('位置对不上会被打回');
+  }
+
+  {
+    const file = copyStory('sb-both.json');
+    const r = run(file, '第三镜慢一点，开头换成提问', {
+      asks: [
+        {ask: '第三镜慢一点', ops: [0]},
+        {ask: '开头换成提问', ops: [1]},
+      ],
+      ops: [
+        {op: 'set', path: 'shots[2].dur', value: 5},
+        {op: 'set', path: 'shots[0].caption', value: '这个月的钱，\n{去哪了}'},
+      ],
+    });
+    const doc = JSON.parse(fs.readFileSync(file, 'utf8'));
+    if (r.status !== 0) bad('两个要求都改到', r.out);
+    else if (doc.shots[2].dur !== 5 || !String(doc.shots[0].caption).includes('去哪了')) bad('两个要求都改到', '文件没改对');
+    else if (!r.out.includes('第三镜慢一点 → 第 3 镜 时长') || !r.out.includes('开头换成提问 → 第 1 镜 字幕')) bad('两个要求都改到', r.out);
+    else ok('两个要求都改到才通过');
   }
 
   console.log('可调项校验');
@@ -231,8 +285,26 @@ try {
 
   const big = structuredClone(parsed.sb);
   big.meta.tweak = {textScale: 1.1};
-  if (validate(big, {baseDir}).errors.length) bad('textScale 1.1', validate(big, {baseDir}).errors.map((e) => e.problem).join('；'));
+  const bigR = validate(big, {baseDir});
+  if (bigR.errors.length) bad('textScale 1.1', bigR.errors.map((e) => e.problem).join('；'));
+  else if (bigR.warnings.some((w) => String(w.problem).includes('这两项目前只对 cards 生效'))) bad('textScale 1.1', 'cards 不该提醒字号无效');
   else ok('textScale 1.1 通过');
+
+  const quizPath = path.join(ROOT, 'styles', 'quiz', 'examples', 'software-archive.json');
+  const quiz = structuredClone(parseFile(quizPath).sb);
+  quiz.meta.tweak = {textScale: 1.1, headingFont: 'kai'};
+  const quizR = validate(quiz, {baseDir: path.dirname(quizPath)});
+  if (quizR.errors.length) bad('quiz 字号字体只提醒', quizR.errors.map((e) => `${e.where}：${e.problem}`).join('；'));
+  else if (!quizR.warnings.some((w) => w.where === 'meta.tweak' && String(w.problem).includes('这两项目前只对 cards 生效'))) bad('quiz 字号字体只提醒', quizR.warnings.map((w) => w.problem).join('；'));
+  else ok('quiz 写了 textScale 和 headingFont 会提醒');
+
+  const journeyPath = path.join(ROOT, 'styles', 'journey', 'examples', 'software-notes.json');
+  const journey = structuredClone(parseFile(journeyPath).sb);
+  journey.meta.tweak = {headingFont: 'kai'};
+  const journeyR = validate(journey, {baseDir: path.dirname(journeyPath)});
+  if (journeyR.errors.length) bad('journey 字体只提醒', journeyR.errors.map((e) => `${e.where}：${e.problem}`).join('；'));
+  else if (!journeyR.warnings.some((w) => String(w.problem).includes('这两项目前只对 cards 生效'))) bad('journey 字体只提醒', journeyR.warnings.map((w) => w.problem).join('；'));
+  else ok('journey 写了 headingFont 会提醒');
 
   for (const value of [1.2, 0.85]) {
     const sb = structuredClone(parsed.sb);

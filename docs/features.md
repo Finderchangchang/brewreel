@@ -88,9 +88,11 @@ industries/<id>/
 | 字段 | 取值 | 效果 |
 |---|---|---|
 | `meta.tweak.pace` | `slow` / `normal` / `fast` | 每一镜的拍长乘 1.15 / 1 / 0.88，再吸附到整拍。`normal` 和不写一样，不乘。每种镜头的最短、最长时长照样生效 |
-| `meta.tweak.textScale` | 0.9–1.15 | 缩放字幕带、片尾大字和 hook 主视觉大字。不写或 `1` 等于不缩放。裁切、出安全区、压字这些版式检查照样拦 |
-| `meta.tweak.headingFont` | `sans` / `serif` / `kai` | 标题和大字的字体。`sans` 是 Noto Sans SC（默认），`serif` 是 BrewReel Serif，`kai` 是 BrewReel Kai。`sans` 和不写一样 |
+| `meta.tweak.textScale` | 0.9–1.15 | 缩放字幕带、片尾大字和 hook 主视觉大字。不写或 `1` 等于不缩放。裁切、出安全区、压字这些版式检查照样拦。quiz、journey 写了这项会提醒：这两项目前只对 cards 生效 |
+| `meta.tweak.headingFont` | `sans` / `serif` / `kai` | 标题和大字的字体。`sans` 是 Noto Sans SC（默认），`serif` 是 BrewReel Serif，`kai` 是 BrewReel Kai。`sans` 和不写一样。quiz、journey 写了这项会提醒：这两项目前只对 cards 生效 |
 | 镜头 `bg` | 相对路径的 png / jpg / webp | 盖在这一镜的渐变上，并自动压暗，保证字看得清。文件必须在项目目录里、至少 1KB。没在 `meta.assets` 登记为 `source: merchant` 的图，画面文字不能写「实拍」 |
+
+`textScale` 和 `headingFont` 目前只对 cards 生效。quiz、journey 的标题是风格自己画的，不跟着这两项变。这两种风格写了这两项，校验提醒「这两项目前只对 cards 生效」，不拦截。`pace` 和镜头 `bg` 对 quiz、journey 仍然生效。
 
 用户说「节奏快一点 / 字大一点 / 标题换楷体 / 这一镜换张背景图」时，便宜模型按上表写，不要改模板代码。已经写好的片子要改一处，用 `node scripts/revise.mjs <storyboard.json> "一句话"`，不要整份重写。
 

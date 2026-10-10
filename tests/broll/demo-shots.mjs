@@ -70,6 +70,7 @@ check('endCard 不算', isDemoShot({type: 'endCard', params: {brand: '甲'}}, []
 check('finale 票面数字不算', isDemoShot({type: 'finale', params: {stats: [{value: '1200', unit: '期'}]}}, []) === false);
 check('district scene=phone 仍算', isDemoShot({type: 'district', params: {scene: 'phone'}}, []));
 check('quiz scene=office 不算', isDemoShot({type: 'quiz', params: {scene: 'office'}}, [{type: 'quiz', params: {scene: 'office'}}]) === false);
+check('custom 一律算演示镜头', isDemoShot({type: 'custom', component: 'shots/keyword-toss.tsx', slots: {keyword: '少一步'}}, []));
 
 const onlyText = [{type: 'hook', params: {visual: 'icon', text: '只有字'}}];
 check('全片没有演示镜头时纯文字 hook 仍全片显示', demoOpacity(1, [{start: 0, end: 3, shot: onlyText[0]}]) === 1);

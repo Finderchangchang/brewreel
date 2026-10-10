@@ -694,6 +694,9 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
           err('meta.tweak.textScale', `字号缩放 ${JSON.stringify(tw.textScale)} 不在 0.9–1.15`, '写 0.9 到 1.15；字大一点用 1.08，字小一点用 0.92。不写或写 1 等于不缩放');
         if (tw.headingFont !== undefined && !['sans', 'serif', 'kai'].includes(tw.headingFont))
           err('meta.tweak.headingFont', `「${tw.headingFont}」不是可选字体`, 'sans = 思源黑体（Noto Sans SC，和不写一样），serif = BrewReel Serif，kai = BrewReel Kai');
+        const fontKeys = ['textScale', 'headingFont'].filter((k) => tw[k] !== undefined);
+        if ((styleId === 'quiz' || styleId === 'journey') && fontKeys.length)
+          warn('meta.tweak', `${fontKeys.join('、')}：这两项目前只对 cards 生效`, 'quiz 和 journey 的标题是风格自己画的，不跟着字号和字体变。节奏 pace、镜头 bg 仍然生效。不想看到这条提醒就删掉这两项，或改用 cards');
       }
     }
     for (const k of Object.keys(meta)) if (!known.includes(k)) err(`meta.${k}`, '多了一个不认识的字段', `删掉，或检查拼写。可用字段：${known.join('、')}`);
