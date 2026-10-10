@@ -1,44 +1,35 @@
 <div align="center">
 
-<img src="docs/images/logo.png" width="150" alt="BrewReel · 精酿" />
+<img src="docs/images/logo.png" width="120" alt="BrewReel · 精酿" />
 
 # BrewReel · 精酿
 
-**Four ways to make a video, each with one command.** Write a product brief and render a vertical promo, or drop in a talking-head clip and add pictures to the lines. An explainer, a course, a legal-education video, or a tutorial is landscape. See [Lesson video](#lesson-video).
+**Even a cheap model can produce a usable video: give it the material, and one command renders the file.**
 
-[![Version](https://img.shields.io/badge/version-v0.13.0-1f6feb?style=flat-square)](CHANGELOG.en.md)
-[![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers)
-[![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
+[![Version](https://img.shields.io/badge/version-v0.13.0-1f6feb?style=flat-square)](CHANGELOG.en.md) [![Stars](https://img.shields.io/github/stars/Finderchangchang/brewreel?style=flat-square&logo=github&label=Stars)](https://github.com/Finderchangchang/brewreel/stargazers) [![License](https://img.shields.io/github/license/Finderchangchang/brewreel?style=flat-square)](LICENSE) [![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4D6BFE?style=flat-square)](#use-it-in-deepseek-harness)
 
-[Promo videos](#promo-videos) · [Talking-head B-roll](#talking-head-b-roll) · [Style factory](#style-factory) · [Lesson video](#lesson-video) · [Quick start](#quick-start) · [Docs](#docs) · [中文](README.md)
+[Why BrewReel](#why-brewreel) · [Quick start](#quick-start) · [Promo videos](#promo-videos) · [Talking-head B-roll](#talking-head-b-roll) · [Lesson video](#lesson-video) · [Docs](#docs) · [中文](README.md)
 
-<table>
-<tr>
-<td width="50%" align="left">
-<b>Promo video</b> (since v0.1)<br/>
-<code>node scripts/make.mjs</code><br/>
-<sub>Write a brief. A cheap model writes the storyboard.<br/>3 recipes · 6 industries</sub>
-</td>
-<td width="50%" align="left">
-<b>Talking-head B-roll</b> (usable since v0.9)<br/>
-<code>node scripts/talk.mjs</code><br/>
-<sub>Drop in talk.mp4.<br/>Local transcription · motion cards or AI clips</sub>
-</td>
-</tr>
-</table>
+<img src="docs/images/readme-modes.en.png" width="860" alt="Promo, talking-head B-roll, and lesson video" />
 
-v0.10 also drafts an AI-picture style from one sentence. See [Style factory](#style-factory).
-
+**Promo**: a product brief → a vertical promo (9:16)
+**Talking-head B-roll**: a talk, `talk.mp4` → the talk with pictures (motion cards / AI clips)
+**Lesson**: a script or a brief → a 16:9 lesson (a vertical cut is optional)
 <sub>Formerly promo-video-skill / Distill Video (蒸馏视频); old links redirect automatically.</sub>
 
 </div>
 
+## Why BrewReel
+
+**The cheap model only fills in a form. It does not write code.** A promo fills in `storyboard.json`, a talk fills in `broll.json`, a lesson fills in `lesson.json`: pick a layout, fill in the words. That is why a cheap model such as DeepSeek can still produce a video that passes the checks.
+
+**Compliance and the quality checks run first.** Advertising-law wording, industry rules, where a number came from, layout, and motion that freezes: if one check fails, the video is not delivered.
+
+**Open source, commercial use allowed.** Apache-2.0. Credit the source when you distribute it. Rendered videos do not require attribution.
+
 ## Quick start
 
-You need Node.js 18+ and Python 3.10+. On Windows, x64 only. The platform table, environment variables and the full write-up are in [Install and get started](docs/quickstart.en.md).
-
-**1. Install dependencies.**
+**Install the dependencies.**
 
 ```bash
 git clone https://github.com/Finderchangchang/brewreel.git
@@ -46,128 +37,120 @@ cd brewreel/template && npm install && npx remotion browser ensure
 cd .. && pip install numpy scipy imageio-ffmpeg
 ```
 
-**2. Promo video: render a sample.**
+**Promo** (`examples/ledger.json`)
 
 ```bash
-node scripts/validate.mjs examples/en-focus.json
-node scripts/make.mjs examples/en-focus.json --out ../brewreel-out/en-focus
+node scripts/validate.mjs examples/ledger.json
+node scripts/make.mjs examples/ledger.json --out ../brewreel-out/ledger
 ```
 
-Rendering takes a few minutes. The last terminal line is `交付：<mp4 path>` ("delivered"). `--out` must not point inside the repo.
+Validation runs first, then the render, which takes a few minutes. The last line is `交付：<mp4 path>` ("delivered"). `--out` must not point inside the repo. This sample's captions are Chinese.
 
-To have a model write the storyboard, put the repo at `~/.claude/skills/brewreel/` or `~/.agents/skills/brewreel/`, hand the assistant [`brief-template.md`](brief-template.md) (English templates are `industries/<id>/brief-template.en.md`) and let it follow `SKILL.md`. Without an assistant: `python scripts/llm_make.py path/to/brief.md`.
-
-**3. Talking-head: one video file.**
-
-Rename the talk to `talk.mp4` and put it in a project folder:
+**Talking-head B-roll**
 
 ```bash
 node scripts/talk.mjs path/to/project --out ../brewreel-out/talk
 ```
 
-Transcription runs on your machine. DeepSeek writes `broll.json` (set `DEEPSEEK_API_KEY` or `LLM_API_KEY` first). Motion cards are drawn for real. AI clips start as stand-ins and cost nothing; a real render is estimated first, and a person approves it before the final video. See [Talking-head B-roll](docs/broll.en.md).
+Put `talk.mp4` in the project folder. Transcription runs on your machine. Motion cards are drawn for real. AI clips start as stand-ins and cost nothing.
 
-### Use it in DeepSeek Harness
+**Lesson** (`examples/lesson/mascot-demo.json`, mock voice)
 
-The repo ships a plugin, `dsh-brewreel`, for validating, rendering and checking promo videos. It needs dsh 0.1.7-rc.2 or later within 0.1.x. The install command, the 7 tools and the license note are in [Install and get started](docs/quickstart.en.md#use-it-in-deepseek-harness). This version does not cover talking-head B-roll, and it has not been tested against a real DeepSeek model.
+```bash
+node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-out/first-lesson --voice-provider mock --no-bgm
+```
+
+Mock voice is for layout and pacing, and it does not bill a voice provider. On success the last line starts with `交付：`.
+
+You need Node.js 18+ and Python 3.10+. On Windows, x64 only. Platforms, environment variables and the full write-up are in [Install and get started](docs/quickstart.en.md).
 
 ## Promo videos
 
-Since v0.1: write a product brief, let a cheap model write one `storyboard.json` (it picks shots and fills in text, and it does not write code), and render a vertical video with one command.
-
 <p align="center"><img src="docs/images/readme-hero.gif" width="720" alt="cards, data chart, quiz and journey" /></p>
 
-| Recipe | When to use it |
-|---|---|
-| `cards` (default) | One selling point, a flow, a screen, a physical product or a price list. 9:16 |
-| `quiz` | One multiple-choice question with a single right answer. 9:16 |
-| `journey` | 4–6 categories to tour in order. 4:5 by default, 9:16 also works |
+**You give**: a product brief.
 
-- **Six industries**: software, food, physical goods, adult vocational training, non-medical beauty, travel and lodging. Each pack has advertising-law and industry rules, a recommended shot structure and a brief template. Not supported: medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.
-- **Voice-over** (since v0.5): MiniMax, Alibaba Cloud or Volcengine. Shot lengths follow the narration, subtitles light up word by word, and the music ducks under speech.
-- **Data charts** (v0.7): bar, line, dot, stacked and donut. Every number on the chart must appear in the cited fact. See [`docs/shots/dataChart.en.md`](docs/shots/dataChart.en.md).
-- **Palettes** (v0.7): cards has 6 default themes and 12 optional ones. If you pick none, an old storyboard renders as before. See [`styles/cards/THEMES.md`](styles/cards/THEMES.md).
-- **Music and captions**: `scripts/make_bgm.py` synthesizes the music on the spot, on the shot cuts. Captions can be Chinese or English.
+**You get**: a vertical promo (9:16; `journey` defaults to 4:5).
 
-<p align="center"><img src="docs/images/themes.png" width="720" alt="12 optional palettes" /></p>
+**One command**: `node scripts/make.mjs examples/ledger.json --out ../brewreel-out/ledger`
 
-A video with a ✗ in its self-check is not delivered. Details: [Features](docs/features.en.md). More frames: [Screenshots](docs/gallery.en.md).
+- 3 recipes: `cards` (the default, 9:16), `quiz` (9:16), `journey` (4:5 by default, 9:16 also works).
+- 6 industries: software, food, physical goods, adult vocational training, non-medical beauty, travel and lodging. Each pack has advertising-law and industry rules. Not supported: medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.
+- Voice-over can be MiniMax, Alibaba Cloud or Volcengine. Shot lengths follow the narration, subtitles light up word by word, and the music ducks under speech.
+- Data charts: bar, line, dot, stacked and donut. Every number on the chart must appear in the cited fact. See [dataChart](docs/shots/dataChart.en.md).
+- A video with a ✗ in its self-check is not delivered. Music is synthesized on the shot cuts. Captions can be Chinese or English. cards has 6 default themes and 12 optional ones: [palettes](styles/cards/THEMES.md).
+
+Details → [Features](docs/features.en.md)
 
 ## Talking-head B-roll
 
-v0.8 was the experiment. Since v0.9 you can drop in one talk and render with one command. The project folder only needs `talk.mp4`.
-
 <p align="center"><img src="docs/images/talk-intro.png" width="720" alt="Talking-head B-roll diagram, no real person on screen" /></p>
 
-<p align="center"><a href="https://github.com/Finderchangchang/brewreel/releases/download/v0.9.0/brewreel-v0.9.0-talk-demo.mp4">Watch the v0.9.0 demo</a></p>
+<p align="center"><a href="https://github.com/Finderchangchang/brewreel/releases/download/v0.9.0/brewreel-v0.9.0-talk-demo.mp4">Watch the demo</a></p>
 
-- **Local transcription**: SenseVoice (FunAudioLLM / Alibaba Tongyi Lab), run with sherpa-onnx. An existing `talk.srt` is never overwritten.
-- **Motion cards**: DeepSeek picks one per line. Five kinds: keyword, checklist, steps, counter, compare. The words must be copied from the speech, and the script checks them character by character. These cards do not cost money.
-- **Motion looks** (v0.11): cards follow the main style's colours by default; add `--motion-look cutpaper-meadow` or `cutpaper-dusk` for a cut-paper look: paper grain, hand-cut cards that toss up on key words and land, paper scraps flying past. Still free. How to build a new look: [Motion looks](docs/motion-looks.en.md).
-- **AI clips**: MiniMax H3. Three regular styles share one robot, described in `broll/character.json`: wood blocks (`wood-blocks`, the default; still called 积木风 in Chinese), clay stop-motion (`clay-stopmotion`) and layered paper (`paper-layers`). Ink sketch (`ink-sketch`) is experimental and only works as a stand-in preview. At most 2 AI clips by default.
-- **Estimate first. A person approves the final video.** `--provider minimax-h3 --dry-run` only prints the estimate. Add `--yes` to generate. The person runs `node scripts/broll/approve.mjs <project> --out <dir-outside-the-repo>`. `talk.mjs` never runs it for you.
+**You give**: a talk, `talk.mp4`.
 
-Price, placement and limits: [Talking-head B-roll](docs/broll.en.md). That page is still titled experimental: clay stop-motion and layered paper have not been generated for real, and ink sketch has no reference images yet.
+**You get**: the talk with pictures. Motion cards are free. AI clips are estimated first, then a person approves them.
 
-## Style factory
+**One command**: `node scripts/talk.mjs path/to/project --out ../brewreel-out/talk`
 
-v0.10. One sentence describes an AI-picture style. The script writes the config, generates reference images, scores them and makes one still. The vision check gets things wrong. A person looks last.
+- Transcription runs locally with SenseVoice (FunAudioLLM / Alibaba Tongyi Lab), via sherpa-onnx. An existing `talk.srt` is never overwritten.
+- Five motion cards: keyword, checklist, steps, counter, compare. The words must be copied from the speech, and the script checks them character by character. These cards do not cost money.
+- Cards follow the main style's colours by default. Add `--motion-look cutpaper-meadow` or `cutpaper-dusk` for a cut-paper look: paper grain and hand-cut cards that toss up on a key word and land. Still free. See [Motion looks](docs/motion-looks.en.md).
+- AI clips use MiniMax H3. The whole video shares one robot, described in `broll/character.json`: wood blocks (`wood-blocks`, the default), clay stop-motion (`clay-stopmotion`) and layered paper (`paper-layers`). Ink sketch (`ink-sketch`) only works as a stand-in preview. At most 2 AI clips by default.
 
-Print the requests first. This step calls nothing:
+**Style factory.** One sentence describes an AI-picture style. The script writes the config, generates reference images, scores them and makes one still. The vision check gets things wrong. A person looks last. That person runs `node scripts/broll/approve-style.mjs <id>`. An AI assistant must not run it. Pull requests that bring back an approved style are welcome. See [Style factory](docs/style-factory.en.md).
 
-```bash
-node scripts/broll/new-style.mjs --id demo-watercolor --name 水彩绘本 --desc "水彩晕染、纸纹、柔和暖色"
-```
+**Cost and a person's approval**: for AI clips, `--provider minimax-h3 --dry-run` only prints the estimate. Add `--yes` to generate. The final video needs a person to run `node scripts/broll/approve.mjs <project> --out <dir-outside-the-repo>`. `talk.mjs` never runs it. Only a person can run the approve command.
 
-The sample name and description are the ones in the docs. `--name` and `--desc` are your own words. Add `--yes` when you want the real run. After `broll/styles/_drafts/<id>/review.html`, a person runs this in a terminal:
-
-```bash
-node scripts/broll/approve-style.mjs <id>
-```
-
-Only a person can run it. An AI assistant must not run it for you. A non-interactive terminal is refused. If a video test was made and it passed, the status is `stable`; otherwise it is `experimental`.
-
-Pull requests that bring back an approved style are welcome. That is a different set of files from a promo-recipe remix, which still goes through [Contributing](CONTRIBUTING.en.md). Steps, cost and the vision rules: [Style factory](docs/style-factory.en.md).
+Details → [Talking-head B-roll](docs/broll.en.md)
 
 ## Lesson video
 
-Landscape 16:9, for an explainer, a course, a legal-education video, or a tutorial. Twenty layouts and four themes, with an optional presenter and brand frame. Vertical clips and covers are optional. Run the same output directory again after you edit one page, and unchanged pages are reused.
+<p align="center"><img src="docs/images/lesson-layouts.webp" width="720" alt="Four lesson layouts: statute card, compare, flow, big number" /></p>
 
-```bash
-node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-studio-out/first-lesson --voice-provider mock --no-bgm
-```
+**You give**: a script, `lesson.json`, or a brief.
 
-What it does, the three-step start, and the limits: [Lesson video](docs/lesson.en.md).
+**You get**: a 16:9 lesson. Vertical clips and covers are optional.
 
-## Why BrewReel
+**One command**: `node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../brewreel-out/first-lesson --voice-provider mock --no-bgm`
 
-- **The cheap model only does what it is good at.** A promo writes `storyboard.json`. A talk writes `broll.json`. Pick shots, fill in text. No code, no coordinates.
-- **A strong model tunes the recipe first.** Each promo style is written down as components and validation rules. The cheap model follows them.
-- **Compliance red lines are checked first.** Every error says which shot and which field to fix. Validate → music → render → check frames runs as one command.
-- **Open source, commercial use allowed.** Apache-2.0. Credit the source. Rendered videos do not require attribution.
+- 20 layouts and 4 themes: `paper` (the legal-education default), `lecture` (the default otherwise), `product`, and `editorial` (hand-picked only, not for legal education).
+- A presenter and a brand frame are optional. The preset cartoons are free. A lesson renders with no brand written in.
+- Run the same output directory again after you edit one page. Unchanged pages are reused.
+- A legal-education lesson does not render without a valid review record. A tech lesson does not require one. An AI assistant cannot sign the review.
+- Domain packs: `tech` for a technical lesson, `legal` for legal education. Legal quotes are filled only from the checked Civil Code corpus.
+
+**Cost and a person's approval**: building a character from a photo needs that person's consent. The photo is sent to MiniMax for recognition, and that costs money. Do not run it unless someone asked for it this time. An unconfirmed character cannot be used in a final video. Only a person can confirm it.
+
+Details → [Lesson video](docs/lesson.en.md)
+
+## Let an AI assistant do it
+
+For Claude Code, put the repo at `~/.claude/skills/brewreel/`. For Codex and the others, put it at `~/.agents/skills/brewreel/`. Say what you want. The top of the skill routes the request to a promo, talking-head B-roll, or a lesson.
+
+### Use it in DeepSeek Harness
+
+The repo ships a plugin, `dsh-brewreel`. Seven tools validate, render and check promo videos. The registered skill also routes the other jobs: talking-head B-roll writes `broll.json` and runs `scripts/talk.mjs`; the style factory reads `docs/style-factory.md` and runs `scripts/broll/new-style.mjs`; a lesson reads `lesson/SKILL-lesson.md` and runs `scripts/lesson/make-lesson.mjs`. Those three do not go through the seven tools. Install and version requirements: [Install and get started](docs/quickstart.en.md#use-it-in-deepseek-harness).
 
 ## Docs
 
-**Start**
+| Doc | What it covers |
+|---|---|
+| [Install and get started](docs/quickstart.en.md) | Platforms, setup, the talk command, the style factory, DeepSeek Harness |
+| [Features](docs/features.en.md) | Recipes, voice-over, industries, validation |
+| [Talking-head B-roll](docs/broll.en.md) | One talk, with motion cards or AI clips |
+| [Style factory](docs/style-factory.en.md) | One sentence drafts an AI-picture style; a person approves it |
+| [Lesson video](docs/lesson.en.md) | An explainer, a course, legal education, or a tutorial |
+| [Motion looks](docs/motion-looks.en.md) | Cut-paper and other looks for motion cards |
+| [Screenshots](docs/gallery.en.md) | Frames from the three promo recipes |
+| [How it works](docs/how-it-works.en.md) | From a brief to a delivered file |
+| [FAQ](docs/faq.en.md) | Music, setup, and problems while rendering |
+| [Known limitations](docs/limitations.en.md) | Why a render is still a draft, and how it was tested |
+| [Changelog](CHANGELOG.en.md) | What changed in each version · [Releases](https://github.com/Finderchangchang/brewreel/releases) |
+| [Contributing](CONTRIBUTING.en.md) | How to send a promo recipe |
 
-- [Install and get started](docs/quickstart.en.md): platforms, setup, the cheap-model path, the talk command, the style factory, DeepSeek Harness
-- [First video guide](https://brewreel.com/guides/first-promo-video.en.html) · [Product brief template](https://brewreel.com/guides/product-brief.en.html) (website)
-- [Brief template](brief-template.md) (the general template in the repo)
-
-**Four ways**
-
-- [Features](docs/features.en.md): recipes, voice-over, industries, talking-head B-roll, style factory, validation
-- [Lesson video](docs/lesson.en.md)
-- [Screenshots](docs/gallery.en.md)
-- [Talking-head B-roll](docs/broll.en.md)
-- [Style factory](docs/style-factory.en.md)
-- [How it works](docs/how-it-works.en.md)
-
-**Reference**
-
-- [FAQ](docs/faq.en.md)
-- [Known limitations](docs/limitations.en.md)
-- [Changelog](CHANGELOG.en.md) · [Releases](https://github.com/Finderchangchang/brewreel/releases) · [Contributing](CONTRIBUTING.en.md)
+Website: [First video guide](https://brewreel.com/guides/first-promo-video.en.html) · [Product brief template](https://brewreel.com/guides/product-brief.en.html). The general template in the repo: [brief-template.md](brief-template.md).
 
 ## Known limitations
 
@@ -187,6 +170,20 @@ The test method and the open problems are in [Known limitations](docs/limitation
 
 We want to hear real needs: what product do you want a video for? Which recipe or industry is missing? Which compliance rule got in your way? Message the Official Account or open an issue.
 
+## ❤️ Sponsors
+
+> Want to appear here? Add me on WeChat: **jskjkf007**, and include the note "BrewReel 商务合作" (BrewReel business) in your request.
+
+## ☕ Buy me a coffee
+
+If BrewReel saved you an evening of video editing, feel free to buy me a coffee. Every recipe here was brewed on a lot of coffee: keep the cup filled and the next recipe comes sooner. If a new style suddenly shows up in the repo one day, this cup probably helped 😄
+
+<p align="center">
+  <img src="docs/images/contact/wechat-donate-v3.png" width="260" alt="WeChat appreciation QR code (name hidden)" />
+</p>
+
+<p align="center"><sub>Only if it's easy for you, no pressure. A Star, an issue, or showing me a video you brewed makes me just as happy.</sub></p>
+
 ## Sister projects
 
 Open-source projects by the same author, under the [jev-chat](https://github.com/jev-chat) organization:
@@ -204,23 +201,9 @@ Copyright © 2026 Finderchangchang. The code is released under the [Apache-2.0](
 - Don't use the names "BrewReel" or "精酿" or the brewreel.com domain to imply that your work is made or endorsed by the original author.
 - **Videos rendered with this project do not require attribution.**
 - **Remotion is not open source**: for-profit organizations with 4 or more people must purchase Remotion's Company License, and this repo's Apache-2.0 license doesn't change that; see <https://www.remotion.dev/license>.
-- The fonts Noto Sans SC and Cascadia Mono are licensed under the SIL Open Font License 1.1; the full license text ships alongside each font under `template/public/fonts/`.
+- The fonts Noto Sans SC and Cascadia Mono, and the lesson fonts BrewReel Serif and BrewReel Kai (subsets of Noto Serif SC and LXGW WenKai), are licensed under the SIL Open Font License 1.1. The full license text ships with the fonts under `template/public/fonts/`.
 
 **Scope of use**: the rules in `industries/` and the validation scripts are compiled from public regulations and platform rules for self-checking only. They **are not legal advice** and are not guaranteed to cover every platform's latest rules. Whether published content is compliant is governed by the latest rules from regulators and platforms at the time; the publisher is solely responsible.
-
-## ❤️ Sponsors
-
-> Want to appear here? Add me on WeChat: **jskjkf007**, and include the note "BrewReel 商务合作" (BrewReel business) in your request.
-
-## ☕ Buy me a coffee
-
-If BrewReel saved you an evening of video editing, feel free to buy me a coffee. Every recipe here was brewed on a lot of coffee: keep the cup filled and the next recipe comes sooner. If a new style suddenly shows up in the repo one day, this cup probably helped 😄
-
-<p align="center">
-  <img src="docs/images/contact/wechat-donate-v3.png" width="260" alt="WeChat appreciation QR code (name hidden)" />
-</p>
-
-<p align="center"><sub>Only if it's easy for you, no pressure. A Star, an issue, or showing me a video you brewed makes me just as happy.</sub></p>
 
 ## Acknowledgements
 
