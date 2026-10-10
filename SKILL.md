@@ -23,6 +23,8 @@ metadata:
 
 便宜模型不要用 custom。`custom` 是强模型自己写组件的自由镜头，只在本地技能模式开放，插件里会直接拒绝。便宜模型继续只挑镜头、填文字。写法见 `docs/custom-shot.md`。
 
+用户想改已经写好的某一处时，先跑 `node <SKILL>/scripts/revise.mjs <storyboard.json> "一句话"`，不要整份重写。
+
 下文 `<SKILL>` = 本文件所在目录。命令都用 Node 22 / Python 3.10 跑。English speaker or English video needed → read `<SKILL>/SKILL.en.md` instead.
 
 ## 流程
@@ -140,6 +142,19 @@ metadata:
    - 退出码：0 可交付 / 1 校验没过 / 2 参数错 / 3 版式或汉字自查有 ✗（成片改名 `video.rejected.mp4`，只给人看哪里坏了）/ 4 渲染失败或时长不对 / 5 排队超时 / 6 内部错误 / 130 被中断。
 11. **看 `report.txt`**：「机器自查」「文字排版报告」「布局自查」里**有一个 ✗ 就不能交付**（make 会返回 3）。布局自查在渲染后量每个文字块：被卡片裁切、两块字互相压住、关键文字出了 x180–900、英文片画面上出现汉字（每半拍抽一帧查）。✗ 通常是某个字段写太多：删条目或缩短文字，改完回到第 9 步。全是 ✓ 之后再看 `sheet.png` 和 `check/`，按下面清单自查。
 12. **交付**：交付前可以跑一次 `node <SKILL>/scripts/make.mjs promo/<片名>/storyboard.json --out promo/<片名> --verify`，确认成片还对应当前分镜（改过分镜会报「成片和分镜不一致，请重跑 make」）。把 make 最后一行的 mp4 路径、`sheet.png` 路径交给用户，附上「发布前自查清单」（见下）——第 9 步的「需人工复核」条目原样列进去，逐条让用户确认，不要替用户下判断。
+
+## 可调项（meta.tweak，可选）
+
+用户说节奏、字号、标题字体，或某一镜换一张背景图时，写这些字段，不要改 `template/`。不写 `meta.tweak` 时，画面和现在完全一样。
+
+| 用户说 | 怎么写 |
+|---|---|
+| 节奏快一点 | `meta.tweak.pace` 写 `fast`（慢一点 `slow`，改回原来 `normal`）。拍长分别乘 0.88 / 1.15 / 1。每种镜头的最短、最长时长照样生效 |
+| 字大一点 | `meta.tweak.textScale` 写 1.05–1.15（字小一点写 0.9–1）。只缩放字幕带、片尾大字和 hook 主视觉大字 |
+| 标题换楷体 | `meta.tweak.headingFont` 写 `kai`（衬线 `serif`，黑体 `sans`）。字体用仓库里的 BrewReel Kai、BrewReel Serif、Noto Sans SC，只影响标题和大字 |
+| 这一镜换张背景图 | 这一镜加 `"bg": "photos/desk.jpg"`（相对 storyboard.json 的 png / jpg / webp，出片时自动压暗）。没在 `meta.assets` 里登记 `"source": "merchant"` 的图，画面文字不能写「实拍」 |
+
+改已经写好的分镜时，优先用 `revise.mjs` 只改这几个字段，不要整份重写。
 
 ## 配音（可选）
 

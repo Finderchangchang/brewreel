@@ -81,6 +81,19 @@ Copy an existing industry folder and rename it, fill in `rules.json` following t
 
 </details>
 
+## Tweaks (`meta.tweak`)
+
+A promo storyboard may set `meta.tweak` for pace, type size, and the heading face. A shot may also set `bg` for its own background. Leaving these fields out keeps the picture pixel-identical to today.
+
+| Field | Values | Effect |
+|---|---|---|
+| `meta.tweak.pace` | `slow` / `normal` / `fast` | Multiply each shot's length by 1.15 / 1 / 0.88, then snap to a beat. `normal` is the same as omitting it: no multiply. Each shot's min and max duration still apply |
+| `meta.tweak.textScale` | 0.9–1.15 | Scales the caption band, the end-card big type, and the hook hero type. Omitting it, or writing `1`, does not scale. Crop, safe-area, and overlap checks still block |
+| `meta.tweak.headingFont` | `sans` / `serif` / `kai` | Face for titles and big type. `sans` is Noto Sans SC (the default), `serif` is BrewReel Serif, `kai` is BrewReel Kai. `sans` matches omitting the field |
+| shot `bg` | png / jpg / webp, relative path | Drawn over that shot's gradient and darkened so type stays readable. The file must sit in the project folder and be at least 1KB. Copy must not say 「实拍」 unless the file is registered in `meta.assets` with `source: merchant` |
+
+When the user says "a bit faster", "larger type", "kai for the title", or "a new background on this shot", a cheap model writes the fields above and does not edit the template. To change one thing in a film that already exists, run `node scripts/revise.mjs <storyboard.json> "one sentence"` instead of rewriting the file.
+
 ## Talking-head B-roll
 
 Use this when a real talking-head video needs explanatory pictures on the lines about a step, a number or a comparison. v0.8 was the experiment; since v0.9 one command can render from `talk.mp4` alone. The limits remain, and the pages still treat it as experimental. Put only `talk.mp4` in a project folder and run one command, `node scripts/talk.mjs <project> --out <dir-outside-the-repo>`: it transcribes the talk on your machine, a cheap model writes `broll.json`, and scripts compute timing, price, generation and the final cut.

@@ -21,6 +21,8 @@ If you are not sure which row it is, ask the user. Do not guess. `<SKILL>` = the
 
 You do exactly two things: **pick shots** and **fill in text**. Don't write code, don't edit anything under `template/`, `scripts/`, or `industries/`, don't write coordinates, frame numbers, or color values.
 
+When the user wants to change something already written, run `node <SKILL>/scripts/revise.mjs <storyboard.json> "one sentence"` first. Do not rewrite the whole file.
+
 Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Python 3.10. 需要中文文档或做中文视频 → 改读 `<SKILL>/SKILL.md`。
 
 ## Workflow
@@ -138,6 +140,19 @@ Below, `<SKILL>` = the folder this file lives in. Run commands with Node 22 / Py
     - Exit codes: 0 deliverable / 1 validation failed / 2 bad arguments / 3 a ✗ in the layout or Han-character check (the video is renamed `video.rejected.mp4`, only for seeing what broke) / 4 render failed or wrong duration / 5 queue timeout / 6 internal error / 130 interrupted.
 11. **Read `report.txt`**: **any single ✗** in "machine self-check," "text-layout report," or "layout self-check" means the video can't be delivered (make exits with 3). The layout check measures every text block after rendering: clipped by a card, two text blocks overlapping, key text outside x180–900, and for English videos any Chinese character on screen (one probe frame every half beat). A ✗ usually means a field has too much text: trim items or shorten the copy, then go back to step 9. Once everything is ✓, check `sheet.png` and `check/` against the checklist below.
 12. **Deliver**: before delivering you can run `node <SKILL>/scripts/make.mjs promo/<name>/storyboard.json --out promo/<name> --verify` to confirm the video still matches the current storyboard (after an edit it reports that they differ and you must re-run make). Hand the user the mp4 path from make's last line and the `sheet.png` path, plus a "pre-publish checklist" (below) — copy step 9's "human review" items into it verbatim, one by one, and let the user confirm each — don't decide for them.
+
+## Tweaks (`meta.tweak`, optional)
+
+When the user asks for a faster pace, larger type, a kai heading, or a different background on one shot, write these fields. Do not edit `template/`. Leaving out `meta.tweak` keeps the picture identical to a storyboard without it.
+
+| The user says | Write |
+|---|---|
+| A bit faster | `meta.tweak.pace`: `fast` (slower is `slow`, back to the current pace is `normal`). Shot length is multiplied by 0.88 / 1.15 / 1. Each shot's min and max duration still apply |
+| Larger type | `meta.tweak.textScale`: 1.05–1.15 (smaller is 0.9–1). This scales the caption band, the end-card big type, and the hook hero type |
+| Kai for the title | `meta.tweak.headingFont`: `kai` (serif is `serif`, gothic/sans is `sans`). The faces already in the repo are BrewReel Kai, BrewReel Serif, and Noto Sans SC. Titles and big type only |
+| A new background on this shot | Add `"bg": "photos/desk.jpg"` on that shot (png / jpg / webp relative to storyboard.json; the picture is darkened automatically). Do not write 「实拍」 unless that file is registered in `meta.assets` with `"source": "merchant"` |
+
+To change an existing storyboard, prefer `revise.mjs` and touch only these fields. Do not rewrite the whole file.
 
 ## Voice-over (optional)
 

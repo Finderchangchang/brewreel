@@ -240,5 +240,8 @@ if (fails.length) {
 const customTest = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'test-custom.mjs')], {encoding: 'utf8'});
 if (customTest.stdout) process.stdout.write(customTest.stdout.endsWith('\n') ? customTest.stdout : customTest.stdout + '\n');
 if (customTest.stderr) process.stderr.write(customTest.stderr);
-if (fails.length || customTest.status !== 0) process.exit(1);
+const reviseTest = spawnSync(process.execPath, [path.join(ROOT, 'scripts', 'test-revise.mjs')], {encoding: 'utf8'});
+if (reviseTest.stdout) process.stdout.write(reviseTest.stdout.endsWith('\n') ? reviseTest.stdout : reviseTest.stdout + '\n');
+if (reviseTest.stderr) process.stderr.write(reviseTest.stderr);
+if (fails.length || customTest.status !== 0 || reviseTest.status !== 0) process.exit(1);
 process.exit(0);

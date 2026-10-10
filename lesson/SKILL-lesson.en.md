@@ -67,6 +67,8 @@ For the legal sample, use `examples/lesson/briefs/iou-basics.json` and `--mock-l
 
 ## Write or edit lesson.json
 
+When the user wants to change something already written, run `node <SKILL>/scripts/revise.mjs <lesson.json> "one sentence"` first. Do not rewrite the whole file.
+
 The top level is `meta` and `chapters`. `meta.format` is `lesson`. `meta.domain` is `tech` or `legal`. `meta.lang` is `zh` or `en`. Each page has `layout`, `title`, and `narration`. Layout names are in `<SKILL>/docs/lesson.en.md`. Samples: `<SKILL>/examples/lesson/sample-tech.json`, `<SKILL>/examples/lesson/mascot-demo.json`.
 
 `meta.theme` can be omitted. When it is omitted, a legal lesson uses `paper`, a lesson whose screenshot and code pages are at least 30% uses `product`, and everything else uses `lecture`. To force one, write `paper`, `lecture`, `product`, or `editorial`. `editorial` is not allowed for a legal lesson.

@@ -120,6 +120,18 @@ export type Meta = {
   assets?: AssetEntry[];
   /** 配音。不写 = 不配音（和以前完全一样）；写了之后各镜的 vo（旁白）会被合成、按声音定镜头时长，见 VoiceSetting */
   voice?: VoiceSetting;
+  /** 可选微调。不写时排程、字号、字体和现在完全一样，见 Tweak */
+  tweak?: Tweak;
+};
+
+/** 整片微调。每一项都可以不写。不写 meta.tweak 时，出片和没这个字段时逐像素一致。 */
+export type Tweak = {
+  /** 整体节奏。slow 拍长 ×1.15，normal 不乘（和不写一样），fast ×0.88。镜头最短、最长时长照样生效 */
+  pace?: 'slow' | 'normal' | 'fast';
+  /** 字幕带、片尾大字、hook 主视觉大字的缩放，0.9–1.15。不写或 1 等于不缩放 */
+  textScale?: number;
+  /** 标题和大字的字体。sans = Noto Sans SC（默认，和不写一样），serif = BrewReel Serif，kai = BrewReel Kai */
+  headingFont?: 'sans' | 'serif' | 'kai';
 };
 
 /** 配音提供者：minimax = MiniMax（要环境变量 MINIMAX_API_KEY）；aliyun = 阿里云百炼 CosyVoice（要 DASHSCOPE_API_KEY）；
@@ -226,6 +238,11 @@ export type Shot = {
    * 写了 vo 的镜头时长由配音决定（前后留白后取整拍），dur / beats 会被 make.mjs 改写。
    */
   vo?: string;
+  /**
+   * 这一镜的背景图，相对 storyboard.json 所在目录的 png/jpg/webp。
+   * 出片时盖在渐变上面并压暗，保证字看得清。没在 meta.assets 登记为 merchant 时，画面文字不能写「实拍」。
+   */
+  bg?: string;
 };
 
 export type Storyboard = {

@@ -1,5 +1,6 @@
 import React from 'react';
 import {FONT} from './font';
+import {headingFamily, useTweak} from './tweak';
 import {Icon} from './icons';
 import {Theme, alpha, toneColor, useTheme} from './theme';
 
@@ -53,13 +54,15 @@ export const BigText: React.FC<{text: string; size: number; lineHeight?: number;
   lang = 'zh',
 }) => {
   const th = useTheme();
+  const tw = useTweak();
+  const sizePx = tw.textScale === 1 ? size : Math.round(size * tw.textScale);
   const lh = lineHeight ?? (lang === 'en' ? 1.28 : 1.16);
   return (
     <div
       style={{
-        fontFamily: FONT,
-        fontSize: size,
-        fontWeight: th.captionStyle === 'clean' ? 800 : 900,
+        fontFamily: tw.headingFont ? headingFamily(tw.headingFont) : FONT,
+        fontSize: sizePx,
+        fontWeight: tw.headingFont === 'kai' ? 400 : th.captionStyle === 'clean' ? 800 : 900,
         lineHeight: lh,
         letterSpacing: lang === 'en' ? 0 : undefined,
         textAlign: 'center',
@@ -70,7 +73,7 @@ export const BigText: React.FC<{text: string; size: number; lineHeight?: number;
     >
       {parseRich(text).map((ch, j) =>
         // 逐字 span：单独一个空格会被当成行首+行尾的可折叠空白吃掉（英文标题最明显），换成 NBSP
-        'br' in ch ? <br key={j} /> : <span key={j} style={glyph(th, size, ch.hot)}>{ch.c === ' ' ? ' ' : ch.c}</span>,
+        'br' in ch ? <br key={j} /> : <span key={j} style={glyph(th, sizePx, ch.hot)}>{ch.c === ' ' ? ' ' : ch.c}</span>,
       )}
     </div>
   );

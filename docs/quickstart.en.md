@@ -64,6 +64,16 @@ python scripts/llm_make.py path/to/brief.md
 
 On Windows PowerShell use `$env:LLM_API_KEY="..."` instead of `export`. All of the values above are placeholders; swap in your own key, and never commit a key or paste one into an issue. You may also put these variables into your AI assistant's own global config (e.g. `~/.claude/settings.json`); that's optional, and this repo never changes any global config for you. With `--dry-run` it calls no API and reads no key; it only writes out the assembled prompt and estimates its token count. Pass `--skip-readthrough-gate` to only warn about read-through problems and still render; by default those problems block rendering.
 
+### Revise
+
+When a promo storyboard, a lesson, or a talk's `broll.json` already exists and you only want to change one thing:
+
+```bash
+node scripts/revise.mjs path/to/storyboard.json "slow the third shot down, and open with a question"
+```
+
+For a lesson, pass `lesson.json`. For a talk, pass the project's `broll.json`. The cheap model returns a patch list only, and the file is written back only after validation passes. The original is copied to `<name>.bak.json` first; the next edit uses `.bak.1.json`. `--dry-run` prints the patch and does not write. A promo prints stills of the changed shots only. A lesson or a talk only prints the original render command (a lesson already rerenders just the changed pages, and motion B-roll is free). If a talk edit would regenerate AI pictures, the script says that costs money and does not render unless you pass `--render`. `--render` renders the whole film.
+
 ### Talking-head B-roll (experimental)
 
 Use this when you already have a talking-head video and want explanatory pictures on the lines about steps or numbers. Put only the talk, `talk.mp4`, in a project folder, then run one command:

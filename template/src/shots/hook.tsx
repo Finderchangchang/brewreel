@@ -3,6 +3,7 @@ import {Img, interpolate, staticFile} from 'remotion';
 import {beatPulse, bump, clamp, float, pop} from '../core/anim';
 import {emWidth, fitLine, glueBreaks} from '../core/fit';
 import {FONT} from '../core/font';
+import {headingFamily, useTweak} from '../core/tweak';
 import {Icon, isIcon} from '../core/icons';
 import {Avatar, Card, IconDisc, Lang, Sweep, pick} from '../core/kit';
 import {alpha, mixHex, textOnHot, toneColor, useTheme} from '../core/theme';
@@ -322,6 +323,7 @@ const STAT_MIN = 64;
 
 const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => {
   const th = useTheme();
+  const tw = useTweak();
   const onAccent = p.tone === 'accent' || !p.tone;
   const toneFill = onAccent ? th.accentFill : toneColor(th, p.tone);
   const toneInk = onAccent ? th.accentInk : toneColor(th, p.tone);
@@ -330,7 +332,10 @@ const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
   // 一行放得下（≥64px）就一行，否则拆两行
   const one = Math.floor(RING_TEXT_W / Math.max(0.01, emWidth(text)));
   const lines = one >= STAT_MIN ? [text] : splitStat(text);
-  const size = Math.max(STAT_MIN - 8, Math.min(lines.length > 1 ? 120 : 180, Math.floor((lines.length > 1 ? RING_TEXT_W - 30 : RING_TEXT_W) / Math.max(0.01, ...lines.map(emWidth)))));
+  const size0 = Math.max(STAT_MIN - 8, Math.min(lines.length > 1 ? 120 : 180, Math.floor((lines.length > 1 ? RING_TEXT_W - 30 : RING_TEXT_W) / Math.max(0.01, ...lines.map(emWidth)))));
+  const size = tw.textScale === 1 ? size0 : Math.round(size0 * tw.textScale);
+  const numFamily = tw.headingFont ? headingFamily(tw.headingFont) : FONT;
+  const numWeight = tw.headingFont === 'kai' ? 400 : 900;
   const subSize = p.sub ? fitLine(p.sub, 330, 44, 30) : 0;
   const numH = lines.length * size * 1.08;
   const blockH = numH + (p.sub ? 14 + subSize * 1.25 : 0);
@@ -366,7 +371,7 @@ const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
             </>
           )}
         </svg>
-        <div style={{position: 'absolute', left: 0, right: 0, top: numTop, textAlign: 'center', fontFamily: FONT, fontWeight: 900, fontSize: size, lineHeight: 1.08, color: toneInk, whiteSpace: 'nowrap', transform: `scale(${1 + bb * 0.025})`}}>
+        <div style={{position: 'absolute', left: 0, right: 0, top: numTop, textAlign: 'center', fontFamily: numFamily, fontWeight: numWeight, fontSize: size, lineHeight: 1.08, color: toneInk, whiteSpace: 'nowrap', transform: `scale(${1 + bb * 0.025})`}}>
           {lines.map((l, i) => (
             <div key={i}>{l}</div>
           ))}
@@ -384,9 +389,13 @@ const StatVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
 // ---------- stat 的文字兜底：text 里没有数字时不套圆环，改成一张贴纸式大字卡（按内容长高） ----------
 const WordVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => {
   const th = useTheme();
+  const tw = useTweak();
   const tone = p.tone === 'accent' || !p.tone ? th.accentInk : toneColor(th, p.tone);
   const text = p.text ?? '';
-  const size = fitLine(text, 640, 150, 64);
+  const size0 = fitLine(text, 640, 150, 64);
+  const size = tw.textScale === 1 ? size0 : Math.round(size0 * tw.textScale);
+  const wordFamily = tw.headingFont ? headingFamily(tw.headingFont) : undefined;
+  const wordWeight = tw.headingFont === 'kai' ? 400 : 900;
   const bb = beatPulse(t, beat);
   const under = interpolate(t, [0, 0.4], [0.35, 1], clamp);
   return (
@@ -394,7 +403,7 @@ const WordVisual: React.FC<{p: P; t: number; beat: number}> = ({p, t, beat}) => 
       <Floaties p={p} t={t} spots={[[40, 800, 104, -10], [936, 1120, 104, 10]]} />
       <div style={{position: 'absolute', left: 150, width: 780, top: VIS_TOP, height: VIS_BOT - VIS_TOP, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center'}}>
         <Card style={{padding: '44px 56px 48px', display: 'flex', flexDirection: 'column', alignItems: 'center', transform: `rotate(-2deg) scale(${1 + bb * 0.02})`}} radius={44}>
-          <div style={{position: 'relative', fontSize: size, fontWeight: 900, lineHeight: 1.1, color: tone, whiteSpace: 'nowrap'}}>
+          <div style={{position: 'relative', fontSize: size, fontWeight: wordWeight, fontFamily: wordFamily, lineHeight: 1.1, color: tone, whiteSpace: 'nowrap'}}>
             <div style={{position: 'absolute', left: -10, right: -10, bottom: size * 0.04, height: size * 0.28, borderRadius: size * 0.1, background: alpha(th.hot, 0.75), transform: `scaleX(${under})`, transformOrigin: '0 50%'}} />
             <span style={{position: 'relative'}}>{text}</span>
           </div>

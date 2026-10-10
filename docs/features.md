@@ -81,6 +81,19 @@ industries/<id>/
 
 </details>
 
+## 可调项（meta.tweak）
+
+宣传片分镜可以选写 `meta.tweak`，改整片节奏、字号和标题字体。每一镜还可以写 `bg` 换一张背景图。不写这些字段时，出片和现在逐像素一致。
+
+| 字段 | 取值 | 效果 |
+|---|---|---|
+| `meta.tweak.pace` | `slow` / `normal` / `fast` | 每一镜的拍长乘 1.15 / 1 / 0.88，再吸附到整拍。`normal` 和不写一样，不乘。每种镜头的最短、最长时长照样生效 |
+| `meta.tweak.textScale` | 0.9–1.15 | 缩放字幕带、片尾大字和 hook 主视觉大字。不写或 `1` 等于不缩放。裁切、出安全区、压字这些版式检查照样拦 |
+| `meta.tweak.headingFont` | `sans` / `serif` / `kai` | 标题和大字的字体。`sans` 是 Noto Sans SC（默认），`serif` 是 BrewReel Serif，`kai` 是 BrewReel Kai。`sans` 和不写一样 |
+| 镜头 `bg` | 相对路径的 png / jpg / webp | 盖在这一镜的渐变上，并自动压暗，保证字看得清。文件必须在项目目录里、至少 1KB。没在 `meta.assets` 登记为 `source: merchant` 的图，画面文字不能写「实拍」 |
+
+用户说「节奏快一点 / 字大一点 / 标题换楷体 / 这一镜换张背景图」时，便宜模型按上表写，不要改模板代码。已经写好的片子要改一处，用 `node scripts/revise.mjs <storyboard.json> "一句话"`，不要整份重写。
+
 ## 口播配画面
 
 已经有真人口播、想在讲步骤、讲数字、讲对比的句子上加解释画面时用。v0.8 先做实验；v0.9 起可以只放 `talk.mp4`，一条命令出片。限制还在，页面仍按实验来写。项目目录里只放 `talk.mp4`，一条命令 `node scripts/talk.mjs <项目目录> --out <仓库外目录>`：本机转写出字幕，便宜模型写 `broll.json`，脚本算时间、估价、生成和合成。

@@ -3,6 +3,7 @@ import {Audio, Easing, Img, Sequence, interpolate, staticFile, useCurrentFrame} 
 import type {Storyboard} from '../schema';
 import {clamp} from './anim';
 import {FONT} from './font';
+import {headingFamily, useTweak} from './tweak';
 import {Lang, glyph, parseRich, repeatsHint} from './kit';
 import {CAP, DISCLAIMER_Y, FPS} from './safe';
 import {fitLine, fitSize} from './fit';
@@ -271,6 +272,21 @@ export const Background: React.FC<{slots: Slot[]; beat?: number}> = ({slots, bea
   );
 };
 
+/** 某一镜写了 bg 时，盖在渐变上并压暗。没有任何镜头写 bg 时不要挂这个组件。 */
+export const ShotPhoto: React.FC<{slots: Slot[]}> = ({slots}) => {
+  const t = useSec();
+  let hit = slots[0];
+  for (const s of slots) if (t >= s.start) hit = s;
+  const bg = typeof hit?.shot.bg === 'string' ? hit.shot.bg : '';
+  if (!bg) return null;
+  return (
+    <div style={{position: 'absolute', inset: 0, overflow: 'hidden'}}>
+      <Img src={staticFile(bg)} style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+      <div style={{position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(8,10,16,0.62) 0%, rgba(8,10,16,0.45) 46%, rgba(8,10,16,0.58) 100%)'}} />
+    </div>
+  );
+};
+
 /** 跨两档的情绪切换点（暖红 ↔ 冷色），这些点上背景硬切 + 闪白 */
 export const moodCuts = (slots: Slot[]) => {
   const band = (m: number) => (m < 0.25 ? 0 : m > 0.75 ? 1 : 0.5);
@@ -311,6 +327,7 @@ type CapSeg = {key: string; text: string; start: number; end: number; instant: b
 /** skip：这些镜头的字幕带交给配音字幕（core/voice.tsx 的 VoiceCaptions）画，这里不画；不传 = 和以前一样 */
 export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip?: Set<number>}> = ({slots, beat = 0.5, lang = 'zh', skip}) => {
   const th = useTheme();
+  const tw = useTweak();
   const t = useSec();
   const lineHeight = lang === 'en' ? 1.32 : 1.18;
   const total = slots.length ? slots[slots.length - 1].end : 0;
@@ -330,7 +347,8 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
           const text = s.text;
           const instant = s.instant;
           const clean = th.captionStyle === 'clean';
-          const size = clean ? Math.min(78, captionSize(text, lang)) : captionSize(text, lang);
+          const base = clean ? Math.min(78, captionSize(text, lang)) : captionSize(text, lang);
+          const size = tw.textScale === 1 ? base : Math.round(base * tw.textScale);
           const nLines = text.split('\n').length;
           const h = nLines * size * lineHeight;
           const top = Math.round(CAP.y0 + (CAP.y1 - CAP.y0 - h) / 2);
@@ -345,9 +363,9 @@ export const Captions: React.FC<{slots: Slot[]; beat?: number; lang?: Lang; skip
                 width: CAP.w,
                 top,
                 textAlign: 'center',
-                fontFamily: FONT,
+                fontFamily: tw.headingFont ? headingFamily(tw.headingFont) : FONT,
                 fontSize: size,
-                fontWeight: clean ? 800 : 900,
+                fontWeight: tw.headingFont === 'kai' ? 400 : clean ? 800 : 900,
                 lineHeight,
                 letterSpacing: lang === 'en' ? 0 : undefined,
                 whiteSpace: 'nowrap',

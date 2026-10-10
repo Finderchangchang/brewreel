@@ -258,12 +258,21 @@ const subseq = (q, p) => {
 };
 
 // ---------------- 排程（与 template/src/core/timeline.ts 同一算法） ----------------
+/** 和 template/src/core/timeline.ts、styles/quiz/checks.mjs 同一组系数。不写或 normal 时返回 null，不乘。 */
+export const paceFactor = (meta) => {
+  const p = meta?.tweak?.pace;
+  if (p === 'slow') return 1.15;
+  if (p === 'fast') return 0.88;
+  return null;
+};
 export const schedule = (sb, specs) => {
   const beat = 60 / bpmOf(sb.meta); // cards：meta.bpm || 120（和改造前一样）；其他风格不写 bpm 时用风格默认
+  const factor = paceFactor(sb.meta);
   let t = 0;
   return (sb.shots || []).map((shot, i) => {
     const spec = specs[shot?.type];
-    const raw = typeof shot?.beats === 'number' ? shot.beats * beat : typeof shot?.dur === 'number' ? shot.dur : spec?.dur?.default ?? 3;
+    const raw0 = typeof shot?.beats === 'number' ? shot.beats * beat : typeof shot?.dur === 'number' ? shot.dur : spec?.dur?.default ?? 3;
+    const raw = factor == null ? raw0 : raw0 * factor;
     const dur = Math.max(1, Math.round(raw / beat)) * beat;
     const s = {i, type: shot?.type, raw, start: t, dur, end: t + dur};
     t += dur;
@@ -590,6 +599,8 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       'style', 'aspect',
       // voice：配音（{provider, voiceId?, speed?, emotion?, model?, subtitles?}），不写 = 不配音；各镜 vo 是旁白
       'voice',
+      // tweak：可选节奏 / 字号 / 标题字体。不写时排程和字号与以前一致
+      'tweak',
     ];
     if (meta.voice !== undefined) checkVoiceMeta(meta.voice, {lang: meta.lang === 'en' ? 'en' : 'zh', err, warn, env});
     // demoData：整片用的是演示数据（简报没给真数据，界面里的数字是示例）。只放行「演示界面里的内容」，不放行效果说法；
@@ -670,6 +681,19 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
       else {
         if (units(meta.cta) > 12) err('meta.cta', `「${short(meta.cta, 20)}」${fmtN(units(meta.cta))} 字，最多 12 字`, '把简报里的获取方式换一种更短的说法，意思不能变（不能把官网下载写成应用商店）');
         texts.push({where: 'meta.cta', text: meta.cta});
+      }
+    }
+    if (meta.tweak !== undefined) {
+      const tw = meta.tweak;
+      if (!tw || typeof tw !== 'object' || Array.isArray(tw)) err('meta.tweak', '应该是对象', '写成 {"pace":"fast","textScale":1.1,"headingFont":"kai"}；不需要的项删掉。不写 meta.tweak 就是现在的节奏和字号');
+      else {
+        for (const k of Object.keys(tw)) if (!['pace', 'textScale', 'headingFont'].includes(k)) err(`meta.tweak.${k}`, '多了一个不认识的字段', '只能有 pace、textScale、headingFont');
+        if (tw.pace !== undefined && !['slow', 'normal', 'fast'].includes(tw.pace))
+          err('meta.tweak.pace', `「${tw.pace}」不是可选值`, '只能是 slow（×1.15）、normal（不乘，和不写一样）、fast（×0.88）');
+        if (tw.textScale !== undefined && (typeof tw.textScale !== 'number' || !Number.isFinite(tw.textScale) || tw.textScale < 0.9 - 1e-9 || tw.textScale > 1.15 + 1e-9))
+          err('meta.tweak.textScale', `字号缩放 ${JSON.stringify(tw.textScale)} 不在 0.9–1.15`, '写 0.9 到 1.15；字大一点用 1.08，字小一点用 0.92。不写或写 1 等于不缩放');
+        if (tw.headingFont !== undefined && !['sans', 'serif', 'kai'].includes(tw.headingFont))
+          err('meta.tweak.headingFont', `「${tw.headingFont}」不是可选字体`, 'sans = 思源黑体（Noto Sans SC，和不写一样），serif = BrewReel Serif，kai = BrewReel Kai');
       }
     }
     for (const k of Object.keys(meta)) if (!known.includes(k)) err(`meta.${k}`, '多了一个不认识的字段', `删掉，或检查拼写。可用字段：${known.join('、')}`);
@@ -783,15 +807,36 @@ export function validate(sb, {baseDir = process.cwd(), specs = loadSpecs(), brie
     if (!isCards && SM.captionLayer === 'none' && shot.caption !== undefined && spec.caption !== 'none')
       err(W('caption'), `「${styleId}」风格不用全局字幕，caption 不能写`, '删掉 caption，要上屏的字写进这一镜的 params');
     // 把 params 里的字段写到了镜头顶层（便宜模型常见：{"type":"district","headline":…}）：合并成一条错，不按字段一条条报
-    const SHOT_KEYS = ['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note', 'vo'];
+    const SHOT_KEYS = ['type', 'dur', 'beats', 'caption', 'mood', 'params', 'note', 'vo', 'bg'];
     if (type === 'custom') SHOT_KEYS.push('component', 'slots');
     const paramKeys = Object.keys(spec.params?.properties ?? {});
     const misplaced = Object.keys(shot).filter((k) => !SHOT_KEYS.includes(k) && paramKeys.includes(k));
     for (const k of Object.keys(shot)) if (!SHOT_KEYS.includes(k) && !misplaced.includes(k))
-      err(W(k), '多了一个不认识的字段', '每一镜只能有 type、dur 或 beats、caption、mood、params、note、vo（时长字段叫 dur，单位秒；vo 是旁白）');
+      err(W(k), '多了一个不认识的字段', '每一镜只能有 type、dur 或 beats、caption、mood、params、note、vo、bg（时长字段叫 dur，单位秒；vo 是旁白；bg 是这一镜的背景图）');
     if (misplaced.length)
       err(W('params'), `${misplaced.join('、')} 写在了镜头顶层，这些是 params 里的字段`, `整镜写成 {"type": "${type}", "dur": ${spec.dur?.default ?? 3}, "params": {${misplaced.map((k) => `"${k}": …`).join(', ')}}}：${isCards ? '' : '风格镜头的字段一律写在 params 里；'}改完再校验一次，剩下的字段问题会逐条报出来`);
     // 时长
+    if (shot.bg !== undefined) {
+      const bg = shot.bg;
+      if (typeof bg !== 'string' || !bg.trim()) err(W('bg'), '背景图应该是相对路径', '写项目目录里的 png / jpg / webp，例如 "photos/desk.jpg"；不需要就删掉 bg');
+      else if (path.isAbsolute(bg) || bg.includes('..') || /^[A-Za-z]:/.test(bg) || bg.startsWith('/') || bg.startsWith('\\'))
+        err(W('bg'), `背景图不能写绝对路径或 ..：${bg}`, '改成相对 storyboard.json 所在目录的路径');
+      else {
+        const ext = path.extname(bg).slice(1).toLowerCase();
+        if (!['png', 'jpg', 'jpeg', 'webp'].includes(ext)) err(W('bg'), `背景图格式 .${ext || '无'} 不支持`, '换成 png / jpg / webp');
+        else {
+          const abs = resolveAsset(bg);
+          if (!abs) err(W('bg'), `素材文件找不到：${bg}`, `确认文件存在；相对路径以 storyboard.json 所在目录为准（${baseDir}）`);
+          else {
+            try {
+              const sz = fs.statSync(abs).size;
+              if (sz < 1024) err(W('bg'), `素材文件「${bg}」只有 ${sz} 字节，大概率是占位/空文件，不是真实图片`, '换成至少 1KB 的 png / jpg / webp；不需要背景就删掉 bg');
+              else assets.push({where: W('bg'), rel: bg, abs});
+            } catch {}
+          }
+        }
+      }
+    }
     if (shot.dur !== undefined && (typeof shot.dur !== 'number' || !(shot.dur > 0))) err(W('dur'), `时长 ${JSON.stringify(shot.dur)} 不对`, '写正数秒，例如 3 或 2.5');
     if (shot.beats !== undefined && (typeof shot.beats !== 'number' || !(shot.beats > 0))) err(W('beats'), `拍数 ${JSON.stringify(shot.beats)} 不对`, '写正整数，例如 6');
     if (shot.dur !== undefined && shot.beats !== undefined) warn(W('dur/beats'), '同时写了 dur 和 beats，以 beats 为准', '只留一个');

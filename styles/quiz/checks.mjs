@@ -285,7 +285,11 @@ export function run(sb, ctx) {
     const bpm = typeof meta.bpm === 'number' && meta.bpm ? meta.bpm : 128;
     const beat = 60 / bpm;
     const s = shots[quizI];
-    const raw = typeof s.beats === 'number' ? s.beats * beat : typeof s.dur === 'number' ? s.dur : 19 * beat;
+    // 和 template/src/core/timeline.ts、scripts/validate.mjs 同一组系数。不写或 normal 不乘。
+    const pace = meta?.tweak?.pace;
+    const factor = pace === 'slow' ? 1.15 : pace === 'fast' ? 0.88 : null;
+    const raw0 = typeof s.beats === 'number' ? s.beats * beat : typeof s.dur === 'number' ? s.dur : 19 * beat;
+    const raw = factor == null ? raw0 : raw0 * factor;
     const dur = Math.max(1, Math.round(raw / beat)) * beat;
     const reveal = Math.floor((dur - 1.5) / beat) * beat;
     if (reveal < 5.5 || reveal > 8.5)

@@ -4,6 +4,8 @@ The user may give you only `talk.mp4` (`talk.srt` is optional; without it the sc
 
 Run one command per step, the command written below. On failure, follow the printed "怎么改" (how to fix) line, edit, and run the same command again.
 
+When the user wants to change something already written, run `node scripts/revise.mjs <project>/broll.json "one sentence"` first. Do not rewrite the whole file.
+
 **Do not run `approve.mjs` for the user.** A person watches the review sheet and approves it.
 
 ## The user only has a video: one command

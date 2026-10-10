@@ -64,6 +64,16 @@ python scripts/llm_make.py path/to/brief.md
 
 Windows PowerShell 用 `$env:LLM_API_KEY="..."` 代替 `export`。以上都是占位符，换成你自己的 key；不要把 key 提交进仓库或写进 issue。也可以把这些变量写进 AI 编程助手自己的全局配置（如 `~/.claude/settings.json`），这是可选做法，本仓库不会替你改任何全局配置。加 `--dry-run` 不调接口、不读密钥，只把拼好的提示写出来并估算 token 数。加 `--skip-readthrough-gate` 时，通读检查发现的问题只警告，仍照常出片；默认会拦下、不出片。
 
+### 改稿
+
+已经有宣传片分镜、讲课稿或口播稿，只想改一处时：
+
+```bash
+node scripts/revise.mjs path/to/storyboard.json "第三镜慢一点，开头换成提问"
+```
+
+讲课把路径换成 `lesson.json`，口播换成项目目录里的 `broll.json`。便宜模型只返回修改清单，校验通过才写回；原文件先备份成同名 `.bak.json`，再改一次是 `.bak.1.json`。加 `--dry-run` 只看清单，不写文件。宣传片默认只出改动镜头的静帧。讲课和口播默认只打印原来的出片命令（讲课本来就只重出改过的页，口播动效段不花钱）。口播改动如果会重新生成 AI 画面，会先说明要花钱，并且默认不出片。加 `--render` 才出整片。
+
 ### 口播配画面（实验）
 
 已经有一段真人口播、想在讲步骤、讲数字的句子上加解释画面时用。项目目录里只放口播 `talk.mp4`，一条命令：

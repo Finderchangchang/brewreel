@@ -67,6 +67,8 @@ node <SKILL>/scripts/lesson/generate-lesson.mjs --brief <SKILL>/examples/lesson/
 
 ## 手写或改 lesson.json
 
+用户想改已经写好的某一处时，先跑 `node <SKILL>/scripts/revise.mjs <lesson.json> "一句话"`，不要整份重写。
+
 顶层是 `meta` 和 `chapters`。`meta.format` 为 `lesson`，`meta.domain` 为 `tech` 或 `legal`，`meta.lang` 为 `zh` 或 `en`。每一页有 `layout`、`title`、`narration`。版式名见 `<SKILL>/docs/lesson.md` 的清单。样例：`<SKILL>/examples/lesson/sample-tech.json`、`<SKILL>/examples/lesson/mascot-demo.json`。
 
 `meta.theme` 可以不写。不写时：普法用 `paper`，截图和代码页占比高用 `product`，其余用 `lecture`。要指定就写 `paper`、`lecture`、`product`、`editorial`。`editorial` 不能用于普法。

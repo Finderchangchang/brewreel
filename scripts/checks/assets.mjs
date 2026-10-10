@@ -220,6 +220,9 @@ export function collectUsages(sb) {
     const src = shot.params?.photo;
     if (typeof src === 'string' && src.trim()) out.push({i, type: 'storeCard', field: 'params.photo', src, role: 'store'});
   }
+  (sb.shots ?? []).forEach((shot, i) => {
+    if (shot && typeof shot.bg === 'string' && shot.bg.trim()) out.push({i, type: shot.type, field: 'bg', src: shot.bg, role: 'bg'});
+  });
   return out;
 }
 
@@ -289,6 +292,8 @@ export function assetTruth(sb, ctx) {
       }
       continue; // beforeAfter 缺 src 由 beforeAfterConsent 报
     }
+    // 镜头 bg 是压暗的装饰底，不强制登记、不按实拍照片的 2KB/300px 门槛卡。画面写「实拍」仍走下面的声明检查。
+    if (u.role === 'bg') continue;
     for (const p of fileProblems(ctx, u.src)) out.push(F('block', w, p.problem, u.type === 'beforeAfter' ? BA_FIX : p.fix));
     const e = entryOf(u.src);
     if (!e) {

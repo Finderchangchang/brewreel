@@ -3,7 +3,8 @@ import {AbsoluteFill, Sequence, useCurrentFrame} from 'remotion';
 import type {Shot, Storyboard, ThemeName} from './schema';
 import {FONT} from './core/font';
 import {Placeholder, pick} from './core/kit';
-import {Background, Bgm, Captions, Disclaimer, MoodFlash, Notices, SfxTrack, Watermark, collectSfx} from './core/layers';
+import {Background, Bgm, Captions, Disclaimer, MoodFlash, Notices, SfxTrack, ShotPhoto, Watermark, collectSfx} from './core/layers';
+import {TweakProvider} from './core/tweak';
 import {FPS} from './core/safe';
 import {ThemeProvider, resolveTheme} from './core/theme';
 import {Slot, beatOf, schedule, totalDur} from './core/timeline';
@@ -92,10 +93,13 @@ const CardsPromo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
   // 配音（props.voice，make.mjs 产出）：没有时 vp = null，下面几层都和以前一样
   const vp = planVoice(sb, slots);
   const voiceSubs = voiceSubsFor(vp, slots, specOf);
+  const hasBg = slots.some((s) => typeof s.shot.bg === 'string' && s.shot.bg);
   return (
     <ThemeProvider theme={theme}>
+      <TweakProvider meta={sb.meta}>
       <AbsoluteFill style={{fontFamily: FONT, overflow: 'hidden', background: theme.bgBot[0]}}>
         <Background slots={slots} beat={beat} />
+        {hasBg ? <ShotPhoto slots={slots} /> : null}
         <LayoutProbe frames={sb.__probe}>
         {slots.map((s) => {
           const isLast = s.i === slots.length - 1;
@@ -118,6 +122,7 @@ const CardsPromo: React.FC<Storyboard & {__probe?: number[]}> = (sb) => {
         <VoiceTrackAudio plan={vp} />
         <Bgm sb={sb} frames={frames} duck={duckGainOf(vp)} />
       </AbsoluteFill>
+      </TweakProvider>
     </ThemeProvider>
   );
 };
@@ -154,6 +159,7 @@ const StylePromo: React.FC<Storyboard & {__probe?: number[]; def: StyleDef}> = (
   const pal = (def.tokens?.themes?.[themeName ?? ''] ?? def.tokens?.themes?.[def.tokens?.defaultTheme ?? ''] ?? {}) as Record<string, string>;
   const fp = {sb, slots, beat, geo};
   const {Film, Background: StyleBg, Overlay} = def;
+  const hasBg = slots.some((s) => typeof s.shot.bg === 'string' && s.shot.bg);
   // 配音：音轨和配乐闪避在这里统一接；字幕 captionLayer=cards 的风格用全局字幕带，其他风格在自己的 Film/Overlay 里画（planVoice 同一份数据）
   const vp = planVoice(sb, slots);
   const voiceSubs = def.manifest.captionLayer === 'cards' ? voiceSubsFor(vp, slots, lookup.specOf) : null;
@@ -161,8 +167,10 @@ const StylePromo: React.FC<Storyboard & {__probe?: number[]; def: StyleDef}> = (
     <AspectProvider geo={geo}>
       <StyleTokensProvider tokens={def.tokens} themeName={themeName}>
         <ThemeProvider theme={theme}>
+          <TweakProvider meta={sb.meta}>
           <AbsoluteFill style={{fontFamily: def.tokens?.font?.family ?? FONT, overflow: 'hidden', background: pal.bg ?? theme.bgBot[0]}}>
             {StyleBg ? <StyleBg {...fp} /> : null}
+            {hasBg ? <ShotPhoto slots={slots} /> : null}
             <LayoutProbe frames={sb.__probe}>
               {Film
                 ? <Film {...fp} />
@@ -185,6 +193,7 @@ const StylePromo: React.FC<Storyboard & {__probe?: number[]; def: StyleDef}> = (
             <VoiceTrackAudio plan={vp} />
             <Bgm sb={sb} frames={frames} duck={duckGainOf(vp)} />
           </AbsoluteFill>
+          </TweakProvider>
         </ThemeProvider>
       </StyleTokensProvider>
     </AspectProvider>

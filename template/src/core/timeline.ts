@@ -14,12 +14,22 @@ export type Slot = {i: number; shot: Shot; start: number; dur: number; end: numb
 
 export const beatOf = (sb: Storyboard) => 60 / (sb.meta?.bpm || DEFAULT_BPM);
 
+/** 和 scripts/validate.mjs、styles/quiz/checks.mjs 同一组系数。不写或 normal 时返回 null，排程公式不乘。 */
+export const paceFactor = (meta: {tweak?: {pace?: string}} | undefined): number | null => {
+  const p = meta?.tweak?.pace;
+  if (p === 'slow') return 1.15;
+  if (p === 'fast') return 0.88;
+  return null;
+};
+
 export const schedule = (sb: Storyboard, specOf: (type: string) => ShotSpec | undefined): Slot[] => {
   const beat = beatOf(sb);
+  const factor = paceFactor(sb.meta);
   let t = 0;
   return (sb.shots || []).map((shot, i) => {
     const spec = specOf(shot.type);
-    const raw = typeof shot.beats === 'number' ? shot.beats * beat : typeof shot.dur === 'number' ? shot.dur : spec?.dur.default ?? 3;
+    const raw0 = typeof shot.beats === 'number' ? shot.beats * beat : typeof shot.dur === 'number' ? shot.dur : spec?.dur.default ?? 3;
+    const raw = factor == null ? raw0 : raw0 * factor;
     const dur = Math.max(1, Math.round(raw / beat)) * beat;
     const slot = {i, shot, start: t, dur, end: t + dur, mood: typeof shot.mood === 'number' ? shot.mood : spec?.mood ?? 0.5};
     t += dur;
