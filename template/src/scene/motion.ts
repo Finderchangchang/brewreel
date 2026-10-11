@@ -105,6 +105,29 @@ const bounceCurve = (action: ActionName): MotionCurve => {
   };
 };
 
+/** 向上推入。无回弹、无倾斜。0.30 秒走完 64 像素，200 毫秒时仍在向上。 */
+const PUSH_DUR: Record<ActionName, number> = {enter: 0.3, emphasize: 0.26, count: 0.3, reveal: 0.28, exit: 0.26};
+const PUSH_TRAVEL: Record<ActionName, number> = {enter: 64, emphasize: 28, count: 48, reveal: 40, exit: 48};
+
+const pushCurve = (action: ActionName): MotionCurve => {
+  const duration = PUSH_DUR[action];
+  const travel = PUSH_TRAVEL[action];
+  const upward = action !== 'exit';
+  return {
+    action,
+    motion: 'push',
+    duration,
+    durationRange: [0.24, 0.4],
+    overshootPx: 0,
+    overshootDeg: 0,
+    sample: (t) => {
+      const p = easeOut(t / duration);
+      const y = upward ? (1 - p) * travel : -p * travel;
+      return {p, y, tilt: 0, scale: 1};
+    },
+  };
+};
+
 const paperCurve = (action: ActionName, height = 1000): MotionCurve => {
   if (action === 'exit') {
     const gone = leave(height);
@@ -159,16 +182,18 @@ export function curveOf(action: ActionName, motion: MotionName, height = 1000): 
   if (motion === 'crisp') return crispCurve(action);
   if (motion === 'soft') return softCurve(action);
   if (motion === 'bounce') return bounceCurve(action);
+  if (motion === 'push') return pushCurve(action);
   return paperCurve(action, height);
 }
 
 /** 提前量（秒）。口播 LEAD 0.12 落在 soft / bounce。paper 上抛更长。 */
-export const LEAD_SEC: Record<MotionName, number> = {crisp: 0.08, soft: 0.12, bounce: 0.12, paper: 0.2};
+export const LEAD_SEC: Record<MotionName, number> = {crisp: 0.08, soft: 0.12, bounce: 0.12, paper: 0.2, push: 0.1};
 
 export type MotionDefaults = Record<string, MotionName>;
 
 /** 用户没写性格时用。讲课 paper / lecture 保持 soft，不改现有课程手感。 */
 export function defaultMotion(product: 'promo' | 'lesson' | 'talk', style: string, dark = false): MotionName {
+  if (style === 'techbrief') return 'push';
   if (product === 'lesson') {
     if (style === 'paper' || style === 'lecture') return 'soft';
     return 'crisp';

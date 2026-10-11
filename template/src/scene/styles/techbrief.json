@@ -1,0 +1,26 @@
+{
+  "id": "techbrief",
+  "$doc": "科技资讯简报。色值按调配方再设计，不沿用参考片的舞台和强调色。",
+  "$originality": {
+    "primary": "ink",
+    "accent": "accent",
+    "background": ["bg"],
+    "outline": ["ink", "line"]
+  },
+  "roles": {
+    "bg": "#3A2E28",
+    "surface": "#F4EFE4",
+    "ink": "#1C1915",
+    "muted": "#5C564C",
+    "accent": "#3E6B4F",
+    "line": "#D9D0C2",
+    "radius": 8,
+    "weight": 800,
+    "shadow": "0 14px 36px rgba(28,18,12,0.28)",
+    "texture": "grid"
+  },
+  "extra": {
+    "fontHeading": "\"PSans\", \"Noto Sans SC\", sans-serif",
+    "fontNumber": "\"Cascadia Mono\", ui-monospace, monospace"
+  }
+}

@@ -38,8 +38,9 @@ const MATERIAL_CHROME = {
 };
 
 const extraReaders = [];
+const EXTRA_STYLES = {promo: ['techbrief'], lesson: [], talk: []};
 
-/** T12b 之后加新风格（例如陆三金）时注册到这里，不必改三份旧文件。 */
+/** T12b 之后加新风格时注册到这里，不必改三份旧文件。 */
 export function registerStyleReader(reader) {
   extraReaders.push(reader);
 }
@@ -49,9 +50,10 @@ export function themeIsDark(style) {
 }
 
 export function stylesFor(product) {
-  if (product === 'promo') return PROMO_STYLES;
-  if (product === 'lesson') return LESSON_STYLES;
-  if (product === 'talk') return TALK_STYLES;
+  const extra = EXTRA_STYLES[product] ?? [];
+  if (product === 'promo') return PROMO_STYLES.concat(extra);
+  if (product === 'lesson') return LESSON_STYLES.concat(extra);
+  if (product === 'talk') return TALK_STYLES.concat(extra);
   return [];
 }
 
@@ -153,6 +155,21 @@ export function loadPreset(name) {
   if (name === 'C') return loadStyle('talk', 'paper');
   return null;
 }
+
+function techbriefReader(product, style) {
+  if (product !== 'promo' || style !== 'techbrief') return null;
+  const doc = readJson('template/src/scene/styles/techbrief.json');
+  return {
+    family: 'scene',
+    product: 'promo',
+    id: 'techbrief',
+    source: 'template/src/scene/styles/techbrief.json',
+    roles: doc.roles,
+    extra: doc.extra,
+  };
+}
+
+registerStyleReader(techbriefReader);
 
 export function missingRoles(roles) {
   return TOKEN_ROLES.filter((key) => roles?.[key] === undefined || roles?.[key] === null || roles?.[key] === '');

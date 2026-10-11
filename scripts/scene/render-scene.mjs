@@ -11,7 +11,7 @@ import {ensureTemplateBrowser, withBrowserExecutable} from '../lib/remotion-brow
 import {acquireRenderLock} from '../lib/render-lock.mjs';
 import {auditPlan, checkFrames, prepareScene, protoScene} from '../../template/src/scene/prepare.ts';
 import {sceneFrame} from './geom.mjs';
-import {LESSON_STYLES, loadStyle, PROMO_STYLES, TALK_STYLES} from './tokens.mjs';
+import {loadStyle, stylesFor} from './tokens.mjs';
 import {formatReport, validateScene} from './validate-scene.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -40,11 +40,7 @@ function argsOf(argv) {
 }
 
 function familiesOf(style) {
-  const found = [];
-  if (PROMO_STYLES.includes(style)) found.push('promo');
-  if (LESSON_STYLES.includes(style)) found.push('lesson');
-  if (TALK_STYLES.includes(style)) found.push('talk');
-  return found;
+  return ['promo', 'lesson', 'talk'].filter((product) => stylesFor(product).includes(style));
 }
 
 function outsideRepo(dir) {

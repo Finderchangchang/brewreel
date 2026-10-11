@@ -84,3 +84,27 @@ assert.equal(defaultMotion('promo', 'tech-dark', true), 'crisp');
 assert.equal(defaultMotion('talk', 'paper'), 'paper');
 assert.equal(defaultMotion('talk', 'ink'), 'crisp');
 assert.equal(defaultMotion('talk', 'wood'), 'bounce');
+assert.equal(defaultMotion('promo', 'techbrief', false), 'push');
+assert.equal(defaultMotion('lesson', 'techbrief'), 'push');
+
+for (const action of ACTIONS) {
+  const curve = curveOf(action, 'push', 1000);
+  assert.equal(curve.motion, 'push');
+  assert.ok(curve.duration >= 0.24 && curve.duration <= 0.4, `${action} ${curve.duration}`);
+  assert.equal(curve.overshootPx, 0);
+  assert.equal(curve.overshootDeg, 0);
+}
+const push = curveOf('enter', 'push');
+assert.equal(push.duration, 0.3);
+assert.equal(push.sample(0).y, 64);
+assert.ok(Math.abs(push.sample(0.3).y) < 1e-6);
+const pushSamples = samples(push);
+for (const sample of pushSamples) assert.equal(sample.scale, 1);
+for (let i = 1; i < pushSamples.length; i++) {
+  if (pushSamples[i].t <= push.duration + 1e-9) assert.ok(pushSamples[i].y <= pushSamples[i - 1].y + 1e-6);
+}
+const yAt = push.sample(0.2).y;
+const yNext = push.sample(0.2 + 1 / 30).y;
+assert.ok(yNext - yAt < -0.2, `push 在 200ms 应仍向上，dy ${yNext - yAt}`);
+const pushExit = curveOf('exit', 'push');
+assert.ok(pushExit.sample(0.26).y < 0);

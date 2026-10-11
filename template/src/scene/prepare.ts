@@ -208,6 +208,16 @@ export function poseAt(motion: MotionName, t: number, height: number): Pose {
   return {y: raw.y, scale: Math.max(raw.scale, 0.88), tilt: 0, opacity};
 }
 
+/**
+ * 拍点之前卡片停在哪。旧四种性格停在静止位，行为不变。
+ * push 从下方进来。若还没到拍的卡停在静止位，正在进来的卡会压进下一张。
+ * 所以 push 在拍点前停在入场起点，和正在进来的那张对齐。
+ */
+export function holdPose(motion: MotionName, height: number): Pose {
+  if (motion !== 'push') return {y: 0, scale: 1, tilt: 0, opacity: 1};
+  return poseAt(motion, 0, height);
+}
+
 export function measureEnter(motion: MotionName, height: number) {
   const y = poseAt(motion, 0.2, height).y;
   const yNext = poseAt(motion, 0.2 + 1 / FPS, height).y;

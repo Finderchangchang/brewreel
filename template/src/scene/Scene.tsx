@@ -4,7 +4,7 @@
 import React from 'react';
 import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {LayoutProbe} from '../core/probe';
-import {poseAt, type PlanBlock, type ScenePlan} from './prepare.ts';
+import {holdPose, poseAt, type PlanBlock, type ScenePlan} from './prepare.ts';
 
 export type SceneProps = {
   plan?: ScenePlan;
@@ -32,6 +32,17 @@ function Backdrop({plan}: {plan: ScenePlan}) {
             position: 'absolute',
             inset: 0,
             backgroundImage: `repeating-linear-gradient(0deg, ${roles.line}22 0 1px, transparent 1px 7px), repeating-linear-gradient(90deg, ${roles.line}14 0 1px, transparent 1px 11px)`,
+          }}
+        />
+      ) : null}
+      {texture === 'grid' ? (
+        <div
+          data-probe-skip
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(${roles.line}55 1px, transparent 1px), linear-gradient(90deg, ${roles.line}55 1px, transparent 1px)`,
+            backgroundSize: '80px 80px',
           }}
         />
       ) : null}
@@ -77,7 +88,7 @@ function Card({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: n
   // 拍点之前也留在静止位。只藏起来的话，竖版大底上只剩一张小卡，会被空帧检查判成纯色。
   const pose = local + 1e-4 >= block.showAt
     ? poseAt(plan.motion, local - block.showAt, plan.height)
-    : {y: 0, scale: 1, tilt: 0, opacity: 1};
+    : holdPose(plan.motion, plan.height);
   const mainColor = block.role === 'support' ? plan.paint.muted : plan.paint.ink;
   return (
     <div

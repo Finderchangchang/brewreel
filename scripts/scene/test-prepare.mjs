@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {auditPlan, checkFrames, ensureContrast, measureEnter, prepareScene, protoScene} from '../../template/src/scene/prepare.ts';
+import {auditPlan, checkFrames, ensureContrast, holdPose, measureEnter, poseAt, prepareScene, protoScene} from '../../template/src/scene/prepare.ts';
 import {sceneFrame} from './geom.mjs';
 import {loadStyle} from './tokens.mjs';
 import {formatReport, validateScene} from './validate-scene.mjs';
@@ -91,6 +91,14 @@ const darkened = ensureContrast('#5B6B75', '#9AF0CF');
 assert.equal(darkened.adjusted, true);
 assert.ok(darkened.ratio >= 4.5, String(darkened.ratio));
 assert.notEqual(A.paint.muted.toUpperCase(), darkened.color);
+
+const parkedPush = holdPose('push', A.height);
+assert.deepEqual(parkedPush, poseAt('push', 0, A.height));
+assert.equal(parkedPush.y, 64);
+assert.equal(parkedPush.scale, 1);
+for (const motion of ['crisp', 'bounce', 'soft', 'paper']) {
+  assert.deepEqual(holdPose(motion, A.height), {y: 0, scale: 1, tilt: 0, opacity: 1}, motion);
+}
 
 const bounce = measureEnter('bounce', A.height);
 const crisp = measureEnter('crisp', B.height);

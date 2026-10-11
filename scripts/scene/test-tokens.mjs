@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import {contrastRatio} from '../../template/src/scene/contrast.ts';
 import {TOKEN_ROLES} from '../../template/src/scene/types.ts';
-import {loadPreset, loadStyle, missingRoles, registerStyleReader} from './tokens.mjs';
+import {loadPreset, loadStyle, missingRoles, registerStyleReader, stylesFor} from './tokens.mjs';
 
 const REQUIRED = [
   ['ink', 'surface'],
@@ -61,3 +61,21 @@ const extra = loadStyle('talk', 'demo-extra');
 assert.equal(extra.roles.texture, 'demo-extra');
 assert.equal(extra.roles.bg, paper.roles.bg);
 assert.equal(loadStyle('talk', 'missing-style'), null);
+
+const brief = loadStyle('promo', 'techbrief');
+assert.ok(brief, 'techbrief');
+assert.equal(brief.family, 'scene');
+assert.equal(brief.source, 'template/src/scene/styles/techbrief.json');
+assert.deepEqual(missingRoles(brief.roles), []);
+assert.equal(brief.roles.texture, 'grid');
+assert.equal(brief.roles.radius, 8);
+assert.equal(brief.roles.weight, 800);
+assert.equal(brief.extra.fontHeading.includes('Noto Sans SC'), true);
+assert.equal(loadStyle('talk', 'techbrief'), null);
+assert.ok(stylesFor('promo').includes('techbrief'));
+assert.ok(stylesFor('promo').includes('fresh-light'));
+assert.equal(stylesFor('lesson').includes('techbrief'), false);
+for (const [fg, bg] of [['ink', 'surface'], ['muted', 'surface']]) {
+  const ratio = contrastRatio(brief.roles[fg], brief.roles[bg]);
+  assert.ok(ratio >= 4.5, `techbrief ${fg}/${bg} ${ratio.toFixed(2)}`);
+}
