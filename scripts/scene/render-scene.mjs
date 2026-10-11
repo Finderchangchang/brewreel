@@ -114,7 +114,7 @@ function frame0Issue(probes, plan) {
   const block = (hit.blocks || []).find((item) => String(item.text || '').replace(/\s/g, '').includes(needle));
   if (!block) return `第 0 帧安全区内看不到主文案「${text.slice(0, 12)}」`;
   const [x0, y0, x1, y1] = block.tx || [block.x0, block.y0, block.x1, block.y1];
-  const safe = plan.safe;
+  const safe = plan.screens[0]?.safe ?? plan.safe;
   if (x0 < safe.x - 12 || x1 > safe.x + safe.w + 12 || y0 < safe.y - 30 || y1 > safe.y + safe.h + 30) {
     return `第 0 帧主文案出了安全区（x ${x0}–${x1}，y ${y0}–${y1}）`;
   }

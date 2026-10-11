@@ -23,6 +23,30 @@ export const LESSON_FLOOR: FontFloor = {title: 64, titleMax: 96, body: 44, aux: 
 /** 讲课竖版：标题 72，正文 48。 */
 export const LESSON_VERTICAL_FLOOR: FontFloor = {title: 72, titleMax: 96, body: 48, aux: 28, tiny: 28};
 
+/**
+ * 资讯板用的竖版安全框，和讲课 `VERTICAL.safe` 同一块：x180–900、y260–1340。
+ *
+ * 不会压到平台按钮。依据是现有安全区，不是新裁的一圈：
+ * - `template/src/core/aspects.json` 的 9:16 注：y 0–205 被状态栏和标题盖住，y 1340 以下被平台文案和按钮盖住，关键内容 x 180–900。
+ * - `template/src/core/safe.ts`：y 1340 以下只放背景；`BG_ONLY.bottom` 是 1340。宣传片主体从 y560 起，是为了把 y260–540 让给全局字幕带，不是因为 y260–560 会被按钮盖住。
+ * - `docs/lesson/LAYOUT_RULES.md`：竖版内容就放在 x180–900、y260–1340，「底部和右侧按钮区不放内容」。
+ *
+ * 所以这块上沿在平台顶栏（y205）下面 55px，下沿停在按钮区之前，右沿停在 x900。board / number / media 没有全局字幕带，可以沿用讲课这块。hero / stack / split 等仍用宣传片主体区。
+ */
+export function plateSafe(frame: SceneFrame): SafeFrame {
+  if (frame.aspect !== '9:16') return frame.safe;
+  const box = VERTICAL.safe;
+  return {x: box.x, y: box.y, w: box.right - box.x, h: box.bottom - box.y, reserve: null};
+}
+
+const PLATE_GEOM = new Set(['board', 'number', 'media']);
+
+/** 9:16 的资讯板用 plateSafe，其余画幅和其余版式用这一帧原来的安全区。 */
+export function screenSafe(frame: SceneFrame, geom: string): SafeFrame {
+  if (PLATE_GEOM.has(geom)) return plateSafe(frame);
+  return frame.safe;
+}
+
 export type SceneFrame = {
   product: Product;
   aspect: Aspect;

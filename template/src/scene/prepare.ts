@@ -6,7 +6,7 @@ import {layoutBlocks} from './geom.ts';
 import type {BandName, GeomLayout} from './geom.ts';
 import {curveOf} from './motion.ts';
 import {revealFromBeats} from './time.ts';
-import type {SceneFrame} from './safe-box.ts';
+import {screenSafe, type SceneFrame} from './safe-box.ts';
 import type {BeatReveal} from './time.ts';
 import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
 
@@ -69,6 +69,9 @@ export type PlanScreen = {
   callouts?: CalloutBox[];
   rows?: {label: string; value: string}[];
   code?: string;
+  /** 这一屏实际用的安全框。资讯板在 9:16 上是讲课竖版 safe，其它屏是宣传片主体区。 */
+  safe?: {x: number; y: number; w: number; h: number};
+  overflow?: boolean;
 };
 
 export type ContrastRow = {
@@ -428,11 +431,12 @@ export function prepareScene(input: {
     });
     const seconds = Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
     const durationFrames = Math.max(1, Math.round(seconds * fps));
+    const safe = screenSafe(frame, built.geom);
     const placed = layoutBlocks({
       layout: built.geom,
       count: pieces.length,
       chars: pieces.map((piece) => glyphCount(piece.text + (piece.note || ''))),
-      safe: frame.safe,
+      safe,
       floor: frame.floor,
       maxRow: frame.maxRow,
       density: scene.density ?? 'regular',
@@ -501,6 +505,8 @@ export function prepareScene(input: {
       ...(screen.callouts ? {callouts: screen.callouts} : {}),
       ...(screen.rows ? {rows: screen.rows} : {}),
       ...(screen.code ? {code: screen.code} : {}),
+      safe: {x: safe.x, y: safe.y, w: safe.w, h: safe.h},
+      overflow: placed.overflow,
     };
   });
   return {
@@ -548,8 +554,9 @@ export function auditPlan(plan: ScenePlan): string[] {
       const min = fontFloorOf(plan, screen, block);
       if (block.font < min) issues.push(`第 ${screen.index + 1} 屏「${block.text}」字号 ${block.font} 低于 ${min}`);
       if (block.note && block.noteFont < plan.floor.aux) issues.push(`第 ${screen.index + 1} 屏注字号 ${block.noteFont} 低于 ${plan.floor.aux}`);
-      if (block.x < plan.safe.x - 0.5 || block.y < plan.safe.y - 0.5) issues.push(`第 ${screen.index + 1} 屏块超出安全区左上`);
-      if (block.x + block.w > plan.safe.x + plan.safe.w + 0.5 || block.y + block.h > plan.safe.y + plan.safe.h + 0.5) {
+      const box = screen.safe ?? plan.safe;
+      if (block.x < box.x - 0.5 || block.y < box.y - 0.5) issues.push(`第 ${screen.index + 1} 屏块超出安全区左上`);
+      if (block.x + block.w > box.x + box.w + 0.5 || block.y + block.h > box.y + box.h + 0.5) {
         issues.push(`第 ${screen.index + 1} 屏块超出安全区右下`);
       }
       if (i === 0 && block.showAt !== 0) issues.push(`第 ${screen.index + 1} 屏第一块不是从 0 秒出现`);

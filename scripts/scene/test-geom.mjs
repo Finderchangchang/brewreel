@@ -289,7 +289,10 @@ for (const frame of frames) {
   const caption = number.blocks.find((block) => block.kind === 'caption');
   assert.ok(stage && caption, tag);
   assert.ok(stage.font >= caption.font * 2, `${tag} 数字 ${stage.font} 说明 ${caption.font}`);
-  assert.ok(stage.font <= frame.floor.titleMax);
+  assert.ok(stage.font > frame.floor.titleMax, `${tag} 数字 ${stage.font} 应大于标题上限 ${frame.floor.titleMax}`);
+  assert.ok(stage.font <= Math.round(stage.h * 0.55) + 1, `${tag} 数字 ${stage.font} 高 ${stage.h}`);
+  const em = Math.max(1.8, 3 * 0.7);
+  assert.ok(stage.font <= Math.floor((stage.w - 24) / em) + 1, `${tag} 数字宽 ${stage.font}`);
   assert.ok(stage.h > number.blocks.find((block) => block.kind === 'card').h, `数字区应大于判断带 ${tag}`);
 }
 

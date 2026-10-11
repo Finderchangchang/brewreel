@@ -7,7 +7,8 @@ import {AbsoluteFill, Img, useCurrentFrame} from 'remotion';
 import {LayoutProbe} from '../core/probe';
 import {Icon} from '../core/icons';
 import {emphasisLook} from './motion.ts';
-import {holdPose, poseAt, type PlanBlock, type PlanScreen, type ScenePlan} from './prepare.ts';
+import {fontFloorOf, holdPose, poseAt, type PlanBlock, type PlanScreen, type ScenePlan} from './prepare.ts';
+import {fitSceneCopy} from './wrap.ts';
 
 export type SceneProps = {
   plan?: ScenePlan;
@@ -169,6 +170,57 @@ function onAccent(accent: string): string {
   return y > 150 ? '#1C1915' : '#FFFFFF';
 }
 
+const NUMBER_LOCK = /^(\d+(?:\.\d+)?)(?:\s+)(\S+)$/;
+
+function Copy({
+  plan,
+  text,
+  width,
+  font,
+  minFont,
+  color,
+  align,
+  family,
+  weight,
+  lineHeight,
+  emphasis,
+}: {
+  plan: ScenePlan;
+  text: string;
+  width: number;
+  font: number;
+  minFont: number;
+  color: string;
+  align: PlanBlock['textAlign'] | 'end';
+  family: string;
+  weight: number;
+  lineHeight: number;
+  emphasis?: string[];
+}) {
+  const fitted = fitSceneCopy(text, Math.max(8, width), font, minFont);
+  const lines = fitted.lines.length ? fitted.lines : text ? [text] : [];
+  const look = emphasisLook(plan.motion);
+  return (
+    <div
+      style={{
+        fontFamily: family,
+        fontWeight: weight,
+        fontSize: fitted.font,
+        lineHeight,
+        color,
+        textAlign: align,
+        wordBreak: 'normal',
+      }}
+    >
+      {lines.map((line, index) => (
+        <div key={index} style={{whiteSpace: 'nowrap'}}>
+          <Line text={line} emphasis={emphasis} accent={plan.roles.accent} look={look} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function Line({text, emphasis, accent, look}: {text: string; emphasis?: string[]; accent: string; look: 'line' | 'block' | 'marker'}) {
   const word = emphasis?.find((item) => item && text.includes(item));
   if (!word) return <>{text}</>;
@@ -198,7 +250,7 @@ function poseStyle(plan: ScenePlan, block: PlanBlock, local: number): React.CSSP
   };
 }
 
-function Card({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: number}) {
+function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
   // 拍点之前也留在静止位。只藏起来的话，竖版大底上只剩一张小卡，会被空帧检查判成纯色。
   const pose = local + 1e-4 >= block.showAt
     ? poseAt(plan.motion, local - block.showAt, plan.height)
@@ -248,38 +300,41 @@ function Card({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: n
           }}
         />
       ) : null}
-      <div
-        style={{
-          fontFamily: plan.fontFamily,
-          fontWeight: plan.roles.weight,
-          fontSize: block.font,
-          lineHeight: 1.15,
-          color: mainColor,
-          textAlign: block.textAlign,
-        }}
-      >
-        <Line text={block.text} emphasis={block.emphasis} accent={plan.roles.accent} look={emphasisLook(plan.motion)} />
-      </div>
+      <Copy
+        plan={plan}
+        text={block.text}
+        width={block.w - 36}
+        font={block.font}
+        minFont={fontFloorOf(plan, screen, block)}
+        color={mainColor}
+        align={block.textAlign}
+        family={plan.fontFamily}
+        weight={plan.roles.weight}
+        lineHeight={1.15}
+        emphasis={block.emphasis}
+      />
       {block.note ? (
-        <div
-          style={{
-            fontFamily: plan.fontFamily,
-            fontWeight: plan.roles.weight,
-            fontSize: block.noteFont,
-            lineHeight: 1.2,
-            color: plan.paint.muted,
-            textAlign: block.textAlign,
-          }}
-        >
-          {block.note}
-        </div>
+        <Copy
+          plan={plan}
+          text={block.note}
+          width={block.w - 36}
+          font={block.noteFont}
+          minFont={plan.floor.aux}
+          color={plan.paint.muted}
+          align={block.textAlign}
+          family={plan.fontFamily}
+          weight={plan.roles.weight}
+          lineHeight={1.2}
+        />
       ) : null}
       </div>
     </div>
   );
 }
 
-function StageLine({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: number}) {
+function StageLine({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
+  const lock = block.kind === 'stage' ? block.text.trim().match(NUMBER_LOCK) : null;
+  const unitFont = Math.max(plan.floor.aux, Math.round(block.font * 0.75));
   return (
     <div
       style={{
@@ -295,27 +350,45 @@ function StageLine({plan, block, local}: {plan: ScenePlan; block: PlanBlock; loc
         ...poseStyle(plan, block, local),
       }}
     >
-      <div
-        style={{
-          maxWidth: '100%',
-          fontFamily: block.mono ? plan.fontNumber : plan.fontFamily,
-          fontWeight: block.kind === 'kicker' ? 500 : plan.roles.weight,
-          fontSize: block.font,
-          lineHeight: block.kind === 'stage' ? 1 : 1.15,
-          color: plan.paint.stage,
-          textAlign: block.textAlign,
-        }}
-      >
-        <Line text={block.text} emphasis={block.emphasis} accent={plan.roles.accent} look={emphasisLook(plan.motion)} />
-      </div>
+      {lock ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: block.textAlign === 'center' ? 'center' : 'flex-start',
+            maxWidth: '100%',
+            gap: '0.18em',
+            fontFamily: plan.fontNumber,
+            fontWeight: plan.roles.weight,
+            color: plan.paint.stage,
+            lineHeight: 1,
+          }}
+        >
+          <span style={{fontSize: block.font}}>{lock[1]}</span>
+          <span style={{fontSize: unitFont}}>{lock[2]}</span>
+        </div>
+      ) : (
+        <Copy
+          plan={plan}
+          text={block.text}
+          width={block.w}
+          font={block.font}
+          minFont={fontFloorOf(plan, screen, block)}
+          color={plan.paint.stage}
+          align={block.textAlign}
+          family={block.mono ? plan.fontNumber : plan.fontFamily}
+          weight={block.kind === 'kicker' ? 500 : plan.roles.weight}
+          lineHeight={block.kind === 'stage' ? 1 : 1.15}
+          emphasis={block.emphasis}
+        />
+      )}
     </div>
   );
 }
 
-function Slotted({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: number}) {
+function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
   const slot = block.slot;
   const textBox = block.textBox;
-  const look = emphasisLook(plan.motion);
   return (
     <div
       style={{
@@ -390,31 +463,32 @@ function Slotted({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local
             gap: 6,
           }}
         >
-          <div
-            style={{
-              fontFamily: plan.fontFamily,
-              fontWeight: plan.roles.weight,
-              fontSize: block.font,
-              lineHeight: 1.15,
-              color: plan.paint.ink,
-              textAlign: block.textAlign,
-            }}
-          >
-            <Line text={block.text} emphasis={block.emphasis} accent={plan.roles.accent} look={look} />
-          </div>
+          <Copy
+            plan={plan}
+            text={block.text}
+            width={textBox.w}
+            font={block.font}
+            minFont={fontFloorOf(plan, screen, block)}
+            color={plan.paint.ink}
+            align={block.textAlign}
+            family={plan.fontFamily}
+            weight={plan.roles.weight}
+            lineHeight={1.15}
+            emphasis={block.emphasis}
+          />
           {block.note ? (
-            <div
-              style={{
-                fontFamily: plan.fontFamily,
-                fontWeight: plan.roles.weight,
-                fontSize: block.noteFont,
-                lineHeight: 1.2,
-                color: plan.paint.muted,
-                textAlign: block.textAlign,
-              }}
-            >
-              {block.note}
-            </div>
+            <Copy
+              plan={plan}
+              text={block.note}
+              width={textBox.w}
+              font={block.noteFont}
+              minFont={plan.floor.aux}
+              color={plan.paint.muted}
+              align={block.textAlign}
+              family={plan.fontFamily}
+              weight={plan.roles.weight}
+              lineHeight={1.2}
+            />
           ) : null}
         </div>
       ) : null}
@@ -493,8 +567,34 @@ function Evidence({plan, screen, block, local}: {plan: ScenePlan; screen: PlanSc
             color: plan.paint.ink,
           }}
         >
-          <span>{row.label}</span>
-          <span style={{fontFamily: plan.fontNumber}}>{row.value}</span>
+          <div style={{flex: '1 1 auto', minWidth: 0}}>
+            <Copy
+              plan={plan}
+              text={row.label}
+              width={Math.max(8, Math.floor((block.w - 32) * 0.62))}
+              font={rowFont}
+              minFont={plan.floor.tiny}
+              color={plan.paint.ink}
+              align="start"
+              family={plan.fontFamily}
+              weight={plan.roles.weight}
+              lineHeight={1.15}
+            />
+          </div>
+          <div style={{flex: '0 0 auto'}}>
+            <Copy
+              plan={plan}
+              text={String(row.value)}
+              width={Math.max(8, Math.floor((block.w - 32) * 0.34))}
+              font={rowFont}
+              minFont={plan.floor.tiny}
+              color={plan.paint.ink}
+              align="end"
+              family={plan.fontNumber}
+              weight={plan.roles.weight}
+              lineHeight={1.15}
+            />
+          </div>
         </div>
       )) : null}
       {showCode ? (
@@ -556,8 +656,8 @@ function BarsChart({plan, block, points, peak, shell}: {plan: ScenePlan; block: 
     <div style={shell}>
       {points.map((point, index) => (
         <div key={index} style={{position: 'absolute', left: pad, top: pad + index * rowH, width: innerW, height: rowH}}>
-          <div style={{position: 'absolute', left: 0, top: 0, width: labelW, height: rowH, display: 'flex', alignItems: 'center', fontFamily: plan.fontFamily, fontWeight: plan.roles.weight, fontSize: font, color: plan.paint.ink}}>
-            {point.label}
+          <div style={{position: 'absolute', left: 0, top: 0, width: labelW, height: rowH, display: 'flex', alignItems: 'center'}}>
+            <Copy plan={plan} text={point.label} width={labelW} font={font} minFont={plan.floor.tiny} color={plan.paint.ink} align="start" family={plan.fontFamily} weight={plan.roles.weight} lineHeight={1.1} />
           </div>
           <div data-probe-skip style={{position: 'absolute', left: labelW + 8, top: rowH * 0.28, width: barW, height: Math.max(8, rowH * 0.4), background: plan.roles.line, borderRadius: 4}}>
             <div style={{width: `${Math.max(4, Math.min(100, (point.value / peak) * 100))}%`, height: '100%', background: point.focus ? plan.roles.accent : plan.paint.ink, borderRadius: 4}} />
@@ -603,11 +703,10 @@ function LineChart({plan, block, points, peak, shell}: {plan: ScenePlan; block: 
             textAlign: 'center',
             fontFamily: plan.fontFamily,
             fontWeight: plan.roles.weight,
-            fontSize: font,
             color: plan.paint.ink,
           }}
         >
-          {point.label}
+          <Copy plan={plan} text={point.label} width={colW} font={font} minFont={plan.floor.tiny} color={plan.paint.ink} align="center" family={plan.fontFamily} weight={plan.roles.weight} lineHeight={1.1} />
         </div>
       ))}
     </div>
@@ -666,8 +765,10 @@ function Donut({plan, block, points, shell}: {plan: ScenePlan; block: PlanBlock;
             color: plan.paint.ink,
           }}
         >
-          <span>{point.label}</span>
-          <span style={{fontFamily: plan.fontNumber}}>{point.value}</span>
+          <div style={{flex: '1 1 auto', minWidth: 0}}>
+            <Copy plan={plan} text={point.label} width={Math.max(8, block.w - legendX - 72)} font={font} minFont={plan.floor.tiny} color={plan.paint.ink} align="start" family={plan.fontFamily} weight={plan.roles.weight} lineHeight={1.1} />
+          </div>
+          <span style={{fontFamily: plan.fontNumber, whiteSpace: 'nowrap'}}>{point.value}</span>
         </div>
       ))}
     </div>
@@ -685,11 +786,13 @@ function Links({plan, links}: {plan: ScenePlan; links: {x1: number; y1: number; 
 }
 
 function BlockView({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
-  if (block.kind === 'stage' || block.kind === 'kicker' || block.kind === 'caption') return <StageLine plan={plan} block={block} local={local} />;
+  // techbrief 的判断句直接写在暗舞台上，不套米色卡片。证据卡、A、B 仍走原来的卡片。
+  const bareTitle = plan.style === 'techbrief' && (screen.layout === 'board' || screen.layout === 'number') && block.kind === 'card' && block.role === 'main';
+  if (bareTitle || block.kind === 'stage' || block.kind === 'kicker' || block.kind === 'caption') return <StageLine plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'evidence') return <Evidence plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'plot') return <Plot plan={plan} screen={screen} block={block} local={local} />;
-  if ((block.kind === 'card' || block.kind === 'node') && (block.slot || block.textBox)) return <Slotted plan={plan} block={block} local={local} />;
-  return <Card plan={plan} block={block} local={local} />;
+  if ((block.kind === 'card' || block.kind === 'node') && (block.slot || block.textBox)) return <Slotted plan={plan} screen={screen} block={block} local={local} />;
+  return <Card plan={plan} screen={screen} block={block} local={local} />;
 }
 
 export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {

@@ -150,6 +150,22 @@ for (const spec of [
   assert.equal(stage.mono, true);
   assert.ok(number.blocks.some((block) => block.kind === 'kicker' && block.mono));
   assert.equal(plan.screens.some((item) => item.imageSrc && item.imageSrc.includes('detail-screen')), true);
+  if (spec.product === 'promo' && spec.aspect === '9:16') {
+    for (const screen of plan.screens) {
+      const plate = screen.layout === 'board' || screen.layout === 'number' || screen.layout === 'media';
+      if (plate) {
+        assert.equal(screen.safe.y, 260, `${screen.role} 资讯板应改用讲课竖版上沿`);
+        assert.equal(screen.safe.x, 180);
+        assert.equal(screen.safe.w, 720);
+        assert.equal(screen.safe.h, 1080);
+        assert.ok(screen.blocks[0].y < 400, `${screen.role} 标题带应上移，现在 y=${screen.blocks[0].y}`);
+      } else {
+        assert.ok(screen.blocks[0].y >= 560, `${screen.role} 仍用宣传片主体区，y=${screen.blocks[0].y}`);
+      }
+    }
+    const evidence = plan.screens.find((item) => item.role === 'media').blocks.find((block) => block.kind === 'evidence');
+    assert.ok(evidence.h >= 600, `证据卡应占满剩余高度，现在 ${evidence.h}`);
+  }
 }
 
 console.log(`prepare ok ${A.durationSec.toFixed(2)}s ${A.screens.map((screen) => screen.duration.toFixed(2)).join('+')} frames ${A.durationFrames}`);

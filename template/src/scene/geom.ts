@@ -602,8 +602,9 @@ function layoutBoard(input: GeomInput, count: number): GeomResult {
   const heights = bands.map((band) => {
     if (band === 'kicker') return Math.max(input.floor.aux + 18, 50);
     if (band === 'caption') return Math.max(input.floor.body + 20, 68);
-    // 判断带要有一块实底。深色舞台上只有一行字，空帧检查会把整屏当成纯色。
-    if (band === 'title') return Math.max(input.floor.title + 28, Math.round(safe.h * 0.22));
+    // 判断带贴在安全区顶上，高度够放标题上限的一行，不再按安全区高度的 22% 撑高。
+    // 剩下的高度全部给证据或数字。
+    if (band === 'title') return Math.max(input.floor.title + 28, Math.min(Math.round(safe.h * 0.22), input.floor.titleMax + 44));
     return 0;
   });
   const flexAt = bands.map((band, index) => (band === 'evidence' || band === 'number' ? index : -1)).filter((index) => index >= 0);
@@ -624,7 +625,13 @@ function layoutBoard(input: GeomInput, count: number): GeomResult {
     heights[cutAt] -= 1;
     total = usedFixed();
   }
-  let y = safe.y + Math.max(0, Math.floor((safe.h - total) / 2));
+  const leftover = Math.max(0, safe.h - total);
+  if (leftover > 0 && flexAt.length) {
+    const add = Math.floor(leftover / flexAt.length);
+    for (const index of flexAt) heights[index] += add;
+    heights[flexAt[0]] += leftover - add * flexAt.length;
+  }
+  let y = safe.y;
   let overflow = flex < input.floor.title;
   const blocks: SceneBlock[] = [];
   for (let i = 0; i < count; i++) {
@@ -647,11 +654,21 @@ function layoutBoard(input: GeomInput, count: number): GeomResult {
   const number = blocks.find((block, index) => bands[index] === 'number');
   const caption = blocks.find((block, index) => bands[index] === 'caption');
   if (number && caption) {
-    const want = Math.min(input.floor.titleMax, Math.max(number.font, caption.font * 2));
-    number.font = want;
-    if (number.font < caption.font * 2) overflow = true;
-    const again = fitFont(input.chars[number.index] ?? 2, number.w, number.h, number.font, number.font);
-    if (again.overflow) overflow = true;
+    const chars = Math.max(1, input.chars[number.index] ?? 2);
+    const innerW = Math.max(1, number.w - 24);
+    const innerH = Math.max(1, number.h - 8);
+    // 数字层按这一带高度的 55% 放大，同时要放进安全区。标题仍由 paintBlock 停在 titleMax。
+    // 短数字（「27 人」「4 分钟」）渲染时数字用全字号、单位 0.75 倍，按约 0.7em 估宽，避免把单位也当成 1em 把字号压回标题。
+    // 长句仍按 1em 一个字，放不下就标溢出，交给回喂去改文案。
+    const em = chars <= 4 ? Math.max(1.8, chars * 0.7) : chars;
+    const byBand = Math.round(number.h * 0.55);
+    const byWidth = Math.floor(innerW / em);
+    const byLine = Math.floor(innerH / 1.15);
+    const fitted = Math.max(1, Math.min(byBand, byWidth, byLine));
+    const least = caption.font * 2;
+    number.font = Math.max(fitted, least);
+    if (number.font > fitted) overflow = true;
+    if (number.font < least) overflow = true;
   }
   const evidence = blocks.find((block) => block.kind === 'evidence' || block.kind === 'stage');
   return {

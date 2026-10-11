@@ -12,19 +12,9 @@ import {sceneFrame} from './geom.mjs';
 import {loadStyle} from './tokens.mjs';
 import {validateScene} from './validate-scene.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const OUT = process.argv[2];
-const IDS = ['01', '03', '05', '07', '09', '11', '13', '15', '17', '19'];
-if (!OUT) {
-  console.error('用法: node scripts/scene/deepseek-layouts.mjs <仓库外目录>');
-  process.exit(2);
-}
-
-const briefs = JSON.parse(readFileSync(path.join('H:/ai_tool/promo-video-skill-tests/v0150-scene/ab/briefs/briefs.json'), 'utf8'));
-const picked = IDS.map((id) => briefs.find((item) => item.id === id)).filter(Boolean);
 const iconNames = Object.keys(ICONS).join('、');
 
-const prompt = `你只输出一个 JSON 对象，不要 markdown。这是 scene.json。不要写坐标、像素、帧号、毫秒。
+export const prompt = `你只输出一个 JSON 对象，不要 markdown。这是 scene.json。不要写坐标、像素、帧号、毫秒。
 
 字段名必须是 role，不要写 type。要点数组必须叫 items，不要叫 points。emphasis 必须是字符串数组，不要写成一个字符串。数字必须写在 number 对象里，不要把 text、fact 放在屏的根上。
 
@@ -120,6 +110,16 @@ function fits(scene) {
   return {ok: issues.length === 0 && overflow.length === 0, issues, overflow};
 }
 
+async function main() {
+const OUT = process.argv[2];
+const IDS = ['01', '03', '05', '07', '09', '11', '13', '15', '17', '19'];
+if (!OUT) {
+  console.error('用法: node scripts/scene/deepseek-layouts.mjs <仓库外目录>');
+  process.exit(2);
+}
+const briefs = JSON.parse(readFileSync(path.join('H:/ai_tool/promo-video-skill-tests/v0150-scene/ab/briefs/briefs.json'), 'utf8'));
+const picked = IDS.map((id) => briefs.find((item) => item.id === id)).filter(Boolean);
+
 let calls = 0;
 const fetchImpl = (url, init) => {
   calls += 1;
@@ -131,6 +131,10 @@ const cfg = readLlmEnv();
 if (!cfg.key) {
   console.error('没有 DeepSeek 密钥，跳过。环境变量未打印。');
   process.exit(3);
+}
+if (/minimax/i.test(cfg.model) || /minimax/i.test(cfg.base)) {
+  console.error('这个脚本不调 MiniMax');
+  process.exit(2);
 }
 
 mkdirSync(OUT, {recursive: true});
@@ -198,3 +202,7 @@ const summary = {
 };
 writeFileSync(path.join(OUT, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`, 'utf8');
 console.log(`DeepSeek 调用 ${calls} 次。结构 ${summary.structure}/${summary.n}，不改文案排下 ${summary.fits}/${summary.n}，数字 ${summary.fact}/${summary.n}`);
+}
+
+const invoked = process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+if (invoked) await main();
