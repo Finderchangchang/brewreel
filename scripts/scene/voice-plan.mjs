@@ -1,6 +1,8 @@
 // 场景配音的时间。逐字和拍点各走各的函数，不合成一个再丢掉来源。
 import {LEAD_SEC, TAIL_SEC} from '../lib/tts/pipeline.mjs';
 import {paginate, plainOf} from '../lib/tts/timing.mjs';
+import {CAPTION_FONT_MAX, captionBox} from '../../template/src/scene/safe-box.ts';
+import {fitSceneCopy} from '../../template/src/scene/wrap.ts';
 
 export {LEAD_SEC, TAIL_SEC};
 
@@ -93,32 +95,106 @@ export function boxesOverlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-function hitsEvidence(box, blocks) {
-  return (blocks || []).some((block) => (block.kind === 'evidence' || block.kind === 'plot') && boxesOverlap(box, block));
+const CONTENT_KINDS = new Set(['card', 'stage', 'kicker', 'caption', 'evidence', 'plot', 'node']);
+
+/** 字幕盒和标题、kicker、证据、数字、条目（以及说明条、绘图区）是否相交。不相交返回空数组。 */
+export function captionHits(box, blocks) {
+  return (blocks || []).filter((block) => {
+    const kind = block?.kind || 'card';
+    if (!CONTENT_KINDS.has(kind)) return false;
+    return boxesOverlap(box, block);
+  });
 }
 
 /**
- * 逐字字幕的盒子。先试宣传片字幕带；压到证据就改用本屏说明条；再不行就在安全区底部往上挪。
- * coversCaption 为真时，合成里不再画那条静态说明，避免叠两层字。
+ * 逐字字幕的盒子。固定在底部字幕带，不因为压到证据就改到顶部或说明条上。
+ * coversCaption 恒为 false：屏上的说明照旧画，字幕只说还没写在屏上的那部分。
  */
-export function captionBoxFor(screen, width) {
-  const blocks = screen?.blocks || [];
-  const safe = screen?.safe || {x: 80, y: 560, w: Math.max(200, width - 160), h: 1100};
-  const classic = {x: Math.round(width * 0.12), y: 292, w: Math.round(width * 0.76), h: 160};
-  if (!hitsEvidence(classic, blocks)) return {box: classic, coversCaption: false};
-  const caption = blocks.find((block) => block.kind === 'caption');
-  if (caption && !hitsEvidence(caption, blocks)) {
-    return {box: {x: caption.x, y: caption.y, w: caption.w, h: caption.h}, coversCaption: true};
+export function captionBoxFor(screen, width, height = 1920, aspect) {
+  const canvasH = Number(height) || 1920;
+  const safe = screen?.safe || {x: 80, y: 80, w: Math.max(200, (Number(width) || 1080) - 160), h: Math.max(200, canvasH - 160)};
+  const resolved = aspect || (canvasH >= 1600 ? '9:16' : canvasH >= 1200 ? '4:5' : '16:9');
+  const box = captionBox({aspect: resolved, canvasH, safe});
+  return {box, coversCaption: false};
+}
+
+function glyphTimeline(words) {
+  const glyphs = [];
+  for (const word of words || []) {
+    const text = String(word?.text || '');
+    const chars = [...text];
+    const start = Number(word?.startMs) || 0;
+    const end = Number(word?.endMs) || start;
+    chars.forEach((ch, i) => {
+      const at = LEAD_SEC + (start + ((end - start) * i) / Math.max(1, chars.length)) / 1000;
+      glyphs.push({ch, at});
+    });
   }
-  const stripH = 120;
-  const box = {x: safe.x, y: safe.y, w: safe.w, h: stripH};
-  let y = safe.y + safe.h - stripH;
-  for (let step = 0; step < 14; step++) {
-    box.y = y;
-    if (box.y >= safe.y - 0.5 && !hitsEvidence(box, blocks)) return {box: {...box}, coversCaption: false};
-    y -= 40;
+  return glyphs;
+}
+
+/** 把去重后的字幕对齐回逐字时间。对不上的空格沿用前一个字的时刻。 */
+export function alignSpoken(narration, words, spoken) {
+  const glyphs = glyphTimeline(words);
+  let cursor = 0;
+  const out = [];
+  for (const ch of [...String(spoken || '')]) {
+    if (ch === '\n') continue;
+    let found = -1;
+    for (let i = cursor; i < glyphs.length; i++) {
+      if (glyphs[i].ch === ch) {
+        found = i;
+        break;
+      }
+    }
+    if (found >= 0) {
+      out.push({ch, at: glyphs[found].at});
+      cursor = found + 1;
+    } else {
+      const prev = out[out.length - 1];
+      out.push({ch, at: prev ? prev.at : LEAD_SEC});
+    }
   }
-  return {box: {x: safe.x, y: safe.y, w: safe.w, h: stripH}, coversCaption: false};
+  return out;
+}
+
+/**
+ * 去重后的字幕排进底部带。先缩字号，不低于正文下限；仍超过两行就按词断成多页。
+ * 断行用 fitSceneCopy，不另写分词。
+ */
+export function pagesForCaption(narration, words, spoken, maxW, minPx) {
+  const text = String(spoken || '').trim();
+  if (!text) return [];
+  const timed = alignSpoken(narration, words, text);
+  if (!timed.length) return [];
+  const lo = Math.max(1, Math.min(CAPTION_FONT_MAX, Math.floor(Number(minPx) || 40)));
+  const fitted = fitSceneCopy(text, Math.max(8, maxW - 16), CAPTION_FONT_MAX, lo);
+  const lines = fitted.lines.length ? fitted.lines : [text];
+  const pages = [];
+  let cursor = 0;
+  const take = (ch) => {
+    while (cursor < timed.length && timed[cursor].ch !== ch) cursor += 1;
+    const hit = timed[Math.min(cursor, Math.max(0, timed.length - 1))];
+    if (cursor < timed.length && timed[cursor].ch === ch) cursor += 1;
+    return {ch, at: hit ? hit.at : LEAD_SEC};
+  };
+  for (let i = 0; i < lines.length; i += 2) {
+    const chunk = lines.slice(i, i + 2);
+    const chars = [];
+    chunk.forEach((line, lineIndex) => {
+      if (lineIndex) {
+        const prev = chars[chars.length - 1];
+        chars.push({ch: '\n', at: prev ? prev.at : LEAD_SEC});
+      }
+      for (const ch of [...line]) chars.push(take(ch));
+    });
+    const visible = chars.filter((item) => item.ch !== '\n');
+    if (!visible.length) continue;
+    const startSec = visible[0].at;
+    const endSec = visible[visible.length - 1].at;
+    pages.push({startSec, endSec, font: fitted.font, chars});
+  }
+  return pages;
 }
 
 function charsOfPage(page, words) {

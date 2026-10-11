@@ -12,6 +12,7 @@ type AspectGeom = {
   safe: {x0: number; x1: number; y0: number; y1: number};
   card: {x0: number; x1: number};
   cap: {y0: number; y1: number};
+  bgOnly: {top: number; bottom: number};
 };
 
 const GEOM = aspects as Record<string, AspectGeom>;
@@ -37,6 +38,43 @@ export function plateSafe(frame: SceneFrame): SafeFrame {
   if (frame.aspect !== '9:16') return frame.safe;
   const box = VERTICAL.safe;
   return {x: box.x, y: box.y, w: box.right - box.x, h: box.bottom - box.y, reserve: null};
+}
+
+/**
+ * 9:16 底部字幕带。参考片的字幕大约在 y 1400–1450，贴着画面下沿，不在顶部。
+ *
+ * 不照搬那个 y。`aspects.json` 的 9:16 写明 y 1340 以下会被平台文案和按钮盖住
+ * （`bgOnly.bottom` = 1340，`noticeY` = 1344）。讲课竖版字幕条在 y 1380–1520，同样落进底栏，这里也不照搬。
+ * 宣传片原来的全局字幕带在 y 260–540。资讯板从 y 260 起排 kicker 和标题，字幕放在那里会压住它们。
+ *
+ * 所以下沿对齐安全区下沿 y = 1340，高度 140（两行、字号不超过 56、行高 1.25 正好放下）。
+ * 上沿 y = 1200。左右用关键内容 x 180–900。有字幕的屏，内容排到 y 1200 为止，不再往上挪字幕。
+ */
+export const PORTRAIT_CAPTION = {x: 180, y: 1200, w: 720, h: 140, bottom: 1340};
+
+/** 字幕字号上限。两行 × 1.25 行高 = 140，和 PORTRAIT_CAPTION.h 对齐。下限用这一帧的正文下限，不另定。 */
+export const CAPTION_FONT_MAX = 56;
+
+export function captionBox(frame: Pick<SceneFrame, 'aspect' | 'canvasH' | 'safe'>): {x: number; y: number; w: number; h: number} {
+  if (frame.aspect === '9:16' || frame.canvasH >= 1600) {
+    return {x: PORTRAIT_CAPTION.x, y: PORTRAIT_CAPTION.y, w: PORTRAIT_CAPTION.w, h: PORTRAIT_CAPTION.h};
+  }
+  if (frame.aspect === '4:5') {
+    const g = GEOM['4:5'];
+    const h = 112;
+    return {x: g.safe.x0, y: g.bgOnly.bottom - h, w: g.safe.x1 - g.safe.x0, h};
+  }
+  const h = 96;
+  const bottom = frame.safe.y + frame.safe.h;
+  return {x: frame.safe.x, y: bottom - h, w: frame.safe.w, h};
+}
+
+/** 有还没写在屏上的旁白时，内容区下沿停在字幕带上沿。安全区记录仍是原来的那一块。 */
+export function layoutSafe(full: SafeFrame, laneY: number, reserve: boolean): SafeFrame {
+  if (!reserve) return full;
+  if (laneY <= full.y + 1) return full;
+  if (full.y + full.h <= laneY + 0.5) return full;
+  return {...full, h: laneY - full.y};
 }
 
 const PLATE_GEOM = new Set(['board', 'number', 'media']);

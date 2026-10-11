@@ -34,8 +34,10 @@ export const prompt = `你只输出一个 JSON 对象，不要 markdown。这是
 
 文案只能摘简报，不要加简报里没有的数字。
 
+每一屏都要写 narration。这是口播，用简报里的话写成一句完整的口语，可以比屏上的标题长。不要只把 text、title、items 或 number.text 原样再写一遍：这些字已经在画面上。旁白要带上画面上没有的那半句，比如对象、原因或下一步。narration 不能是空字符串。
+
 例子只说明字段，不要照抄产品和文案，src 也不要照抄：
-{"product":"promo","aspect":"9:16","style":"fresh-light","motion":"bounce","facts":[{"id":"f1","text":"样例平均要 4 分钟。","source":"样例记录"}],"screens":[{"role":"claim","layout":"hero","text":"先看完再回","emphasis":["看完"],"support":"不要急着发"},{"role":"points","layout":"grid","items":[{"text":"先看语气","icon":"eye"},{"text":"再写回复","icon":"send"}]},{"role":"number","layout":"board","kicker":"● 趋势","title":"还要一会儿","number":{"text":"4 分钟","fact":"f1","label":"样例平均"}},{"role":"action","layout":"end","brand":"样例","line":"看完再回"}]}`;
+{"product":"promo","aspect":"9:16","style":"fresh-light","motion":"bounce","facts":[{"id":"f1","text":"样例平均要 4 分钟。","source":"样例记录"}],"screens":[{"role":"claim","layout":"hero","narration":"先看完这一屏，再决定要不要回。","text":"先看完再回","emphasis":["看完"],"support":"不要急着发"},{"role":"points","layout":"grid","narration":"先看语气，再写回复，两步都做完再发。","items":[{"text":"先看语气","icon":"eye"},{"text":"再写回复","icon":"send"}]},{"role":"number","layout":"board","narration":"样例平均要 4 分钟，不赶着发。","kicker":"● 趋势","title":"还要一会儿","number":{"text":"4 分钟","fact":"f1","label":"样例平均"}},{"role":"action","layout":"end","narration":"看完再回，按这个改一版。","brand":"样例","line":"看完再回"}]}`;
 
 function parseJson(content) {
   const text = String(content || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();

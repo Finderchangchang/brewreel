@@ -2,12 +2,13 @@
 // 第 0 帧必须已经有主文案，所以每屏第一块的 showAt 压到 0。
 // 有逐字时钟时只调用 revealFromWords；没有就只调用 revealFromBeats。两种来源不写进同一个对象。
 // 次文字只标成落在卡片上。低于 4.5 的前景会调深，本轮三支预设的卡片对已经过线，调深不会触发。
+import {captionPaint, captionRemainder, onScreenPhrases} from './caption.ts';
 import {contrastRatio} from './contrast.ts';
 import {layoutBlocks} from './geom.ts';
 import type {BandName, GeomLayout} from './geom.ts';
 import {curveOf} from './motion.ts';
 import {revealFromBeats, revealFromWords} from './time.ts';
-import {screenSafe, type SceneFrame} from './safe-box.ts';
+import {captionBox, layoutSafe, screenSafe, type SceneFrame} from './safe-box.ts';
 import type {RevealPlan} from './time.ts';
 import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
 
@@ -105,6 +106,8 @@ export type ScenePlan = {
   safe: {x: number; y: number; w: number; h: number};
   floor: FontFloor;
   paint: {ink: string; muted: string; surface: string; stage: string; inkAdjusted: boolean; mutedAdjusted: boolean};
+  /** 底部字幕的字色。不铺底板。ink 是还没念到的字，hot 是已经点亮的字。 */
+  caption: {ink: string; hot: string; bg: string; shadow: string};
   contrast: ContrastRow[];
   /**
    * none：判断句直接写在舞台上，不铺圆角底。卡片只留给证据和条目。
@@ -122,7 +125,7 @@ export type ScenePlan = {
     screens: {
       index: number;
       box: {x: number; y: number; w: number; h: number};
-      pages: {startSec: number; endSec: number; chars: {ch: string; at: number}[]}[];
+      pages: {startSec: number; endSec: number; font?: number; chars: {ch: string; at: number}[]}[];
     }[];
   };
 };
@@ -448,6 +451,25 @@ export function prepareScene(input: {
   const slow = slowestEnter(frame.canvasH);
   const curve = curveParams(motion, frame.canvasH);
   const stage = stageInk(roles.ink, roles.surface, roles.bg);
+  const lane = captionBox(frame);
+  const backdropTop = firstColor(input.extra?.bgTop, roles.bg);
+  const backdropBottom = firstColor(input.extra?.bgBot, roles.bg);
+  const spokenColor = captionPaint({
+    style: scene.style,
+    ink: roles.ink,
+    accent: roles.accent,
+    bg: roles.bg,
+    stage,
+    backdropTop,
+    backdropBottom,
+    canvasH: frame.canvasH,
+    laneY: lane.y,
+    laneH: lane.h,
+  });
+  contrast.push(
+    {pair: 'caption/bg', fg: spokenColor.ink, bg: spokenColor.bg, ratio: spokenColor.inkRatio, painted: true, adjusted: spokenColor.inkAdjusted},
+    {pair: 'captionHot/bg', fg: spokenColor.hot, bg: spokenColor.bg, ratio: spokenColor.hotRatio, painted: true, adjusted: spokenColor.hotAdjusted},
+  );
   let frameCursor = 0;
   const screens: PlanScreen[] = (scene.screens ?? []).map((screen, index) => {
     const built = compose(screen);
@@ -470,7 +492,9 @@ export function prepareScene(input: {
       seconds = Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
     }
     const durationFrames = Math.max(1, Math.round(seconds * fps));
-    const safe = screenSafe(frame, built.geom);
+    const full = screenSafe(frame, built.geom);
+    const spoken = captionRemainder(screen.narration || '', onScreenPhrases(screen));
+    const safe = layoutSafe(full, lane.y, Boolean(spoken));
     const placed = layoutBlocks({
       layout: built.geom,
       count: pieces.length,
@@ -544,7 +568,7 @@ export function prepareScene(input: {
       ...(screen.callouts ? {callouts: screen.callouts} : {}),
       ...(screen.rows ? {rows: screen.rows} : {}),
       ...(screen.code ? {code: screen.code} : {}),
-      safe: {x: safe.x, y: safe.y, w: safe.w, h: safe.h},
+      safe: {x: full.x, y: full.y, w: full.w, h: full.h},
       overflow: placed.overflow,
     };
   });
@@ -563,10 +587,11 @@ export function prepareScene(input: {
     fontFamily: fontOf(input.extra),
     fontNumber: fontNumberOf(input.extra),
     cardBorder,
-    backdrop: {top: firstColor(input.extra?.bgTop, roles.bg), bottom: firstColor(input.extra?.bgBot, roles.bg)},
+    backdrop: {top: backdropTop, bottom: backdropBottom},
     safe: {x: frame.safe.x, y: frame.safe.y, w: frame.safe.w, h: frame.safe.h},
     floor: frame.floor,
     paint: {ink: ink.color, muted: muted.color, surface: roles.surface, stage, inkAdjusted: ink.adjusted, mutedAdjusted: muted.adjusted},
+    caption: {ink: spokenColor.ink, hot: spokenColor.hot, bg: spokenColor.bg, shadow: spokenColor.shadow},
     contrast,
     headlinePlate: input.extra?.headlinePlate === 'none' ? 'none' : 'card',
     screens,

@@ -109,6 +109,11 @@ function contentIssues(scene, user) {
   const allowedNumbers = new Set(numbersIn(user));
   const extra = [...new Set(numbersIn(visibleCopy(scene)).filter((value) => !allowedNumbers.has(value)))];
   if (extra.length) lines.push(`这些数字不在简报里：${extra.join('、')}。删掉，或改成简报原文里有的数`);
+  (scene?.screens || []).forEach((screen, index) => {
+    if (!String(screen?.narration || '').trim()) {
+      lines.push(`第 ${index + 1} 屏没有 narration。每一屏都要写口播，用简报里的话，并带上画面上没有的半句`);
+    }
+  });
   return lines;
 }
 

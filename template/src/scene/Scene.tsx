@@ -828,9 +828,10 @@ function Karaoke({plan, screen, local}: {plan: ScenePlan; screen: PlanScreen; lo
   }
   if (!page || local + 1e-6 < page.startSec) return null;
   const box = cap.box;
+  const ink = plan.caption?.ink || plan.paint.stage;
+  const hot = plan.caption?.hot || plan.roles.accent;
   return (
     <div
-      data-probe-skip
       style={{
         position: 'absolute',
         left: box.x,
@@ -841,28 +842,25 @@ function Karaoke({plan, screen, local}: {plan: ScenePlan; screen: PlanScreen; lo
         alignItems: 'center',
         justifyContent: 'center',
         pointerEvents: 'none',
-        overflow: 'hidden',
       }}
     >
       <div
-        data-probe-skip
         style={{
           maxWidth: '100%',
-          background: plan.roles.surface,
-          borderRadius: 18,
-          padding: '10px 18px',
           fontFamily: plan.fontFamily,
           fontWeight: plan.roles.weight,
-          fontSize: 36,
+          fontSize: page.font || 48,
           lineHeight: 1.25,
           textAlign: 'center',
+          color: ink,
+          textShadow: plan.caption?.shadow && plan.caption.shadow !== 'none' ? plan.caption.shadow : undefined,
         }}
       >
         {page.chars.map((item, index) =>
           item.ch === '\n' ? (
             <br key={index} />
           ) : (
-            <span key={index} style={{color: local + 1e-4 >= item.at ? plan.roles.accent : plan.paint.ink}}>
+            <span key={index} style={{color: local + 1e-4 >= item.at ? hot : ink}}>
               {item.ch}
             </span>
           ),

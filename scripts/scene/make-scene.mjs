@@ -19,7 +19,8 @@ import {sceneFrame} from './geom.mjs';
 import {speakScreens, DUCK, LEAD_SEC} from './speak.mjs';
 import {loadStyle, stylesFor} from './tokens.mjs';
 import {formatReport, validateScene} from './validate-scene.mjs';
-import {captionBoxFor, clocksFor, pagesFor} from './voice-plan.mjs';
+import {captionRemainder, onScreenPhrases} from '../../template/src/scene/caption.ts';
+import {captionBoxFor, captionHits, clocksFor, pagesForCaption} from './voice-plan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const TEMPLATE = path.join(ROOT, 'template');
@@ -116,23 +117,40 @@ function hasNarration(scene) {
   return (scene.screens || []).some((screen) => String(screen?.narration || '').trim());
 }
 
-function attachCaptions(plan, lines) {
+function attachCaptions(plan, lines, sceneScreens) {
   const byIndex = new Map(lines.map((line) => [line.index, line]));
   const screens = [];
-  const coverScreens = [];
   for (const screen of plan.screens) {
     const line = byIndex.get(screen.index);
-    if (!line?.words?.length) continue;
-    const placed = captionBoxFor(screen, plan.width);
-    if (placed.coversCaption) coverScreens.push(screen.index);
-    screens.push({
-      index: screen.index,
-      box: placed.box,
-      pages: pagesFor(line.words),
-    });
+    const src = sceneScreens?.[screen.index];
+    if (!line?.words?.length || !src) continue;
+    const spoken = captionRemainder(src.narration || '', onScreenPhrases(src));
+    if (!spoken) continue;
+    const placed = captionBoxFor(screen, plan.width, plan.height, plan.aspect);
+    const pages = pagesForCaption(src.narration || '', line.words, spoken, placed.box.w, plan.floor?.body || 40);
+    if (!pages.length) continue;
+    screens.push({index: screen.index, box: placed.box, pages});
   }
   if (!screens.length) return;
-  plan.captions = {coverScreens, screens};
+  plan.captions = {coverScreens: [], screens};
+}
+
+function captionIssues(plan) {
+  const issues = [];
+  for (const cap of plan.captions?.screens || []) {
+    const screen = plan.screens.find((item) => item.index === cap.index);
+    if (!screen) continue;
+    if (plan.aspect === '9:16') {
+      const bottom = cap.box.y + cap.box.h;
+      if (bottom > 1340.5) issues.push(`第 ${cap.index + 1} 屏字幕下沿 ${Math.round(bottom)} 进了平台底栏（y 1340 以下）`);
+      if (cap.box.y < 1100) issues.push(`第 ${cap.index + 1} 屏字幕在 y ${Math.round(cap.box.y)}，不在底部字幕带`);
+    }
+    for (const block of captionHits(cap.box, screen.blocks)) {
+      const kind = block.kind || 'card';
+      issues.push(`第 ${cap.index + 1} 屏字幕压住${kind}「${String(block.text || '').slice(0, 12)}」`);
+    }
+  }
+  return issues;
 }
 
 function contentMask(screen, plan, outW, outH, enterEnd) {
@@ -337,7 +355,7 @@ async function main() {
     console.error(issues.join('\n'));
     process.exit(1);
   }
-  if (spoken) attachCaptions(plan, spoken.lines);
+  if (spoken) attachCaptions(plan, spoken.lines, result.scene.screens);
 
   const runId = `scene-${Date.now().toString(36)}-${process.pid}`;
   const runDir = path.join(TEMPLATE, 'public', '_run', runId);
@@ -412,7 +430,7 @@ async function main() {
           cwd: TEMPLATE,
           stdio: ['ignore', logFd, logFd],
           windowsHide: true,
-          timeout: 420000,
+          timeout: 900000,
         });
       } finally {
         fs.closeSync(logFd);
@@ -452,6 +470,7 @@ async function main() {
       mustShow: [{i: 0, frame: 0, fields: ['params.title']}],
     });
     const safeIssue = frame0Issue(probes, plan);
+    const capIssues = captionIssues(plan);
     const ffmpeg = ffmpegExe();
     const blank = blankRuns({
       video: videoPath,
@@ -465,6 +484,7 @@ async function main() {
 
     const failed = [];
     if (layout.layoutIssues.length || layout.errors.length) failed.push(`版式 ${layout.layoutIssues.length + layout.errors.length} 条`);
+    if (capIssues.length) failed.push(`字幕 ${capIssues.length} 条`);
     if (safeIssue) failed.push(safeIssue);
     if (!blank.ok || blank.error) failed.push(blank.error ? `空帧检查没跑成：${blank.error}` : `空帧 ${blank.runs.length} 段`);
     if (!probes.size) failed.push('没有布局探针');
@@ -506,11 +526,13 @@ async function main() {
       contrast: plan.contrast,
       checks: {
         layout: layout.layoutIssues.length || layout.errors.length ? 'fail' : 'ok',
+        caption: capIssues.length ? 'fail' : 'ok',
         blank: blank.ok && !blank.error ? 'ok' : 'fail',
         contrast: plan.contrast.filter((row) => row.painted && row.ratio < 4.5).length ? 'fail' : 'ok',
         motion: motion.fails.length ? 'fail' : 'ok',
         frame0: safeIssue ? 'fail' : 'ok',
         layoutIssues: layout.layoutIssues,
+        captionIssues: capIssues,
         blankRuns: blank.runs,
         frame0Issue: safeIssue,
         motionNotes: motion.notes,
@@ -524,6 +546,7 @@ async function main() {
       writeJson(path.join(outDir, 'manifest.json'), manifest);
       console.error(failed.join('\n'));
       for (const line of layout.layoutIssues.slice(0, 8)) console.error(line);
+      for (const line of capIssues.slice(0, 8)) console.error(line);
       const stop = new Error('检查没过');
       stop.exitCode = 3;
       throw stop;

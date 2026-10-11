@@ -69,7 +69,7 @@ node scripts/scene/brief-to-video.mjs <brief.md|json> --out <directory outside t
 
 If any screen has narration, pass `--voice-provider` or `--no-voice`. Otherwise the command stops. Without that provider's key, use `--voice-provider mock` to check rhythm. Mock is offline, unbilled, a placeholder tone, and not a delivery. Keys are read only from the environment. They are not printed and must not be written into a file.
 
-Voice is synthesized from each screen's `narration`. Per-word times set that screen's length. Subtitles light up word by word and stay off the evidence layer. Music reuses the existing score and ducks under speech. If a check fails, the file is renamed to `video.rejected.mp4`.
+Voice is synthesized from each screen's `narration`. Per-word times set that screen's length. Subtitles stay in the bottom band (on 9:16 the band ends at y=1340, above the platform bar, and it is never moved to the top). They light up word by word and have no plate. Words already on screen as a title, judgment, number, or item are removed; a sentence that is entirely on screen gets no subtitle. Music reuses the existing score and ducks under speech. If a check fails, the file is renamed to `video.rejected.mp4`.
 
 Without a DeepSeek key, the one-shot command says so and points at `make-scene.mjs`.
 
@@ -94,4 +94,4 @@ The old storyboard is still the regular promo path. `scene.json` is an experimen
 - Experimental. Passing validation and geometry is not the regular delivery bar.
 - `quiz` and `journey` are not split into this format.
 - A screen without voice uses beats. A screen with voice uses word times only. The two sources are not stored on one timing object.
-- Karaoke is placed so it does not cover evidence. On a board it moves off the screenshot and the big number.
+- Karaoke stays in the bottom band. Overlapping a title, kicker, evidence card, number, or item fails the check. It is not moved to the top.
