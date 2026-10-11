@@ -1,7 +1,8 @@
 // hero / stack / split 的几何。只算矩形和字号，不画。
 // 疏密：间距约占行高的 tight 0.06 / regular 0.12 / loose 0.20。
 // 行高先按这个比例求，再被 maxRow 封顶（宣传片 200、讲课横版 96、竖版 142）。
-// 字号停在该产品下限，不把整卡缩到 0.8。
+// 没被封顶时，把剩余高度分进行里，尽量用满安全区；封顶后整组垂直居中。
+// 字号跟着行高放大，停在标题上限。放不下就停在该产品下限，不把整卡缩到 0.8。
 import type {Align, Density, FontFloor, ProtoLayout, SafeFrame, SceneBlock} from './types.ts';
 
 const RATIO: Record<Density, number> = {tight: 0.06, regular: 0.12, loose: 0.2};
@@ -34,6 +35,14 @@ export type GeomResult = {
 };
 
 const clampCount = (n: number) => Math.max(1, Math.min(8, Math.round(n) || 1));
+
+/** 主块按标题字号收紧时的高度：行盒 1.25，再加上下各 16 的内边距。 */
+function textBoxH(charCount: number, width: number, font: number): number {
+  const innerW = Math.max(1, width - 36);
+  const per = Math.max(1, Math.floor(innerW / Math.max(1, font)));
+  const lines = Math.ceil(Math.max(1, charCount) / per);
+  return lines * Math.ceil(font * 1.25) + 32;
+}
 
 function fitFont(chars: number, width: number, height: number, max: number, min: number): {font: number; overflow: boolean} {
   const n = Math.max(1, chars);
@@ -89,11 +98,36 @@ function stackMetrics(height: number, count: number, maxRow: number, ratio: numb
     gap -= 1;
     total = row * count + gap * Math.max(0, count - 1);
   }
+  // 6 条这类没顶到上限的，把剩下的像素分进行高，整组尽量贴满安全区。
+  if (row < maxRow && count > 0) {
+    const add = Math.min(maxRow - row, Math.floor((height - total) / count));
+    if (add > 0) {
+      row += add;
+      gap = count > 1 ? Math.round(ratio * row) : 0;
+      total = row * count + gap * Math.max(0, count - 1);
+      while (total > height && row > 1) {
+        row -= 1;
+        gap = count > 1 ? Math.round(ratio * row) : 0;
+        total = row * count + gap * Math.max(0, count - 1);
+      }
+      while (total > height && gap > 0) {
+        gap -= 1;
+        total = row * count + gap * Math.max(0, count - 1);
+      }
+    }
+  }
   return {row, gap, total};
 }
 
-function placeRows(safe: SafeFrame, count: number, chars: number[], floor: number, maxFont: number, maxRow: number, ratio: number, align: Align, role: SceneBlock['role']): {blocks: SceneBlock[]; gap: number; row: number; overflow: boolean} {
+/** 行内扣掉上下各 16 的内边距后，字号能用到的上限。不低于调用方给的底，不超过标题上限。 */
+function fontCapForRow(row: number, base: number, ceiling: number): number {
+  const grown = Math.max(1, Math.floor(Math.max(1, row - 32) / 1.25));
+  return Math.max(base, Math.min(ceiling, grown));
+}
+
+function placeRows(safe: SafeFrame, count: number, chars: number[], floor: number, maxFont: number, maxRow: number, ratio: number, align: Align, role: SceneBlock['role'], ceiling = maxFont): {blocks: SceneBlock[]; gap: number; row: number; overflow: boolean} {
   const {row, gap, total} = stackMetrics(safe.h, count, maxRow, ratio);
+  const cap = fontCapForRow(row, maxFont, ceiling);
   const y0 = safe.y + Math.floor((safe.h - total) / 2);
   let overflow = false;
   let fontMin = maxFont;
@@ -111,7 +145,7 @@ function placeRows(safe: SafeFrame, count: number, chars: number[], floor: numbe
       textAlign: align,
     };
     const box = finish(draft, safe);
-    const fitted = fitFont(chars[i] ?? 8, box.w, box.h, maxFont, floor);
+    const fitted = fitFont(chars[i] ?? 8, box.w, box.h, cap, floor);
     if (fitted.overflow) overflow = true;
     fontMin = Math.min(fontMin, fitted.font);
     blocks.push({...box, font: fitted.font});
@@ -122,13 +156,13 @@ function placeRows(safe: SafeFrame, count: number, chars: number[], floor: numbe
 function layoutStack(input: GeomInput, count: number, chars: number[], safe: SafeFrame, role: SceneBlock['role'], maxFont: number): GeomResult {
   const density = input.density ?? 'regular';
   const align = input.align ?? 'center';
-  const placed = placeRows(safe, count, chars, input.floor.body, maxFont, input.maxRow, RATIO[density], align, role);
+  const placed = placeRows(safe, count, chars, input.floor.body, maxFont, input.maxRow, RATIO[density], align, role, input.floor.titleMax);
   return {
     layout: 'stack',
     blocks: placed.blocks,
     gap: placed.gap,
     row: placed.row,
-    font: placed.blocks.reduce((min, block) => Math.min(min, block.font), maxFont),
+    font: placed.blocks.reduce((min, block) => Math.min(min, block.font), input.floor.titleMax),
     floor: input.floor.body,
     overflow: placed.overflow,
     mainAreaRatio: 0,
@@ -145,20 +179,35 @@ function layoutHero(input: GeomInput, count: number): GeomResult {
   let supportH = Math.max(Math.ceil(input.floor.body * 1.5), input.floor.body + 16);
   let gap = supports > 0 ? Math.max(8, Math.round(ratio * supportH)) : 0;
   let supportTotal = supports * supportH + Math.max(0, supports - 1) * gap;
-  const mid = supports > 0 ? gap : 0;
-  let mainH = count === 1 ? Math.round(safe.h * 0.72) : safe.h - supportTotal - mid;
+  const capH = Math.round(safe.h * 0.72);
   const minMain = Math.ceil(input.floor.title * 1.3);
+  const mainW0 = align === 'center' ? Math.round(safe.w * 0.92) : safe.w;
   let overflow = false;
-  if (mainH < minMain) {
-    const minSup = Math.ceil(input.floor.body * 1.35);
-    gap = supports > 0 ? 8 : 0;
-    const room = safe.h - minMain - (supports > 0 ? gap : 0);
-    supportH = supports > 0 ? Math.max(minSup, Math.floor((room - Math.max(0, supports - 1) * gap) / supports)) : 0;
-    supportTotal = supports * supportH + Math.max(0, supports - 1) * gap;
-    mainH = safe.h - supportTotal - (supports > 0 ? gap : 0);
-    if (mainH < minMain || supportH < minSup) overflow = true;
-    mainH = Math.max(1, mainH);
-    supportH = Math.max(1, supportH);
+  // 单条保持 72%，字在块内居中。有辅条时主块按文字高度收，避免一张空卡占满安全区。
+  let mainH = capH;
+  if (supports > 0) {
+    let font = input.floor.titleMax;
+    let need = textBoxH(chars[0] ?? 4, mainW0, font);
+    while (need > capH && font > input.floor.title) {
+      font -= 2;
+      need = textBoxH(chars[0] ?? 4, mainW0, font);
+    }
+    // 一句标题收成文字高度后，纸色卡片在 36×64 空帧检查里会掉到 5% 以下。
+    // 下限取安全区的 28%，仍低于 72% 的单条主块，字在块内居中。
+    const minCard = Math.min(capH, Math.max(minMain, Math.round(safe.h * 0.28)));
+    mainH = Math.min(capH, Math.max(minCard, need));
+    const group0 = mainH + gap + supportTotal;
+    if (group0 > safe.h) {
+      const minSup = Math.ceil(input.floor.body * 1.35);
+      gap = 8;
+      const room = safe.h - minMain - gap;
+      supportH = Math.max(minSup, Math.floor((room - Math.max(0, supports - 1) * gap) / supports));
+      supportTotal = supports * supportH + Math.max(0, supports - 1) * gap;
+      mainH = Math.min(mainH, Math.max(1, safe.h - gap - supportTotal));
+      if (mainH < minMain || supportH < minSup) overflow = true;
+      mainH = Math.max(1, mainH);
+      supportH = Math.max(1, supportH);
+    }
   }
   const group = mainH + (supports > 0 ? gap : 0) + supportTotal;
   let y = safe.y + Math.max(0, Math.floor((safe.h - group) / 2));
@@ -248,7 +297,7 @@ function layoutSplit(input: GeomInput, count: number): GeomResult {
   let row = 0;
   let overflow = false;
   for (const pane of panes) {
-    const placed = placeRows(pane.origin, pane.chars.length, pane.chars, input.floor.body, Math.max(input.floor.body, 56), pane.origin.h, RATIO[input.density ?? 'regular'], align, 'item');
+    const placed = placeRows(pane.origin, pane.chars.length, pane.chars, input.floor.body, Math.max(input.floor.body, 56), pane.origin.h, RATIO[input.density ?? 'regular'], align, 'item', input.floor.titleMax);
     gap = placed.gap;
     row = placed.row;
     if (placed.overflow) overflow = true;
@@ -259,7 +308,7 @@ function layoutSplit(input: GeomInput, count: number): GeomResult {
     blocks,
     gap,
     row,
-    font: blocks.reduce((min, block) => Math.min(min, block.font), input.floor.body),
+    font: blocks.reduce((min, block) => Math.min(min, block.font), input.floor.titleMax),
     floor: input.floor.body,
     overflow,
     mainAreaRatio: 0,

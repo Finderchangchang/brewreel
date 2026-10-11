@@ -88,7 +88,6 @@ function Card({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: n
         width: block.w,
         height: block.h,
         boxSizing: 'border-box',
-        padding: '16px 18px',
         borderRadius: plan.roles.radius,
         background: plan.roles.surface,
         boxShadow: plan.roles.shadow,
@@ -96,12 +95,21 @@ function Card({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: n
         transform: `translateY(${pose.y}px) rotate(${pose.tilt}deg) scale(${pose.scale})`,
         transformOrigin: 'center center',
         opacity: pose.opacity,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        gap: 8,
       }}
     >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          boxSizing: 'border-box',
+          padding: '16px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'stretch',
+          gap: 8,
+        }}
+      >
       {block.mark ? (
         <div
           data-probe-skip
@@ -141,6 +149,7 @@ function Card({plan, block, local}: {plan: ScenePlan; block: PlanBlock; local: n
           {block.note}
         </div>
       ) : null}
+      </div>
     </div>
   );
 }

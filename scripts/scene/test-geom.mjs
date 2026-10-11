@@ -120,7 +120,23 @@ assert.ok(tight.gap < regular.gap && regular.gap < loose.gap);
 
 const hero = layoutBlocks({layout: 'hero', count: 1, chars: [6], safe: promo.safe, floor: promo.floor, maxRow: promo.maxRow, align: 'start'});
 assert.equal(hero.blocks[0].x, promo.safe.x);
+assert.equal(hero.blocks[0].h, Math.round(promo.safe.h * 0.72));
 assert.ok(hero.mainAreaRatio >= 0.4, `主块面积 ${hero.mainAreaRatio}`);
+
+const heroPair = layoutBlocks({layout: 'hero', count: 2, chars: [13, 6], safe: promo.safe, floor: promo.floor, maxRow: promo.maxRow, align: 'center'});
+assert.ok(heroPair.blocks[0].h < promo.safe.h * 0.72, `有辅条的主块应收回文字高度，现在 ${heroPair.blocks[0].h}`);
+assert.ok(heroPair.blocks[0].y > promo.safe.y, '整组应在安全区里垂直居中');
+assert.equal(heroPair.overflow, false);
+
+const heroShort = layoutBlocks({layout: 'hero', count: 2, chars: [4, 6], safe: promo.safe, floor: promo.floor, maxRow: promo.maxRow, align: 'center'});
+assert.ok(heroShort.blocks[0].h >= Math.round(promo.safe.h * 0.28), `一句标题的主块不应缩成细条，现在 ${heroShort.blocks[0].h}`);
+assert.ok(heroShort.blocks[0].h < promo.safe.h * 0.72);
+
+const six = rows.find((row) => row.n === 6);
+const two = rows.find((row) => row.n === 2);
+assert.ok(two.font > six.font, `条数少时字号应更大：2 条 ${two.font}，6 条 ${six.font}`);
+const sixTotal = six.row * 6 + six.gap * 5;
+assert.ok(sixTotal >= promo.safe.h * 0.95, `6 条应尽量用满安全区，现在 ${sixTotal}/${promo.safe.h}`);
 
 const split = layoutBlocks({
   layout: 'split',
