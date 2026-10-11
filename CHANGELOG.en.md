@@ -2,6 +2,22 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.15.0 · 2026-10-11 · New authoring path (experimental): the model says what each screen is about, the engine decides how it looks
+
+Feedback said BrewReel felt like a few fixed templates, because each template fused content, layout, style, motion and rhythm. This release splits them and adds a new path alongside the old ones.
+
+### New: `scene.json` (experimental)
+- The model writes semantics only: each screen is a claim, points, a number, a comparison, evidence or an action; which words to stress; which fact it cites. No coordinates, frames or colors.
+- The engine lays out content (nine layout archetypes: hero, stack, split, grid, sequence, evidence board, annotated media, chart, end), times entrances from per-word voice timing, and checks safe areas, type size, contrast, captions not covering content, and frozen motion.
+- Style and motion personality are separate axes: changing two fields restyles the same copy (gradient cards + bounce, editorial + crisp, news brief + push) without new components. New `techbrief` style: dark stage, claim on top, evidence (screenshot or big number) in the middle, captions below.
+- Commands: `node scripts/scene/make-scene.mjs <scene.json>` renders with voice, per-word captions and music; `node scripts/scene/brief-to-video.mjs <brief>` lets a low-cost model go from brief to video with up to 3 feedback rounds; `revise.mjs` supports scene.json.
+- With DeepSeek on 10 briefs, every scene passed structure and layout in the first round, numbers came from the briefs, no screenshots were invented.
+- Docs: [docs/scene.en.md](docs/scene.en.md); examples in `examples/scene/`.
+
+### Notes
+- Experimental: the existing `storyboard.json` / `lesson.json` / `broll.json` flows are unchanged; quiz and journey stay whole-film styles.
+- Only vertical 9:16 promo scenes for now; more visual elements are coming.
+
 ## v0.14.1 · 2026-10-11 · Fixes for nine issues found by a Codex run, plus a news domain
 
 We had Codex plan a promo and render a news-recap lesson with the BrewReel skill, logged where it got stuck, and fixed all of it.
