@@ -214,6 +214,21 @@ metadata:
 6. **密钥**：只从环境变量读（每家的变量名见上表；自定义接口地址只接受 https）。不要把 key 写进分镜、简报、命令行参数或任何文件，也不要打印出来。
 7. **配音相关退出码**：旁白比这一镜最长时长还长 → 1（删字或拆镜）；没 key、鉴权失败、限流重试用完、网络不通 → 2（让用户设 key 或稍后重跑；先看效果用 `--voice-provider mock`）。
 
+## 新写法（实验）：scene.json
+
+这是宣传片的另一种写法，还在实验。模型只写语义（每屏说什么、强调哪几个字、版式名、风格名、动效性格名），引擎算位置和时间。它仍然属于宣传片，不另占上面的分流表。`quiz` 和 `journey` 不走这条路。旧的 `storyboard.json` 和 `node scripts/make.mjs` 一行不变。
+
+什么时候用：想用版式原型（主张、条目、截图板、大数字、片尾），并且接受这一版标成实验。拿不准就继续写 `storyboard.json`。
+
+怎么写：一份 `scene.json`。顶层写 `product`、`aspect`（`9:16`）、`style`、`motion`、`facts`、`screens`。每一屏写 `role`、`layout`、`narration` 和这一屏的文案。不写坐标、像素、帧号、毫秒。版式名用 `hero`、`stack`、`grid`、`split`、`sequence`、`media`、`chart`、`end`、`board`。风格：宣传片主题名见 `template/src/core/themes.json`（示例 `fresh-light`，渐变卡片），杂志用讲课的 `editorial`，资讯板用 `techbrief`。性格用 `crisp`、`bounce`、`soft`、`paper`、`push`。`editorial` 不要配 `bounce`，宣传片不要配 `paper`。说明和限制见 `<SKILL>/docs/scene.md`。给便宜模型的提示词用 `scripts/scene/deepseek-layouts.mjs` 导出的 `prompt`，不要改写。
+
+```
+node <SKILL>/scripts/scene/make-scene.mjs <scene.json> --out <仓库外目录> [--voice-provider minimax|aliyun|volcengine|mock] [--no-voice] [--no-bgm]
+node <SKILL>/scripts/scene/brief-to-video.mjs <brief.md|json> --out <仓库外目录> [--assets <素材清单>]
+```
+
+有旁白却没写 `--voice-provider` 也没写 `--no-voice`，命令会停。没有密钥时用 `--voice-provider mock` 看节奏（占位音，不能当交付）。一条龙没有 DeepSeek 密钥时会直接说明。一句话改稿：`node <SKILL>/scripts/revise.mjs <scene.json> "一句话"`。能改屏上的文案、强调、版式名、风格名、性格名、疏密。示例在 `<SKILL>/examples/scene/`。
+
 ## 自查清单（看拼图，逐条对照画面写结论，不要直接打勾）
 
 - 第 0 帧就有大标题 + 主视觉，不是空白或半截；封面上没有 `\n`、反斜杠这类怪字符

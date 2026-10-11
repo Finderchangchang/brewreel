@@ -28,5 +28,5 @@ export type {MotionCurve, CurveSample} from './motion.ts';
 export {revealFromWords, revealFromSentences, revealFromBeats, FIRST_BY, LAST_BEFORE_END} from './time.ts';
 export type {WordReveal, SentenceReveal, BeatReveal, RevealPlan} from './time.ts';
 export {contrastRatio} from './contrast.ts';
-export {auditPlan, checkFrames, ensureContrast, hanziCount, holdPose, measureEnter, poseAt, prepareScene, protoScene} from './prepare.ts';
+export {auditPlan, checkFrames, ensureContrast, hanziCount, holdPose, measureEnter, pieceTextsOf, poseAt, prepareScene, protoScene} from './prepare.ts';
 export type {ContrastRow, PlanBlock, PlanScreen, Pose, ScenePlan} from './prepare.ts';

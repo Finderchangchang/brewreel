@@ -1,13 +1,14 @@
-// 渲染前的数据准备。纯函数：屏 → 块、拍点出场、曲线参数。不读文件，不画。
-// 第 0 帧必须已经有主文案，所以每屏第一块的 showAt 压到 0；其余块仍用 revealFromBeats 的拍点。
+// 渲染前的数据准备。纯函数：屏 → 块、出场、曲线参数。不读文件，不画。
+// 第 0 帧必须已经有主文案，所以每屏第一块的 showAt 压到 0。
+// 有逐字时钟时只调用 revealFromWords；没有就只调用 revealFromBeats。两种来源不写进同一个对象。
 // 次文字只标成落在卡片上。低于 4.5 的前景会调深，本轮三支预设的卡片对已经过线，调深不会触发。
 import {contrastRatio} from './contrast.ts';
 import {layoutBlocks} from './geom.ts';
 import type {BandName, GeomLayout} from './geom.ts';
 import {curveOf} from './motion.ts';
-import {revealFromBeats} from './time.ts';
+import {revealFromBeats, revealFromWords} from './time.ts';
 import {screenSafe, type SceneFrame} from './safe-box.ts';
-import type {BeatReveal} from './time.ts';
+import type {RevealPlan} from './time.ts';
 import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
 
 const FPS = 30;
@@ -28,7 +29,7 @@ export type PlanBlock = {
   index: number;
   align: Align;
   textAlign: Align;
-  /** 秒，相对本屏。第一块是 0，其余等于拍点。 */
+  /** 秒，相对本屏。第一块是 0，其余等于这一来源的 at。 */
   showAt: number;
   mark: boolean;
   kind?: BlockKind;
@@ -58,7 +59,7 @@ export type PlanScreen = {
   duration: number;
   startFrame: number;
   durationFrames: number;
-  reveal: BeatReveal;
+  reveal: RevealPlan;
   curve: PlanCurve;
   blocks: PlanBlock[];
   links?: {x1: number; y1: number; x2: number; y2: number}[];
@@ -111,6 +112,19 @@ export type ScenePlan = {
    */
   headlinePlate: 'none' | 'card';
   screens: PlanScreen[];
+  /** make-scene 在准备之后填上。渲染器只读，准备函数不写。 */
+  sound?: {
+    bgm?: string;
+    lines?: {src: string; startFrame: number}[];
+  };
+  captions?: {
+    coverScreens: number[];
+    screens: {
+      index: number;
+      box: {x: number; y: number; w: number; h: number};
+      pages: {startSec: number; endSec: number; chars: {ch: string; at: number}[]}[];
+    }[];
+  };
 };
 
 export type Pose = {y: number; scale: number; tilt: number; opacity: number};
@@ -348,6 +362,13 @@ function compose(screen: SceneScreen): Built {
   return {layout, geom, pieces: piecesOf(screen, layout)};
 }
 
+/** 这一屏要逐条对上旁白的文案，顺序和 compose 的 pieces 一致。证据占位也占一条。 */
+export function pieceTextsOf(screen: SceneScreen): string[] {
+  const built = compose(screen);
+  const pieces = built.pieces.length ? built.pieces : [{text: ' ', role: 'main' as const}];
+  return pieces.map((piece) => piece.text);
+}
+
 function firstColor(value: unknown, fallback: string): string {
   if (typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value)) return value;
   if (Array.isArray(value) && typeof value[0] === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value[0])) return value[0];
@@ -406,6 +427,8 @@ export function prepareScene(input: {
   extra?: Record<string, unknown>;
   frame: SceneFrame;
   fps?: number;
+  /** 与 screens 等长。word 只走逐字，beat 或缺省只走拍点。 */
+  clocks?: Array<{source: 'word'; marks: number[]; duration: number} | {source: 'beat'} | undefined>;
 }): ScenePlan {
   const fps = input.fps ?? FPS;
   const scene = input.scene;
@@ -429,12 +452,23 @@ export function prepareScene(input: {
   const screens: PlanScreen[] = (scene.screens ?? []).map((screen, index) => {
     const built = compose(screen);
     const pieces = built.pieces.length ? built.pieces : [{text: ' ', role: 'main' as const}];
-    const reveal = revealFromBeats({
-      hanzi: Math.max(1, pieces.reduce((sum, piece) => sum + hanziCount(piece.text), 0)),
-      count: pieces.length,
-      motion,
-    });
-    const seconds = Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
+    const clock = input.clocks?.[index];
+    let reveal: RevealPlan;
+    let seconds: number;
+    if (clock?.source === 'word') {
+      const count = Math.max(1, pieces.length);
+      const marks = clock.marks.slice(0, count);
+      while (marks.length < count) marks.push(marks.length ? marks[marks.length - 1] : 0);
+      reveal = revealFromWords(marks, motion, Math.max(0.1, clock.duration), 'tts-words');
+      seconds = Math.max(clock.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
+    } else {
+      reveal = revealFromBeats({
+        hanzi: Math.max(1, pieces.reduce((sum, piece) => sum + hanziCount(piece.text), 0)),
+        count: pieces.length,
+        motion,
+      });
+      seconds = Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
+    }
     const durationFrames = Math.max(1, Math.round(seconds * fps));
     const safe = screenSafe(frame, built.geom);
     const placed = layoutBlocks({
@@ -539,6 +573,21 @@ export function prepareScene(input: {
   };
 }
 
+function timingIssue(reveal: RevealPlan, index: number): string {
+  const where = `第 ${index + 1} 屏`;
+  if (reveal.source === 'word') {
+    if (reveal.kind !== 'tts-words' && reveal.kind !== 'talk-marks') return `${where}逐字时间的种类不对`;
+    if ('bpm' in reveal || 'charsPerSec' in reveal) return `${where}逐字时间混进了拍点`;
+    return '';
+  }
+  if (reveal.source === 'beat') {
+    if (reveal.kind !== 'promo-no-audio') return `${where}拍点种类不对`;
+    if ('lead' in reveal) return `${where}拍点混进了逐字提前量`;
+    return '';
+  }
+  return `${where}时间来源不是逐字，也不是拍点`;
+}
+
 export function fontFloorOf(plan: ScenePlan, screen: PlanScreen, block: PlanBlock): number {
   if (block.kind === 'kicker') return plan.floor.aux;
   if (block.kind === 'stage') return plan.floor.title;
@@ -554,7 +603,8 @@ export function auditPlan(plan: ScenePlan): string[] {
     if (row.painted && row.ratio < 4.5) issues.push(`${row.pair} 对比度 ${row.ratio.toFixed(2)}，低于 4.5`);
   }
   for (const screen of plan.screens) {
-    if (screen.reveal.source !== 'beat') issues.push(`第 ${screen.index + 1} 屏时间来源不是 beat`);
+    const timing = timingIssue(screen.reveal, screen.index);
+    if (timing) issues.push(timing);
     for (let i = 0; i < screen.blocks.length; i++) {
       const block = screen.blocks[i];
       const min = fontFloorOf(plan, screen, block);

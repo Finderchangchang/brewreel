@@ -18,9 +18,14 @@ import {loadBanned, loadProject, loadStyles, validateBroll} from './broll/valida
 import {keyKindOf} from './broll/prices.mjs';
 import {validateLesson} from './lesson/validate-lesson.mjs';
 import {validate} from './validate.mjs';
+import {auditPlan, prepareScene} from '../template/src/scene/prepare.ts';
+import {sceneFrame} from './scene/geom.mjs';
+import {loadStyle} from './scene/tokens.mjs';
+import {validateScene} from './scene/validate-scene.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const USAGE = '用法：node scripts/revise.mjs <storyboard.json | lesson.json | broll.json> "一句话" [--dry-run] [--render] [--mock-llm <json文件>] [--out <目录>] [--max-rounds 3]';
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+const USAGE = '用法：node scripts/revise.mjs <storyboard.json | lesson.json | broll.json | scene.json> "一句话" [--dry-run] [--render] [--mock-llm <json文件>] [--out <目录>] [--max-rounds 3]';
 
 const args = process.argv.slice(2);
 const flagValue = (name) => {
@@ -35,31 +40,33 @@ const fail = (message, code = 2) => {
   process.exit(code);
 };
 
-if (positionals.length < 2) fail(USAGE);
+if (isMain && positionals.length < 2) fail(USAGE);
 const fileArg = positionals[0];
 const sentence = positionals.slice(1).join(' ').trim();
-if (!sentence) fail('改稿的那句话是空的\n' + USAGE);
+if (isMain && !sentence) fail('改稿的那句话是空的\n' + USAGE);
 const dryRun = has('--dry-run');
 const wantRender = has('--render');
 const mockArg = flagValue('--mock-llm') || process.env.REVISE_MOCK_LLM || '';
 const outArg = flagValue('--out');
 const maxRounds = flagValue('--max-rounds') === undefined ? 3 : Number(flagValue('--max-rounds'));
-if (!Number.isInteger(maxRounds) || maxRounds < 1 || maxRounds > 3) fail('--max-rounds 只能是 1、2 或 3');
-if (flagValue('--mock-llm') === undefined && args.includes('--mock-llm')) fail('--mock-llm 后面要跟 json 文件');
-if (flagValue('--out') === undefined && args.includes('--out')) fail('--out 后面要跟目录');
+if (isMain && (!Number.isInteger(maxRounds) || maxRounds < 1 || maxRounds > 3)) fail('--max-rounds 只能是 1、2 或 3');
+if (isMain && flagValue('--mock-llm') === undefined && args.includes('--mock-llm')) fail('--mock-llm 后面要跟 json 文件');
+if (isMain && flagValue('--out') === undefined && args.includes('--out')) fail('--out 后面要跟目录');
 
-const file = path.resolve(fileArg);
-if (!fs.existsSync(file)) fail(`找不到文件：${file}`);
+const file = isMain ? path.resolve(fileArg) : '';
+if (isMain && !fs.existsSync(file)) fail(`找不到文件：${file}`);
 
 const readJson = (p) => JSON.parse(fs.readFileSync(p, 'utf8').replace(/^\uFEFF/, ''));
 
-let originalText;
-let doc0;
-try {
-  originalText = fs.readFileSync(file, 'utf8');
-  doc0 = JSON.parse(originalText.replace(/^\uFEFF/, ''));
-} catch (e) {
-  fail(`JSON 解析失败：${e.message}`);
+let originalText = '';
+let doc0 = {};
+if (isMain) {
+  try {
+    originalText = fs.readFileSync(file, 'utf8');
+    doc0 = JSON.parse(originalText.replace(/^\uFEFF/, ''));
+  } catch (e) {
+    fail(`JSON 解析失败：${e.message}`);
+  }
 }
 
 const kindOf = (doc, filePath) => {
@@ -67,20 +74,22 @@ const kindOf = (doc, filePath) => {
   if (doc.meta?.format === 'lesson' || (Array.isArray(doc.chapters) && doc.meta && !Array.isArray(doc.shots))) return 'lesson';
   if (Array.isArray(doc.clips) && (doc.version === 1 || doc.version === 2) && !Array.isArray(doc.shots)) return 'broll';
   if (doc.meta && Array.isArray(doc.shots)) return 'storyboard';
+  if (Array.isArray(doc.screens) && doc.product && doc.style && !Array.isArray(doc.shots) && !Array.isArray(doc.clips) && !Array.isArray(doc.chapters)) return 'scene';
   const base = path.basename(filePath);
   if (base === 'lesson.json') return 'lesson';
   if (base === 'broll.json') return 'broll';
   return null;
 };
 
-const kind = kindOf(doc0, file);
-if (!kind) fail('看不出这是宣传片分镜、讲课稿还是口播 broll.json。分镜要有 meta 和 shots，讲课要有 meta.format = lesson，口播要有 version 和 clips。');
+const kind = isMain ? kindOf(doc0, file) : null;
+if (isMain && !kind) fail('看不出这是宣传片分镜、讲课稿还是口播 broll.json。分镜要有 meta 和 shots，讲课要有 meta.format = lesson，口播要有 version 和 clips。场景文件要有 screens、product 和 style（scene.json）。');
 
-const KIND_NAME = {storyboard: '宣传片分镜', lesson: '讲课稿', broll: '口播 broll.json'};
+const KIND_NAME = {storyboard: '宣传片分镜', lesson: '讲课稿', broll: '口播 broll.json', scene: '场景 scene.json'};
 const SKILL_FILE = {
   storyboard: 'SKILL.md',
   lesson: path.join('lesson', 'SKILL-lesson.md'),
   broll: path.join('broll', 'SKILL-broll.md'),
+  scene: path.join('docs', 'scene.md'),
 };
 
 const BAD_KEY = new Set(['__proto__', 'constructor', 'prototype']);
@@ -134,6 +143,22 @@ const allowed = (kindName, parts) => {
   if (kindName === 'storyboard') return allowedStory(parts);
   if (kindName === 'lesson') return allowedLesson(parts);
   if (kindName === 'broll') return allowedBroll(parts);
+  if (kindName === 'scene') return allowedScene(parts);
+  return false;
+};
+
+const SCENE_TOP = new Set(['style', 'motion', 'density']);
+const SCENE_SCREEN = new Set(['text', 'title', 'support', 'narration', 'kicker', 'line', 'brand', 'cta', 'emphasis', 'layout']);
+
+const allowedScene = (p) => {
+  if (p.length === 1 && SCENE_TOP.has(p[0])) return true;
+  if (p[0] !== 'screens' || !isIndex(p[1])) return false;
+  if (p.length === 3 && SCENE_SCREEN.has(p[2])) return true;
+  if (p.length === 5 && p[2] === 'items' && isIndex(p[3]) && (p[4] === 'text' || p[4] === 'note' || p[4] === 'emphasis')) return true;
+  if (p.length === 4 && p[2] === 'number' && (p[3] === 'text' || p[3] === 'label')) return true;
+  if (p.length === 4 && (p[2] === 'left' || p[2] === 'right') && p[3] === 'label') return true;
+  if (p.length === 5 && (p[2] === 'left' || p[2] === 'right') && p[3] === 'items' && isIndex(p[4])) return true;
+  if (p.length === 5 && p[2] === 'callouts' && isIndex(p[3]) && p[4] === 'label') return true;
   return false;
 };
 
@@ -409,7 +434,7 @@ const normAsk = (s) => String(s).replace(/\s+/g, '').replace(/[，,。；;、！
 
 const findLocations = (text) => {
   const locs = [];
-  const re = /第\s*([0-9]+|[零〇一二两三四五六七八九十百]+)\s*(镜|页|段)/g;
+  const re = /第\s*([0-9]+|[零〇一二两三四五六七八九十百]+)\s*(镜|页|段|屏)/g;
   let m;
   while ((m = re.exec(text))) {
     const n = parseCnInt(m[1]);
@@ -445,6 +470,7 @@ const resolveLoc = (loc, doc, kind) => {
   const pages = pageList(doc);
   const shotLabel = (index, name) => `${name}是第 ${index + 1} 镜 shots[${index}]`;
   if (kind === 'storyboard') {
+    if (loc.kind === '屏') return {skip: true};
     if (loc.kind === '页' || loc.kind === 'end-page') return {error: '宣传片没有页，位置写成 shots[N]'};
     if (loc.kind === '段' || loc.kind === 'end-clip') return {error: '宣传片没有段，位置写成 shots[N]'};
     if (!shots.length) return {error: '这份分镜没有镜头'};
@@ -470,6 +496,7 @@ const resolveLoc = (loc, doc, kind) => {
     return {label, hit: (path) => onParts(path, 'shots', index)};
   }
   if (kind === 'lesson') {
+    if (loc.kind === '屏') return {skip: true};
     if (loc.kind === '镜' || loc.kind === 'end-shot' || loc.kind === '段' || loc.kind === 'end-clip') return {error: '讲课稿没有镜头或段，位置写成 chapters[i].pages[j]'};
     if (!pages.length) return {error: '这份讲课稿没有页'};
     let page = null;
@@ -491,6 +518,29 @@ const resolveLoc = (loc, doc, kind) => {
       return !!(parts && parts[0] === 'chapters' && parts[1] === page.ci && parts[2] === 'pages' && parts[3] === page.pi);
     }};
   }
+  if (kind === 'scene') {
+    const screens = Array.isArray(doc?.screens) ? doc.screens : [];
+    if (loc.kind === '镜' || loc.kind === 'end-shot' || loc.kind === '页' || loc.kind === 'end-page' || loc.kind === '段' || loc.kind === 'end-clip') {
+      return {error: '场景用屏，位置写成 screens[N]'};
+    }
+    if (!screens.length) return {error: '这份场景没有屏'};
+    let index = -1;
+    let label = '';
+    if (loc.kind === '屏') {
+      if (loc.n > screens.length) return {error: `点了第 ${loc.n} 屏，但这份只有 ${screens.length} 屏`};
+      index = loc.n - 1;
+      label = `第 ${loc.n} 屏 screens[${index}]`;
+    } else if (loc.kind === 'start') {
+      index = 0;
+      label = '开头是第 1 屏 screens[0]';
+    } else if (loc.kind === 'end' || loc.kind === 'credits') {
+      index = screens.length - 1;
+      label = `结尾是第 ${screens.length} 屏 screens[${index}]`;
+    }
+    if (index < 0) return {error: '没有可以对应的屏'};
+    return {label, hit: (path) => onParts(path, 'screens', index)};
+  }
+  if (loc.kind === '屏') return {skip: true};
   if (loc.kind === '镜' || loc.kind === 'end-shot' || loc.kind === '页' || loc.kind === 'end-page') return {error: '口播没有镜头或页，位置写成 clips[N]'};
   if (!clips.length) return {error: '这份口播没有段'};
   let index = -1;
@@ -567,6 +617,7 @@ export const checkAsks = (sentence, asks, ops, doc, kind) => {
     const hits = [];
     for (const loc of locs) {
       const resolved = resolveLoc(loc, doc, kind);
+      if (resolved.skip) continue;
       if (!resolved.hit) {
         push(missAsk(text, doc, kind));
         continue;
@@ -626,6 +677,7 @@ const allowHint = {
   storyboard: '宣传片可改：meta 的 title、product、theme、bpm、disclaimer、cta、action、brandColor、durationRange、notices、facts 的 text/source/quote、tweak.pace、tweak.textScale、tweak.headingFont、voice 的 speed/emotion/subtitles/voiceId；每一镜的 type、dur、beats、caption、mood、note、vo、bg、params、slots。不能改 component，不能改 meta.assets，不能写 .. 或绝对路径。',
   lesson: '讲课可改：meta.title、meta.theme；章的 title；页的 title、subtitle、smallText 和旁白 narration[].text / pose；steps、points、items、left、right 里的文字。不能改 layout、domain、voice、brand、mascot、图片路径。',
   broll: '口播可改：thread、style、styleAlt、motionTheme、captions、budgetYuan、quality、keepFace；每一段的 plain、place、subject、action、end、camera、mode、job、from、to、look、link、template、source、slots、beats。不能改 provider、file、version、id。',
+  scene: '场景可改：顶层 style、motion、density；每一屏的 text、title、support、narration、kicker、line、brand、cta、emphasis、layout；条目的 text、note、emphasis；number 的 text、label；左右栏的 label 和条目文字；callouts 的 label。不能改 src、facts、product、aspect、role、坐标、图表数值，也不能整屏替换。',
 };
 
 const placeLine = (kindName, doc) => {
@@ -634,6 +686,10 @@ const placeLine = (kindName, doc) => {
     return `镜头位置：${list}。开头 = 第 1 镜 shots[0]。结尾 = 最后一镜。片尾 = endCard、finale 或 brandEnd 那一镜。`;
   }
   if (kindName === 'lesson') return '讲课位置：第 1 页一般是 chapters[0].pages[0]。开头改这一页，不要改到后面的页。';
+  if (kindName === 'scene' && Array.isArray(doc?.screens)) {
+    const list = doc.screens.map((s, i) => `第 ${i + 1} 屏 screens[${i}] ${s?.role ?? ''} ${s?.layout ?? ''}`).join('；');
+    return `屏位置：${list}。开头 = 第 1 屏 screens[0]。`;
+  }
   if (kindName === 'broll' && Array.isArray(doc?.clips)) {
     const list = doc.clips.map((c, i) => `第 ${i + 1} 段 clips[${i}] ${c?.id ?? ''}`).join('；');
     return `段落位置：${list}。开头 = 第 1 段 clips[0]。`;
@@ -653,6 +709,7 @@ const promptFor = (kindName, doc, note) => {
     '「开头换成提问」要改第 1 镜的字幕或旁白，让它变成问句。不能把提问写进第 3 镜就算交差。',
     '同一句字幕停超过 5 秒会被校验打回。要加长某一镜时，caption 改成 2 到 3 句的数组，或把时长留在 5 秒以内。',
     allowHint[kindName],
+    ...(kindName === 'scene' ? ['场景的 path 用 screens[0].text、screens[0].layout、style、motion、density。第 N 屏是 screens[N-1]。不要写 shots，不要写坐标。'] : []),
     '宣传片：用户说节奏快一点写 meta.tweak.pace = fast（慢 slow，不变 normal）；字大一点写 meta.tweak.textScale（0.9 到 1.15）；标题换楷体写 meta.tweak.headingFont = kai（衬线 serif，黑体 sans）；某一镜换背景写这一镜的 bg 为项目目录里的图片相对路径。',
     '不要编造数字来源，不要把没登记的图说成实拍，不要改 provider 去触发付费生成。',
     '',
@@ -726,6 +783,7 @@ const validateDoc = (doc) => {
     const r = validateLesson(doc);
     return {ok: r.ok, errors: r.errors};
   }
+  if (kind === 'scene') return sceneGeometry(doc);
   if (!brollCtx) {
     const loaded = loadProject(path.dirname(file), {jsonPath: file, ignoreLock: false});
     if (!loaded.ok) return {ok: false, errors: [loaded.message]};
@@ -746,6 +804,31 @@ const validateDoc = (doc) => {
     doubtLevel: 'warn',
   });
   return {ok: r.errors.length === 0, errors: r.errors};
+};
+
+const sceneGeometry = (doc) => {
+  const checked = validateScene(doc);
+  if (!checked.ok) return {ok: false, errors: checked.errors};
+  const hard = (checked.warnings || []).filter((item) => String(item.problem || '').includes('最多'));
+  if (hard.length) return {ok: false, errors: hard};
+  const token = loadStyle(checked.scene.product, checked.scene.style);
+  if (!token) return {ok: false, errors: [{where: '几何', problem: '风格读不到', fix: '换成可选的风格名'}]};
+  const frame = sceneFrame(checked.scene.product, checked.scene.aspect);
+  let plan;
+  try {
+    plan = prepareScene({scene: checked.scene, roles: token.roles, extra: token.extra, frame});
+  } catch (error) {
+    return {ok: false, errors: [{where: '几何', problem: error?.message || String(error), fix: '缩短这一屏的文案，或换一个排得下的版式名。不要写坐标'}]};
+  }
+  const lines = auditPlan(plan).filter((item) => !String(item).startsWith('成片') && !String(item).includes('画幅'));
+  plan.screens.forEach((screen, index) => {
+    if (screen.overflow) lines.push(`第 ${index + 1} 屏 ${screen.layout} 几何溢出：字或层放不进安全区`);
+  });
+  if (!lines.length) return {ok: true, errors: []};
+  return {
+    ok: false,
+    errors: lines.map((problem) => ({where: '几何', problem, fix: '缩短这一屏的文案，或换一个排得下的版式名。不要写坐标'})),
+  };
 };
 
 const backupPath = (target) => {
@@ -809,6 +892,18 @@ const runNode = (script, argv) => {
 };
 
 const preview = (ops, applied, validated) => {
+  if (kind === 'scene') {
+    console.log(`重出：node scripts/scene/make-scene.mjs ${file} --out <仓库外目录> --no-voice --no-bgm`);
+    if (mockArg || !wantRender) return;
+    const out = previewOut();
+    const rel = path.relative(ROOT, out);
+    if (!(rel.startsWith('..') || path.isAbsolute(rel))) {
+      console.error('输出目录要在仓库外面');
+      process.exit(2);
+    }
+    console.log(`按 --render 出整片 → ${out}`);
+    process.exit(runNode('scripts/scene/make-scene.mjs', [file, '--out', out, '--no-voice', '--no-bgm']));
+  }
   if (mockArg) {
     if (kind === 'storyboard' && validated.slots) {
       const before = validate(doc0, {baseDir: path.dirname(file)});
@@ -939,6 +1034,7 @@ const main = async () => {
   for (const line of lines) console.log(line);
   if (dryRun) {
     console.log('干跑：没写文件。');
+    if (kind === 'scene') console.log(`重出：node scripts/scene/make-scene.mjs ${file} --out <仓库外目录> --no-voice --no-bgm`);
     return;
   }
   const bak = backupPath(file);
@@ -949,7 +1045,6 @@ const main = async () => {
   preview(applied.changes, applied.doc, validated);
 };
 
-const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isMain) {
   main().catch((e) => {
     console.error(redactSecrets(e?.message || String(e)));

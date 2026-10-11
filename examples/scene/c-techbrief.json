@@ -1,0 +1,55 @@
+{
+  "product": "promo",
+  "aspect": "9:16",
+  "style": "techbrief",
+  "motion": "push",
+  "density": "regular",
+  "facts": [
+    {
+      "id": "f-chart",
+      "text": "样例店首周复购 12 人，次周 18 人，第三周 27 人",
+      "source": "样例店周报"
+    }
+  ],
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "narration": "规格先摆到第一屏，顾客不用再点开展开。",
+      "text": "规格先摆到第一屏",
+      "emphasis": ["第一屏"],
+      "support": "不用再点开展开"
+    },
+    {
+      "role": "media",
+      "layout": "board",
+      "narration": "规格写在第一屏，标题区在上，参数区在下。",
+      "kicker": "● 界面 · 样例",
+      "title": "规格写在第一屏",
+      "src": "examples/assets/ecommerce/detail-screen.png",
+      "source": "screenshot",
+      "support": "标题区在上，参数区在下",
+      "callouts": [
+        {"x": 0.08, "y": 0.06, "w": 0.46, "h": 0.16, "label": "标题区"},
+        {"x": 0.08, "y": 0.58, "w": 0.62, "h": 0.22, "label": "参数区"}
+      ]
+    },
+    {
+      "role": "number",
+      "layout": "board",
+      "narration": "复购还没过半，第三周才到 27 人。",
+      "kicker": "● 趋势 · 样例",
+      "title": "复购还没过半",
+      "number": {"text": "27 人", "fact": "f-chart", "label": "第三周复购"},
+      "support": "第三周才到 27 人"
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "narration": "第一屏就写完，按这个改一版。",
+      "brand": "规格样例",
+      "line": "第一屏就写完",
+      "cta": "按这个改一版"
+    }
+  ]
+}

@@ -328,7 +328,7 @@ async function runBatch(flags, cfg) {
 const {flags, positional} = argsOf(process.argv.slice(2));
 const cfg = readLlmEnv();
 if (!cfg.key) {
-  say('没有 DeepSeek 密钥。环境变量未打印。');
+  say('没有 DeepSeek 密钥。设 DEEPSEEK_API_KEY 或 LLM_API_KEY。环境变量未打印。');
   process.exit(3);
 }
 if (/minimax/i.test(`${cfg.model} ${cfg.base}`)) {

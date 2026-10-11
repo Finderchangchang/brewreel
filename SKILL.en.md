@@ -208,6 +208,21 @@ Turn it on only when the user wants narration / voice-over. Without `meta.voice`
 6. **Keys**: read only from environment variables (names per provider in the table above; custom endpoints must be https). Never put the key in the storyboard, the brief, command-line arguments or any file, and never print it.
 7. **Voice exit codes**: narration longer than the shot allows → 1 (cut words or split the shot); no key, auth failure, rate-limit retries exhausted, network down → 2 (have the user set the key or retry later; preview with `--voice-provider mock`).
 
+## New format (experimental): scene.json
+
+This is another way to write a promo, and it is experimental. The model writes only the meaning (what each screen says, which words to emphasize, the layout name, the style name, the motion character). The engine computes placement and time. It still belongs to promo videos, so it is not a new row in the routing table above. `quiz` and `journey` do not use it. `storyboard.json` and `node scripts/make.mjs` stay as they are.
+
+Use it when you want layout prototypes (a claim, points, a screenshot board, a big number, an end card) and you accept the experimental label. If you are unsure, keep writing `storyboard.json`.
+
+How to write it: one `scene.json`. Top level is `product`, `aspect` (`9:16`), `style`, `motion`, `facts`, `screens`. Each screen has `role`, `layout`, `narration`, and the copy for that screen. Do not write coordinates, pixels, frame numbers, or milliseconds. Layout names: `hero`, `stack`, `grid`, `split`, `sequence`, `media`, `chart`, `end`, `board`. Styles: promo theme names in `template/src/core/themes.json` (the example `fresh-light` is gradient cards), the lesson magazine style `editorial`, and the info board `techbrief`. Motion characters: `crisp`, `bounce`, `soft`, `paper`, `push`. Do not pair `editorial` with `bounce`, or a promo style with `paper`. See `<SKILL>/docs/scene.en.md`. The prompt for a cheap model is the `prompt` export of `scripts/scene/deepseek-layouts.mjs`. Do not rewrite it.
+
+```
+node <SKILL>/scripts/scene/make-scene.mjs <scene.json> --out <directory outside the repo> [--voice-provider minimax|aliyun|volcengine|mock] [--no-voice] [--no-bgm]
+node <SKILL>/scripts/scene/brief-to-video.mjs <brief.md|json> --out <directory outside the repo> [--assets <asset list>]
+```
+
+If there is narration and you pass neither `--voice-provider` nor `--no-voice`, the command stops. Without a key, `--voice-provider mock` checks the rhythm (placeholder audio, not a delivery). The one-shot command says so when the DeepSeek key is missing. One-sentence edits: `node <SKILL>/scripts/revise.mjs <scene.json> "one sentence"`. You can change on-screen copy, emphasis, the layout name, the style name, the motion character, and density. Examples are in `<SKILL>/examples/scene/`.
+
 ## Self-check list (look at the frame sheet, write a conclusion for each line against the actual image — don't just tick boxes)
 
 - Frame 0 already has the big headline + main visual — not blank or half-drawn; the cover has no `\n` or backslash artifacts

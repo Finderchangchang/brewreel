@@ -4,7 +4,7 @@
 // 圆角、阴影、字重、描边、质感都从 plan.roles 来，不写死像素。
 // 纸片入场走 poseAt → curveOf → settle / toss，这里不另写曲线。
 import React from 'react';
-import {AbsoluteFill, Img, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {LayoutProbe} from '../core/probe';
 import {Icon} from '../core/icons';
 import {emphasisLook} from './motion.ts';
@@ -799,7 +799,81 @@ function bareJudgment(plan: ScenePlan, screen: PlanScreen, block: PlanBlock): bo
   return false;
 }
 
+function SoundBed({plan}: {plan: ScenePlan}) {
+  if (!plan.sound) return null;
+  const end = Math.max(8, plan.durationFrames);
+  return (
+    <>
+      {plan.sound.bgm ? (
+        <Audio
+          src={staticFile(plan.sound.bgm)}
+          volume={(frame) => interpolate(frame, [0, 6, Math.max(7, end - 30), end], [0, 0.3, 0.3, 0], {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'})}
+        />
+      ) : null}
+      {(plan.sound.lines ?? []).map((line) => (
+        <Sequence key={line.src} from={Math.max(0, line.startFrame)} layout="none">
+          <Audio src={staticFile(line.src)} />
+        </Sequence>
+      ))}
+    </>
+  );
+}
+
+function Karaoke({plan, screen, local}: {plan: ScenePlan; screen: PlanScreen; local: number}) {
+  const cap = plan.captions?.screens.find((item) => item.index === screen.index);
+  if (!cap) return null;
+  let page = cap.pages[0];
+  for (const item of cap.pages) {
+    if (local + 1e-6 >= item.startSec) page = item;
+  }
+  if (!page || local + 1e-6 < page.startSec) return null;
+  const box = cap.box;
+  return (
+    <div
+      data-probe-skip
+      style={{
+        position: 'absolute',
+        left: box.x,
+        top: box.y,
+        width: box.w,
+        height: box.h,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        data-probe-skip
+        style={{
+          maxWidth: '100%',
+          background: plan.roles.surface,
+          borderRadius: 18,
+          padding: '10px 18px',
+          fontFamily: plan.fontFamily,
+          fontWeight: plan.roles.weight,
+          fontSize: 36,
+          lineHeight: 1.25,
+          textAlign: 'center',
+        }}
+      >
+        {page.chars.map((item, index) =>
+          item.ch === '\n' ? (
+            <br key={index} />
+          ) : (
+            <span key={index} style={{color: local + 1e-4 >= item.at ? plan.roles.accent : plan.paint.ink}}>
+              {item.ch}
+            </span>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
 function BlockView({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
+  if (plan.captions?.coverScreens.includes(screen.index) && block.kind === 'caption') return null;
   if (bareJudgment(plan, screen, block) || block.kind === 'stage' || block.kind === 'kicker' || block.kind === 'caption') return <StageLine plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'evidence') return <Evidence plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'plot') return <Plot plan={plan} screen={screen} block={block} local={local} />;
@@ -816,10 +890,12 @@ export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {
     <LayoutProbe frames={__probe}>
       <AbsoluteFill>
         <Backdrop plan={plan} />
+        <SoundBed plan={plan} />
         {screen.links?.length ? <Links plan={plan} links={screen.links} /> : null}
         {screen.blocks.map((block) => (
           <BlockView key={`${screen.index}-${block.index}`} plan={plan} screen={screen} block={block} local={local} />
         ))}
+        <Karaoke plan={plan} screen={screen} local={local} />
       </AbsoluteFill>
     </LayoutProbe>
   );

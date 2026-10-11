@@ -74,6 +74,8 @@ node scripts/lesson/make-lesson.mjs examples/lesson/mascot-demo.json --out ../br
 
 **一条命令**：`node scripts/make.mjs examples/ledger.json --out ../brewreel-out/ledger`
 
+实验写法 `scene.json`：模型写语义，引擎算样子。`node scripts/scene/make-scene.mjs examples/scene/c-techbrief.json --out ../brewreel-out/scene --voice-provider mock`。说明见 [场景](docs/scene.md)。
+
 - 3 种配方：`cards` 卡片信息流（默认，9:16）、`quiz` 答题互动（9:16）、`journey` 角色漫游（默认 4:5，也可 9:16）。
 - 6 个行业：软件、餐饮、电商实物、成人职业培训、生活美容、文旅住宿。各带广告法和行业规则。不做医疗美容、处方药 / 药品、K12 学科培训、保健品功效宣称、烟草。
 - 配音可选 MiniMax、阿里云、火山引擎。镜头时长跟着旁白，字幕逐字点亮，配乐在人声处压低。

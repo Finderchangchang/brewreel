@@ -74,6 +74,8 @@ You need Node.js 18+ and Python 3.10+. On Windows, x64 only. Platforms, environm
 
 **One command**: `node scripts/make.mjs examples/ledger.json --out ../brewreel-out/ledger`
 
+Experimental `scene.json`: the model writes the meaning and the engine computes the look. `node scripts/scene/make-scene.mjs examples/scene/c-techbrief.json --out ../brewreel-out/scene --voice-provider mock`. See [Scenes](docs/scene.en.md).
+
 - 3 recipes: `cards` (the default, 9:16), `quiz` (9:16), `journey` (4:5 by default, 9:16 also works).
 - 6 industries: software, food, physical goods, adult vocational training, non-medical beauty, travel and lodging. Each pack has advertising-law and industry rules. Not supported: medical aesthetics, prescription drugs / medicine, K12 academic tutoring, dietary-supplement efficacy claims, tobacco.
 - Voice-over can be MiniMax, Alibaba Cloud or Volcengine. Shot lengths follow the narration, subtitles light up word by word, and the music ducks under speech.
