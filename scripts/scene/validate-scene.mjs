@@ -40,6 +40,75 @@ const issue = (where, problem, fix, reason) => ({where, problem, fix, ...(reason
 
 const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const text = (value) => typeof value === 'string' && value.trim().length > 0;
+const glyphs = (value) => [...String(value ?? '').replace(/\s/g, '')].length;
+/** 数字和单位，例如「25 分钟」「62%」「5.2%」。整句不能进 number.text。 */
+const NUMBER_TEXT = /^\d+(?:\.\d+)?%?(?:\s*[\u3400-\u9fffA-Za-z]{1,3})?$/;
+
+function copyLimitErrors(screen, where, errors) {
+  if (screen.role === 'number' && isObject(screen.number) && text(screen.number.text)) {
+    const raw = String(screen.number.text).trim();
+    if (!NUMBER_TEXT.test(raw) || glyphs(raw) > 6) {
+      errors.push(issue(`${where}.number.text`, `数字 text「${raw}」只能写数字和单位，最多 6 个字`, '改成「25 分钟」或「62%」这种。整句放进 label，不要把事实原文整段塞进来'));
+    }
+  }
+  if (screen.role === 'number' && isObject(screen.number) && text(screen.number.label) && glyphs(screen.number.label) > 16) {
+    errors.push(issue(`${where}.number.label`, `说明有 ${glyphs(screen.number.label)} 个字，最多 16 个字`, '收成这一数字的短说明'));
+  }
+  if (screen.role === 'action' && text(screen.line) && glyphs(screen.line) > 16) {
+    errors.push(issue(`${where}.line`, `片尾这一句有 ${glyphs(screen.line)} 个字，最多 16 个字`, '收成一句短判断，不要把要点串成一段'));
+  }
+  if (screen.role === 'action' && text(screen.brand) && glyphs(screen.brand) > 8) {
+    errors.push(issue(`${where}.brand`, `品牌有 ${glyphs(screen.brand)} 个字，最多 8 个字`, '用产品名，不要写一整句'));
+  }
+}
+
+function copyLimitWarnings(screen, where, warnings) {
+  if (!isObject(screen)) return;
+  if ((screen.role === 'claim' || screen.role === 'quote') && text(screen.text) && glyphs(screen.text) > 16) {
+    warnings.push(issue(`${where}.text`, `主张有 ${glyphs(screen.text)} 个字，最多 16 个字`, '收成一句判断。这是提醒，不拦截'));
+  }
+  if (text(screen.title) && glyphs(screen.title) > 12) {
+    warnings.push(issue(`${where}.title`, `标题有 ${glyphs(screen.title)} 个字，最多 12 个字`, '收成一句短判断。这是提醒，不拦截'));
+  }
+  if (text(screen.support) && glyphs(screen.support) > 16) {
+    warnings.push(issue(`${where}.support`, `辅句有 ${glyphs(screen.support)} 个字，最多 16 个字`, '收短。这是提醒，不拦截'));
+  }
+  if (text(screen.kicker) && glyphs(screen.kicker) > 8) {
+    warnings.push(issue(`${where}.kicker`, `栏目标有 ${glyphs(screen.kicker)} 个字，最多 8 个字`, '收成几个字。这是提醒，不拦截'));
+  }
+  if (Array.isArray(screen.items)) {
+    screen.items.forEach((item, index) => {
+      if (item && text(item.text) && glyphs(item.text) > 12) {
+        warnings.push(issue(`${where}.items[${index}].text`, `这一条有 ${glyphs(item.text)} 个字，最多 12 个字`, '收成短句。这是提醒，不拦截'));
+      }
+    });
+  }
+}
+
+/** 同一版式连续不超过 2 屏；4 屏以上至少 3 种。只提醒，不拦截。 */
+function layoutMixWarnings(screens) {
+  const warnings = [];
+  const list = Array.isArray(screens) ? screens : [];
+  let start = 0;
+  for (let i = 1; i <= list.length; i += 1) {
+    const same = i < list.length && isObject(list[i]) && isObject(list[start]) && list[i].layout && list[i].layout === list[start].layout;
+    if (same) continue;
+    const run = i - start;
+    if (run > 2 && isObject(list[start]) && list[start].layout) {
+      const name = list[start].layout;
+      warnings.push(issue(`screens[${start}].layout`, `版式 ${name} 连续 ${run} 屏，同一版式连续不超过 2 屏`, '把多出来的屏改成别的版式。这是提醒，不拦截'));
+    }
+    start = i;
+  }
+  const named = list.filter((screen) => isObject(screen) && LAYOUTS.includes(screen.layout));
+  if (named.length >= 4) {
+    const kinds = new Set(named.map((screen) => screen.layout));
+    if (kinds.size < 3) {
+      warnings.push(issue('screens', `全片 ${named.length} 屏只用了 ${kinds.size} 种版式，至少用 3 种`, '把重复的屏改成还没用过的版式。这是提醒，不拦截'));
+    }
+  }
+  return warnings;
+}
 
 function walk(value, path, errors, inCallout) {
   if (Array.isArray(value)) {
@@ -194,6 +263,7 @@ function checkScreen(screen, index, facts, errors) {
   if (screen.role === 'action') {
     if (!text(screen.brand) || !text(screen.line)) errors.push(issue(where, '行动屏要有 brand 和 line', '品牌和一句口号。没有获取方式就不要写 cta'));
   }
+  copyLimitErrors(screen, where, errors);
   checkIcon(screen.icon, `${where}.icon`, errors);
   if (Array.isArray(screen.items)) {
     screen.items.forEach((item, itemIndex) => {
@@ -365,17 +435,8 @@ export function validateScene(scene) {
   if (motion === 'crisp' && scene.style === 'fresh-light' && !errors.some((item) => item.where === 'motion')) {
     warnings.push(issue('motion', 'crisp 配 fresh-light 可以渲染，但和现在的弹簧卡片不一样', '想要卡片回弹就改成 bounce'));
   }
-  let run = 1;
-  for (let i = 1; i < nextScreens.length; i++) {
-    const prev = nextScreens[i - 1];
-    const cur = nextScreens[i];
-    if (isObject(prev) && isObject(cur) && prev.layout === cur.layout && motion) run += 1;
-    else run = 1;
-    if (run === 3) {
-      warnings.push(issue(`screens[${i}].layout`, '连续 3 屏是同一个原型、同一种性格', '改疏密，或换一个性格。这是提醒，不拦截'));
-      break;
-    }
-  }
+  nextScreens.forEach((screen, index) => copyLimitWarnings(screen, `screens[${index}]`, warnings));
+  warnings.push(...layoutMixWarnings(nextScreens));
 
   const next = {
     ...scene,

@@ -20,20 +20,22 @@ export const prompt = `你只输出一个 JSON 对象，不要 markdown。这是
 
 最外层 product 用 promo，aspect 用 9:16，style 用 fresh-light，motion 用 bounce。facts 只有一条：id 写 f1，text 照抄给出的那句原文，source 照抄来源名。screens 写 4 到 5 屏。
 
-版式和角色：
-- claim：text 用简报里的话。emphasis 是 text 里连续的几个字，写成数组。layout 用 hero 或 board。board 可以加 kicker（短栏目标），title 写判断，support 写跟口播的一句。
-- points：2 到 4 条用 grid 或 sequence。每条 text 用简报里的要点原话，放在 items 里。可选 icon，只能是这些名字：${iconNames}。
-- number：layout 用 hero 或 board。number 是对象，含 text、fact、label。text 必须是事实原文里的那一段，fact 写 f1。不要再编一个数。
-- compare：left、right 各有 label 和 items（字符串数组）。layout 用 split。没有对比就不要写。
-- action：brand 用产品名，line 用一句收束。layout 用 end。
-- chart 不要用。没有图表序列，不要编数据点。
-- media 不要用。没有图片路径。
+字数按去掉空格后计算。写超了，第一轮就排不下：
+- claim：text 最多 16 字，写成一句判断，不要把简报的一句话原样搬上来。emphasis 是 text 里连续的几个字。support 最多 16 字，可以不写。kicker 最多 8 字。layout 用 hero 或 board。
+- points：2 到 4 条。每条 text 最多 12 字，从简报要点里摘短句，放在 items 里。不要写 note。可选 icon，只能是这些名字：${iconNames}。layout 用 grid 或 sequence。
+- number：layout 用 board。number 是对象，含 text、fact、label。text 只写数字和单位，最多 6 个字，例如「9 分钟」「62%」，而且必须是事实原文里的连续一段。整句放进 label，label 最多 16 字。fact 写 f1。title 最多 12 字。kicker 最多 8 字。不要再编一个数。
+- compare：没有两边对照就不要写。left、right 各有 label（最多 6 字）和 items（每条最多 8 字的字符串数组）。layout 用 split。
+- media：只有用户消息里给出素材清单时才能用。src 必须和清单里的路径逐字相同，source 写 screenshot，layout 用 board，title 最多 12 字。callouts 写 1 到 2 个，x、y、w、h 都是 0 到 1 的小数，label 最多 12 字。没有清单就不要写 media，不要编造文件名或截图。
+- chart：简报里能放在一起比的数字不足 2 个就不要用，不要编数据点。要用时 layout 写 chart，chart 写 bar，每个 point 有 label（最多 6 字）和 value，value 必须出现在事实原文里，title 最多 12 字，fact 写 f1。
+- action：brand 用产品名，最多 8 字。line 是一句收束，最多 16 字。layout 用 end。简报里没有获取方式就不要写 cta。
 - dialogue 不要用。
+
+版式多样性：同一版式连续不超过 2 屏，全片至少用 3 种版式。不要连续三屏都是 hero。有素材清单时放一屏 media，有关键数字时放一屏 number，要点放 grid 或 sequence，开头放一句判断，结尾放 action。
 
 文案只能摘简报，不要加简报里没有的数字。
 
-例子只说明字段，不要照抄产品和文案：
-{"product":"promo","aspect":"9:16","style":"fresh-light","motion":"bounce","facts":[{"id":"f1","text":"样例平均要 4 分钟。","source":"样例记录"}],"screens":[{"role":"claim","layout":"board","kicker":"● 要点","title":"先看完再回","text":"先看完再回","emphasis":["看完"],"support":"不要急着发"},{"role":"points","layout":"sequence","items":[{"text":"先看语气","icon":"eye"},{"text":"再写回复","icon":"send"}]},{"role":"number","layout":"board","kicker":"● 趋势","title":"还要一会儿","number":{"text":"4 分钟","fact":"f1","label":"样例平均"}},{"role":"action","layout":"end","brand":"样例","line":"看完再回"}]}`;
+例子只说明字段，不要照抄产品和文案，src 也不要照抄：
+{"product":"promo","aspect":"9:16","style":"fresh-light","motion":"bounce","facts":[{"id":"f1","text":"样例平均要 4 分钟。","source":"样例记录"}],"screens":[{"role":"claim","layout":"hero","text":"先看完再回","emphasis":["看完"],"support":"不要急着发"},{"role":"points","layout":"grid","items":[{"text":"先看语气","icon":"eye"},{"text":"再写回复","icon":"send"}]},{"role":"number","layout":"board","kicker":"● 趋势","title":"还要一会儿","number":{"text":"4 分钟","fact":"f1","label":"样例平均"}},{"role":"action","layout":"end","brand":"样例","line":"看完再回"}]}`;
 
 function parseJson(content) {
   const text = String(content || '').trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();

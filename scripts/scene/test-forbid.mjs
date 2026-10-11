@@ -119,6 +119,37 @@ function reasonOf(result) {
   const {result} = run({...base, screens: [page, {...page}, {...page}]});
   assert.equal(result.ok, true);
   assert.ok(result.warnings.some((item) => item.problem.includes('连续 3 屏')));
+  assert.ok(result.warnings.some((item) => item.problem.includes('不超过 2 屏')));
+}
+
+{
+  const page = screen({role: 'claim', layout: 'hero', text: '一句'});
+  const other = screen({role: 'points', layout: 'grid', items: [{text: '一条'}]});
+  const {result} = run({...base, screens: [page, {...page}, other]});
+  assert.equal(result.ok, true);
+  assert.equal(result.warnings.some((item) => item.problem.includes('连续')), false);
+}
+
+{
+  const page = screen({role: 'claim', layout: 'hero', text: '一句'});
+  const {result} = run({...base, screens: [page, {...page}, {...page}, {...page}]});
+  assert.equal(result.ok, true);
+  assert.ok(result.warnings.some((item) => item.problem.includes('至少用 3 种')));
+}
+
+{
+  const facts = [{id: 'f1', text: '一份补充协议人工对照平均要 25 分钟。', source: '记录'}];
+  const long = run({...base, facts, screens: [screen({role: 'number', layout: 'board', number: {text: '平均要 25 分钟', fact: 'f1', label: '人工对照'}})]});
+  assert.equal(long.result.ok, false);
+  assert.ok(long.result.errors.some((item) => item.where.endsWith('number.text')));
+  const short = run({...base, facts, screens: [screen({role: 'number', layout: 'board', title: '还要一会儿', number: {text: '25 分钟', fact: 'f1', label: '人工对照'}})]});
+  assert.equal(short.result.ok, true, short.report);
+}
+
+{
+  const {result} = run({...base, screens: [screen({role: 'action', layout: 'end', brand: '示例', line: '把三个步骤全部接成一句再补一句判断'})]});
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.some((item) => item.where.endsWith('.line')));
 }
 
 {

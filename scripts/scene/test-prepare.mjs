@@ -63,6 +63,14 @@ assert.equal(A.backdrop.top.toUpperCase(), '#9AF0CF');
 assert.notEqual(A.backdrop.top.toUpperCase(), A.backdrop.bottom.toUpperCase());
 assert.equal(C.roles.texture, 'paper');
 assert.equal(B.roles.weight, 900);
+assert.equal(A.headlinePlate, 'card');
+assert.equal(B.headlinePlate, 'card');
+assert.equal(C.headlinePlate, 'card');
+
+const tech = planFor('promo', 'techbrief', 'push');
+assert.equal(tech.headlinePlate, 'none');
+assert.equal(tech.style, 'techbrief');
+assert.deepEqual(linesOf(tech), linesOf(A));
 
 for (const plan of [A, B, C]) {
   const issues = auditPlan(plan);

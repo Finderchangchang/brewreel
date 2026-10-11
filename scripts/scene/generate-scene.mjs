@@ -2,7 +2,7 @@
 // 便宜模型写 scene.json，校验和几何审计的原文回喂，最多 3 轮。
 //   node scripts/scene/generate-scene.mjs <brief.json|md> --out <scene.json>
 //   node scripts/scene/generate-scene.mjs --batch <briefs.json> --out-dir <目录> [--ids 01,03]
-// 不调 MiniMax。调用次数记在输出目录的 calls.json，总数不超过 30。3 轮不过不写文件。
+// 不调 MiniMax。调用次数记在输出目录的 calls.json，总数不超过 35。3 轮不过不写文件。
 import {existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import path from 'node:path';
 import {callLlm, extractJson, readLlmEnv, redactSecrets} from '../broll/llm-client.mjs';
@@ -13,7 +13,7 @@ import {loadStyle} from './tokens.mjs';
 import {formatReport, validateScene} from './validate-scene.mjs';
 
 const MAX_ROUNDS = 3;
-const MAX_CALLS = 30;
+const MAX_CALLS = 35;
 const DEFAULT_IDS = ['01', '03', '05', '07', '09', '11', '13', '15', '17', '19'];
 
 function argsOf(argv) {
@@ -45,12 +45,71 @@ function userFromFile(file) {
   return userFromBrief(data, raw);
 }
 
+function assetLines(data) {
+  const assets = Array.isArray(data?.assets) ? data.assets : [];
+  const rows = assets.filter((item) => item && item.file && item.note);
+  if (!rows.length) return '素材清单：没有。不要用 media，不要编造截图路径。';
+  const lines = rows.map((item) => `- ${item.file}：${item.note}`);
+  return `素材清单（src 只能用下面这些路径，逐字复制，不要编造）：\n${lines.join('\n')}\n请用一屏 media，layout 用 board，把其中一张图放进 src。`;
+}
+
 function userFromBrief(data, raw) {
   if (data && data.product && data.oneLiner && data.fact) {
     const points = Array.isArray(data.points) ? data.points.join('、') : '';
-    return `产品：${data.product}\n一句话：${data.oneLiner}\n要点：${points}\n原文：${data.fact.text}\n来源：${data.fact.source}`;
+    return `产品：${data.product}\n一句话：${data.oneLiner}\n要点：${points}\n原文：${data.fact.text}\n来源：${data.fact.source}\n${assetLines(data)}`;
   }
   return raw ?? JSON.stringify(data);
+}
+
+function numbersIn(text) {
+  const cleaned = String(text).replace(/(\d),(\d{3})/g, '$1$2');
+  return [...cleaned.matchAll(/\d+(?:\.\d+)?/g)].map((item) => item[0]);
+}
+
+function listedAssets(user) {
+  return [...String(user).matchAll(/^-\s+(\S+)：/gm)].map((item) => item[1]);
+}
+
+function visibleCopy(scene) {
+  const parts = [];
+  for (const screen of scene?.screens || []) {
+    if (!screen || typeof screen !== 'object') continue;
+    for (const key of ['text', 'title', 'support', 'line', 'kicker', 'brand', 'cta', 'narration']) {
+      if (screen[key]) parts.push(String(screen[key]));
+    }
+    if (screen.number) parts.push(`${screen.number.text || ''} ${screen.number.label || ''}`);
+    for (const item of screen.items || []) parts.push(`${item?.text || ''} ${item?.note || ''}`);
+    for (const side of ['left', 'right']) {
+      const pane = screen[side];
+      if (!pane) continue;
+      parts.push(String(pane.label || ''));
+      for (const item of pane.items || []) parts.push(String(item));
+    }
+    for (const row of screen.rows || []) parts.push(`${row?.label || ''} ${row?.value || ''}`);
+    for (const point of screen.points || []) parts.push(`${point?.label || ''} ${point?.value ?? ''}`);
+    if (screen.code) parts.push(String(screen.code));
+  }
+  return parts.join('\n');
+}
+
+function contentIssues(scene, user) {
+  const lines = [];
+  const allowed = listedAssets(user);
+  const srcs = [];
+  for (const screen of scene?.screens || []) {
+    if (screen?.src) srcs.push(String(screen.src));
+  }
+  for (const src of srcs) {
+    if (!allowed.includes(src)) {
+      lines.push(allowed.length
+        ? `src「${src}」不在素材清单里。改成清单上的路径，或删掉这屏 media`
+        : `没有素材还写了 src「${src}」。删掉 media，不要编造截图`);
+    }
+  }
+  const allowedNumbers = new Set(numbersIn(user));
+  const extra = [...new Set(numbersIn(visibleCopy(scene)).filter((value) => !allowedNumbers.has(value)))];
+  if (extra.length) lines.push(`这些数字不在简报里：${extra.join('、')}。删掉，或改成简报原文里有的数`);
+  return lines;
 }
 
 function geometryReport(scene) {
@@ -84,7 +143,7 @@ function makeFetch(ledger) {
   const fetchImpl = (url, init) => {
     calls += 1;
     writeFileSync(ledger, `${JSON.stringify({calls})}\n`, 'utf8');
-    if (calls > MAX_CALLS) throw new Error('已到 30 次上限，停止');
+    if (calls > MAX_CALLS) throw new Error('已到 35 次上限，停止');
     return fetch(url, init);
   };
   return {fetchImpl, read: () => calls};
@@ -135,13 +194,17 @@ async function revise(user, cfg, fetchImpl) {
     let report = formatReport(result);
     if (result.ok && (screens < 4 || screens > 5)) report += `\nscreens 要 4 到 5 屏，现在是 ${screens} 屏`;
     let fit = false;
+    let contentOk = false;
     if (structure) {
       const geo = geometryReport(result.scene);
       fit = geo.ok;
       if (!geo.ok) report += `\n几何审计：\n${geo.lines.join('\n')}`;
+      const content = contentIssues(result.scene, user);
+      contentOk = content.length === 0;
+      if (!contentOk) report += `\n内容：\n${content.join('\n')}`;
     }
-    trace.push({round, structure, fit, screens, report});
-    if (structure && fit) return {ok: true, scene: result.scene, passedRound: round, trace};
+    trace.push({round, structure, fit, content: contentOk, screens, report});
+    if (structure && fit && contentOk) return {ok: true, scene: result.scene, passedRound: round, trace};
     lastText = report;
     if (round === MAX_ROUNDS) break;
     const body = JSON.stringify(result.scene ?? scene);
@@ -201,25 +264,27 @@ async function runBatch(flags, cfg) {
   const ledger = path.join(outDir, 'calls.json');
   const bucket = makeFetch(ledger);
   if (bucket.read() >= MAX_CALLS) {
-    say('已到 30 次上限，停止');
+    say('已到 35 次上限，停止');
     process.exit(2);
   }
   const briefs = JSON.parse(readFileSync(briefsPath, 'utf8'));
   if (!Array.isArray(briefs)) throw new Error('batch 文件要是简报数组');
+  const assetMap = flags.assets ? JSON.parse(readFileSync(flags.assets, 'utf8')) : {};
   const ids = (flags.ids || DEFAULT_IDS.join(',')).split(',').map((item) => item.trim()).filter(Boolean);
   const summaryPath = path.join(outDir, 'summary.json');
   const previous = existsSync(summaryPath) ? JSON.parse(readFileSync(summaryPath, 'utf8')) : {rows: []};
   const byId = new Map((previous.rows || []).map((row) => [row.id, row]));
   for (const id of ids) {
     if (bucket.read() >= MAX_CALLS) {
-      say('已到 30 次上限，剩下的简报不再请求');
+      say('已到 35 次上限，剩下的简报不再请求');
       break;
     }
-    const brief = briefs.find((item) => item.id === id);
-    if (!brief) {
+    const found = briefs.find((item) => item.id === id);
+    if (!found) {
       say(`${id} 不在简报里`);
       continue;
     }
+    const brief = assetMap[id] ? {...found, assets: assetMap[id]} : found;
     say(`—— ${id} ${brief.product} ——`);
     const result = await revise(userFromBrief(brief), cfg, bucket.fetchImpl);
     const row = {
@@ -229,6 +294,7 @@ async function runBatch(flags, cfg) {
         round: item.round,
         structure: Boolean(item.structure),
         fit: Boolean(item.fit),
+        content: Boolean(item.content),
         screens: item.screens ?? 0,
         error: item.error ? redactSecrets(item.error).slice(0, 240) : '',
       })),
@@ -237,6 +303,9 @@ async function runBatch(flags, cfg) {
       const scenePath = path.join(outDir, `${id}.scene.json`);
       writeScene(scenePath, result.scene);
       row.scene = `${id}.scene.json`;
+      row.layouts = result.scene.screens.map((screen) => screen.layout);
+      row.roles = result.scene.screens.map((screen) => screen.role);
+      row.srcs = result.scene.screens.map((screen) => screen.src).filter(Boolean);
       say(`${id} 第 ${result.passedRound} 轮通过`);
     } else {
       say(`${id} 未通过`);
@@ -282,7 +351,7 @@ if (flags.batch) {
   mkdirSync(path.dirname(out), {recursive: true});
   const bucket = makeFetch(ledger);
   if (bucket.read() >= MAX_CALLS) {
-    say('已到 30 次上限，停止');
+    say('已到 35 次上限，停止');
     process.exit(2);
   }
   const result = await runOne(file, out, cfg, bucket);

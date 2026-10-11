@@ -1,5 +1,6 @@
-// scene 原型合成。hero / stack / split 仍是整张卡片。
-// 新版式按块的 kind 画：证据板、节点、图表、大数字不进卡片。
+// scene 原型合成。A / B 的 hero、stack、split 仍是整张卡片。
+// headlinePlate 为 none 时，判断句（hero 主张、板式标题、片尾那一句）直接写在舞台上。
+// 证据、图表绘图区和条目卡仍是圆角卡。
 // 圆角、阴影、字重、描边、质感都从 plan.roles 来，不写死像素。
 // 纸片入场走 poseAt → curveOf → settle / toss，这里不另写曲线。
 import React from 'react';
@@ -45,8 +46,9 @@ function Backdrop({plan}: {plan: ScenePlan}) {
           style={{
             position: 'absolute',
             inset: 0,
-            backgroundImage: `linear-gradient(${roles.line}55 1px, transparent 1px), linear-gradient(90deg, ${roles.line}55 1px, transparent 1px)`,
-            backgroundSize: '80px 80px',
+            // 1px 淡线在半分辨率缩略图里会被平均掉。判断句没有卡片时，网格要留得住，空帧检查才不会把整屏当成纯色。
+            backgroundImage: `linear-gradient(${roles.line}CC 4px, transparent 4px), linear-gradient(90deg, ${roles.line}CC 4px, transparent 4px)`,
+            backgroundSize: '72px 72px',
           }}
         />
       ) : null}
@@ -785,10 +787,20 @@ function Links({plan, links}: {plan: ScenePlan; links: {x1: number; y1: number; 
   );
 }
 
+/** 令牌 headlinePlate=none 时，判断句不上卡片。条目卡、证据、绘图区不受影响。A / B 没有这条令牌。 */
+function bareJudgment(plan: ScenePlan, screen: PlanScreen, block: PlanBlock): boolean {
+  if (plan.headlinePlate !== 'none') return false;
+  if (block.kind === 'evidence' || block.kind === 'plot' || block.kind === 'node') return false;
+  if (block.slot || block.textBox) return false;
+  if (screen.layout === 'grid' || screen.layout === 'sequence' || screen.layout === 'split' || screen.layout === 'stack') return false;
+  if (screen.layout === 'hero') return block.role === 'main' || block.role === 'support';
+  if (screen.layout === 'end') return block.role === 'main' || block.kind === 'caption';
+  if ((screen.layout === 'board' || screen.layout === 'number' || screen.layout === 'chart' || screen.layout === 'media') && block.kind === 'card' && block.role === 'main') return true;
+  return false;
+}
+
 function BlockView({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
-  // techbrief 的判断句直接写在暗舞台上，不套米色卡片。证据卡、A、B 仍走原来的卡片。
-  const bareTitle = plan.style === 'techbrief' && (screen.layout === 'board' || screen.layout === 'number') && block.kind === 'card' && block.role === 'main';
-  if (bareTitle || block.kind === 'stage' || block.kind === 'kicker' || block.kind === 'caption') return <StageLine plan={plan} screen={screen} block={block} local={local} />;
+  if (bareJudgment(plan, screen, block) || block.kind === 'stage' || block.kind === 'kicker' || block.kind === 'caption') return <StageLine plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'evidence') return <Evidence plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'plot') return <Plot plan={plan} screen={screen} block={block} local={local} />;
   if ((block.kind === 'card' || block.kind === 'node') && (block.slot || block.textBox)) return <Slotted plan={plan} screen={screen} block={block} local={local} />;

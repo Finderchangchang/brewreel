@@ -1,6 +1,6 @@
 {
   "id": "techbrief",
-  "$doc": "科技资讯简报。色值按调配方再设计，不沿用参考片的舞台和强调色。",
+  "$doc": "科技资讯简报。色值按调配方再设计，不沿用参考片的舞台和强调色。判断句不铺卡片，见 extra.headlinePlate。",
   "$originality": {
     "primary": "ink",
     "accent": "accent",
@@ -21,6 +21,7 @@
   },
   "extra": {
     "fontHeading": "\"PSans\", \"Noto Sans SC\", sans-serif",
-    "fontNumber": "\"PMono\", \"Cascadia Mono\", ui-monospace, monospace"
+    "fontNumber": "\"PMono\", \"Cascadia Mono\", ui-monospace, monospace",
+    "headlinePlate": "none"
   }
 }

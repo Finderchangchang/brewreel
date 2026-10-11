@@ -105,6 +105,11 @@ export type ScenePlan = {
   floor: FontFloor;
   paint: {ink: string; muted: string; surface: string; stage: string; inkAdjusted: boolean; mutedAdjusted: boolean};
   contrast: ContrastRow[];
+  /**
+   * none：判断句直接写在舞台上，不铺圆角底。卡片只留给证据和条目。
+   * 没写这个令牌时是 card，A / B 仍是整张卡片。
+   */
+  headlinePlate: 'none' | 'card';
   screens: PlanScreen[];
 };
 
@@ -529,6 +534,7 @@ export function prepareScene(input: {
     floor: frame.floor,
     paint: {ink: ink.color, muted: muted.color, surface: roles.surface, stage, inkAdjusted: ink.adjusted, mutedAdjusted: muted.adjusted},
     contrast,
+    headlinePlate: input.extra?.headlinePlate === 'none' ? 'none' : 'card',
     screens,
   };
 }
