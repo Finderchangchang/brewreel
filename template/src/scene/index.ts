@@ -1,4 +1,4 @@
-// T12b 渲染器从这里进。本轮没有 Remotion 组件，也不接 make / make-lesson / talk。
+// 准备函数从这里出。Remotion 组件在 Scene.tsx，合成名 Scene，不接 make / make-lesson / talk。
 // 新风格（例如之后的「陆三金」）加在令牌读取的 registerStyleReader，不改这三支原型的公式。
 export {TOKEN_ROLES, PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, ACTIONS, DENSITIES, ALIGNS, PROTO_LAYOUTS} from './types.ts';
 export type {
@@ -28,3 +28,5 @@ export type {MotionCurve, CurveSample} from './motion.ts';
 export {revealFromWords, revealFromSentences, revealFromBeats, FIRST_BY, LAST_BEFORE_END} from './time.ts';
 export type {WordReveal, SentenceReveal, BeatReveal, RevealPlan} from './time.ts';
 export {contrastRatio} from './contrast.ts';
+export {auditPlan, checkFrames, ensureContrast, hanziCount, measureEnter, poseAt, prepareScene, protoScene} from './prepare.ts';
+export type {ContrastRow, PlanBlock, PlanScreen, Pose, ScenePlan} from './prepare.ts';

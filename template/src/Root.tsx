@@ -13,6 +13,7 @@ import {LessonVertical} from './lesson/LessonVertical';
 import {CoverStill, coverSize, type CoverStillProps} from './lesson/CoverStill';
 import {LessonSheet, type LessonSheetProps, lessonSheetSize} from './lesson/LessonSheet';
 import {CharacterCard, type CharacterCardProps} from './lesson/CharacterCard';
+import {Scene, type SceneProps} from './scene/Scene';
 import demo from './demo.json';
 
 ensureFont();
@@ -144,6 +145,25 @@ export const RemotionRoot: React.FC = () => (
       durationInFrames={1}
       defaultProps={{images: []} as LessonSheetProps}
       calculateMetadata={({props}) => lessonSheetSize(props as unknown as LessonSheetProps)}
+    />
+    {/* Scene：结构化拆解原型。props 是准备好的 plan，不走 make 的默认入口。 */}
+    <Composition
+      id="Scene"
+      component={Scene as unknown as React.FC<Record<string, unknown>>}
+      fps={30}
+      width={1080}
+      height={1920}
+      durationInFrames={30}
+      defaultProps={{plan: undefined} as SceneProps}
+      calculateMetadata={({props}) => {
+        const plan = (props as unknown as SceneProps).plan;
+        return {
+          fps: plan?.fps ?? 30,
+          width: plan?.width ?? 1080,
+          height: plan?.height ?? 1920,
+          durationInFrames: Math.max(1, plan?.durationFrames ?? 30),
+        };
+      }}
     />
     {/* IllustLab：行业插画网格自检（props: {industry?, theme?}），不是正式镜头，见 IllustLab.tsx */}
     <Composition
