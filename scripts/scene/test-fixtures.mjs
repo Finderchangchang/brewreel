@@ -33,6 +33,59 @@ const unknown = validateScene({product: 'promo', aspect: '9:16', style: 'no-such
 assert.equal(unknown.ok, false);
 assert.ok(unknown.errors.some((item) => item.where === 'style' && item.fix.includes('fresh-light')));
 
+const coverage = validateSceneFile(path.join(dir, 'coverage.json'));
+assert.equal(coverage.ok, true, formatReport(coverage, 'coverage.json'));
+assert.deepEqual(coverage.scene.screens.map((screen) => `${screen.role}:${screen.layout}`), [
+  'claim:hero',
+  'points:grid',
+  'points:sequence',
+  'media:board',
+  'chart:chart',
+  'compare:split',
+  'number:board',
+  'action:end',
+]);
+
+const iconLesson = JSON.parse(readFileSync(path.join(dir, 'example-promo.json'), 'utf8'));
+iconLesson.screens[1].items[0].icon = 'document';
+const iconLessonResult = validateScene(iconLesson);
+assert.equal(iconLessonResult.ok, false);
+assert.ok(iconLessonResult.errors.some((item) => item.problem.includes('document') && item.fix.includes('doc')));
+
+const iconBad = JSON.parse(readFileSync(path.join(dir, 'example-promo.json'), 'utf8'));
+iconBad.screens[1].items[0].icon = 'no-such-icon';
+const iconBadResult = validateScene(iconBad);
+assert.equal(iconBadResult.ok, false);
+assert.ok(iconBadResult.errors.some((item) => item.fix.includes('check') && item.reason.includes('封闭枚举')));
+
+const dialogue = validateScene({
+  product: 'promo',
+  aspect: '9:16',
+  style: 'fresh-light',
+  motion: 'bounce',
+  screens: [{role: 'dialogue', layout: 'stack', items: [{text: '甲'}, {text: '乙'}]}],
+});
+assert.equal(dialogue.ok, false);
+assert.ok(dialogue.errors.some((item) => item.problem.includes('对话')));
+
+const chartMiss = validateScene({
+  product: 'promo',
+  aspect: '9:16',
+  style: 'fresh-light',
+  motion: 'bounce',
+  facts: [{id: 'f1', text: '只有 12 人', source: '样例'}],
+  screens: [{
+    role: 'chart',
+    layout: 'chart',
+    title: '人数',
+    chart: 'bar',
+    fact: 'f1',
+    points: [{label: '甲', value: 12}, {label: '乙', value: 99}],
+  }],
+});
+assert.equal(chartMiss.ok, false);
+assert.ok(chartMiss.errors.some((item) => item.problem.includes('99')));
+
 const missed = validateScene({
   product: 'lesson',
   aspect: '16:9',

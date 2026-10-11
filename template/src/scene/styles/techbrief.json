@@ -21,6 +21,6 @@
   },
   "extra": {
     "fontHeading": "\"PSans\", \"Noto Sans SC\", sans-serif",
-    "fontNumber": "\"Cascadia Mono\", ui-monospace, monospace"
+    "fontNumber": "\"PMono\", \"Cascadia Mono\", ui-monospace, monospace"
   }
 }

@@ -3,14 +3,16 @@
 // 次文字只标成落在卡片上。低于 4.5 的前景会调深，本轮三支预设的卡片对已经过线，调深不会触发。
 import {contrastRatio} from './contrast.ts';
 import {layoutBlocks} from './geom.ts';
+import type {BandName, GeomLayout} from './geom.ts';
 import {curveOf} from './motion.ts';
 import {revealFromBeats} from './time.ts';
 import type {SceneFrame} from './safe-box.ts';
 import type {BeatReveal} from './time.ts';
-import type {Align, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
+import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
 
 const FPS = 30;
 const FONT_STACK = '"PSans", "Noto Sans SC", "Microsoft YaHei UI", sans-serif';
+const MONO_STACK = '"PMono", "Cascadia Mono", ui-monospace, monospace';
 
 export type PlanBlock = {
   text: string;
@@ -29,6 +31,12 @@ export type PlanBlock = {
   /** 秒，相对本屏。第一块是 0，其余等于拍点。 */
   showAt: number;
   mark: boolean;
+  kind?: BlockKind;
+  icon?: string;
+  /** 大数字和栏目标用等宽。 */
+  mono?: boolean;
+  slot?: {x: number; y: number; w: number; h: number};
+  textBox?: {x: number; y: number; w: number; h: number};
 };
 
 export type PlanCurve = {
@@ -45,7 +53,7 @@ export type PlanCurve = {
 export type PlanScreen = {
   index: number;
   role: string;
-  layout: 'hero' | 'stack' | 'split' | 'end';
+  layout: 'hero' | 'stack' | 'split' | 'end' | 'grid' | 'sequence' | 'media' | 'chart' | 'board' | 'number';
   start: number;
   duration: number;
   startFrame: number;
@@ -53,6 +61,14 @@ export type PlanScreen = {
   reveal: BeatReveal;
   curve: PlanCurve;
   blocks: PlanBlock[];
+  links?: {x1: number; y1: number; x2: number; y2: number}[];
+  chart?: {type: 'bar' | 'line' | 'donut'; points: ChartPoint[]; max?: number};
+  imageSrc?: string;
+  /** 原图像素宽 / 高。标注按图片本身，不按外层卡片。 */
+  imageAspect?: number;
+  callouts?: CalloutBox[];
+  rows?: {label: string; value: string}[];
+  code?: string;
 };
 
 export type ContrastRow = {
@@ -78,19 +94,20 @@ export type ScenePlan = {
   align: Align;
   roles: TokenRoles;
   fontFamily: string;
+  fontNumber: string;
   cardBorder: string;
   /** 渐变只取令牌里的 bgTop / bgBot。没有这两项时上下都是 bg。 */
   backdrop: {top: string; bottom: string};
   safe: {x: number; y: number; w: number; h: number};
   floor: FontFloor;
-  paint: {ink: string; muted: string; surface: string; inkAdjusted: boolean; mutedAdjusted: boolean};
+  paint: {ink: string; muted: string; surface: string; stage: string; inkAdjusted: boolean; mutedAdjusted: boolean};
   contrast: ContrastRow[];
   screens: PlanScreen[];
 };
 
 export type Pose = {y: number; scale: number; tilt: number; opacity: number};
 
-type Piece = {text: string; note?: string; emphasis?: string[]; role: PlanBlock['role']};
+type Piece = {text: string; note?: string; emphasis?: string[]; role: PlanBlock['role']; icon?: string};
 
 export function hanziCount(text: string): number {
   return [...text].filter((ch) => /[\u3400-\u9fff]/.test(ch)).length;
@@ -100,14 +117,14 @@ export function glyphCount(text: string): number {
   return [...text.replace(/\s/g, '')].length || 1;
 }
 
-/** 收成 claim 的 hero、points 的 stack、compare 的 split，再加片尾。文案字段原样留下。 */
+/** 留下能画的屏。dialogue 丢掉。compare 不是 split/stack 时收成 split。文案字段原样留下。 */
 export function protoScene<T extends SceneFile>(scene: T): T {
   const screens: SceneScreen[] = [];
   for (const screen of scene.screens ?? []) {
-    if (screen.role === 'claim') screens.push(screen);
-    else if (screen.role === 'points') screens.push({...screen, layout: 'stack'});
-    else if (screen.role === 'compare') screens.push(screen.layout === 'split' ? screen : {...screen, layout: 'split'});
-    else if (screen.role === 'action' || screen.layout === 'end') screens.push({...screen, layout: 'end'});
+    if (screen.role === 'dialogue') continue;
+    if (screen.role === 'compare' && screen.layout !== 'split' && screen.layout !== 'stack') screens.push({...screen, layout: 'split'});
+    else if (screen.role === 'action' && screen.layout !== 'end' && screen.layout !== 'hero') screens.push({...screen, layout: 'end'});
+    else screens.push(screen);
   }
   return {...scene, screens};
 }
@@ -189,6 +206,140 @@ function fontOf(extra: Record<string, unknown> | undefined): string {
   return typeof heading === 'string' && heading.trim() ? heading : FONT_STACK;
 }
 
+function fontNumberOf(extra: Record<string, unknown> | undefined): string {
+  const raw = extra?.fontNumber;
+  if (typeof raw === 'string' && raw.includes('PMono')) return raw;
+  if (typeof raw === 'string' && raw.trim()) return `${MONO_STACK}, ${raw}`;
+  return MONO_STACK;
+}
+
+function stageInk(ink: string, surface: string, bg: string): string {
+  if (contrastRatio(ink, bg) >= 4.5) return ink;
+  if (contrastRatio(surface, bg) >= 4.5) return surface;
+  return ensureContrast('#F4F1EA', bg).color;
+}
+
+type Built = {
+  layout: PlanScreen['layout'];
+  geom: GeomLayout;
+  pieces: Piece[];
+  bands?: BandName[];
+  callouts?: CalloutBox[];
+  icons?: string[];
+};
+
+function textPiece(text: string, role: Piece['role'], emphasis?: string[], note?: string, icon?: string): Piece {
+  return {text, role, ...(emphasis?.length ? {emphasis} : {}), ...(note ? {note} : {}), ...(icon ? {icon} : {})};
+}
+
+function compose(screen: SceneScreen): Built {
+  if (screen.role === 'number') {
+    const num = screen.number?.text || screen.text || '0';
+    const label = screen.number?.label || screen.support || '';
+    if (screen.layout === 'board') {
+      const pieces: Piece[] = [];
+      const bands: BandName[] = [];
+      if (screen.kicker) {
+        pieces.push(textPiece(screen.kicker, 'support'));
+        bands.push('kicker');
+      }
+      const judgment = screen.title || screen.text || '';
+      if (judgment) {
+        pieces.push(textPiece(judgment, 'main', screen.emphasis));
+        bands.push('title');
+      }
+      pieces.push(textPiece(num, 'main'));
+      bands.push('number');
+      const caption = screen.support || (judgment && label && label !== judgment ? label : judgment ? '' : label);
+      if (caption) {
+        pieces.push(textPiece(caption, 'support'));
+        bands.push('caption');
+      }
+      return {layout: 'board', geom: 'board', pieces, bands};
+    }
+    const pieces = [textPiece(num, 'main')];
+    const bands: BandName[] = ['number'];
+    if (label) {
+      pieces.push(textPiece(label, 'support'));
+      bands.push('caption');
+    }
+    return {layout: 'number', geom: 'number', pieces, bands};
+  }
+  if (screen.role === 'media' || (screen.layout === 'board' && screen.src)) {
+    const pieces: Piece[] = [];
+    const bands: BandName[] = [];
+    if (screen.kicker) {
+      pieces.push(textPiece(screen.kicker, 'support'));
+      bands.push('kicker');
+    }
+    pieces.push(textPiece(screen.title || screen.text || '界面', 'main', screen.emphasis));
+    const labels = (screen.callouts ?? []).map((box) => box.label).filter((label): label is string => typeof label === 'string' && label.trim().length > 0);
+    const caption = screen.support || '';
+    if (screen.layout === 'board') {
+      bands.push('title');
+      pieces.push(textPiece(' ', 'item'));
+      bands.push('evidence');
+      const line = caption || labels[0] || '';
+      if (line && line !== (screen.title || screen.text || '界面')) {
+        pieces.push(textPiece(line, 'support'));
+        bands.push('caption');
+      }
+      return {layout: 'board', geom: 'board', pieces, bands, callouts: screen.callouts};
+    }
+    for (const label of labels) pieces.push(textPiece(label, 'support'));
+    if (!labels.length && caption) pieces.push(textPiece(caption, 'support'));
+    if (screen.kicker) bands.push('kicker');
+    return {layout: 'media', geom: 'media', pieces, ...(screen.kicker ? {bands} : {}), callouts: screen.callouts};
+  }
+  if (screen.role === 'chart' || screen.layout === 'chart') {
+    const pieces = [textPiece(screen.title || screen.text || '对比', 'main', screen.emphasis)];
+    pieces.push(textPiece(' ', 'item'));
+    if (screen.support) pieces.push(textPiece(screen.support, 'support'));
+    return {layout: 'chart', geom: 'chart', pieces};
+  }
+  if (screen.layout === 'end' || screen.role === 'action') {
+    return {layout: 'end', geom: 'end', pieces: piecesOf(screen, 'end')};
+  }
+  if (screen.layout === 'grid' && screen.items?.length) {
+    return {
+      layout: 'grid',
+      geom: 'grid',
+      pieces: screen.items.map((item) => textPiece(item.text, 'item', undefined, item.note, item.icon)),
+      icons: screen.items.map((item) => item.icon || ''),
+    };
+  }
+  if (screen.layout === 'sequence' && screen.items?.length) {
+    return {
+      layout: 'sequence',
+      geom: 'sequence',
+      pieces: screen.items.map((item) => textPiece(item.text, 'item', undefined, item.note, item.icon)),
+    };
+  }
+  if (screen.layout === 'board') {
+    const pieces: Piece[] = [];
+    const bands: BandName[] = [];
+    if (screen.kicker) {
+      pieces.push(textPiece(screen.kicker, 'support'));
+      bands.push('kicker');
+    }
+    const judgment = screen.title || screen.text || '';
+    if (judgment) {
+      pieces.push(textPiece(judgment, 'main', screen.emphasis));
+      bands.push('title');
+    }
+    pieces.push(textPiece(screen.support || ' ', 'item'));
+    bands.push('evidence');
+    if (screen.line) {
+      pieces.push(textPiece(screen.line, 'support'));
+      bands.push('caption');
+    }
+    return {layout: 'board', geom: 'board', pieces, bands};
+  }
+  const layout: PlanScreen['layout'] = screen.layout === 'split' ? 'split' : screen.layout === 'stack' ? 'stack' : 'hero';
+  const geom: GeomLayout = layout === 'split' ? 'split' : layout === 'stack' ? 'stack' : 'hero';
+  return {layout, geom, pieces: piecesOf(screen, layout)};
+}
+
 function firstColor(value: unknown, fallback: string): string {
   if (typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value)) return value;
   if (Array.isArray(value) && typeof value[0] === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value[0])) return value[0];
@@ -265,11 +416,11 @@ export function prepareScene(input: {
   const cardBorder = roles.shadow === 'none' ? `2px solid ${roles.line}` : 'none';
   const slow = slowestEnter(frame.canvasH);
   const curve = curveParams(motion, frame.canvasH);
+  const stage = stageInk(roles.ink, roles.surface, roles.bg);
   let frameCursor = 0;
   const screens: PlanScreen[] = (scene.screens ?? []).map((screen, index) => {
-    const layout: PlanScreen['layout'] = screen.layout === 'end' ? 'end' : screen.layout === 'split' ? 'split' : screen.layout === 'stack' ? 'stack' : 'hero';
-    const geom = layout === 'end' || layout === 'hero' ? 'hero' : layout === 'split' ? 'split' : 'stack';
-    const pieces = piecesOf(screen, layout);
+    const built = compose(screen);
+    const pieces = built.pieces.length ? built.pieces : [{text: ' ', role: 'main' as const}];
     const reveal = revealFromBeats({
       hanzi: Math.max(1, pieces.reduce((sum, piece) => sum + hanziCount(piece.text), 0)),
       count: pieces.length,
@@ -278,7 +429,7 @@ export function prepareScene(input: {
     const seconds = Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
     const durationFrames = Math.max(1, Math.round(seconds * fps));
     const placed = layoutBlocks({
-      layout: geom,
+      layout: built.geom,
       count: pieces.length,
       chars: pieces.map((piece) => glyphCount(piece.text + (piece.note || ''))),
       safe: frame.safe,
@@ -289,11 +440,25 @@ export function prepareScene(input: {
       winner: screen.winner,
       emphasis: screen.winner && screen.winner !== 'none' ? 'focus' : 'even',
       portrait: frame.portrait,
+      ...(built.bands ? {bands: built.bands} : {}),
+      ...(built.callouts ? {callouts: built.callouts} : {}),
     });
     const half = Math.ceil(pieces.length / 2);
+    const mediaPieces = () => {
+      const out: Piece[] = [];
+      let cursor = 0;
+      for (const block of placed.blocks) {
+        if (block.kind === 'evidence' || block.kind === 'plot') out.push({text: '', role: 'item'});
+        else out.push(pieces[cursor++] ?? {text: '', role: 'item'});
+      }
+      return out;
+    };
+    const aligned = built.geom === 'media' ? mediaPieces() : pieces;
     const blocks: PlanBlock[] = placed.blocks.map((block, blockIndex) => {
-      const piece = pieces[blockIndex] ?? pieces[0];
+      const raw = aligned[blockIndex] ?? {text: '', role: 'item' as const};
+      const piece = block.kind === 'evidence' || block.kind === 'plot' ? {text: '', role: 'item' as const} : raw;
       const side = blockIndex < half ? 'left' : 'right';
+      const icon = piece.icon || built.icons?.[blockIndex] || '';
       return {
         text: piece.text,
         ...(piece.note ? {note: piece.note} : {}),
@@ -304,12 +469,17 @@ export function prepareScene(input: {
         h: block.h,
         font: block.font,
         noteFont: frame.floor.aux,
-        role: piece.role,
+        role: block.kind === 'evidence' || block.kind === 'plot' ? 'item' : piece.role,
         index: blockIndex,
         align: block.align,
         textAlign: block.textAlign,
-        showAt: blockIndex === 0 ? 0 : (reveal.at[blockIndex] ?? 0),
-        mark: blockIndex === 0 || (layout === 'split' && side === screen.winner),
+        showAt: blockIndex === 0 ? 0 : (reveal.at[Math.min(blockIndex, pieces.length - 1)] ?? 0),
+        mark: blockIndex === 0 || (built.layout === 'split' && side === screen.winner),
+        ...(block.kind ? {kind: block.kind} : {}),
+        ...(icon ? {icon} : {}),
+        ...((block.kind === 'stage' || block.kind === 'kicker') ? {mono: true} : {}),
+        ...(block.slot ? {slot: block.slot} : {}),
+        ...(block.textBox ? {textBox: block.textBox} : {}),
       };
     });
     const startFrame = frameCursor;
@@ -317,7 +487,7 @@ export function prepareScene(input: {
     return {
       index,
       role: screen.role,
-      layout,
+      layout: built.layout,
       start: startFrame / fps,
       duration: durationFrames / fps,
       startFrame,
@@ -325,6 +495,12 @@ export function prepareScene(input: {
       reveal,
       curve,
       blocks,
+      ...(placed.links?.length ? {links: placed.links} : {}),
+      ...(screen.chart && screen.points ? {chart: {type: screen.chart, points: screen.points, ...(screen.max !== undefined ? {max: screen.max} : {})}} : {}),
+      ...(screen.src ? {imageSrc: screen.src} : {}),
+      ...(screen.callouts ? {callouts: screen.callouts} : {}),
+      ...(screen.rows ? {rows: screen.rows} : {}),
+      ...(screen.code ? {code: screen.code} : {}),
     };
   });
   return {
@@ -340,18 +516,21 @@ export function prepareScene(input: {
     align,
     roles,
     fontFamily: fontOf(input.extra),
+    fontNumber: fontNumberOf(input.extra),
     cardBorder,
     backdrop: {top: firstColor(input.extra?.bgTop, roles.bg), bottom: firstColor(input.extra?.bgBot, roles.bg)},
     safe: {x: frame.safe.x, y: frame.safe.y, w: frame.safe.w, h: frame.safe.h},
     floor: frame.floor,
-    paint: {ink: ink.color, muted: muted.color, surface: roles.surface, inkAdjusted: ink.adjusted, mutedAdjusted: muted.adjusted},
+    paint: {ink: ink.color, muted: muted.color, surface: roles.surface, stage, inkAdjusted: ink.adjusted, mutedAdjusted: muted.adjusted},
     contrast,
     screens,
   };
 }
 
 export function fontFloorOf(plan: ScenePlan, screen: PlanScreen, block: PlanBlock): number {
-  if (block.role === 'main' && (screen.layout === 'hero' || screen.layout === 'end')) return plan.floor.title;
+  if (block.kind === 'kicker') return plan.floor.aux;
+  if (block.kind === 'stage') return plan.floor.title;
+  if (block.role === 'main' && (screen.layout === 'hero' || screen.layout === 'end' || screen.layout === 'board' || screen.layout === 'number')) return plan.floor.title;
   return plan.floor.body;
 }
 
@@ -375,6 +554,11 @@ export function auditPlan(plan: ScenePlan): string[] {
       }
       if (i === 0 && block.showAt !== 0) issues.push(`第 ${screen.index + 1} 屏第一块不是从 0 秒出现`);
       if (i > 0 && block.showAt + 1e-9 < screen.blocks[i - 1].showAt) issues.push(`第 ${screen.index + 1} 屏出场不是单调的`);
+    }
+    const stageNumber = screen.blocks.find((item) => item.kind === 'stage');
+    const caption = screen.blocks.find((item) => item.kind === 'caption');
+    if (stageNumber && caption && stageNumber.font < caption.font * 2) {
+      issues.push(`第 ${screen.index + 1} 屏数字 ${stageNumber.font} 不到说明 ${caption.font} 的两倍`);
     }
   }
   return issues;

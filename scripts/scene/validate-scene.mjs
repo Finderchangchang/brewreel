@@ -1,9 +1,23 @@
 // scene.json 结构检查。报错格式和 scripts/validate.mjs 一样：哪里、错在哪、怎么改。
 // 禁止组合要么拒绝，要么改写，报告里都写原因。quiz / journey 不拆。
 import {readFileSync} from 'node:fs';
+import ICONS from '../../template/src/core/icons.json' with {type: 'json'};
 import {PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, DENSITIES, ALIGNS} from '../../template/src/scene/types.ts';
 import {defaultMotion} from '../../template/src/scene/motion.ts';
+import {inspectCallouts, inspectChart} from '../../template/src/scene/rules.ts';
 import {stylesFor, themeIsDark} from './tokens.mjs';
+
+const ICON_NAMES = Object.keys(ICONS);
+const LESSON_ICON_HINT = {
+  document: 'doc',
+  warning: 'alert',
+  cross: 'x',
+  percent: 'chart',
+  card: 'money',
+  bank: 'money',
+  scale: 'chart',
+  flag: 'star',
+};
 
 const BANNED_KEYS = new Set(['x', 'y', 'frame', 'ms', 'fps', 'px', 'startMs', 'endMs', 'revealAtMs', 'atMs', 'durationMs']);
 const CALLOUT_KEYS = new Set(['x', 'y', 'w', 'h']);
@@ -180,19 +194,62 @@ function checkScreen(screen, index, facts, errors) {
   if (screen.role === 'action') {
     if (!text(screen.brand) || !text(screen.line)) errors.push(issue(where, '行动屏要有 brand 和 line', '品牌和一句口号。没有获取方式就不要写 cta'));
   }
+  checkIcon(screen.icon, `${where}.icon`, errors);
+  if (Array.isArray(screen.items)) {
+    screen.items.forEach((item, itemIndex) => {
+      if (item && item.icon !== undefined) checkIcon(item.icon, `${where}.items[${itemIndex}].icon`, errors);
+    });
+  }
   if (screen.role === 'media') {
     if (!text(screen.src) || !['merchant', 'screenshot', 'illustration'].includes(screen.source)) {
       errors.push(issue(where, 'media 要有 src，source 只能是 merchant、screenshot、illustration', '按画面来源写。没有图就不要用这一类'));
     }
-    if (screen.callouts !== undefined && (!Array.isArray(screen.callouts) || screen.callouts.length < 1 || screen.callouts.length > 4)) {
-      errors.push(issue(`${where}.callouts`, '标注要 1 到 4 个', '删到 4 个以内，或整段删掉'));
+    if (!Array.isArray(screen.callouts) || screen.callouts.length < 1 || screen.callouts.length > 4) {
+      errors.push(issue(`${where}.callouts`, '标注要 1 到 4 个', '每个标注写 x、y、w、h，都是 0 到 1。不要写成像素'));
+    } else {
+      for (const message of inspectCallouts(screen.callouts)) {
+        errors.push(issue(`${where}.callouts`, message, '框和框不要相交，也不要伸出图片。改 x、y、w、h，仍用 0 到 1'));
+      }
+      screen.callouts.forEach((box, boxIndex) => {
+        if (box && box.label !== undefined && (typeof box.label !== 'string' || [...box.label].length > 12)) {
+          errors.push(issue(`${where}.callouts[${boxIndex}].label`, '标注最多 12 字', '收成不超过 12 个字'));
+        }
+      });
     }
   }
   if (screen.role === 'chart') {
     if (!['bar', 'line', 'donut'].includes(screen.chart) || !text(screen.fact) || !Array.isArray(screen.points)) {
-      errors.push(issue(where, 'chart 要有 chart（bar、line 或 donut）、points 和 fact', '每个点写 label 和 value'));
+      errors.push(issue(where, 'chart 要有 chart（bar、line 或 donut）、points 和 fact', '每个点写 label 和 value。value 必须能在事实原文里找到'));
+    } else {
+      const fact = factById(facts, screen.fact);
+      if (!fact) errors.push(issue(`${where}.fact`, `找不到事实「${screen.fact}」`, '先在 facts 里加上这个 id，原文里要包含画面上的数字'));
+      else {
+        for (const message of inspectChart(screen.chart, screen.points, fact.text, screen.max)) {
+          const fix = message.includes('事实')
+            ? '把这个数字写进对应 fact 的原文，或从画面上删掉。不要自己编一个数'
+            : message.includes('donut')
+              ? '合并小类别，或改成 bar'
+              : message.includes('series')
+                ? '每条线至少两个点，而且用同一组 label'
+                : message.includes('focus')
+                  ? '只保留一个 focus: true'
+                  : '按 dataChart 的规则改 points';
+          errors.push(issue(where, message, fix, '图表数字必须来自 facts，规则与宣传片 dataChart 相同'));
+        }
+      }
     }
   }
+}
+
+function checkIcon(name, where, errors) {
+  if (name === undefined) return;
+  if (typeof name === 'string' && ICON_NAMES.includes(name)) return;
+  const hint = LESSON_ICON_HINT[name];
+  if (hint) {
+    errors.push(issue(where, `「${name}」是讲课图标名，场景原型不收`, `改成 ${hint}。场景只用宣传片 template/src/core/icons.json 里的名字`));
+    return;
+  }
+  errors.push(issue(where, `不认识的图标「${name}」`, `改成 ${ICON_NAMES.join('、')}`, '图标名是封闭枚举，来自宣传片 core/icons.json'));
 }
 
 function moneyText(screen) {
@@ -228,12 +285,12 @@ function rewriteScreen(screen, index, rewrites) {
 }
 
 function allowed(role, layout, n) {
-  if (role === 'claim' || role === 'quote') return layout === 'hero';
-  if (role === 'number') return layout === 'hero';
+  if (role === 'claim' || role === 'quote') return layout === 'hero' || layout === 'board';
+  if (role === 'number') return layout === 'hero' || layout === 'board';
   if (role === 'action') return layout === 'end' || layout === 'hero';
   if (role === 'compare') return layout === 'split' || layout === 'stack';
-  if (role === 'chart') return layout === 'chart';
-  if (role === 'media') return layout === 'media';
+  if (role === 'chart') return layout === 'chart' || layout === 'board';
+  if (role === 'media') return layout === 'media' || layout === 'board';
   if (role === 'points') {
     if (layout === 'stack' || layout === 'sequence') return true;
     if (layout === 'grid') return n <= 4;

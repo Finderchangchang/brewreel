@@ -4,7 +4,7 @@
 export const PRODUCTS = ['promo', 'lesson', 'talk'] as const;
 export const ASPECTS = ['9:16', '16:9', '4:5'] as const;
 export const ROLES = ['claim', 'points', 'number', 'quote', 'compare', 'chart', 'media', 'action', 'dialogue'] as const;
-export const LAYOUTS = ['hero', 'stack', 'grid', 'split', 'sequence', 'media', 'chart', 'end'] as const;
+export const LAYOUTS = ['hero', 'stack', 'grid', 'split', 'sequence', 'media', 'chart', 'end', 'board'] as const;
 export const MOTIONS = ['crisp', 'bounce', 'soft', 'paper', 'push'] as const;
 export const ACTIONS = ['enter', 'emphasize', 'count', 'reveal', 'exit'] as const;
 export const DENSITIES = ['tight', 'regular', 'loose'] as const;
@@ -40,7 +40,11 @@ export type TokenRoles = {
 
 export type SceneFact = {id: string; text: string; source: string};
 
-export type SceneItem = {text: string; note?: string; when?: string};
+export type SceneItem = {text: string; note?: string; when?: string; icon?: string};
+
+export type ChartPoint = {label: string; value: number; series?: string; focus?: boolean};
+
+export type CalloutBox = {x: number; y: number; w: number; h: number; label?: string};
 
 export type SceneScreen = {
   role: Role;
@@ -66,7 +70,19 @@ export type SceneScreen = {
   /** quiz 专用动词。surface 家族上出现就拒绝。 */
   verbs?: string[];
   src?: string;
-  callouts?: {x: number; y: number; w: number; h: number}[];
+  callouts?: CalloutBox[];
+  /** 标题上方的栏目标。等宽小字，可省略。 */
+  kicker?: string;
+  /** 证据板中间放什么。不写时：有 src 就是图，有 number 就是大数字。 */
+  evidence?: 'image' | 'table' | 'code' | 'number';
+  chart?: 'bar' | 'line' | 'donut';
+  points?: ChartPoint[];
+  max?: number;
+  /** 表格证据。数字必须出现在 fact 原文里。 */
+  rows?: {label: string; value: string}[];
+  /** 代码证据。整段当原件，不逐行套字号下限。 */
+  code?: string;
+  icon?: string;
 };
 
 export type SceneFile = {
@@ -82,12 +98,20 @@ export type SceneFile = {
 
 export type Rect = {x: number; y: number; w: number; h: number};
 
+export type BlockKind = 'card' | 'stage' | 'kicker' | 'caption' | 'evidence' | 'plot' | 'node';
+
 export type SceneBlock = Rect & {
   font: number;
   role: 'main' | 'item' | 'support';
   index: number;
   align: Align;
   textAlign: Align;
+  /** 不写就是卡片。stage 是压在舞台上的字，不铺底。 */
+  kind?: BlockKind;
+  /** 图标或节点圆，绝对坐标，落在块内。 */
+  slot?: Rect;
+  /** 正文占用的区域。和 slot 不相交。 */
+  textBox?: Rect;
 };
 
 export type SafeFrame = {

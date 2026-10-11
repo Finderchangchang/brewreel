@@ -175,6 +175,124 @@ const verticalStack = layoutBlocks({
 assert.ok(verticalStack.font >= 48);
 assert.ok(verticalStack.row <= 142);
 
+const frames = [
+  sceneFrame('promo', '9:16'),
+  sceneFrame('lesson', '16:9'),
+  sceneFrame('lesson', '9:16'),
+];
+
+function assertLaid(result, frame, label) {
+  assert.equal(result.overflow, false, `${label} 溢出`);
+  for (const block of result.blocks) inside(block, frame);
+  for (let i = 0; i < result.blocks.length; i++) {
+    for (let j = i + 1; j < result.blocks.length; j++) {
+      assert.equal(hits(result.blocks[i], result.blocks[j]), false, `${label} 重叠`);
+    }
+  }
+}
+
+function baseInput(frame, extra) {
+  return {
+    chars: Array.from({length: extra.count ?? 1}, () => extra.char ?? 6),
+    safe: frame.safe,
+    floor: frame.floor,
+    maxRow: frame.maxRow,
+    density: 'regular',
+    align: 'center',
+    portrait: frame.portrait,
+    ...extra,
+  };
+}
+
+for (const frame of frames) {
+  const tag = `${frame.product} ${frame.aspect}`;
+  const grid = layoutBlocks(baseInput(frame, {layout: 'grid', count: 4}));
+  assert.equal(grid.blocks.length, 4, tag);
+  assertLaid(grid, frame, `grid4 ${tag}`);
+  for (const block of grid.blocks) {
+    assert.equal(block.kind, 'card');
+    assert.ok(block.slot && block.textBox, '格子要有图标位和文字位');
+    assert.equal(hits(block.slot, block.textBox), false, `grid 图标和文字重叠 ${tag}`);
+    assert.ok(block.font >= frame.floor.body, `grid 字号 ${block.font}`);
+  }
+  const grid3 = layoutBlocks(baseInput(frame, {layout: 'grid', count: 3}));
+  assertLaid(grid3, frame, `grid3 ${tag}`);
+  if (frame.portrait) assert.ok(grid3.blocks[1].y >= grid3.blocks[0].y + grid3.blocks[0].h - 0.01);
+  else assert.ok(grid3.blocks[0].w > grid3.blocks[1].w);
+
+  const sequence = layoutBlocks(baseInput(frame, {layout: 'sequence', count: 4}));
+  assert.equal(sequence.links.length, 3, tag);
+  assertLaid(sequence, frame, `sequence ${tag}`);
+  for (const block of sequence.blocks) {
+    assert.equal(block.kind, 'node');
+    assert.ok(block.font >= frame.floor.body);
+    assert.equal(hits(block.slot, block.textBox), false);
+  }
+  const tooMany = layoutBlocks(baseInput(frame, {layout: 'sequence', count: 7, chars: Array.from({length: 7}, () => 4)}));
+  assert.equal(tooMany.overflow, true, `sequence 超过 6 步应溢出 ${tag}`);
+
+  const callouts = [
+    {x: 0.08, y: 0.08, w: 0.3, h: 0.2, label: '标题'},
+    {x: 0.08, y: 0.5, w: 0.4, h: 0.2, label: '参数'},
+  ];
+  const media = layoutBlocks(baseInput(frame, {layout: 'media', count: 3, callouts}));
+  assertLaid(media, frame, `media ${tag}`);
+  assert.ok(media.blocks.some((block) => block.kind === 'evidence'), tag);
+  assert.ok(media.frame && media.frame.h >= frame.floor.body * 2, `media 图太矮 ${tag}`);
+  const clash = layoutBlocks(baseInput(frame, {
+    layout: 'media',
+    count: 3,
+    callouts: [
+      {x: 0.1, y: 0.1, w: 0.4, h: 0.4},
+      {x: 0.2, y: 0.2, w: 0.4, h: 0.4},
+    ],
+  }));
+  assert.equal(clash.overflow, true, `相交标注应溢出 ${tag}`);
+
+  const chart = layoutBlocks(baseInput(frame, {layout: 'chart', count: 3}));
+  assertLaid(chart, frame, `chart ${tag}`);
+  const plot = chart.blocks.find((block) => block.kind === 'plot');
+  assert.ok(plot && plot.h >= frame.safe.h * 0.4, `chart 图区 ${tag}`);
+
+  const end = layoutBlocks(baseInput(frame, {layout: 'end', count: 3, chars: [4, 6, 6]}));
+  assertLaid(end, frame, `end ${tag}`);
+  assert.equal(end.blocks[0].kind, 'card');
+  assert.equal(end.blocks[1].kind, 'caption');
+  assert.ok(end.blocks[0].h > end.blocks[1].h, tag);
+  assert.ok(end.blocks[0].font >= frame.floor.title);
+  assert.ok(end.blocks[1].font >= frame.floor.body);
+
+  const board = layoutBlocks(baseInput(frame, {
+    layout: 'board',
+    count: 4,
+    chars: [8, 8, 2, 8],
+    bands: ['kicker', 'title', 'evidence', 'caption'],
+  }));
+  assertLaid(board, frame, `board ${tag}`);
+  assert.deepEqual(board.blocks.map((block) => block.kind), ['kicker', 'card', 'evidence', 'caption']);
+  const evidence = board.blocks[2];
+  assert.ok(evidence.h > board.blocks[1].h && evidence.h > board.blocks[3].h, `证据应是最高的一层 ${tag}`);
+  assert.ok(board.blocks[0].font >= frame.floor.aux && board.blocks[0].font <= frame.floor.aux + 0.01);
+  assert.ok(board.blocks[1].font >= frame.floor.title);
+  assert.notEqual(board.blocks[0].h, board.blocks[1].h);
+  assert.notEqual(board.blocks[1].h, evidence.h);
+
+  const number = layoutBlocks(baseInput(frame, {
+    layout: 'number',
+    count: 4,
+    chars: [8, 6, 3, 8],
+    bands: ['kicker', 'title', 'number', 'caption'],
+  }));
+  assertLaid(number, frame, `number ${tag}`);
+  assert.equal(number.layout, 'number');
+  const stage = number.blocks.find((block) => block.kind === 'stage');
+  const caption = number.blocks.find((block) => block.kind === 'caption');
+  assert.ok(stage && caption, tag);
+  assert.ok(stage.font >= caption.font * 2, `${tag} 数字 ${stage.font} 说明 ${caption.font}`);
+  assert.ok(stage.font <= frame.floor.titleMax);
+  assert.ok(stage.h > number.blocks.find((block) => block.kind === 'card').h, `数字区应大于判断带 ${tag}`);
+}
+
 console.log('对照');
 for (const row of rows) {
   console.log(`n=${row.n} 新间距=${row.gap} 新行高=${row.row} 新字号=${row.font} | features ${row.featureGap}/${row.featureRow.toFixed(0)} quickList ${row.quickGap}/${row.quickRow} steps间距 ${row.stepPitch}`);

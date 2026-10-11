@@ -11,6 +11,13 @@ const FPS = 30;
 /** 与 anim.ts pop 同一调用。steps 常用 (16, 170)，落在文档的 damping 13–16、stiffness 170–210。 */
 export const BOUNCE_SPRING = {damping: 16, stiffness: 170};
 
+/** 重点字的手感。crisp / push 下划线，bounce 色块，soft / paper 马克笔。 */
+export function emphasisLook(motion: MotionName): 'line' | 'block' | 'marker' {
+  if (motion === 'bounce') return 'block';
+  if (motion === 'soft' || motion === 'paper') return 'marker';
+  return 'line';
+}
+
 export function popAt(t: number, t0 = 0, damping = BOUNCE_SPRING.damping, stiffness = BOUNCE_SPRING.stiffness): number {
   if (t < t0) return 0;
   return spring({frame: Math.round((t - t0) * FPS), fps: FPS, config: {damping, stiffness}});

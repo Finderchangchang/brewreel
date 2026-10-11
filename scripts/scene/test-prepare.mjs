@@ -15,15 +15,16 @@ const collapsed = protoScene(fixture);
 
 assert.deepEqual(collapsed.screens.map((screen) => `${screen.role}:${screen.layout}`), [
   'claim:hero',
-  'points:stack',
+  'points:grid',
   'compare:split',
+  'number:hero',
   'action:end',
 ]);
 assert.equal(collapsed.screens[0].text, fixture.screens[0].text);
 assert.equal(collapsed.screens[1].items[1].text, '给出回复');
 assert.equal(collapsed.screens[1].items[1].note, '三条里挑一条');
 assert.equal(collapsed.screens[2].right.items[1], '直接发送');
-assert.equal(collapsed.screens[3].brand, '示例助手');
+assert.equal(collapsed.screens[4].brand, '示例助手');
 
 function planFor(product, style, motion) {
   const scene = {...collapsed, product, style, motion};
@@ -125,6 +126,31 @@ for (const screen of A.screens) {
   }
 }
 assert.equal(hits, 0);
+
+const coverageRaw = JSON.parse(readFileSync(path.join(ROOT, 'scripts/scene/fixtures/coverage.json'), 'utf8'));
+const coverageChecked = validateScene(coverageRaw);
+assert.equal(coverageChecked.ok, true, formatReport(coverageChecked));
+for (const spec of [
+  {product: 'promo', style: 'fresh-light', motion: 'bounce', aspect: '9:16'},
+  {product: 'lesson', style: 'editorial', motion: 'crisp', aspect: '9:16'},
+  {product: 'lesson', style: 'editorial', motion: 'crisp', aspect: '16:9'},
+]) {
+  const scene = {...coverageChecked.scene, ...spec};
+  const again = validateScene(scene);
+  assert.equal(again.ok, true, formatReport(again));
+  const token = loadStyle(spec.product, spec.style);
+  const frame = sceneFrame(spec.product, spec.aspect);
+  const plan = prepareScene({scene: again.scene, roles: token.roles, extra: token.extra, frame});
+  const issues = auditPlan(plan).filter((item) => spec.aspect === '9:16' || !item.includes('画幅'));
+  assert.deepEqual(issues, [], `${spec.product} ${spec.aspect} ${issues.join('；')}`);
+  const number = plan.screens.find((item) => item.role === 'number');
+  const stage = number.blocks.find((block) => block.kind === 'stage');
+  const caption = number.blocks.find((block) => block.kind === 'caption');
+  assert.ok(stage.font >= caption.font * 2, `${spec.aspect} ${stage.font} vs ${caption.font}`);
+  assert.equal(stage.mono, true);
+  assert.ok(number.blocks.some((block) => block.kind === 'kicker' && block.mono));
+  assert.equal(plan.screens.some((item) => item.imageSrc && item.imageSrc.includes('detail-screen')), true);
+}
 
 console.log(`prepare ok ${A.durationSec.toFixed(2)}s ${A.screens.map((screen) => screen.duration.toFixed(2)).join('+')} frames ${A.durationFrames}`);
 console.log(`measure bounce turns ${bounce.scaleTurns} dy ${bounce.dy.toFixed(2)} | crisp turns ${crisp.scaleTurns} ${crisp.vertical} | paper ${paper.vertical} tilt ${paper.tiltPeak.toFixed(1)}`);

@@ -59,6 +59,29 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
 }
 
+function embedImages(plan) {
+  const next = structuredClone(plan);
+  for (const screen of next.screens) {
+    const src = screen.imageSrc;
+    if (!src || String(src).startsWith('data:')) continue;
+    const abs = path.isAbsolute(src) ? src : path.resolve(ROOT, src);
+    if (!fs.existsSync(abs)) {
+      console.error(`找不到画面素材 ${src}`);
+      process.exit(1);
+    }
+    const buf = fs.readFileSync(abs);
+    const ext = path.extname(abs).slice(1).toLowerCase();
+    const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'webp' ? 'image/webp' : 'image/png';
+    if (buf.length >= 24 && buf[0] === 0x89 && buf.toString('ascii', 1, 4) === 'PNG') {
+      const w = buf.readUInt32BE(16);
+      const h = buf.readUInt32BE(20);
+      if (w > 0 && h > 0) screen.imageAspect = w / h;
+    }
+    screen.imageSrc = `data:${mime};base64,${buf.toString('base64')}`;
+  }
+  return next;
+}
+
 function shotList(plan) {
   const frames = [
     {name: 'shot-1.png', frame: Math.min(6, plan.durationFrames - 1), label: '0.2s'},
@@ -159,7 +182,7 @@ async function main() {
   writeJson(path.join(outDir, 'scene.used.json'), result.scene);
   writeJson(path.join(outDir, 'plan.json'), plan);
   const propsPath = path.join(outDir, 'props.json');
-  writeJson(propsPath, {plan, __probe: probe});
+  writeJson(propsPath, {plan: embedImages(plan), __probe: probe});
   console.log(`准备完成 ${plan.width}×${plan.height} ${plan.durationSec.toFixed(2)}s ${plan.durationFrames} 帧 ${plan.style} ${plan.motion}`);
 
   const browser = ensureTemplateBrowser({templateDir: TEMPLATE, log: console.log});
