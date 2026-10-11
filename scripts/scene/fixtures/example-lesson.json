@@ -1,0 +1,19 @@
+{
+  "product": "lesson",
+  "aspect": "16:9",
+  "style": "paper",
+  "motion": "soft",
+  "screens": [
+    {
+      "role": "points",
+      "layout": "sequence",
+      "title": "借条至少写三样",
+      "narration": "一张借条要写清谁借谁的钱，写清金额和还款日，最后双方签名。",
+      "items": [
+        {"text": "写清谁借谁的钱", "when": "谁借谁"},
+        {"text": "写清金额和还款日", "when": "金额和还款日"},
+        {"text": "双方签名", "when": "双方签名"}
+      ]
+    }
+  ]
+}

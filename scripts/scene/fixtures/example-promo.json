@@ -1,0 +1,54 @@
+{
+  "product": "promo",
+  "aspect": "9:16",
+  "style": "fresh-light",
+  "motion": "bounce",
+  "facts": [
+    {
+      "id": "f1",
+      "text": "三段聊天收成一条待办，大约 3 分钟",
+      "source": "简报功能说明"
+    }
+  ],
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "narration": "对象说你不懂我，你怎么回？",
+      "text": "对象说你不懂我，你怎么回",
+      "emphasis": ["你不懂我"],
+      "support": "先看懂再回"
+    },
+    {
+      "role": "points",
+      "layout": "grid",
+      "narration": "先读懂语气，再给你三条回复，发不发仍由你决定。",
+      "items": [
+        {"text": "读懂语气", "note": "看出话里的情绪", "when": "读懂语气"},
+        {"text": "给出回复", "note": "三条里挑一条", "when": "三条回复"},
+        {"text": "不替你发", "note": "发不发你决定", "when": "由你决定"}
+      ]
+    },
+    {
+      "role": "compare",
+      "layout": "split",
+      "narration": "以前要翻记录再粘贴，现在自动汇总，可以直接发。",
+      "left": {"label": "以前", "items": ["翻记录", "复制粘贴"]},
+      "right": {"label": "现在", "items": ["自动汇总", "直接发送"]},
+      "winner": "right"
+    },
+    {
+      "role": "number",
+      "layout": "hero",
+      "narration": "三段聊天收成一条待办，大约 3 分钟。",
+      "number": {"text": "3 分钟", "fact": "f1", "label": "三段聊天收成一条待办"}
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "narration": "回消息之前，先看懂对方。",
+      "brand": "示例助手",
+      "line": "回之前，先看懂"
+    }
+  ]
+}
