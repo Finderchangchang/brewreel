@@ -83,15 +83,31 @@ You can change on-screen copy, emphasis, the layout name, the style name, the mo
 
 The prompt for a cheap model is the `prompt` export in `scripts/scene/deepseek-layouts.mjs`. Do not rewrite it.
 
-Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/scene/b-editorial.json`, `examples/scene/c-techbrief.json`.
+Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/scene/b-editorial.json`, `examples/scene/c-techbrief.json`, plus `examples/scene/wide-promo.json` (16:9), `examples/scene/lesson-presenter.json` (lesson with a presenter), and `examples/scene/talk-scene-broll.json` (a talk clip whose template is `scene`).
 
 ## Relation to the old format
 
 The old storyboard is still the regular promo path. `scene.json` is an experimental entrance on that same path, not a new row in the routing table. The old command is `scripts/make.mjs`. The new one is `scripts/scene/make-scene.mjs`.
+
+## Landscape, lesson, and talk
+
+`aspect` may be `9:16` or `16:9`. When it is omitted, promo and talk default to `9:16`, and `product: "lesson"` defaults to `16:9`. `4:5` is still rejected.
+
+Landscape is 1920×1080. The layout probe scales measurements by the real composition width, so the safe-zone, overlap, and clip checks use 1920×1080 pixels. The content box is the lesson stage: x 120–1800, y 300–880. The corner x≥1600 and y≥810 stays clear for a presenter; layout clips that corner to x 1580. The caption band is the lesson subtitle: x 260–1540, y 900–1016, below the content box and clear of the avatar (the circle starts at x 1614). Promo `aspects.json` has no 16:9, so landscape reuses the lesson box instead of inventing one.
+
+On 16:9, `split` is left and right. `grid` uses two columns for two items, one over two for three, and 2×2 for four. `media` gives the image 62% of the content width and puts the words on the right. `board` keeps the evidence band as the tall one. Font floors stay with the product: promo body 40, lesson landscape body 44 and title 64.
+
+After `product: "lesson"`, `style` may be a lesson theme (`paper`, `lecture`, `product`, `editorial`). `presenter.kind` is `cartoon`, `real`, `video`, or `none`, using the lesson presenter. Layout stays out of the presenter corner. The opening 90 frames show the lesson AIGC badge. A legal disclaimer appears only when `domain` is `legal`.
+
+A talk clip can use `"template": "scene"`. `slots.title` and `slots.items` are still quotes from the spoken line. The card uses the talk palette and sits in the B-roll free rectangle. `keyword`, `checklist`, `steps`, `counter`, and `compare` are unchanged.
+
+A compare screen (`role: "compare"`, `layout: "split"`, with `left` and `right`) is two labeled groups with a rule between them. Portrait stacks the groups. Landscape places them side by side.
 
 ## Known limits
 
 - Experimental. Passing validation and geometry is not the regular delivery bar.
 - `quiz` and `journey` are not split into this format.
 - A screen without voice uses beats. A screen with voice uses word times only. The two sources are not stored on one timing object.
-- Karaoke stays in the bottom band. Overlapping a title, kicker, evidence card, number, or item fails the check. It is not moved to the top.
+- Karaoke stays in the caption band (portrait bottom y=1340, landscape the lesson subtitle above). Overlapping a title, kicker, evidence card, number, or item fails the check. It is not moved to the top.
+- A talk `scene` clip is one title-and-items screen. It does not embed a whole `scene.json`. A real presenter needs a local mp4. The example uses the cartoon.
+- Existing `lesson.json` files and the original five talk templates do not read these fields.

@@ -2,7 +2,7 @@
 // 只有类型，没有运行时代码（节点测试可以直接引用 stage.ts / timing.ts / palette.ts，不会拖进 React）。
 import type {MotionLookSpec} from './palette';
 
-export type MotionTemplate = 'keyword' | 'checklist' | 'steps' | 'counter' | 'compare';
+export type MotionTemplate = 'keyword' | 'checklist' | 'steps' | 'counter' | 'compare' | 'scene';
 export type MotionMode = 'full' | 'pip' | 'split';
 
 /** 一个数：脚本从原句里解析好的。text 是原句里的写法（审片用），屏幕上画 prefix + value + suffix */
@@ -24,6 +24,13 @@ export type CounterMarks = {sayAt: number; say0: number; say: number; fromAt?: n
 
 export type CompareData = {labels: string; leftTitle: string; rightTitle: string; left: string[]; right: string[]; verdict?: string};
 export type CompareMarks = {left: number[]; right: number[]; leftEnd?: number[]; rightEnd?: number[]; verdict0?: number; verdict?: number};
+
+export type SceneMotionData = {
+  title: string;
+  items: string[];
+  screen: {role: 'points'; layout: 'stack'; title: string; items: {text: string}[]};
+};
+export type SceneMotionMarks = {title0: number; title: number; items: number[]; itemsEnd?: number[]};
 
 type Base = {
   kind: 'motion';
@@ -47,4 +54,5 @@ export type MotionClip = Base &
     | {template: 'steps'; data: StepsData; marks: ListMarks}
     | {template: 'counter'; data: CounterData; marks: CounterMarks}
     | {template: 'compare'; data: CompareData; marks: CompareMarks}
+    | {template: 'scene'; data: SceneMotionData; marks: SceneMotionMarks}
   );

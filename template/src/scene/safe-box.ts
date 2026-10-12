@@ -3,6 +3,7 @@
 // 讲课横版用 stage.mjs 的 CONTENT，并扣除 RESERVE。竖版用 vertical-layout.mjs 的 safe。
 import aspects from '../core/aspects.json' with {type: 'json'};
 import {CANVAS, CONTENT, RESERVE, RESERVE_ROW_RIGHT} from '../lesson/stage.mjs';
+import {SUBTITLE} from '../lesson/presenter-place.mjs';
 import {VERTICAL} from '../../../scripts/lesson/vertical-layout.mjs';
 import type {Aspect, FontFloor, Product, SafeFrame} from './types.ts';
 
@@ -64,6 +65,12 @@ export function captionBox(frame: Pick<SceneFrame, 'aspect' | 'canvasH' | 'safe'
     const h = 112;
     return {x: g.safe.x0, y: g.bgOnly.bottom - h, w: g.safe.x1 - g.safe.x0, h};
   }
+  // 横版字幕不占内容框。讲课 `presenter-place.mjs` 的 SUBTITLE 在内容框下沿（y=880）之下、
+  // 画布底之上：x260–1540、y900–1016。右下讲解员圆窗从 x1614 起，和这条带左右不相交。
+  // 宣传片没有自己的 16:9 安全区（aspects.json 只有 9:16 和 4:5），横版沿用这一条。
+  if (frame.aspect === '16:9') {
+    return {x: SUBTITLE.x, y: SUBTITLE.y, w: SUBTITLE.w, h: SUBTITLE.h};
+  }
   const h = 96;
   const bottom = frame.safe.y + frame.safe.h;
   return {x: frame.safe.x, y: bottom - h, w: frame.safe.w, h};
@@ -99,6 +106,10 @@ export type SceneFrame = {
 
 export function sceneFrame(product: Product, aspect: Aspect): SceneFrame {
   const floor = product === 'lesson' ? (aspect === '9:16' ? LESSON_VERTICAL_FLOOR : LESSON_FLOOR) : PROMO_FLOOR;
+  // 横版画布 1920×1080，来自讲课 stage.mjs 的 CANVAS。
+  // 内容框是 CONTENT：x 120–1800，y 300–880。宣传片 aspects.json 没有 16:9，所以横版不另裁一圈。
+  // 右下角 RESERVE（x≥1600 且 y≥810）是讲解员保留区，右缘收到 RESERVE_ROW_RIGHT（1580）。
+  // 字号：讲课用 LESSON_FLOOR（标题 64–96，正文 44，辅助 28）；宣传片和口播用 PROMO_FLOOR（正文 40，面板 34，最小 26，标题上限 96）。
   if (aspect === '16:9') {
     return {
       product,

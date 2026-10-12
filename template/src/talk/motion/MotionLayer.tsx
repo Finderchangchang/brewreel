@@ -17,7 +17,8 @@ import {Compare} from './Compare';
 import {Counter} from './Counter';
 import {Keyword} from './Keyword';
 import {CutpaperStage} from './cutpaper';
-import {isCutpaper, resolvePalette} from './palette';
+import {isCutpaper, resolvePalette, type MotionPalette} from './palette';
+import {quietFloat} from './parts';
 import {freeRect} from './stage';
 import {Steps} from './Steps';
 import type {MotionClip} from './types';
@@ -46,6 +47,49 @@ export type MotionLayerProps = {
   hold?: boolean;
 };
 
+/** 一屏场景画面。只用口播配色，画在 freeRect 里。五个旧模板不走这里。 */
+function SceneBoard({data, marks, t, W, H, pal}: {data: {title: string; items: string[]}; marks: {title0?: number; items?: number[]}; t: number; W: number; H: number; pal: MotionPalette}) {
+  const items = data.items ?? [];
+  const pad = Math.max(16, Math.round(Math.min(W, H) * 0.05));
+  const gap = Math.max(8, Math.round(H * 0.03));
+  const titleOn = t + 1e-3 >= (marks.title0 ?? 0);
+  const titleH = Math.round(Math.min(H * 0.28, 160));
+  const listH = Math.max(1, H - pad * 2 - titleH);
+  const row = items.length ? listH / items.length : listH;
+  return (
+    <div style={{width: W, height: H, boxSizing: 'border-box', background: pal.bg, color: pal.ink, overflow: 'hidden'}}>
+      <div style={{boxSizing: 'border-box', width: W, height: H, padding: pad, ...quietFloat(t, H)}}>
+      <div style={{height: titleH, display: 'flex', alignItems: 'center', fontWeight: 760, fontSize: Math.max(28, Math.round(titleH * 0.42)), lineHeight: 1.15, opacity: titleOn ? 1 : 0}}>
+        {data.title}
+      </div>
+      {items.map((text, i) => {
+        const on = t + 1e-3 >= (marks.items?.[i] ?? 0);
+        return (
+          <div
+            key={i}
+            style={{
+              height: Math.max(1, row - gap),
+              marginTop: gap,
+              display: 'flex',
+              alignItems: 'center',
+              padding: '0 16px',
+              borderRadius: 18,
+              background: pal.card,
+              color: pal.ink,
+              boxShadow: `inset 8px 0 0 ${pal.accent}`,
+              fontSize: Math.max(22, Math.round(Math.max(1, row - gap) * 0.36)),
+              opacity: on ? 1 : 0,
+            }}
+          >
+            {text}
+          </div>
+        );
+      })}
+      </div>
+    </div>
+  );
+}
+
 export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, captionBottom, face, relay, hold = false}) => {
   const frame = useCurrentFrame();
   const {fps, width, height} = useVideoConfig();
@@ -70,6 +114,17 @@ export const MotionLayer: React.FC<MotionLayerProps> = ({clip, box, captionTop, 
   }
   if (face && clip.mode === 'pip') avoid.push({x: (face.x - box.x) / u - FACE_PAD, y: (face.y - box.y) / u - FACE_PAD, width: face.width / u + FACE_PAD * 2, height: face.height / u + FACE_PAD * 2});
   const common = {t, dur, W, H, pal};
+  if (clip.template === 'scene') {
+    return (
+      <div style={{position: 'absolute', left: box.x, top: box.y, width: box.width, height: box.height, overflow: 'hidden'}}>
+        <div style={{position: 'absolute', left: 0, top: 0, width: bw, height: bh, transformOrigin: '0 0', transform: `scale(${u})`, fontFamily: FONT}}>
+          <div style={{position: 'absolute', left: fx, top: fy, width: W, height: H}}>
+            <SceneBoard data={clip.data} marks={clip.marks} t={t} W={W} H={H} pal={pal} />
+          </div>
+        </div>
+      </div>
+    );
+  }
   const cut = isCutpaper(pal.look);
   let body: React.ReactNode = null;
   if (!cut) {

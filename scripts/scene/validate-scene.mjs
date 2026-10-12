@@ -1,10 +1,12 @@
 // scene.json 结构检查。报错格式和 scripts/validate.mjs 一样：哪里、错在哪、怎么改。
 // 禁止组合要么拒绝，要么改写，报告里都写原因。quiz / journey 不拆。
 import {readFileSync} from 'node:fs';
+import path from 'node:path';
 import ICONS from '../../template/src/core/icons.json' with {type: 'json'};
 import {PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, DENSITIES, ALIGNS} from '../../template/src/scene/types.ts';
 import {defaultMotion} from '../../template/src/scene/motion.ts';
 import {inspectCallouts, inspectChart} from '../../template/src/scene/rules.ts';
+import {presenterLookErrors} from '../lesson/validate-lesson.mjs';
 import {stylesFor, themeIsDark} from './tokens.mjs';
 
 const ICON_NAMES = Object.keys(ICONS);
@@ -379,6 +381,28 @@ function suggest(role) {
   return 'hero';
 }
 
+function checkPresenter(scene, errors) {
+  if (scene.domain !== undefined && typeof scene.domain !== 'string') {
+    errors.push(issue('domain', 'domain 必须是字符串', '法律领域写 legal，其它领域写 tech 这类名字'));
+  }
+  if (scene.presenter === undefined) return;
+  if (scene.product !== 'lesson') {
+    errors.push(issue('presenter', '讲解员只属于讲课', 'product 改成 lesson，或删掉 presenter'));
+    return;
+  }
+  for (const line of presenterLookErrors(scene.presenter, 'presenter')) {
+    const cut = line.indexOf('：');
+    errors.push(issue(cut >= 0 ? line.slice(0, cut) : 'presenter', cut >= 0 ? line.slice(cut + 1) : line, '按讲课引擎写 presenter.kind：cartoon、real、video 或 none'));
+  }
+  const kind = scene.presenter && scene.presenter.kind;
+  if (kind === 'real' || kind === 'video') {
+    const src = scene.presenter.src;
+    if (typeof src !== 'string' || path.extname(src).toLowerCase() !== '.mp4' || /^(?:[a-z][a-z\d+.-]*:\/\/|data:|blob:|\\\\|\/\/)/i.test(src)) {
+      errors.push(issue('presenter.src', '真人或视频讲解员要本地 mp4', 'src 写本地 .mp4 路径，不要写网址'));
+    }
+  }
+}
+
 export function validateScene(scene) {
   const errors = [];
   const warnings = [];
@@ -393,7 +417,12 @@ export function validateScene(scene) {
       errors.push(issue('product', `「${scene.product}」不拆进通用场景`, '整片继续走现有成片。不要写成 screens 列表', scene.product === 'journey' ? REASONS.journey : REASONS.quizVerb));
     } else errors.push(enumError('product', scene.product, PRODUCTS, '产品'));
   }
-  if (!ASPECTS.includes(scene.aspect)) errors.push(enumError('aspect', scene.aspect, ASPECTS, '画幅'));
+  if (scene.aspect === undefined || scene.aspect === null || scene.aspect === '') {
+    const to = scene.product === 'lesson' ? '16:9' : '9:16';
+    scene.aspect = to;
+    applied.push({where: 'aspect', from: '', to, reason: scene.product === 'lesson' ? '讲课没写画幅，预设横版 16:9' : '没写画幅，预设竖版 9:16'});
+  } else if (!ASPECTS.includes(scene.aspect)) errors.push(enumError('aspect', scene.aspect, ASPECTS, '画幅'));
+  checkPresenter(scene, errors);
   const styles = stylesFor(scene.product);
   if (PRODUCTS.includes(scene.product) && !styles.includes(scene.style)) {
     errors.push(enumError('style', scene.style, styles, scene.product === 'promo' ? '宣传片风格' : scene.product === 'lesson' ? '讲课风格' : '口播风格'));

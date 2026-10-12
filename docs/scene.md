@@ -85,15 +85,31 @@ node scripts/revise.mjs <scene.json> "一句话"
 
 给便宜模型写场景的提示词，用 `scripts/scene/deepseek-layouts.mjs` 里导出的 `prompt`，不要另写一份。
 
-可直接出片的示例：`examples/scene/a-fresh.json`、`examples/scene/b-editorial.json`、`examples/scene/c-techbrief.json`。
+可直接出片的示例：`examples/scene/a-fresh.json`、`examples/scene/b-editorial.json`、`examples/scene/c-techbrief.json`。横版宣传是 `examples/scene/wide-promo.json`，带讲解员的横版讲课是 `examples/scene/lesson-presenter.json`，口播里用一屏场景画面的是 `examples/scene/talk-scene-broll.json`。
 
 ## 和旧写法的关系
 
 旧分镜仍然是宣传片的正式写法。`scene.json` 是同一条宣传片里的实验入口，不另占分流表的一行。出片命令不同：旧的走 `scripts/make.mjs`，新的走 `scripts/scene/make-scene.mjs`。
+
+## 横版、讲课和口播
+
+`aspect` 可以写 `9:16` 或 `16:9`。不写时，宣传片和口播是 `9:16`，`product: "lesson"` 是 `16:9`。`4:5` 仍拒绝出片。
+
+横版画面是 1920×1080。版式探针按成片真实宽度换算，不再把坐标折成 1080 宽，所以安全区、相交和裁切检查用的是 1920×1080 上的像素。内容区沿用讲课横版：x 120–1800、y 300–880。右下 x≥1600 且 y≥810 留给讲解员，排版时这一角收到 x 1580。字幕用讲课的字幕条：x 260–1540、y 900–1016，在内容框下面，也不压到讲解员圆窗（圆窗从 x 1614 起）。宣传片自己的 `aspects.json` 没有 16:9，所以横版安全区和字幕都沿用讲课这套，不另裁一圈。
+
+横版几何：`split` 左右各一组；`grid` 两条两列，三条是上一下二，四条 2×2；`media` 图占内容宽的 62%，字在右侧；`board` 仍是上栏目标、下证据，多出来的高度给证据。字号下限不另做：宣传片仍是正文 40，讲课横版正文 44、标题 64。
+
+`product: "lesson"` 之后，`style` 用讲课主题名（`paper`、`lecture`、`product`、`editorial`）。`presenter.kind` 可以是 `cartoon`、`real`、`video` 或 `none`，沿用讲课引擎的讲解员，不另画一个人。有卡通或真人时，版式让开右下角。片头 90 帧内出「AI生成合成」，和讲课一样，不是常驻角标。`domain` 写成 `legal` 才在片尾出「普法内容，不构成法律意见」。
+
+口播要在某一段用场景画面时，`broll.json` 的该段写 `"template": "scene"`。`slots.title` 和 `slots.items` 仍是原句里的字。画面用这段口播的配色，画在 B-roll 取景框里。原来的 `keyword`、`checklist`、`steps`、`counter`、`compare` 不变。
+
+对比屏（`role: "compare"`、`layout: "split"`，并写了 `left` / `right`）竖版也分成上下两组：每组有组标签，中间有分隔。横版则是左右两组。
 
 ## 已知限制
 
 - 实验功能。校验和几何过了，也不等于可以当正式交付标准。
 - `quiz`、`journey` 不拆进这套场景。
 - 没配音的屏按拍计时。配了音的屏只用逐字时间。同一屏不会把两种来源混在一个时间对象里。
-- 逐字字幕固定在底部带。和标题、kicker、证据、数字、条目相交就算检查失败，不会改放到画面顶部。
+- 逐字字幕固定在字幕带里。竖版下沿 y=1340。横版用上面的讲课字幕条。和标题、kicker、证据、数字、条目相交就算检查失败，不会改放到画面顶部。
+- 口播里的 `scene` 段这一版收成标题加条目的一屏，不把整份 `scene.json` 嵌进去。真人讲解员要本地 mp4，示例用卡通。
+- 旧的 `lesson.json` 和原来的五段口播模板不读这些新字段。

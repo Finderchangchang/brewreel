@@ -101,6 +101,16 @@ export const TEMPLATES = {
     note: '左右对比：左栏放先说的旧做法、右栏放后说的新做法并胜出；栏标题由 labels 给固定词。先说新做法的句子别用 compare',
     example: {sentence: '以前配一段画面要花七块钱，现在一分钱不用', job: 'compare', slots: {labels: 'old-new', left: ['要花七块钱'], right: ['一分钱不用']}},
   },
+  scene: {
+    jobs: ['explain', 'list'],
+    slots: {
+      title: {kind: 'quote', min: 2, max: 16, required: true},
+      items: {kind: 'quotes', min: 2, max: 4, each: 12, required: true},
+    },
+    use: '把这句话收成一屏场景画面，标题加几条',
+    note: '场景画面：字仍从原句摘。合成时用口播配色，画在 B-roll 取景框里',
+    example: {sentence: '做法分三步：先转写，再挑句子，最后出片', job: 'explain', slots: {title: '做法分三步', items: ['先转写', '再挑句子', '最后出片']}},
+  },
 };
 export const MOTION_TEMPLATES = Object.keys(TEMPLATES);
 
@@ -1115,7 +1125,16 @@ export const validateMotionClip = (clip, cues, opts = {}) => {
   if (errors.length) return done();
 
   // ---- 时间上的两条：字出现得太晚（前面卡片是空的）、说完后停得太久 ----
-  const leadMs = {keyword: marksMs.text0, checklist: marksMs.items?.[0], steps: marksMs.items?.[0], counter: marksMs.say0, compare: marksMs.left?.[0]}[clip.template];
+  if (clip.template === 'scene') {
+    data.screen = {
+      role: 'points',
+      layout: 'stack',
+      title: data.title,
+      items: data.items.map((text) => ({text})),
+    };
+  }
+
+  const leadMs = {keyword: marksMs.text0, checklist: marksMs.items?.[0], steps: marksMs.items?.[0], counter: marksMs.say0, compare: marksMs.left?.[0], scene: marksMs.title0}[clip.template];
   if (Number.isFinite(leadMs) && leadMs > fromCue.endMs && leadMs - win.startMs > HEAD_LATE_MS) {
     const cue = covered.find((c) => c.endMs >= leadMs) ?? covered[0];
     err('from', `画面上的字要到第 ${((leadMs - win.startMs) / 1000).toFixed(1)} 秒才说出来，前面这段卡片是空的、人却在讲别的`, `把 from 改成 ${cue.id}`);
@@ -1145,6 +1164,7 @@ export const validateMotionClip = (clip, cues, opts = {}) => {
   const shown = (n) => `${n.prefix}${n.value.toFixed(n.decimals)}${n.suffix}（原话「${n.text}」）`;
   if (clip.template === 'counter') screenText.push(...(data.from ? [shown(data.from)] : []), shown(data.say), data.label);
   if (clip.template === 'compare') screenText.push(`${data.leftTitle}：${data.left.join(' / ')}`, `${data.rightTitle}：${data.right.join(' / ')}`, ...(data.verdict ? [data.verdict] : []));
+  if (clip.template === 'scene') screenText.push(data.title, ...data.items);
 
   return done({
     id,
@@ -1244,7 +1264,7 @@ export const toMotionProps = (plan, opts = {}) => {
  * @typedef {object} MotionPlan
  * @property {string} id
  * @property {'motion'} source
- * @property {'keyword'|'checklist'|'steps'|'counter'|'compare'} template
+ * @property {'keyword'|'checklist'|'steps'|'counter'|'compare'|'scene'} template
  * @property {'full'|'pip'|'split'} mode
  * @property {string} job
  * @property {string} plain

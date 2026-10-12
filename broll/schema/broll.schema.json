@@ -80,7 +80,7 @@
         "source": {"const": "motion"},
         "mode": {"$ref": "#/$defs/mode"},
         "job": {"enum": ["demonstrate", "explain", "compare", "quantify", "evoke", "list", "stress"]},
-        "template": {"enum": ["keyword", "checklist", "steps", "counter", "compare"]},
+        "template": {"enum": ["keyword", "checklist", "steps", "counter", "compare", "scene"]},
         "plain": {"type": "string", "maxLength": 20},
         "slots": {
           "type": "object",

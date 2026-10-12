@@ -10,7 +10,7 @@ import {curveOf} from './motion.ts';
 import {revealFromBeats, revealFromSentenceInterp, revealFromWords} from './time.ts';
 import {captionBox, layoutSafe, screenSafe, type SceneFrame} from './safe-box.ts';
 import type {RevealPlan} from './time.ts';
-import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
+import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, ScenePresenter, SceneScreen, TokenRoles} from './types.ts';
 
 const FPS = 30;
 const FONT_STACK = '"PSans", "Noto Sans SC", "Microsoft YaHei UI", sans-serif';
@@ -39,6 +39,7 @@ export type PlanBlock = {
   mono?: boolean;
   slot?: {x: number; y: number; w: number; h: number};
   textBox?: {x: number; y: number; w: number; h: number};
+  pane?: 'left' | 'right';
 };
 
 export type PlanCurve = {
@@ -64,6 +65,8 @@ export type PlanScreen = {
   curve: PlanCurve;
   blocks: PlanBlock[];
   links?: {x1: number; y1: number; x2: number; y2: number}[];
+  /** split 两组之间的分隔。 */
+  rule?: {x: number; y: number; w: number; h: number};
   chart?: {type: 'bar' | 'line' | 'donut'; points: ChartPoint[]; max?: number};
   imageSrc?: string;
   /** 原图像素宽 / 高。标注按图片本身，不按外层卡片。 */
@@ -115,6 +118,8 @@ export type ScenePlan = {
    */
   headlinePlate: 'none' | 'card';
   screens: PlanScreen[];
+  domain?: string;
+  presenter?: ScenePresenter;
   /** make-scene 在准备之后填上。渲染器只读，准备函数不写。 */
   sound?: {
     bgm?: string;
@@ -132,7 +137,7 @@ export type ScenePlan = {
 
 export type Pose = {y: number; scale: number; tilt: number; opacity: number};
 
-type Piece = {text: string; note?: string; emphasis?: string[]; role: PlanBlock['role']; icon?: string};
+type Piece = {text: string; note?: string; emphasis?: string[]; role: PlanBlock['role']; icon?: string; pane?: 'left' | 'right'; groupLabel?: boolean};
 
 export function hanziCount(text: string): number {
   return [...text].filter((ch) => /[\u3400-\u9fff]/.test(ch)).length;
@@ -162,7 +167,7 @@ function piecesOf(screen: SceneScreen, layout: PlanScreen['layout']): Piece[] {
     if (screen.cta) pieces.push({text: screen.cta, role: 'support'});
     return pieces.length ? pieces : [{text: screen.text || screen.title || '片尾', role: 'main'}];
   }
-  if (screen.left && screen.right) {
+  if (screen.left && screen.right && screen.layout === 'stack') {
     const left = [screen.left.label, ...screen.left.items];
     const right = [screen.right.label, ...screen.right.items];
     return [...left, ...right].filter((text) => typeof text === 'string' && text.trim()).map((text, index) => ({
@@ -251,7 +256,28 @@ type Built = {
   bands?: BandName[];
   callouts?: CalloutBox[];
   icons?: string[];
+  sides?: {labelChars: number; itemChars: number[]}[];
 };
+
+function comparePieces(screen: SceneScreen): {pieces: Piece[]; sides: {labelChars: number; itemChars: number[]}[]} {
+  const pieces: Piece[] = [];
+  const sides: {labelChars: number; itemChars: number[]}[] = [];
+  const push = (pane: 'left' | 'right', label: string | undefined, items: string[] | undefined) => {
+    const head = (label || (pane === 'left' ? '左' : '右')).trim() || (pane === 'left' ? '左' : '右');
+    const body = (items ?? []).map((text) => text.trim()).filter(Boolean);
+    pieces.push({text: head, role: 'support', pane, groupLabel: true});
+    const itemChars: number[] = [];
+    const rows = body.length ? body : [' '];
+    for (const text of rows) {
+      pieces.push({text, role: 'item', pane});
+      itemChars.push(glyphCount(text));
+    }
+    sides.push({labelChars: glyphCount(head), itemChars});
+  };
+  push('left', screen.left?.label, screen.left?.items);
+  push('right', screen.right?.label, screen.right?.items);
+  return {pieces, sides};
+}
 
 function textPiece(text: string, role: Piece['role'], emphasis?: string[], note?: string, icon?: string): Piece {
   return {text, role, ...(emphasis?.length ? {emphasis} : {}), ...(note ? {note} : {}), ...(icon ? {icon} : {})};
@@ -362,6 +388,10 @@ function compose(screen: SceneScreen): Built {
   }
   const layout: PlanScreen['layout'] = screen.layout === 'split' ? 'split' : screen.layout === 'stack' ? 'stack' : 'hero';
   const geom: GeomLayout = layout === 'split' ? 'split' : layout === 'stack' ? 'stack' : 'hero';
+  if (layout === 'split' && screen.left && screen.right) {
+    const compared = comparePieces(screen);
+    return {layout, geom, pieces: compared.pieces, sides: compared.sides};
+  }
   return {layout, geom, pieces: piecesOf(screen, layout)};
 }
 
@@ -510,6 +540,7 @@ export function prepareScene(input: {
       portrait: frame.portrait,
       ...(built.bands ? {bands: built.bands} : {}),
       ...(built.callouts ? {callouts: built.callouts} : {}),
+      ...(built.sides ? {sides: built.sides} : {}),
     });
     const half = Math.ceil(pieces.length / 2);
     const mediaPieces = () => {
@@ -542,8 +573,9 @@ export function prepareScene(input: {
         align: block.align,
         textAlign: block.textAlign,
         showAt: blockIndex === 0 ? 0 : (reveal.at[Math.min(blockIndex, pieces.length - 1)] ?? 0),
-        mark: blockIndex === 0 || (built.layout === 'split' && side === screen.winner),
+        mark: blockIndex === 0 || (built.layout === 'split' && (piece.pane ? piece.pane === screen.winner : side === screen.winner)),
         ...(block.kind ? {kind: block.kind} : {}),
+        ...(block.pane ? {pane: block.pane} : {}),
         ...(icon ? {icon} : {}),
         ...((block.kind === 'stage' || block.kind === 'kicker') ? {mono: true} : {}),
         ...(block.slot ? {slot: block.slot} : {}),
@@ -564,6 +596,7 @@ export function prepareScene(input: {
       curve,
       blocks,
       ...(placed.links?.length ? {links: placed.links} : {}),
+      ...(placed.rule ? {rule: placed.rule} : {}),
       ...(screen.chart && screen.points ? {chart: {type: screen.chart, points: screen.points, ...(screen.max !== undefined ? {max: screen.max} : {})}} : {}),
       ...(screen.src ? {imageSrc: screen.src} : {}),
       ...(screen.callouts ? {callouts: screen.callouts} : {}),
@@ -591,6 +624,8 @@ export function prepareScene(input: {
     backdrop: {top: backdropTop, bottom: backdropBottom},
     safe: {x: frame.safe.x, y: frame.safe.y, w: frame.safe.w, h: frame.safe.h},
     floor: frame.floor,
+    ...(scene.domain ? {domain: scene.domain} : {}),
+    ...(scene.presenter ? {presenter: scene.presenter} : {}),
     paint: {ink: ink.color, muted: muted.color, surface: roles.surface, stage, inkAdjusted: ink.adjusted, mutedAdjusted: muted.adjusted},
     caption: {ink: spokenColor.ink, hot: spokenColor.hot, bg: spokenColor.bg, shadow: spokenColor.shadow},
     contrast,
@@ -629,7 +664,7 @@ export function fontFloorOf(plan: ScenePlan, screen: PlanScreen, block: PlanBloc
 export function auditPlan(plan: ScenePlan): string[] {
   const issues: string[] = [];
   if (plan.durationSec < 6) issues.push(`成片 ${plan.durationSec.toFixed(2)} 秒，短于 6 秒`);
-  if (plan.aspect !== '9:16') issues.push(`画幅 ${plan.aspect}，不是 9:16`);
+  if (plan.aspect !== '9:16' && plan.aspect !== '16:9') issues.push(`画幅 ${plan.aspect}，不是 9:16 或 16:9`);
   for (const row of plan.contrast) {
     if (row.painted && row.ratio < 4.5) issues.push(`${row.pair} 对比度 ${row.ratio.toFixed(2)}，低于 4.5`);
   }

@@ -85,6 +85,13 @@ export type SceneScreen = {
   icon?: string;
 };
 
+/** 讲课讲解员。kind 与讲课引擎相同，包括 none。 */
+export type ScenePresenter = {
+  kind: 'cartoon' | 'real' | 'video' | 'none';
+  look?: {preset?: string; hair?: string; accessory?: string; facialHair?: string; outfit?: string; skin?: string};
+  src?: string;
+};
+
 export type SceneFile = {
   product: Product;
   aspect: Aspect;
@@ -92,6 +99,10 @@ export type SceneFile = {
   motion?: MotionName;
   density?: Density;
   align?: Align;
+  /** 讲课领域。只有 legal 才出普法免责声明。 */
+  domain?: string;
+  /** 只在 product 为 lesson 时使用。 */
+  presenter?: ScenePresenter;
   facts?: SceneFact[];
   screens: SceneScreen[];
 };
@@ -112,6 +123,8 @@ export type SceneBlock = Rect & {
   slot?: Rect;
   /** 正文占用的区域。和 slot 不相交。 */
   textBox?: Rect;
+  /** split 的左右栏。竖版时上栏是 left、下栏是 right。 */
+  pane?: 'left' | 'right';
 };
 
 export type SafeFrame = {

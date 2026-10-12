@@ -4,8 +4,14 @@
 // 圆角、阴影、字重、描边、质感都从 plan.roles 来，不写死像素。
 // 纸片入场走 poseAt → curveOf → settle / toss，这里不另写曲线。
 import React from 'react';
-import {AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
+import {AbsoluteFill, Audio, Img, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
 import {SERIF} from '../core/font.ts';
+import {LegalMarkings} from '../lesson/overlays/LegalMarkings';
+import {Character} from '../lesson/mascot/Character';
+import type {MascotWardrobe} from '../lesson/mascot/poses';
+import {resolveCartoonWardrobe} from '../lesson/mascot/cast.mjs';
+import {cartoonBox} from '../lesson/presenter-place.mjs';
+import type {LessonTheme} from '../lesson/theme';
 import {LayoutProbe} from '../core/probe';
 import {Icon} from '../core/icons';
 import {BLOCK_CHIP_EM, CARD_PAD_X, chipFitWidth, dressOf, freshLowerBlob, showTitleTick, type SceneDress} from './look.ts';
@@ -355,8 +361,10 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
         boxSizing: 'border-box',
         borderRadius: chrome.borderRadius ?? plan.roles.radius,
         background: chrome.background ?? plan.roles.surface,
-        boxShadow: chrome.boxShadow ?? plan.roles.shadow,
-        border: chrome.border !== undefined ? chrome.border : plan.cardBorder,
+        boxShadow: block.pane === 'right'
+          ? `${chrome.boxShadow ?? plan.roles.shadow}, inset 0 0 0 4px ${plan.roles.accent}`
+          : (chrome.boxShadow ?? plan.roles.shadow),
+        border: block.pane === 'right' ? `3px solid ${plan.roles.accent}` : chrome.border !== undefined ? chrome.border : plan.cardBorder,
         transform: `translateY(${pose.y}px) rotate(${pose.tilt}deg) scale(${pose.scale})`,
         transformOrigin: 'center center',
         opacity: pose.opacity,
@@ -988,6 +996,65 @@ function bareJudgment(plan: ScenePlan, screen: PlanScreen, block: PlanBlock): bo
   return false;
 }
 
+function GroupRule({plan, screen}: {plan: ScenePlan; screen: PlanScreen}) {
+  const rule = screen.rule;
+  if (!rule || rule.w < 1 || rule.h < 1) return null;
+  return (
+    <div
+      data-probe-skip
+      style={{
+        position: 'absolute',
+        left: rule.x,
+        top: rule.y,
+        width: rule.w,
+        height: rule.h,
+        borderRadius: 3,
+        background: plan.roles.ink,
+      }}
+    />
+  );
+}
+
+const LESSON_THEMES = new Set(['paper', 'lecture', 'product', 'editorial']);
+
+function LessonChrome({plan, frame}: {plan: ScenePlan; frame: number}) {
+  if (plan.product !== 'lesson') return null;
+  const theme = (LESSON_THEMES.has(plan.style) ? plan.style : 'lecture') as LessonTheme;
+  const presenter = plan.presenter;
+  const showCartoon = presenter?.kind === 'cartoon';
+  const showReal = presenter?.kind === 'real' || presenter?.kind === 'video';
+  const box = showCartoon || (showReal && presenter?.src) ? cartoonBox('steps') : null;
+  return (
+    <>
+      {/* 片头标识在讲课右上角（right: 80），超出内容区 x1800。标识本身不进内容区检查。 */}
+      <div data-probe-skip>
+        <LegalMarkings domain={plan.domain} lang="zh" frame={frame} totalFrames={plan.durationFrames} theme={theme} />
+      </div>
+      {box && showCartoon ? (
+        <div style={{position: 'absolute', left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: box.w / 2, overflow: 'hidden', zIndex: 24, background: plan.roles.surface}}>
+          <Character
+            pose="explain"
+            fromPose="explain"
+            progress={1}
+            mouth={0}
+            blink={0}
+            elapsedMs={(frame / Math.max(1, plan.fps)) * 1000}
+            wardrobe={resolveCartoonWardrobe({presenter, domain: plan.domain}) as MascotWardrobe | null}
+            crop="circle"
+            frameWidth={box.w}
+            frameHeight={box.h}
+          />
+        </div>
+      ) : null}
+      {box && showReal && presenter?.src ? (
+        <div style={{position: 'absolute', left: box.x, top: box.y, width: box.w, height: box.h, borderRadius: box.w / 2, overflow: 'hidden', zIndex: 24}}>
+          <OffthreadVideo src={staticFile(presenter.src)} muted style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function SplitRule({plan, screen}: {plan: ScenePlan; screen: PlanScreen}) {
   const blocks = [...screen.blocks].sort((a, b) => a.y - b.y);
   let y: number | null = null;
@@ -1093,11 +1160,13 @@ export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {
         <Backdrop plan={plan} />
         <SoundBed plan={plan} />
         {screen.links?.length ? <Links plan={plan} links={screen.links} /> : null}
+        {screen.rule ? <GroupRule plan={plan} screen={screen} /> : null}
         {screen.layout === 'split' && dressOf(plan.style)?.split === 'column-rule' ? <SplitRule plan={plan} screen={screen} /> : null}
         {screen.blocks.map((block) => (
           <BlockView key={`${screen.index}-${block.index}`} plan={plan} screen={screen} block={block} local={local} />
         ))}
         <Karaoke plan={plan} screen={screen} local={local} />
+        <LessonChrome plan={plan} frame={frame} />
       </AbsoluteFill>
     </LayoutProbe>
   );

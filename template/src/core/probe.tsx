@@ -1,5 +1,6 @@
 import React, {useLayoutEffect, useRef} from 'react';
-import {continueRender, delayRender, useCurrentFrame} from 'remotion';
+import {continueRender, delayRender, useCurrentFrame, useVideoConfig} from 'remotion';
+import {probeScale} from './probe-scale';
 
 // ============================================================
 // 布局探针（make.mjs 自动用，镜头开发者不用管）。
@@ -56,9 +57,9 @@ const scanHan = (scope: Element): ProbeHan[] => {
   return [...out.entries()].map(([text, vis]) => ({text, vis}));
 };
 
-const measure = (root: HTMLElement): ProbeBlock[] => {
+const measure = (root: HTMLElement, compWidth: number): ProbeBlock[] => {
   const R = root.getBoundingClientRect();
-  const k = R.width ? 1080 / R.width : 1;
+  const k = probeScale(compWidth, R.width);
   const tr = (r: DOMRect | {left: number; top: number; right: number; bottom: number}) => [(r.left - R.left) * k, (r.top - R.top) * k, (r.right - R.left) * k, (r.bottom - R.top) * k] as [number, number, number, number];
   const ids = new Map<Element, number>();
   const idOf = (el: Element) => {
@@ -129,6 +130,7 @@ const measure = (root: HTMLElement): ProbeBlock[] => {
 export const LayoutProbe: React.FC<{frames?: number[]; children: React.ReactNode}> = ({frames, children}) => {
   const ref = useRef<HTMLDivElement>(null);
   const frame = useCurrentFrame();
+  const {width: compWidth} = useVideoConfig();
   const on = Array.isArray(frames) && frames.includes(frame);
   useLayoutEffect(() => {
     if (!on || !ref.current) return;
@@ -140,7 +142,7 @@ export const LayoutProbe: React.FC<{frames?: number[]; children: React.ReactNode
         // 汉字扫描范围 = 探针外层（整片画面，含背景层），不只是探针包住的镜头/字幕
         const scope = el.parentElement ?? el;
         // eslint-disable-next-line no-console
-        console.error(`__LAYOUT__${JSON.stringify({frame, blocks: measure(el), han: scanHan(scope)})}__END__`);
+        console.error(`__LAYOUT__${JSON.stringify({frame, blocks: measure(el, compWidth), han: scanHan(scope)})}__END__`);
       } catch (e) {
         // eslint-disable-next-line no-console
         console.error(`__LAYOUT__${JSON.stringify({frame, error: String(e)})}__END__`);

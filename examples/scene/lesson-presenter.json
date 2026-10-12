@@ -1,0 +1,36 @@
+{
+  "product": "lesson",
+  "aspect": "16:9",
+  "style": "lecture",
+  "motion": "soft",
+  "domain": "tech",
+  "presenter": {
+    "kind": "cartoon",
+    "look": {"preset": "peep-mentor"}
+  },
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "narration": "先看全貌，再看两边的差别。",
+      "text": "先看全貌",
+      "support": "再看两边的差别"
+    },
+    {
+      "role": "compare",
+      "layout": "split",
+      "narration": "旧页要翻记录，新页直接汇总。",
+      "left": {"label": "旧页", "items": ["翻记录", "再粘贴"]},
+      "right": {"label": "新页", "items": ["直接汇总", "可以发出"]},
+      "winner": "right"
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "narration": "按这个讲完，回去改一版。",
+      "brand": "讲解样例",
+      "line": "按这个讲完",
+      "cta": "回去改一版"
+    }
+  ]
+}

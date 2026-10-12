@@ -192,8 +192,11 @@ const tossBeats = (clip: MotionClip, dur: number): number[] => {
     return revealTimes(clip.marks.items, clip.data.items.length, dur);
   }
   if (clip.template === 'counter') return finite(clip.marks.sayAt) ? [clip.marks.sayAt] : [];
-  const verdict = clip.marks.verdict0 ?? clip.marks.verdict;
-  return finite(verdict) ? [verdict] : [];
+  if (clip.template === 'compare') {
+    const verdict = clip.marks.verdict0 ?? clip.marks.verdict;
+    return finite(verdict) ? [verdict] : [];
+  }
+  return [];
 };
 
 /** counter / steps 在新内容上绕 Y 翻一面。第一条从第 0 帧就在正面，不翻。 */

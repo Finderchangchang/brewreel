@@ -1,0 +1,54 @@
+{
+  "product": "promo",
+  "aspect": "16:9",
+  "style": "fresh-light",
+  "motion": "bounce",
+  "density": "regular",
+  "facts": [
+    {
+      "id": "f-spec",
+      "text": "这瓶 500 ml，酒精度 5.2%",
+      "source": "样例参数表"
+    }
+  ],
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "narration": "规格先摆到第一屏，顾客不用再点开展开。",
+      "text": "规格先摆到第一屏",
+      "emphasis": ["第一屏"],
+      "support": "不用再点开展开"
+    },
+    {
+      "role": "points",
+      "layout": "grid",
+      "narration": "容量写清，价格相邻，原料可见，配送单独。",
+      "items": [
+        {"text": "容量写清", "note": "标在标题下", "icon": "doc", "when": "容量写清"},
+        {"text": "价格相邻", "note": "不跟运费混", "icon": "money", "when": "价格相邻"},
+        {"text": "原料可见", "note": "写在参数里", "icon": "eye", "when": "原料可见"},
+        {"text": "配送单独", "note": "不藏进折叠", "icon": "clock", "when": "配送单独"}
+      ]
+    },
+    {
+      "role": "points",
+      "layout": "sequence",
+      "narration": "先写容量，再写价格，补上原料，最后放配送。",
+      "items": [
+        {"text": "先写容量", "icon": "doc", "when": "先写容量"},
+        {"text": "再写价格", "icon": "money", "when": "再写价格"},
+        {"text": "补上原料", "icon": "eye", "when": "补上原料"},
+        {"text": "最后放配送", "icon": "clock", "when": "最后放配送"}
+      ]
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "narration": "第一屏就写完，按这个改一版。",
+      "brand": "规格样例",
+      "line": "第一屏就写完",
+      "cta": "按这个改一版"
+    }
+  ]
+}

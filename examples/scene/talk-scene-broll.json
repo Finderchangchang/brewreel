@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "style": "wood-blocks",
+  "provider": "placeholder",
+  "quality": "768P",
+  "budgetYuan": 20,
+  "captions": "add",
+  "keepFace": [],
+  "clips": [
+    {
+      "id": "b01",
+      "from": "c3",
+      "to": "c4",
+      "source": "motion",
+      "mode": "split",
+      "job": "explain",
+      "template": "scene",
+      "plain": "用场景画面列步骤",
+      "slots": {
+        "title": "要做的事列出来",
+        "items": ["要做的事列出来", "一步一步做完"]
+      }
+    }
+  ]
+}

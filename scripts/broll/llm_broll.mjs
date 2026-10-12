@@ -68,7 +68,7 @@ source 是 motion 的段另外只写：
 
 | 字段 | 写什么 |
 |---|---|
-| template | keyword、checklist、steps、counter、compare，按选择表挑 |
+| template | keyword、checklist、steps、counter、compare、scene，按选择表挑 |
 | slots | 按模板表写。每个字从句子清单里原样复制 |
 
 动效段不写 place、subject、camera、action、end、beats、look、link。

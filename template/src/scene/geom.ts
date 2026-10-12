@@ -25,6 +25,11 @@ export type GeomInput = {
   emphasis?: 'even' | 'focus';
   /** 竖画面的 split 改成上下，不改成左右。grid 的 3 条在竖画面改成单列。 */
   portrait?: boolean;
+  /**
+   * 对比的两组。有它时，每组先排组标签再排条目，两组之间留分隔。
+   * 没有它时，split 仍按条数对半切，给条数单测用。
+   */
+  sides?: {labelChars: number; itemChars: number[]}[];
   /** board / number 的分层。长度必须和 count 一致。 */
   bands?: BandName[];
   /** media 的 0–1 标注。几何只检查相交，不猜图里是什么。 */
@@ -49,6 +54,8 @@ export type GeomResult = {
   calloutIssues?: string[];
   /** 证据卡或图区，绝对坐标。media 的标注相对它。 */
   frame?: Rect;
+  /** split 两组之间的分隔线。 */
+  rule?: Rect;
 };
 
 const clampCount = (n: number) => Math.max(1, Math.min(8, Math.round(n) || 1));
@@ -265,7 +272,77 @@ function layoutHero(input: GeomInput, count: number): GeomResult {
   };
 }
 
+function layoutSplitGrouped(input: GeomInput): GeomResult {
+  const safe = input.safe;
+  const portrait = input.portrait === true;
+  const sides = input.sides ?? [];
+  const align = input.align ?? 'center';
+  const gutter = portrait ? Math.max(40, Math.round(safe.h * 0.05)) : Math.max(28, Math.round(safe.w * 0.04));
+  const labelH = Math.max(input.floor.aux + 20, 56);
+  const panes: {x: number; y: number; w: number; h: number; pane: 'left' | 'right'}[] = [];
+  if (portrait) {
+    const span = safe.h - gutter;
+    const topH = Math.round(span / 2);
+    const botH = span - topH;
+    panes.push({x: safe.x, y: safe.y, w: safe.w, h: topH, pane: 'left'});
+    panes.push({x: safe.x, y: safe.y + topH + gutter, w: safe.w, h: botH, pane: 'right'});
+  } else {
+    const span = safe.w - gutter;
+    const leftW = Math.round(span / 2);
+    const rightW = span - leftW;
+    panes.push({x: safe.x, y: safe.y, w: leftW, h: safe.h, pane: 'left'});
+    panes.push({x: safe.x + leftW + gutter, y: safe.y, w: rightW, h: safe.h, pane: 'right'});
+  }
+  const blocks: SceneBlock[] = [];
+  let overflow = false;
+  sides.slice(0, 2).forEach((side, index) => {
+    const pane = panes[index];
+    const headH = Math.min(labelH, Math.max(input.floor.aux + 8, Math.round(pane.h * 0.22)));
+    const label = paintBlock({
+      x: pane.x,
+      y: pane.y,
+      w: pane.w,
+      h: headH,
+      font: input.floor.body,
+      role: 'support',
+      index: blocks.length,
+      align,
+      textAlign: align,
+      kind: 'kicker',
+    }, safe, side.labelChars, Math.max(input.floor.body, input.floor.aux + 8), input.floor.aux);
+    if (label.overflow) overflow = true;
+    blocks.push({...label.block, pane: pane.pane});
+    const itemChars = side.itemChars.length ? side.itemChars : [2];
+    const y0 = label.block.y + label.block.h + 12;
+    const inner: SafeFrame = {
+      x: pane.x,
+      y: y0,
+      w: pane.w,
+      h: Math.max(1, pane.y + pane.h - y0),
+      reserve: safe.reserve,
+    };
+    const placed = placeRows(inner, itemChars.length, itemChars, input.floor.body, Math.max(input.floor.body, 48), inner.h, RATIO[input.density ?? 'regular'], align, 'item', input.floor.titleMax);
+    if (placed.overflow) overflow = true;
+    for (const block of placed.blocks) blocks.push({...block, index: blocks.length, pane: pane.pane, kind: 'card'});
+  });
+  const rule: Rect = portrait
+    ? {x: safe.x + 24, y: panes[0].y + panes[0].h + Math.round(gutter / 2) - 3, w: safe.w - 48, h: 6}
+    : {x: panes[0].x + panes[0].w + Math.round(gutter / 2) - 3, y: safe.y + 16, w: 6, h: safe.h - 32};
+  return {
+    layout: 'split',
+    blocks,
+    gap: gutter,
+    row: labelH,
+    font: blocks.reduce((min, block) => Math.min(min, block.font), input.floor.titleMax),
+    floor: input.floor.body,
+    overflow,
+    mainAreaRatio: 0,
+    rule,
+  };
+}
+
 function layoutSplit(input: GeomInput, count: number): GeomResult {
+  if (input.sides && input.sides.length >= 2) return layoutSplitGrouped(input);
   const safe = input.safe;
   const portrait = input.portrait === true;
   const align = input.align ?? 'center';
@@ -359,6 +436,7 @@ function layoutGrid(input: GeomInput, count: number): GeomResult {
   const n = Math.max(1, Math.min(4, count));
   const portrait = input.portrait === true;
   const gap = densityGap(input, Math.min(safe.w, safe.h) * 0.2);
+  // 列数：竖版 3 条改单列，2 条和 4 条仍是两列。横版 2 条两列，3 条是上 1 下 2，4 条两行两列。
   const cells: Rect[] = [];
   if (n === 3 && !portrait) {
     const topH = Math.floor((safe.h - gap) * 0.46);
@@ -472,7 +550,73 @@ function layoutSequence(input: GeomInput, count: number): GeomResult {
   return {layout: 'sequence', blocks, gap, row: bandH, font: blocks.reduce((m, b) => Math.min(m, b.font), input.floor.titleMax), floor: input.floor.body, overflow, mainAreaRatio: 0, links};
 }
 
+/** 横版 media：图占内容宽的 62%，标题和标注占右侧剩下的 38%。竖版仍是上字下图。 */
+const MEDIA_WIDE_IMAGE = 0.62;
+
+function layoutMediaWide(input: GeomInput, count: number): GeomResult {
+  const safe = input.safe;
+  const align = input.align ?? 'center';
+  const issues = inspectCallouts(input.callouts);
+  const gap = densityGap(input, 48);
+  const lead = input.bands?.[0] === 'kicker' ? 1 : 0;
+  const kickerH = lead ? Math.max(input.floor.aux + 18, 50) : 0;
+  let overflow = issues.length > 0;
+  let y = safe.y;
+  const blocks: SceneBlock[] = [];
+  if (lead) {
+    const kicker = paintBlock({
+      x: safe.x, y, w: safe.w, h: kickerH, font: input.floor.aux, role: 'support', index: 0, align, textAlign: align, kind: 'kicker',
+    }, safe, input.chars[0] ?? 4, input.floor.aux, input.floor.aux);
+    if (kicker.overflow) overflow = true;
+    blocks.push(kicker.block);
+    y += kickerH + gap;
+  }
+  const rowH = Math.max(1, safe.y + safe.h - y);
+  const imageW = Math.round(safe.w * MEDIA_WIDE_IMAGE);
+  const textX = safe.x + imageW + gap;
+  const textW = Math.max(1, safe.x + safe.w - textX);
+  const image = finish({
+    x: safe.x, y, w: imageW, h: rowH, font: input.floor.body, role: 'item', index: blocks.length, align, textAlign: align, kind: 'evidence',
+  }, safe);
+  blocks.push({...image, font: input.floor.body});
+  const labels = Math.max(0, count - 1 - lead);
+  const titleH = labels > 0 ? Math.round(rowH * 0.42) : rowH;
+  const title = paintBlock({
+    x: textX, y, w: textW, h: titleH, font: input.floor.title, role: 'main', index: blocks.length, align, textAlign: 'start', kind: 'card',
+  }, safe, input.chars[lead] ?? 4, input.floor.titleMax, input.floor.title);
+  if (title.overflow) overflow = true;
+  blocks.push(title.block);
+  if (labels > 0) {
+    const labelTop = y + titleH + gap;
+    const labelH = Math.max(1, y + rowH - labelTop);
+    const each = Math.floor((labelH - gap * Math.max(0, labels - 1)) / labels);
+    for (let i = 0; i < labels; i++) {
+      const ly = labelTop + i * (each + gap);
+      const h = i === labels - 1 ? y + rowH - ly : each;
+      const painted = paintBlock({
+        x: textX, y: ly, w: textW, h: Math.max(1, h), font: input.floor.body, role: 'support', index: blocks.length, align, textAlign: 'start', kind: 'caption',
+      }, safe, input.chars[lead + 1 + i] ?? 2, input.floor.body + 2, input.floor.body);
+      if (painted.overflow) overflow = true;
+      blocks.push(painted.block);
+    }
+  }
+  if (image.h < input.floor.body * 2) overflow = true;
+  return {
+    layout: 'media',
+    blocks,
+    gap,
+    row: image.h,
+    font: title.block.font,
+    floor: input.floor.body,
+    overflow,
+    mainAreaRatio: 0,
+    ...(issues.length ? {calloutIssues: issues} : {}),
+    frame: {x: image.x, y: image.y, w: image.w, h: image.h},
+  };
+}
+
 function layoutMedia(input: GeomInput, count: number): GeomResult {
+  if (input.portrait !== true && input.safe.w > input.safe.h * 1.15) return layoutMediaWide(input, count);
   const safe = input.safe;
   const align = input.align ?? 'center';
   const issues = inspectCallouts(input.callouts);

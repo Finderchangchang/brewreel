@@ -5,6 +5,7 @@
 // 校验 → 配音 → 时间 → 逐字字幕 → 配乐闪避 → 渲染 → 检查 → manifest。
 // 旧的 storyboard / lesson / broll 不走这里。这一版对外是实验。
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -20,6 +21,7 @@ import {speakScreens, DUCK, LEAD_SEC, loudnessGainDb} from './speak.mjs';
 import {loadStyle, stylesFor} from './tokens.mjs';
 import {formatReport, validateScene} from './validate-scene.mjs';
 import {captionRemainder, onScreenPhrases} from '../../template/src/scene/caption.ts';
+import {aigcPayload, embedAigcMetadata, findFullFfmpeg, findRemotionFfprobe} from '../lesson/aigc-label.mjs';
 import {captionBoxFor, captionHits, clocksFor, pagesForCaption} from './voice-plan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -144,6 +146,11 @@ function captionIssues(plan) {
       const bottom = cap.box.y + cap.box.h;
       if (bottom > 1340.5) issues.push(`第 ${cap.index + 1} 屏字幕下沿 ${Math.round(bottom)} 进了平台底栏（y 1340 以下）`);
       if (cap.box.y < 1100) issues.push(`第 ${cap.index + 1} 屏字幕在 y ${Math.round(cap.box.y)}，不在底部字幕带`);
+    } else if (plan.aspect === '16:9') {
+      const bottom = cap.box.y + cap.box.h;
+      const right = cap.box.x + cap.box.w;
+      if (bottom > plan.height + 0.5) issues.push(`第 ${cap.index + 1} 屏字幕下沿 ${Math.round(bottom)} 超出横版画面`);
+      if (right > 1580.5 && bottom > 810.5) issues.push(`第 ${cap.index + 1} 屏字幕进了讲解员保留区`);
     }
     for (const block of captionHits(cap.box, screen.blocks)) {
       const kind = block.kind || 'card';
@@ -592,6 +599,13 @@ async function main() {
       console.log(`响度 ${loud.beforeIntegrated} LUFS / 峰值 ${loud.beforePeak} dBTP，增益 ${loud.gain} dB → ${loud.integrated} LUFS / ${loud.peak} dBTP`);
     } else {
       console.log('响度没量到，成片保持渲染原样');
+    }
+    if (plan.product === 'lesson') {
+      const inputHash = createHash('sha256').update(fs.readFileSync(scenePath)).digest('hex');
+      const payload = aigcPayload(inputHash);
+      embedAigcMetadata({videoPath, payload, ffmpeg: findFullFfmpeg(TEMPLATE), ffprobe: findRemotionFfprobe(TEMPLATE)});
+      manifest.aigc = {key: 'AIGC', label: payload.Label, producer: payload.ContentProducer};
+      console.log('已写入讲课 AIGC 隐式标识');
     }
     writeJson(path.join(outDir, 'manifest.json'), manifest);
     const leftover = path.join(outDir, 'video.rejected.mp4');
