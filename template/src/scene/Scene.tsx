@@ -5,8 +5,10 @@
 // 纸片入场走 poseAt → curveOf → settle / toss，这里不另写曲线。
 import React from 'react';
 import {AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrentFrame} from 'remotion';
+import {SERIF} from '../core/font.ts';
 import {LayoutProbe} from '../core/probe';
 import {Icon} from '../core/icons';
+import {dressOf, type SceneDress} from './look.ts';
 import {emphasisLook} from './motion.ts';
 import {fontFloorOf, holdPose, poseAt, type PlanBlock, type PlanScreen, type ScenePlan} from './prepare.ts';
 import {fitSceneCopy} from './wrap.ts';
@@ -29,7 +31,9 @@ function Backdrop({plan}: {plan: ScenePlan}) {
   return (
     <div style={base} data-probe-skip>
       {texture === 'waves' || texture === 'bubbles' || texture === 'gradient' ? <WaveLines tint={roles.accent} /> : null}
-      {texture === 'grain' ? <Grain /> : null}
+      {texture === 'grain' && plan.style !== 'editorial' ? <Grain /> : null}
+      {plan.style === 'editorial' ? <EditorialPaper ink={roles.ink} /> : null}
+      {plan.style === 'fresh-light' ? <FreshBlobs accent={roles.accent} /> : null}
       {texture === 'paper' ? (
         <div
           data-probe-skip
@@ -162,6 +166,33 @@ function CutPaper({tint, line}: {tint: string; line: string}) {
   );
 }
 
+function FreshBlobs({accent}: {accent: string}) {
+  return (
+    <div data-probe-skip style={{position: 'absolute', inset: 0}}>
+      <div style={{position: 'absolute', left: -140, top: 40, width: 680, height: 680, borderRadius: '50%', background: `radial-gradient(circle, ${accent}66 0%, ${accent}00 70%)`}} />
+      <div style={{position: 'absolute', right: -180, top: 860, width: 760, height: 760, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0) 68%)'}} />
+      <div style={{position: 'absolute', left: 0, top: 1180, width: 460, height: 740, background: accent, opacity: 0.16}} />
+    </div>
+  );
+}
+
+function EditorialPaper({ink}: {ink: string}) {
+  return (
+    <div data-probe-skip style={{position: 'absolute', inset: 0}}>
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `linear-gradient(${ink}55 1px, transparent 1px), linear-gradient(90deg, ${ink}55 1px, transparent 1px)`,
+          backgroundSize: '40px 40px',
+        }}
+      />
+      <div style={{position: 'absolute', left: 96, right: 96, top: 220, height: 1, background: ink}} />
+      <div style={{position: 'absolute', left: 96, right: 96, top: 1500, height: 1, background: ink}} />
+    </div>
+  );
+}
+
 function onAccent(accent: string): string {
   const packed = Number.parseInt(accent.replace('#', ''), 16);
   if (!Number.isFinite(packed)) return '#1C1915';
@@ -186,6 +217,7 @@ function Copy({
   weight,
   lineHeight,
   emphasis,
+  tracking,
 }: {
   plan: ScenePlan;
   text: string;
@@ -198,10 +230,12 @@ function Copy({
   weight: number;
   lineHeight: number;
   emphasis?: string[];
+  tracking?: number;
 }) {
   const fitted = fitSceneCopy(text, Math.max(8, width), font, minFont);
   const lines = fitted.lines.length ? fitted.lines : text ? [text] : [];
-  const look = emphasisLook(plan.motion);
+  const dress = dressOf(plan.style);
+  const look = dress?.emphasis ?? emphasisLook(plan.motion);
   return (
     <div
       style={{
@@ -212,6 +246,7 @@ function Copy({
         color,
         textAlign: align,
         wordBreak: 'normal',
+        letterSpacing: tracking ? `${tracking}em` : undefined,
       }}
     >
       {lines.map((line, index) => (
@@ -252,12 +287,50 @@ function poseStyle(plan: ScenePlan, block: PlanBlock, local: number): React.CSSP
   };
 }
 
+function cardChrome(plan: ScenePlan, screen: PlanScreen, block: PlanBlock, dress: SceneDress): React.CSSProperties {
+  if (dress.end === 'masthead' && screen.layout === 'end') {
+    // 报头落在白底牌上。透明字压在细网格上时，36×64 空帧检查会把整屏收成纸色。
+    return {
+      background: plan.roles.surface,
+      boxShadow: 'none',
+      border: `2px solid ${plan.roles.ink}`,
+      borderRadius: 0,
+    };
+  }
+  if (dress.end === 'chip' && screen.layout === 'end' && block.role === 'main') {
+    return {boxShadow: `${plan.roles.shadow}, inset 0 -10px 0 ${plan.roles.accent}`};
+  }
+  if (dress.stage === 'paper-grid' && (screen.layout === 'split' || screen.layout === 'stack')) {
+    return {background: 'transparent', boxShadow: 'none', border: 'none', borderRadius: 0};
+  }
+  if (dress.stage === 'paper-grid') {
+    return {background: plan.roles.surface, boxShadow: 'none', border: `1px solid ${plan.roles.ink}`, borderRadius: 0};
+  }
+  if (dress.split === 'accent-bar' && screen.layout === 'split' && block.mark) {
+    return {boxShadow: `${plan.roles.shadow}, inset 8px 0 0 ${plan.roles.accent}`};
+  }
+  if (dress.stage === 'blobs' && block.role === 'main' && screen.layout !== 'split') {
+    return {boxShadow: `${plan.roles.shadow}, inset 0 8px 0 ${plan.roles.accent}`};
+  }
+  return {};
+}
+
+function titleLike(screen: PlanScreen, block: PlanBlock): boolean {
+  if (block.role === 'main' || block.kind === 'stage') return true;
+  return screen.layout === 'end' && block.index === 1;
+}
+
 function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
   // 拍点之前也留在静止位。只藏起来的话，竖版大底上只剩一张小卡，会被空帧检查判成纯色。
   const pose = local + 1e-4 >= block.showAt
     ? poseAt(plan.motion, local - block.showAt, plan.height)
     : holdPose(plan.motion, plan.height);
+  const dress = dressOf(plan.style);
+  const chrome = dress ? cardChrome(plan, screen, block, dress) : {};
   const mainColor = block.role === 'support' ? plan.paint.muted : plan.paint.ink;
+  const mainWeight = dress ? (titleLike(screen, block) ? dress.titleWeight : dress.bodyWeight) : plan.roles.weight;
+  const noteWeight = dress ? dress.noteWeight : plan.roles.weight;
+  const mainFamily = dress?.titleFont === 'serif' && titleLike(screen, block) ? SERIF : plan.fontFamily;
   return (
     <div
       style={{
@@ -267,10 +340,10 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
         width: block.w,
         height: block.h,
         boxSizing: 'border-box',
-        borderRadius: plan.roles.radius,
-        background: plan.roles.surface,
-        boxShadow: plan.roles.shadow,
-        border: plan.cardBorder,
+        borderRadius: chrome.borderRadius ?? plan.roles.radius,
+        background: chrome.background ?? plan.roles.surface,
+        boxShadow: chrome.boxShadow ?? plan.roles.shadow,
+        border: chrome.border !== undefined ? chrome.border : plan.cardBorder,
         transform: `translateY(${pose.y}px) rotate(${pose.tilt}deg) scale(${pose.scale})`,
         transformOrigin: 'center center',
         opacity: pose.opacity,
@@ -289,12 +362,23 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
           gap: 8,
         }}
       >
+      {dress?.end === 'masthead' && screen.layout === 'end' && block.role === 'main' ? (
+        <>
+          <div data-probe-skip style={{position: 'absolute', left: '12%', right: '12%', top: '18%', height: 2, background: plan.roles.ink}} />
+          <div data-probe-skip style={{position: 'absolute', left: '12%', right: '12%', top: 'calc(18% + 8px)', height: 1, background: plan.roles.ink}} />
+          <div data-probe-skip style={{position: 'absolute', left: '12%', right: '12%', bottom: 'calc(18% + 8px)', height: 1, background: plan.roles.ink}} />
+          <div data-probe-skip style={{position: 'absolute', left: '12%', right: '12%', bottom: '18%', height: 2, background: plan.roles.ink}} />
+        </>
+      ) : null}
+      {dress?.split === 'column-rule' && (screen.layout === 'stack' || screen.layout === 'split') ? (
+        <div data-probe-skip style={{position: 'absolute', left: 0, right: 0, top: 0, height: 1, background: plan.roles.ink}} />
+      ) : null}
       {block.mark ? (
         <div
           data-probe-skip
           style={{
-            width: 28,
-            height: 8,
+            width: dress?.stage === 'paper-grid' ? 64 : 28,
+            height: dress?.stage === 'paper-grid' ? 2 : 8,
             borderRadius: Math.min(plan.roles.radius, 4),
             background: plan.roles.accent,
             alignSelf: block.textAlign === 'center' ? 'center' : 'flex-start',
@@ -310,8 +394,8 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
         minFont={fontFloorOf(plan, screen, block)}
         color={mainColor}
         align={block.textAlign}
-        family={plan.fontFamily}
-        weight={plan.roles.weight}
+        family={mainFamily}
+        weight={mainWeight}
         lineHeight={1.15}
         emphasis={block.emphasis}
       />
@@ -325,7 +409,7 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
           color={plan.paint.muted}
           align={block.textAlign}
           family={plan.fontFamily}
-          weight={plan.roles.weight}
+          weight={noteWeight}
           lineHeight={1.2}
         />
       ) : null}
@@ -334,7 +418,87 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
   );
 }
 
+function DressedLine({plan, screen, block, local, dress}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number; dress: SceneDress}) {
+  const lock = block.kind === 'stage' ? block.text.trim().match(NUMBER_LOCK) : null;
+  const kicker = block.kind === 'kicker';
+  const heading = titleLike(screen, block) || Boolean(lock);
+  const family = heading && dress.titleFont === 'serif' ? SERIF : kicker ? plan.fontFamily : (block.mono && !heading ? plan.fontNumber : plan.fontFamily);
+  const weight = kicker ? dress.kickerWeight : heading ? dress.titleWeight : dress.bodyWeight;
+  const color = kicker && dress.stage === 'paper-grid' ? plan.roles.accent : plan.paint.stage;
+  const unitFont = Math.max(plan.floor.aux, Math.round(block.font * 0.75));
+  const pill = lock && dress.number === 'pill';
+  const rule = lock && dress.number === 'rule';
+  const cta = dress.end === 'chip' && screen.layout === 'end' && block.kind === 'caption' && block.index === 2;
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: block.x,
+        top: block.y,
+        width: block.w,
+        height: block.h,
+        boxSizing: 'border-box',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: block.textAlign === 'center' ? 'center' : 'flex-start',
+        ...poseStyle(plan, block, local),
+      }}
+    >
+      {lock ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            justifyContent: block.textAlign === 'center' ? 'center' : 'flex-start',
+            maxWidth: '100%',
+            gap: '0.18em',
+            fontFamily: dress.titleFont === 'serif' ? SERIF : plan.fontNumber,
+            fontWeight: dress.titleWeight,
+            color: plan.paint.stage,
+            lineHeight: 1,
+            background: pill ? plan.roles.surface : 'transparent',
+            borderRadius: pill ? plan.roles.radius : 0,
+            boxShadow: pill ? plan.roles.shadow : 'none',
+            padding: pill ? '0.12em 0.42em 0.18em' : 0,
+            borderBottom: rule ? `3px solid ${plan.roles.accent}` : 'none',
+          }}
+        >
+          <span style={{fontSize: block.font}}>{lock[1]}</span>
+          <span style={{fontSize: unitFont, color: plan.roles.accent}}>{lock[2]}</span>
+        </div>
+      ) : (
+        <div
+          style={{
+            maxWidth: '100%',
+            background: cta ? plan.roles.surface : 'transparent',
+            borderRadius: cta ? 999 : 0,
+            boxShadow: cta ? plan.roles.shadow : 'none',
+            padding: cta ? '10px 28px' : 0,
+          }}
+        >
+          <Copy
+            plan={plan}
+            text={block.text}
+            width={block.w - (cta ? 56 : 0)}
+            font={block.font}
+            minFont={fontFloorOf(plan, screen, block)}
+            color={cta ? plan.paint.ink : color}
+            align={block.textAlign}
+            family={family}
+            weight={weight}
+            lineHeight={block.kind === 'stage' ? 1 : 1.15}
+            emphasis={block.emphasis}
+            tracking={kicker ? dress.kickerTrackingEm : 0}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 function StageLine({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
+  const dress = dressOf(plan.style);
+  if (dress) return <DressedLine plan={plan} screen={screen} block={block} local={local} dress={dress} />;
   const lock = block.kind === 'stage' ? block.text.trim().match(NUMBER_LOCK) : null;
   const unitFont = Math.max(plan.floor.aux, Math.round(block.font * 0.75));
   return (
@@ -391,6 +555,8 @@ function StageLine({plan, screen, block, local}: {plan: ScenePlan; screen: PlanS
 function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
   const slot = block.slot;
   const textBox = block.textBox;
+  const dress = dressOf(plan.style);
+  const indexLabel = String(block.index + 1).padStart(2, '0');
   return (
     <div
       style={{
@@ -400,10 +566,10 @@ function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScr
         width: block.w,
         height: block.h,
         boxSizing: 'border-box',
-        borderRadius: plan.roles.radius,
-        background: plan.roles.surface,
-        boxShadow: plan.roles.shadow,
-        border: plan.cardBorder,
+        borderRadius: (dress ? cardChrome(plan, screen, block, dress).borderRadius : undefined) ?? plan.roles.radius,
+        background: (dress ? cardChrome(plan, screen, block, dress).background : undefined) ?? plan.roles.surface,
+        boxShadow: (dress ? cardChrome(plan, screen, block, dress).boxShadow : undefined) ?? plan.roles.shadow,
+        border: dress && cardChrome(plan, screen, block, dress).border !== undefined ? cardChrome(plan, screen, block, dress).border : plan.cardBorder,
         overflow: 'hidden',
         ...poseStyle(plan, block, local),
       }}
@@ -417,18 +583,22 @@ function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScr
             width: slot.w,
             height: slot.h,
             boxSizing: 'border-box',
-            borderRadius: '50%',
-            border: `4px solid ${plan.roles.accent}`,
-            background: plan.roles.surface,
+            borderRadius: dress?.step === 'index' ? 0 : '50%',
+            border: dress?.step === 'disc' || dress?.step === 'index' ? 'none' : `4px solid ${plan.roles.accent}`,
+            background: dress?.step === 'disc' ? plan.roles.accent : dress?.step === 'index' ? 'transparent' : plan.roles.surface,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          {block.icon ? (
-            <Icon name={block.icon} size={Math.round(slot.w * 0.52)} color={plan.roles.accent} />
+          {dress?.step === 'index' ? (
+            <span style={{fontFamily: SERIF, fontWeight: dress.titleWeight, fontSize: Math.max(plan.floor.aux, Math.round(slot.w * 0.62)), color: plan.roles.accent, letterSpacing: '-0.04em'}}>
+              {indexLabel}
+            </span>
+          ) : block.icon ? (
+            <Icon name={block.icon} size={Math.round(slot.w * 0.52)} color={dress?.step === 'disc' ? onAccent(plan.roles.accent) : plan.roles.accent} />
           ) : (
-            <span style={{fontFamily: plan.fontNumber, fontWeight: plan.roles.weight, fontSize: Math.max(plan.floor.aux, Math.round(slot.w * 0.36)), color: plan.paint.ink}}>
+            <span style={{fontFamily: dress?.step === 'disc' ? plan.fontFamily : plan.fontNumber, fontWeight: plan.roles.weight, fontSize: Math.max(plan.floor.aux, Math.round(slot.w * 0.36)), color: dress?.step === 'disc' ? onAccent(plan.roles.accent) : plan.paint.ink}}>
               {block.index + 1}
             </span>
           )}
@@ -446,9 +616,13 @@ function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScr
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            boxSizing: 'border-box',
+            borderRadius: dress?.step === 'disc' ? '50%' : 0,
+            background: dress?.step === 'disc' ? plan.roles.accent : 'transparent',
+            border: dress?.step === 'index' ? `1px solid ${plan.roles.ink}` : 'none',
           }}
         >
-          <Icon name={block.icon} size={Math.round(slot.w * 0.72)} color={plan.roles.accent} />
+          <Icon name={block.icon} size={Math.round(slot.w * 0.72)} color={dress?.step === 'disc' ? onAccent(plan.roles.accent) : plan.roles.accent} />
         </div>
       ) : null}
       {textBox ? (
@@ -474,7 +648,7 @@ function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScr
             color={plan.paint.ink}
             align={block.textAlign}
             family={plan.fontFamily}
-            weight={plan.roles.weight}
+            weight={dress ? dress.bodyWeight : plan.roles.weight}
             lineHeight={1.15}
             emphasis={block.emphasis}
           />
@@ -488,7 +662,7 @@ function Slotted({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScr
               color={plan.paint.muted}
               align={block.textAlign}
               family={plan.fontFamily}
-              weight={plan.roles.weight}
+              weight={dress ? dress.noteWeight : plan.roles.weight}
               lineHeight={1.2}
             />
           ) : null}
@@ -505,6 +679,7 @@ function Evidence({plan, screen, block, local}: {plan: ScenePlan; screen: PlanSc
   const showCode = !showImage && !showTable && Boolean(screen.code);
   const rowH = rows.length ? block.h / rows.length : block.h;
   const rowFont = Math.min(plan.floor.body, Math.max(plan.floor.aux, Math.floor(rowH * 0.42)));
+  const dress = dressOf(plan.style);
   const aspect = screen.imageAspect && screen.imageAspect > 0 ? screen.imageAspect : block.w / Math.max(1, block.h);
   const boxAspect = block.w / Math.max(1, block.h);
   const imageBox = aspect > boxAspect
@@ -519,10 +694,10 @@ function Evidence({plan, screen, block, local}: {plan: ScenePlan; screen: PlanSc
         width: block.w,
         height: block.h,
         boxSizing: 'border-box',
-        borderRadius: plan.roles.radius,
+        borderRadius: dress?.evidence === 'hairline' ? 0 : plan.roles.radius,
         background: plan.roles.surface,
-        boxShadow: plan.roles.shadow,
-        border: plan.cardBorder,
+        boxShadow: dress?.evidence === 'hairline' ? 'none' : plan.roles.shadow,
+        border: dress?.evidence === 'rounded' ? `4px solid ${plan.roles.accent}` : dress?.evidence === 'hairline' ? `1px solid ${plan.roles.ink}` : plan.cardBorder,
         overflow: 'hidden',
         ...poseStyle(plan, block, local),
       }}
@@ -542,7 +717,7 @@ function Evidence({plan, screen, block, local}: {plan: ScenePlan; screen: PlanSc
                 height: `${box.h * 100}%`,
                 boxSizing: 'border-box',
                 border: `3px solid ${plan.roles.accent}`,
-                borderRadius: 6,
+                borderRadius: dress?.evidence === 'hairline' ? 0 : dress?.evidence === 'rounded' ? 12 : 6,
               }}
             />
           )) : null}
@@ -626,6 +801,7 @@ function Plot({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
   const chart = screen.chart;
   const points = chart?.points ?? [];
   const peak = Math.max(chart?.max ?? 0, ...points.map((point) => point.value), 1);
+  const dress = dressOf(plan.style);
   const shell: React.CSSProperties = {
     position: 'absolute',
     left: block.x,
@@ -633,10 +809,10 @@ function Plot({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
     width: block.w,
     height: block.h,
     boxSizing: 'border-box',
-    borderRadius: plan.roles.radius,
+    borderRadius: dress?.evidence === 'hairline' ? 0 : plan.roles.radius,
     background: plan.roles.surface,
-    boxShadow: plan.roles.shadow,
-    border: plan.cardBorder,
+    boxShadow: dress?.evidence === 'hairline' ? 'none' : plan.roles.shadow,
+    border: dress?.evidence === 'rounded' ? `4px solid ${plan.roles.accent}` : dress?.evidence === 'hairline' ? `1px solid ${plan.roles.ink}` : plan.cardBorder,
     overflow: 'hidden',
     ...poseStyle(plan, block, local),
   };
@@ -661,8 +837,8 @@ function BarsChart({plan, block, points, peak, shell}: {plan: ScenePlan; block: 
           <div style={{position: 'absolute', left: 0, top: 0, width: labelW, height: rowH, display: 'flex', alignItems: 'center'}}>
             <Copy plan={plan} text={point.label} width={labelW} font={font} minFont={plan.floor.tiny} color={plan.paint.ink} align="start" family={plan.fontFamily} weight={plan.roles.weight} lineHeight={1.1} />
           </div>
-          <div data-probe-skip style={{position: 'absolute', left: labelW + 8, top: rowH * 0.28, width: barW, height: Math.max(8, rowH * 0.4), background: plan.roles.line, borderRadius: 4}}>
-            <div style={{width: `${Math.max(4, Math.min(100, (point.value / peak) * 100))}%`, height: '100%', background: point.focus ? plan.roles.accent : plan.paint.ink, borderRadius: 4}} />
+          <div data-probe-skip style={{position: 'absolute', left: labelW + 8, top: rowH * 0.28, width: barW, height: Math.max(8, rowH * 0.4), background: plan.roles.line, borderRadius: dressOf(plan.style)?.number === 'pill' ? 999 : dressOf(plan.style)?.number === 'rule' ? 0 : 4}}>
+            <div style={{width: `${Math.max(4, Math.min(100, (point.value / peak) * 100))}%`, height: '100%', background: point.focus ? plan.roles.accent : plan.paint.ink, borderRadius: dressOf(plan.style)?.number === 'pill' ? 999 : dressOf(plan.style)?.number === 'rule' ? 0 : 4}} />
           </div>
           <div style={{position: 'absolute', left: labelW + 8 + barW + 8, top: 0, width: valueW, height: rowH, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', fontFamily: plan.fontNumber, fontWeight: plan.roles.weight, fontSize: font, color: plan.paint.ink}}>
             {point.value}
@@ -781,7 +957,7 @@ function Links({plan, links}: {plan: ScenePlan; links: {x1: number; y1: number; 
   return (
     <svg width={plan.width} height={plan.height} style={{position: 'absolute', inset: 0}} data-probe-skip>
       {links.map((link, index) => (
-        <line key={index} x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke={plan.roles.accent} strokeWidth={4} />
+        <line key={index} x1={link.x1} y1={link.y1} x2={link.x2} y2={link.y2} stroke={dressOf(plan.style)?.step === 'index' ? plan.roles.ink : plan.roles.accent} strokeWidth={dressOf(plan.style)?.step === 'index' ? 1 : dressOf(plan.style)?.step === 'disc' ? 6 : 4} />
       ))}
     </svg>
   );
@@ -797,6 +973,20 @@ function bareJudgment(plan: ScenePlan, screen: PlanScreen, block: PlanBlock): bo
   if (screen.layout === 'end') return block.role === 'main' || block.kind === 'caption';
   if ((screen.layout === 'board' || screen.layout === 'number' || screen.layout === 'chart' || screen.layout === 'media') && block.kind === 'card' && block.role === 'main') return true;
   return false;
+}
+
+function SplitRule({plan, screen}: {plan: ScenePlan; screen: PlanScreen}) {
+  const blocks = [...screen.blocks].sort((a, b) => a.y - b.y);
+  let y: number | null = null;
+  for (let i = 0; i < blocks.length - 1; i++) {
+    const gap = blocks[i + 1].y - (blocks[i].y + blocks[i].h);
+    if (gap > 8) {
+      y = blocks[i].y + blocks[i].h + gap / 2;
+      break;
+    }
+  }
+  if (y == null) return null;
+  return <div data-probe-skip style={{position: 'absolute', left: plan.safe.x, top: y, width: plan.safe.w, height: 1, background: plan.roles.ink}} />;
 }
 
 function SoundBed({plan}: {plan: ScenePlan}) {
@@ -890,6 +1080,7 @@ export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {
         <Backdrop plan={plan} />
         <SoundBed plan={plan} />
         {screen.links?.length ? <Links plan={plan} links={screen.links} /> : null}
+        {screen.layout === 'split' && dressOf(plan.style)?.split === 'column-rule' ? <SplitRule plan={plan} screen={screen} /> : null}
         {screen.blocks.map((block) => (
           <BlockView key={`${screen.index}-${block.index}`} plan={plan} screen={screen} block={block} local={local} />
         ))}

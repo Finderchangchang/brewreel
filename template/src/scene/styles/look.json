@@ -1,0 +1,32 @@
+{
+  "fresh-light": {
+    "stage": "blobs",
+    "titleFont": "sans",
+    "kickerWeight": 700,
+    "titleWeight": 900,
+    "bodyWeight": 650,
+    "noteWeight": 500,
+    "kickerTrackingEm": 0.12,
+    "emphasis": "block",
+    "number": "pill",
+    "step": "disc",
+    "evidence": "rounded",
+    "split": "accent-bar",
+    "end": "chip"
+  },
+  "editorial": {
+    "stage": "paper-grid",
+    "titleFont": "serif",
+    "kickerWeight": 600,
+    "titleWeight": 700,
+    "bodyWeight": 500,
+    "noteWeight": 450,
+    "kickerTrackingEm": 0.28,
+    "emphasis": "marker",
+    "number": "rule",
+    "step": "index",
+    "evidence": "hairline",
+    "split": "column-rule",
+    "end": "masthead"
+  }
+}

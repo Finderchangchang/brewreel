@@ -127,7 +127,7 @@ function attachCaptions(plan, lines, sceneScreens) {
     const spoken = captionRemainder(src.narration || '', onScreenPhrases(src));
     if (!spoken) continue;
     const placed = captionBoxFor(screen, plan.width, plan.height, plan.aspect);
-    const pages = pagesForCaption(src.narration || '', line.words, spoken, placed.box.w, plan.floor?.body || 40);
+    const pages = pagesForCaption(src.narration || '', line.words, spoken, placed.box.w, plan.floor?.body || 40, screen.duration);
     if (!pages.length) continue;
     screens.push({index: screen.index, box: placed.box, pages});
   }

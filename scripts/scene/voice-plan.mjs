@@ -1,8 +1,13 @@
 // 场景配音的时间。逐字和拍点各走各的函数，不合成一个再丢掉来源。
 import {LEAD_SEC, TAIL_SEC} from '../lib/tts/pipeline.mjs';
 import {paginate, plainOf} from '../lib/tts/timing.mjs';
+import {plainChars} from '../../template/src/scene/caption.ts';
 import {CAPTION_FONT_MAX, captionBox} from '../../template/src/scene/safe-box.ts';
 import {fitSceneCopy} from '../../template/src/scene/wrap.ts';
+
+/** 一段字幕少于此字数，或在屏上短于此时长，就并进邻段；并不进去就不显示。 */
+export const CAPTION_ORPHAN_MIN_CHARS = 4;
+export const CAPTION_ORPHAN_MIN_SEC = 0.6;
 
 export {LEAD_SEC, TAIL_SEC};
 
@@ -158,11 +163,100 @@ export function alignSpoken(narration, words, spoken) {
   return out;
 }
 
+function visibleChars(page) {
+  return (page?.chars || []).filter((item) => item.ch !== '\n');
+}
+
+function pageText(page) {
+  return visibleChars(page).map((item) => item.ch).join('');
+}
+
+function holdSec(page, next, screenEndSec) {
+  const until = next ? next.startSec : (Number.isFinite(screenEndSec) ? screenEndSec : page.endSec);
+  return Math.max(0, until - page.startSec);
+}
+
+function isOrphan(page, next, screenEndSec) {
+  if (plainChars(pageText(page)).length < CAPTION_ORPHAN_MIN_CHARS) return true;
+  return holdSec(page, next, screenEndSec) < CAPTION_ORPHAN_MIN_SEC;
+}
+
+/** 两段拼成一页。按词断行，超过两行或装不进字幕带宽度就返回 null。逐字时刻原样保留。 */
+function mergeCaptionPages(left, right, maxW, minPx) {
+  const chars = [...visibleChars(left), ...visibleChars(right)];
+  if (!chars.length) return null;
+  const text = chars.map((item) => item.ch).join('');
+  const lo = Math.max(1, Math.min(CAPTION_FONT_MAX, Math.floor(Number(minPx) || 40)));
+  const fitted = fitSceneCopy(text, Math.max(8, maxW - 16), CAPTION_FONT_MAX, lo);
+  const lines = fitted.lines.length ? fitted.lines : [text];
+  if (lines.length > 2 || lines.join('') !== text) return null;
+  const out = [];
+  let cursor = 0;
+  let broken = false;
+  lines.forEach((line, lineIndex) => {
+    if (broken) return;
+    if (lineIndex) {
+      const prev = out[out.length - 1];
+      out.push({ch: '\n', at: prev ? prev.at : chars[0].at});
+    }
+    for (const ch of [...line]) {
+      const src = chars[cursor];
+      if (!src || src.ch !== ch) {
+        broken = true;
+        return;
+      }
+      out.push({ch: src.ch, at: src.at});
+      cursor += 1;
+    }
+  });
+  if (broken || cursor !== chars.length) return null;
+  const visible = out.filter((item) => item.ch !== '\n');
+  return {
+    startSec: visible[0].at,
+    endSec: visible[visible.length - 1].at,
+    font: fitted.font,
+    chars: out,
+  };
+}
+
+/**
+ * 孤段先并进前一段，并不进去再并进后一段。并完仍超出字幕带宽度就丢掉这一段。
+ * 没被丢掉的字，点亮时刻保持原值。
+ */
+export function foldShortCaptions(pages, maxW, minPx, screenEndSec) {
+  const list = (pages || []).map((page) => ({...page, chars: (page.chars || []).map((item) => ({...item}))}));
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (let i = 0; i < list.length; i++) {
+      const next = list[i + 1];
+      if (!isOrphan(list[i], next, screenEndSec)) continue;
+      if (i > 0) {
+        const merged = mergeCaptionPages(list[i - 1], list[i], maxW, minPx);
+        if (merged) {
+          list.splice(i - 1, 2, merged);
+          changed = true;
+          break;
+        }
+      }
+      if (i + 1 < list.length) {
+        const merged = mergeCaptionPages(list[i], list[i + 1], maxW, minPx);
+        if (merged) {
+          list.splice(i, 2, merged);
+          changed = true;
+          break;
+        }
+      }
+    }
+  }
+  return list.filter((page, index) => !isOrphan(page, list[index + 1], screenEndSec));
+}
+
 /**
  * 去重后的字幕排进底部带。先缩字号，不低于正文下限；仍超过两行就按词断成多页。
- * 断行用 fitSceneCopy，不另写分词。
+ * 断行用 fitSceneCopy，不另写分词。短段再按 foldShortCaptions 并进邻段或丢掉。
  */
-export function pagesForCaption(narration, words, spoken, maxW, minPx) {
+export function pagesForCaption(narration, words, spoken, maxW, minPx, screenEndSec) {
   const text = String(spoken || '').trim();
   if (!text) return [];
   const timed = alignSpoken(narration, words, text);
@@ -194,7 +288,7 @@ export function pagesForCaption(narration, words, spoken, maxW, minPx) {
     const endSec = visible[visible.length - 1].at;
     pages.push({startSec, endSec, font: fitted.font, chars});
   }
-  return pages;
+  return foldShortCaptions(pages, maxW, lo, screenEndSec);
 }
 
 function charsOfPage(page, words) {

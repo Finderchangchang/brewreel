@@ -60,11 +60,8 @@ assert.equal(captionRemainder('关键是，它不会乱编数字', ['它不会�
 assert.equal(captionRemainder('规格先摆到第一屏，顾客不用再点开展开。', ['规格先摆到第一屏', '不用再点开展开']), '顾客');
 assert.equal(captionRemainder('容量写清，价格相邻，原料可见，配送单独。', ['容量写清', '价格相邻', '原料可见', '配送单独']), '');
 assert.equal(captionRemainder('复购还没过半，第三周才到 27 人。', ['复购还没过半', '27 人', '第三周才到 27 人', '第三周复购']), '');
-const pages = pagesForCaption('规格先摆到第一屏，顾客不用再点开展开。', [...'规格先摆到第一屏，顾客不用再点开展开。'].map((ch, index) => ({text: ch, startMs: index * 120, endMs: (index + 1) * 120})), '顾客', 720, 40);
-assert.equal(pages.length, 1);
-assert.equal(pages[0].chars.filter((item) => item.ch !== '\n').map((item) => item.ch).join(''), '顾客');
-assert.ok(pages[0].font >= 40 && pages[0].font <= 56);
-assert.ok(pages[0].chars[0].at > LEAD_SEC);
+const pages = pagesForCaption('规格先摆到第一屏，顾客不用再点开展开。', [...'规格先摆到第一屏，顾客不用再点开展开。'].map((ch, index) => ({text: ch, startMs: index * 120, endMs: (index + 1) * 120})), '顾客', 720, 40, 5);
+assert.equal(pages.length, 0, '孤字「顾客」没有邻段，不显示');
 
 const fixture = JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/scene/fixtures/example-promo.json'), 'utf8'));
 const scene = protoScene({...fixture, screens: fixture.screens.slice(0, 2), product: 'promo', style: 'fresh-light', motion: 'bounce'});

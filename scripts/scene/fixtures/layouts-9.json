@@ -1,0 +1,110 @@
+{
+  "product": "promo",
+  "aspect": "9:16",
+  "style": "fresh-light",
+  "motion": "bounce",
+  "facts": [
+    {
+      "id": "f-chart",
+      "text": "样例店首周复购 12 人，次周 18 人，第三周 27 人",
+      "source": "样例店周报"
+    }
+  ],
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "narration": "规格先摆到第一屏，顾客不用再点开展开。",
+      "text": "规格先摆到第一屏",
+      "emphasis": ["第一屏"],
+      "support": "不用再点开展开"
+    },
+    {
+      "role": "points",
+      "layout": "stack",
+      "narration": "容量写清，价格相邻，原料可见。",
+      "items": [
+        {"text": "容量写清", "note": "标在标题下"},
+        {"text": "价格相邻", "note": "不跟运费混"},
+        {"text": "原料可见", "note": "写在参数里"}
+      ]
+    },
+    {
+      "role": "compare",
+      "layout": "split",
+      "narration": "旧页把规格藏在折叠里，新页把规格放在首屏。",
+      "left": {"label": "旧页", "items": ["规格在折叠", "价格要下滑"]},
+      "right": {"label": "新页", "items": ["规格在首屏", "价格贴标题"]},
+      "winner": "right"
+    },
+    {
+      "role": "points",
+      "layout": "grid",
+      "narration": "容量写清，价格相邻，原料可见，配送单独。",
+      "items": [
+        {"text": "容量写清", "note": "标在标题下", "icon": "doc"},
+        {"text": "价格相邻", "note": "不跟运费混", "icon": "money"},
+        {"text": "原料可见", "note": "写在参数里", "icon": "eye"},
+        {"text": "配送单独", "note": "不藏进折叠", "icon": "clock"}
+      ]
+    },
+    {
+      "role": "points",
+      "layout": "sequence",
+      "narration": "先写容量，再写价格，补上原料，最后放配送。",
+      "items": [
+        {"text": "先写容量", "icon": "doc"},
+        {"text": "再写价格", "icon": "money"},
+        {"text": "补上原料", "icon": "eye"},
+        {"text": "最后放配送", "icon": "clock"}
+      ]
+    },
+    {
+      "role": "number",
+      "layout": "board",
+      "narration": "复购还没过半，第三周才到 27 人。",
+      "kicker": "趋势 · 样例",
+      "title": "复购还没过半",
+      "emphasis": ["过半"],
+      "number": {"text": "27 人", "fact": "f-chart", "label": "第三周复购"},
+      "support": "第三周才到"
+    },
+    {
+      "role": "media",
+      "layout": "media",
+      "narration": "规格写在第一屏，标题区在上，参数区在下。",
+      "kicker": "界面 · 样例",
+      "title": "规格写在第一屏",
+      "src": "examples/assets/ecommerce/detail-screen.png",
+      "source": "screenshot",
+      "support": "标题区在上",
+      "callouts": [
+        {"x": 0.08, "y": 0.06, "w": 0.46, "h": 0.16, "label": "标题区"},
+        {"x": 0.08, "y": 0.58, "w": 0.62, "h": 0.22, "label": "参数区"}
+      ]
+    },
+    {
+      "role": "chart",
+      "layout": "chart",
+      "narration": "三周复购差一截，第三周才稳住。",
+      "title": "三周复购差一截",
+      "emphasis": ["差一截"],
+      "support": "第三周才稳住",
+      "chart": "bar",
+      "fact": "f-chart",
+      "points": [
+        {"label": "首周", "value": 12},
+        {"label": "次周", "value": 18},
+        {"label": "第三周", "value": 27, "focus": true}
+      ]
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "narration": "第一屏就写完，按这个改一版。",
+      "brand": "规格样例",
+      "line": "第一屏就写完",
+      "cta": "按这个改一版"
+    }
+  ]
+}
