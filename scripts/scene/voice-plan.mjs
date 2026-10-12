@@ -62,7 +62,16 @@ export function marksForTexts(narration, words, pieceTexts) {
   });
 }
 
-/** 有旁白和时间戳的屏只给 word；其余只给 beat。 */
+/**
+ * 逐字（granularity 缺省或 char）标 word。
+ * 逐词（word）或只有整句（sentence-interp）标 sentence。时间用 timing.mjs 已经分好的字，不另写一套。
+ */
+export function clockSource(granularity) {
+  if (granularity === 'word' || granularity === 'sentence-interp') return 'sentence';
+  return 'word';
+}
+
+/** 有旁白和时间戳的屏按粒度给 word 或 sentence；其余只给 beat。 */
 export function clocksFor(screens, lines, textsOf) {
   const byIndex = new Map();
   for (const line of lines || []) byIndex.set(line.index, line);
@@ -72,7 +81,7 @@ export function clocksFor(screens, lines, textsOf) {
     if (!narration || !line?.words?.length) return {source: 'beat'};
     const texts = textsOf(screen);
     return {
-      source: 'word',
+      source: clockSource(line.granularity),
       marks: marksForTexts(narration, line.words, texts),
       duration: screenDurationFromAudio((line.durMs || 0) / 1000),
     };
@@ -85,6 +94,11 @@ export function timingExclusive(reveal) {
   if (reveal.source === 'word') {
     if (reveal.kind !== 'tts-words' && reveal.kind !== 'talk-marks') return '逐字时间的种类不对';
     if ('bpm' in reveal || 'charsPerSec' in reveal) return '逐字时间混进了拍点';
+    return '';
+  }
+  if (reveal.source === 'sentence') {
+    if (reveal.kind !== 'tts-sentence' || reveal.resolution !== 'sentence-interp') return '时间来源不是逐字，也不是拍点';
+    if ('bpm' in reveal || 'charsPerSec' in reveal) return '句级时间混进了拍点';
     return '';
   }
   if (reveal.source === 'beat') {

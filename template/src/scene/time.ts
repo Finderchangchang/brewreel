@@ -1,6 +1,8 @@
 // 三种时间来源分开返回。不要合成一个函数再丢掉来源标记。
-// word：口播转写 / 讲课 TTS 的逐字时间。
-// sentence：讲课真人。只有句首，句内不是识别出来的字时间。
+// word：口播转写 / 配音接口的逐字时间。
+// sentence：两种，kind 分开。
+//   lesson-human：讲课真人。只有句首，句内不插值。
+//   tts-sentence：配音接口不是逐字。字级时间由 timing.mjs 在句内按字数和标点分好，字幕按这个点亮。
 // beat：宣传片还没有配音。只按拍，不假装对齐到字。
 import type {MotionName} from './types.ts';
 import {LEAD_SEC} from './motion.ts';
@@ -20,9 +22,9 @@ export type WordReveal = {
 
 export type SentenceReveal = {
   source: 'sentence';
-  kind: 'lesson-human';
-  /** 只对齐到句首。不能把 at 当成某个字的时刻。 */
-  resolution: 'sentence-start';
+  kind: 'lesson-human' | 'tts-sentence';
+  /** sentence-start 只对齐句首。sentence-interp 的 at 是句内估算，不是接口给的逐字。 */
+  resolution: 'sentence-start' | 'sentence-interp';
   lead: number;
   at: number[];
 };
@@ -69,6 +71,21 @@ export function revealFromSentences(sentenceStarts: readonly number[], motion: M
     resolution: 'sentence-start',
     lead,
     at: place(sentenceStarts, lead, duration),
+  };
+}
+
+/**
+ * 配音只有句级或词级，没有逐字。marks 已经是 timing.mjs 在句内分好的时刻。
+ * 来源标 sentence，不标 word。
+ */
+export function revealFromSentenceInterp(marks: readonly number[], motion: MotionName, duration: number): SentenceReveal {
+  const lead = LEAD_SEC[motion];
+  return {
+    source: 'sentence',
+    kind: 'tts-sentence',
+    resolution: 'sentence-interp',
+    lead,
+    at: place(marks, lead, duration),
   };
 }
 

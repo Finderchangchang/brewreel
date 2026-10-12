@@ -153,6 +153,28 @@ export const flattenSubtitle = (json, durMs) => {
 
 const norm = (s) => Array.from(String(s).toLowerCase().replace(/[\s\p{P}\p{S}]/gu, ''));
 
+/**
+ * 接口把同一段原文按音节重复（「27」出现三次，读「二十七」）。
+ * 重复次数多于原文里的次数时，这些时间不是逐字。只比较原文里本来就有的片段，
+ * 数字被拆成「2」「7」各一次仍算逐字。
+ */
+const surfaceRepeated = (toks, words) => {
+  const ours = new Map();
+  for (const t of toks) {
+    const key = norm(t.text).join('');
+    if (key) ours.set(key, (ours.get(key) || 0) + 1);
+  }
+  const seen = new Map();
+  for (const w of words) {
+    const key = norm(w.text).join('');
+    if (!key || !ours.has(key)) continue;
+    const n = (seen.get(key) || 0) + 1;
+    seen.set(key, n);
+    if (n > ours.get(key)) return true;
+  }
+  return false;
+};
+
 /** 我们 token 的每个「有效字符」（去空白标点）→ 所属 token 下标 */
 const charMap = (toks) => {
   const out = [];
@@ -192,8 +214,9 @@ export const wordsFromSubtitle = (plain, lang, durMs, subtitleJson) => {
   const toks = tokenize(plain, lang);
   const {sentences, words} = flattenSubtitle(subtitleJson, durMs);
   const ours = charMap(toks);
-  // 1) 字级 / 词级：把对方每个字符的时间铺开，再按字符对齐到我们的 token
-  if (words.length) {
+  // 1) 字级 / 词级：把对方每个字符的时间铺开，再按字符对齐到我们的 token。
+  //    原文被按音节重复时不走这里，落到下面的句内估算，避免把重复音节标成逐字。
+  if (words.length && !surfaceRepeated(toks, words)) {
     const theirs = [];
     for (const w of words) {
       const cs = norm(w.text);
@@ -234,6 +257,38 @@ export const wordsFromSubtitle = (plain, lang, durMs, subtitleJson) => {
   }
   // 3) 什么都没有：整句时长内估算
   return {words: estimateWords(plain, 0, durMs, lang, toks), granularity: 'sentence-interp'};
+};
+
+/** 归一化后人声的起点（毫秒）。-35 dBFS 以上的第一扇 20ms 窗，没有就 0。 */
+export const speechOnsetMs = (samples, sampleRate) => {
+  const rate = Number(sampleRate) || 0;
+  if (!samples?.length || rate <= 0) return 0;
+  const win = Math.max(1, Math.round(rate * 0.02));
+  const thr = 10 ** (-35 / 20);
+  for (let i = 0; i + win <= samples.length; i += win) {
+    let e = 0;
+    for (let k = 0; k < win; k++) e += samples[i + k] * samples[i + k];
+    if (Math.sqrt(e / win) >= thr) return Math.round((i / rate) * 1000);
+  }
+  return 0;
+};
+
+/**
+ * MiniMax 的字时间比波形早一截（字头落在静音里）。把整句平移到人声起点。
+ * 偏差小于 40ms 或大于 400ms 时不动，避免测偏了把时间轴拽散。
+ */
+export const shiftWordsToSpeech = (words, samples, sampleRate) => {
+  if (!Array.isArray(words) || !words.length) return words;
+  const onset = speechOnsetMs(samples, sampleRate);
+  const first = Number(words[0]?.startMs) || 0;
+  const delta = onset - first;
+  if (!Number.isFinite(delta) || Math.abs(delta) < 40 || Math.abs(delta) > 400) return words;
+  const durMs = Math.round((samples.length / (Number(sampleRate) || 1)) * 1000);
+  return words.map((word) => {
+    const startMs = Math.max(0, Math.min(durMs, Math.round((Number(word.startMs) || 0) + delta)));
+    const endMs = Math.max(startMs, Math.min(durMs, Math.round((Number(word.endMs) || startMs) + delta)));
+    return {...word, startMs, endMs};
+  });
 };
 
 /** 没对上的 token 用前后已知时间线性插值 */

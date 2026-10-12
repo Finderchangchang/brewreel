@@ -5,9 +5,25 @@ import {spawnSync} from 'node:child_process';
 import {PROVIDERS, synthesizeCached, voiceConfigOf} from '../lib/tts/index.mjs';
 import {TtsError} from '../lib/tts/minimax.mjs';
 import {DUCK, LEAD_SEC, TAIL_SEC, normalizeWav} from '../lib/tts/pipeline.mjs';
-import {plainOf} from '../lib/tts/timing.mjs';
+import {plainOf, shiftWordsToSpeech} from '../lib/tts/timing.mjs';
+import {decodeWav} from '../lib/tts/wav.mjs';
 
 export {DUCK, LEAD_SEC, TAIL_SEC};
+
+/**
+ * 成片整体响度对齐 -16 LUFS，真峰值不超过 -1.5 dBTP（宣传片人声峰值上限）。
+ * 已经落在 ±1 LU 且峰值合格时返回 0。峰值顶到上限时少加增益。
+ */
+export function loudnessGainDb(integratedLufs, truePeakDb, target = -16, tolerance = 1, peakCap = -1.5) {
+  const integrated = Number(integratedLufs);
+  const peak = Number(truePeakDb);
+  if (!Number.isFinite(integrated) || !Number.isFinite(peak)) return 0;
+  if (Math.abs(integrated - target) <= tolerance && peak <= peakCap + 1e-6) return 0;
+  let gain = target - integrated;
+  if (peak + gain > peakCap) gain = peakCap - peak;
+  if (Math.abs(gain) < 0.05) return 0;
+  return Math.round(gain * 10) / 10;
+}
 
 const HINT = '想先看效果，加 --voice-provider mock（占位音，不能当交付），或加 --no-voice 出无配音版';
 
@@ -58,6 +74,8 @@ export async function speakScreens(screens, opts) {
       const norm = normalizeWav(buf);
       fs.writeFileSync(wavPath, norm);
       audioPath = wavPath;
+      const decoded = decodeWav(norm);
+      const words = decoded ? shiftWordsToSpeech(got.words, decoded.samples, decoded.sampleRate) : got.words;
       if (got.cacheHit) cacheHits += 1;
       else {
         synthesized += 1;
@@ -66,7 +84,7 @@ export async function speakScreens(screens, opts) {
       lines.push({
         index,
         text: narration,
-        words: got.words,
+        words,
         durMs: got.durMs,
         granularity: got.granularity,
         cacheHit: !!got.cacheHit,

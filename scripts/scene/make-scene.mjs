@@ -16,7 +16,7 @@ import {cacheDirOf} from '../lib/tts/index.mjs';
 import {sampleClip, scoreFrames} from '../broll/motion-check.mjs';
 import {auditPlan, checkFrames, pieceTextsOf, prepareScene, protoScene} from '../../template/src/scene/prepare.ts';
 import {sceneFrame} from './geom.mjs';
-import {speakScreens, DUCK, LEAD_SEC} from './speak.mjs';
+import {speakScreens, DUCK, LEAD_SEC, loudnessGainDb} from './speak.mjs';
 import {loadStyle, stylesFor} from './tokens.mjs';
 import {formatReport, validateScene} from './validate-scene.mjs';
 import {captionRemainder, onScreenPhrases} from '../../template/src/scene/caption.ts';
@@ -212,6 +212,41 @@ function motionIssues(video, plan) {
     }
   }
   return {fails, notes};
+}
+
+function lastMatch(text, re) {
+  const all = [...String(text || '').matchAll(re)];
+  return all.length ? Number(all[all.length - 1][1]) : null;
+}
+
+function readProgramLoudness(ffmpeg, video) {
+  const ran = spawnSync(ffmpeg, ['-hide_banner', '-i', video, '-af', 'ebur128=peak=true', '-f', 'null', '-'], {encoding: 'utf8', windowsHide: true});
+  const text = `${ran.stdout || ''}\n${ran.stderr || ''}`;
+  const integrated = lastMatch(text, /I:\s+(-?\d+(?:\.\d+)?)\s+LUFS/g);
+  const peak = lastMatch(text, /Peak:\s+(-?\d+(?:\.\d+)?)\s+dBFS/g);
+  if (integrated == null || peak == null) return null;
+  return {integrated, peak};
+}
+
+function fitProgramLoudness(ffmpeg, video) {
+  const before = readProgramLoudness(ffmpeg, video);
+  if (!before) return null;
+  const gain = loudnessGainDb(before.integrated, before.peak);
+  if (!gain) return {beforeIntegrated: before.integrated, beforePeak: before.peak, gain: 0, integrated: before.integrated, peak: before.peak};
+  const tmp = `${video}.loud.mp4`;
+  const ran = spawnSync(
+    ffmpeg,
+    ['-y', '-hide_banner', '-loglevel', 'error', '-i', video, '-c:v', 'copy', '-af', `volume=${gain}dB`, '-c:a', 'aac', '-b:a', '192k', tmp],
+    {encoding: 'utf8', windowsHide: true},
+  );
+  if (ran.status !== 0 || !fs.existsSync(tmp)) {
+    if (fs.existsSync(tmp)) fs.rmSync(tmp);
+    return {beforeIntegrated: before.integrated, beforePeak: before.peak, gain: 0, integrated: before.integrated, peak: before.peak, error: '增益没写成'};
+  }
+  fs.rmSync(video);
+  fs.renameSync(tmp, video);
+  const after = readProgramLoudness(ffmpeg, video) || before;
+  return {beforeIntegrated: before.integrated, beforePeak: before.peak, gain, integrated: after.integrated, peak: after.peak};
 }
 
 function sheetOf(ffmpeg, video, plan, dest) {
@@ -550,6 +585,13 @@ async function main() {
       const stop = new Error('检查没过');
       stop.exitCode = 3;
       throw stop;
+    }
+    const loud = fitProgramLoudness(ffmpeg, videoPath);
+    if (loud) {
+      manifest.loudness = {integratedLufs: loud.integrated, truePeakDb: loud.peak, gainDb: loud.gain};
+      console.log(`响度 ${loud.beforeIntegrated} LUFS / 峰值 ${loud.beforePeak} dBTP，增益 ${loud.gain} dB → ${loud.integrated} LUFS / ${loud.peak} dBTP`);
+    } else {
+      console.log('响度没量到，成片保持渲染原样');
     }
     writeJson(path.join(outDir, 'manifest.json'), manifest);
     const leftover = path.join(outDir, 'video.rejected.mp4');

@@ -8,7 +8,7 @@ import {AbsoluteFill, Audio, Img, Sequence, interpolate, staticFile, useCurrentF
 import {SERIF} from '../core/font.ts';
 import {LayoutProbe} from '../core/probe';
 import {Icon} from '../core/icons';
-import {dressOf, type SceneDress} from './look.ts';
+import {BLOCK_CHIP_EM, CARD_PAD_X, chipFitWidth, dressOf, freshLowerBlob, showTitleTick, type SceneDress} from './look.ts';
 import {emphasisLook} from './motion.ts';
 import {fontFloorOf, holdPose, poseAt, type PlanBlock, type PlanScreen, type ScenePlan} from './prepare.ts';
 import {fitSceneCopy} from './wrap.ts';
@@ -167,11 +167,22 @@ function CutPaper({tint, line}: {tint: string; line: string}) {
 }
 
 function FreshBlobs({accent}: {accent: string}) {
+  const blob = freshLowerBlob();
   return (
     <div data-probe-skip style={{position: 'absolute', inset: 0}}>
       <div style={{position: 'absolute', left: -140, top: 40, width: 680, height: 680, borderRadius: '50%', background: `radial-gradient(circle, ${accent}66 0%, ${accent}00 70%)`}} />
       <div style={{position: 'absolute', right: -180, top: 860, width: 760, height: 760, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0) 68%)'}} />
-      <div style={{position: 'absolute', left: 0, top: 1180, width: 460, height: 740, background: accent, opacity: 0.16}} />
+      <div
+        style={{
+          position: 'absolute',
+          left: blob.left,
+          bottom: blob.bottom,
+          width: blob.width,
+          height: blob.height,
+          borderRadius: blob.radius,
+          background: `radial-gradient(ellipse at 35% 40%, ${accent}66 0%, ${accent}22 62%, ${accent}00 74%)`,
+        }}
+      />
     </div>
   );
 }
@@ -232,10 +243,12 @@ function Copy({
   emphasis?: string[];
   tracking?: number;
 }) {
-  const fitted = fitSceneCopy(text, Math.max(8, width), font, minFont);
-  const lines = fitted.lines.length ? fitted.lines : text ? [text] : [];
   const dress = dressOf(plan.style);
   const look = dress?.emphasis ?? emphasisLook(plan.motion);
+  const chip = look === 'block' && Boolean(emphasis?.some((item) => item && text.includes(item)));
+  let fitted = fitSceneCopy(text, Math.max(8, width), font, minFont);
+  if (chip) fitted = fitSceneCopy(text, chipFitWidth(width, fitted.font, true), font, minFont);
+  const lines = fitted.lines.length ? fitted.lines : text ? [text] : [];
   return (
     <div
       style={{
@@ -263,7 +276,7 @@ function Line({text, emphasis, accent, look}: {text: string; emphasis?: string[]
   if (!word) return <>{text}</>;
   const at = text.indexOf(word);
   const style: React.CSSProperties = look === 'block'
-    ? {background: accent, color: onAccent(accent), padding: '0 0.12em', borderRadius: 4}
+    ? {background: accent, color: onAccent(accent), padding: `0 ${BLOCK_CHIP_EM}em`, borderRadius: 4}
     : look === 'marker'
       ? {backgroundImage: `linear-gradient(${accent}, ${accent})`, backgroundRepeat: 'no-repeat', backgroundSize: '100% 0.38em', backgroundPosition: '0 86%'}
       : {boxShadow: `inset 0 -0.18em 0 ${accent}`};
@@ -354,7 +367,7 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
           position: 'absolute',
           inset: 0,
           boxSizing: 'border-box',
-          padding: '16px 18px',
+          padding: `16px ${CARD_PAD_X}px`,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
@@ -373,7 +386,7 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
       {dress?.split === 'column-rule' && (screen.layout === 'stack' || screen.layout === 'split') ? (
         <div data-probe-skip style={{position: 'absolute', left: 0, right: 0, top: 0, height: 1, background: plan.roles.ink}} />
       ) : null}
-      {block.mark ? (
+      {showTitleTick(dress?.stage, screen.blocks.some((item) => item.kind === 'kicker'), Boolean(block.mark)) ? (
         <div
           data-probe-skip
           style={{
@@ -389,7 +402,7 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
       <Copy
         plan={plan}
         text={block.text}
-        width={block.w - 36}
+        width={block.w - CARD_PAD_X * 2}
         font={block.font}
         minFont={fontFloorOf(plan, screen, block)}
         color={mainColor}
@@ -403,7 +416,7 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
         <Copy
           plan={plan}
           text={block.note}
-          width={block.w - 36}
+          width={block.w - CARD_PAD_X * 2}
           font={block.noteFont}
           minFont={plan.floor.aux}
           color={plan.paint.muted}

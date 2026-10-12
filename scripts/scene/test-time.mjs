@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 三种来源各走各的函数。逐字出场 = 字时间 − 提前量，并且单调。
 import assert from 'node:assert/strict';
-import {revealFromBeats, revealFromSentences, revealFromWords} from './time.mjs';
+import {revealFromBeats, revealFromSentenceInterp, revealFromSentences, revealFromWords} from './time.mjs';
 
 const words = [0.2, 0.8, 1.4];
 const duration = 4;
@@ -26,6 +26,13 @@ assert.equal(sentences.source, 'sentence');
 assert.equal(sentences.kind, 'lesson-human');
 assert.equal(sentences.resolution, 'sentence-start');
 assert.notEqual(sentences.source, 'word');
+
+const interp = revealFromSentenceInterp(words, 'soft', duration);
+assert.equal(interp.source, 'sentence');
+assert.equal(interp.kind, 'tts-sentence');
+assert.equal(interp.resolution, 'sentence-interp');
+assert.notEqual(interp.source, 'word');
+assert.deepEqual(interp.at, words.map((mark) => mark - 0.12));
 assert.deepEqual(sentences.at, words.map((mark) => mark - 0.12));
 
 const beats = revealFromBeats({hanzi: 8, count: 3, motion: 'bounce', bpm: 120});

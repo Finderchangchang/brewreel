@@ -10,10 +10,11 @@ import {captionRemainder, onScreenPhrases} from '../../template/src/scene/captio
 import {auditPlan, pieceTextsOf, prepareScene, protoScene} from '../../template/src/scene/prepare.ts';
 import {PORTRAIT_CAPTION} from '../../template/src/scene/safe-box.ts';
 import {sceneFrame} from './geom.mjs';
-import {speakScreens} from './speak.mjs';
+import {loudnessGainDb, speakScreens} from './speak.mjs';
 import {loadStyle} from './tokens.mjs';
 import {validateScene} from './validate-scene.mjs';
-import {LEAD_SEC, boxesOverlap, captionBoxFor, captionHits, clocksFor, marksForTexts, pagesForCaption, timingExclusive} from './voice-plan.mjs';
+import {wordsFromSubtitle} from '../lib/tts/timing.mjs';
+import {LEAD_SEC, boxesOverlap, captionBoxFor, captionHits, clockSource, clocksFor, marksForTexts, pagesForCaption, timingExclusive} from './voice-plan.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const narration = '规格先摆';
@@ -30,12 +31,59 @@ const clocks = clocksFor(
 assert.equal(clocks[0].source, 'word');
 assert.equal(clocks[1].source, 'beat');
 assert.notEqual(JSON.stringify(clocks[0]), JSON.stringify(clocks[1]));
+assert.equal(clockSource('char'), 'word');
+assert.equal(clockSource(undefined), 'word');
+assert.equal(clockSource('word'), 'sentence');
+assert.equal(clockSource('sentence-interp'), 'sentence');
+
+const sentenceLine = wordsFromSubtitle('第三周才到 27 人。', 'zh', 1800, {subtitles: [{text: '第三周才到 27 人。', time_begin: 80, time_end: 1700}]});
+assert.equal(sentenceLine.granularity, 'sentence-interp');
+const sentenceClocks = clocksFor(
+  [{narration: '第三周才到 27 人。'}],
+  [{index: 0, words: sentenceLine.words, durMs: 1800, granularity: sentenceLine.granularity}],
+  () => ['27 人'],
+);
+assert.equal(sentenceClocks[0].source, 'sentence');
+assert.notEqual(sentenceClocks[0].source, 'word');
+const repeated = wordsFromSubtitle('复购还没过半，第三周才到 27 人。', 'zh', 3200, [{
+  text: '复购还没过半，第三周才到 27 人。',
+  time_begin: 0,
+  time_end: 3000,
+  timestamped_words: [...'复购还没过半，第三周才到'].map((ch, i) => ({text: ch, time_begin: i * 140, time_end: (i + 1) * 140})).concat([
+    {text: '27', time_begin: 1540, time_end: 1700},
+    {text: '27', time_begin: 1700, time_end: 1860},
+    {text: '27', time_begin: 1860, time_end: 2020},
+    {text: '人', time_begin: 2020, time_end: 2160},
+    {text: '。', time_begin: 2160, time_end: 2280},
+  ]),
+}]);
+assert.equal(repeated.granularity, 'sentence-interp');
+const repeatedClocks = clocksFor(
+  [{narration: '复购还没过半，第三周才到 27 人。'}],
+  [{index: 0, words: repeated.words, durMs: 3200, granularity: repeated.granularity}],
+  () => ['27 人'],
+);
+assert.equal(repeatedClocks[0].source, 'sentence');
+const sentencePages = pagesForCaption(
+  '第三周才到 27 人。',
+  sentenceLine.words,
+  '第三周才到 27 人',
+  720,
+  40,
+  4,
+);
+assert.ok(sentencePages.length >= 1);
+const spokenAt = sentencePages[0].chars.filter((item) => item.ch !== '\n').map((item) => item.at);
+assert.ok(spokenAt.length >= 4);
+assert.ok(spokenAt[spokenAt.length - 1] > spokenAt[0], '句内估算的字不会挤在同一个时刻');
 
 assert.equal(timingExclusive({source: 'word', kind: 'tts-words', lead: 0.08, at: [0]}), '');
 assert.match(timingExclusive({source: 'word', kind: 'tts-words', lead: 0.08, at: [0], bpm: 120}), /拍点/);
 assert.equal(timingExclusive({source: 'beat', kind: 'promo-no-audio', bpm: 120, at: [0]}), '');
 assert.match(timingExclusive({source: 'beat', kind: 'promo-no-audio', bpm: 120, at: [0], lead: 0.08}), /提前/);
 assert.match(timingExclusive({source: 'sentence', kind: 'lesson-human', at: [0]}), /不是逐字/);
+assert.equal(timingExclusive({source: 'sentence', kind: 'tts-sentence', resolution: 'sentence-interp', lead: 0.12, at: [0]}), '');
+assert.match(timingExclusive({source: 'sentence', kind: 'tts-sentence', resolution: 'sentence-interp', lead: 0.12, at: [0], bpm: 120}), /拍点/);
 
 const classic = captionBoxFor({blocks: [{kind: 'card', x: 80, y: 560, w: 900, h: 400}], safe: {x: 80, y: 560, w: 920, h: 1000}}, 1080, 1920, '9:16');
 assert.equal(classic.box.y, PORTRAIT_CAPTION.y);
@@ -82,6 +130,21 @@ const plan = prepareScene({
 });
 assert.equal(plan.screens[0].reveal.source, 'word');
 assert.equal(plan.screens[0].reveal.kind, 'tts-words');
+const sentencePlan = prepareScene({
+  scene: checked.scene,
+  roles: token.roles,
+  extra: token.extra,
+  frame,
+  clocks: [
+    {source: 'sentence', marks: texts.map((_, index) => 0.2 + index * 0.3), duration: 4},
+    {source: 'beat'},
+  ],
+});
+assert.equal(sentencePlan.screens[0].reveal.source, 'sentence');
+assert.equal(sentencePlan.screens[0].reveal.kind, 'tts-sentence');
+assert.equal(sentencePlan.screens[0].reveal.resolution, 'sentence-interp');
+assert.equal('bpm' in sentencePlan.screens[0].reveal, false);
+assert.deepEqual(auditPlan(sentencePlan).filter((line) => line.includes('来源') || line.includes('混')), []);
 assert.equal('bpm' in plan.screens[0].reveal, false);
 assert.equal('charsPerSec' in plan.screens[0].reveal, false);
 assert.equal(plan.screens[0].blocks[0].showAt, 0);
@@ -101,6 +164,11 @@ const voiced = await speakScreens([{narration: '规格先摆到第一屏'}], {pr
 assert.equal(voiced.ok, true);
 assert.equal(voiced.billedCharacters, 0);
 assert.ok(voiced.lines[0].words.length > 0);
+assert.ok(voiced.lines[0].words[0].startMs < 40, 'mock 的字时间和脉冲对齐，不再平移');
+assert.equal(loudnessGainDb(-18.9, -4.3), 2.8);
+assert.equal(loudnessGainDb(-16.2, -3), 0);
+assert.equal(loudnessGainDb(-14, -0.4), -2);
+assert.equal(loudnessGainDb(-16.2, -0.2), -1.3);
 
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'scene-brief-'));
 const brief = spawnSync(process.execPath, ['scripts/scene/brief-to-video.mjs', 'examples/scene/c-techbrief.json', '--out', out], {

@@ -1,13 +1,13 @@
 // 渲染前的数据准备。纯函数：屏 → 块、出场、曲线参数。不读文件，不画。
 // 第 0 帧必须已经有主文案，所以每屏第一块的 showAt 压到 0。
-// 有逐字时钟时只调用 revealFromWords；没有就只调用 revealFromBeats。两种来源不写进同一个对象。
+// 逐字时钟只调用 revealFromWords。句内估算只调用 revealFromSentenceInterp。没有配音只调用 revealFromBeats。三种来源不写进同一个对象。
 // 次文字只标成落在卡片上。低于 4.5 的前景会调深，本轮三支预设的卡片对已经过线，调深不会触发。
 import {captionPaint, captionRemainder, onScreenPhrases} from './caption.ts';
 import {contrastRatio} from './contrast.ts';
 import {layoutBlocks} from './geom.ts';
 import type {BandName, GeomLayout} from './geom.ts';
 import {curveOf} from './motion.ts';
-import {revealFromBeats, revealFromWords} from './time.ts';
+import {revealFromBeats, revealFromSentenceInterp, revealFromWords} from './time.ts';
 import {captionBox, layoutSafe, screenSafe, type SceneFrame} from './safe-box.ts';
 import type {RevealPlan} from './time.ts';
 import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, SceneScreen, TokenRoles} from './types.ts';
@@ -430,8 +430,8 @@ export function prepareScene(input: {
   extra?: Record<string, unknown>;
   frame: SceneFrame;
   fps?: number;
-  /** 与 screens 等长。word 只走逐字，beat 或缺省只走拍点。 */
-  clocks?: Array<{source: 'word'; marks: number[]; duration: number} | {source: 'beat'} | undefined>;
+  /** 与 screens 等长。word 只走逐字，sentence 只走句内估算，beat 或缺省只走拍点。 */
+  clocks?: Array<{source: 'word' | 'sentence'; marks: number[]; duration: number} | {source: 'beat'} | undefined>;
 }): ScenePlan {
   const fps = input.fps ?? FPS;
   const scene = input.scene;
@@ -477,11 +477,12 @@ export function prepareScene(input: {
     const clock = input.clocks?.[index];
     let reveal: RevealPlan;
     let seconds: number;
-    if (clock?.source === 'word') {
+    if (clock?.source === 'word' || clock?.source === 'sentence') {
       const count = Math.max(1, pieces.length);
       const marks = clock.marks.slice(0, count);
       while (marks.length < count) marks.push(marks.length ? marks[marks.length - 1] : 0);
-      reveal = revealFromWords(marks, motion, Math.max(0.1, clock.duration), 'tts-words');
+      const span = Math.max(0.1, clock.duration);
+      reveal = clock.source === 'sentence' ? revealFromSentenceInterp(marks, motion, span) : revealFromWords(marks, motion, span, 'tts-words');
       seconds = Math.max(clock.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
     } else {
       reveal = revealFromBeats({
@@ -603,6 +604,11 @@ function timingIssue(reveal: RevealPlan, index: number): string {
   if (reveal.source === 'word') {
     if (reveal.kind !== 'tts-words' && reveal.kind !== 'talk-marks') return `${where}逐字时间的种类不对`;
     if ('bpm' in reveal || 'charsPerSec' in reveal) return `${where}逐字时间混进了拍点`;
+    return '';
+  }
+  if (reveal.source === 'sentence') {
+    if (reveal.kind !== 'tts-sentence' || reveal.resolution !== 'sentence-interp') return `${where}时间来源不是逐字，也不是拍点`;
+    if ('bpm' in reveal || 'charsPerSec' in reveal) return `${where}句级时间混进了拍点`;
     return '';
   }
   if (reveal.source === 'beat') {

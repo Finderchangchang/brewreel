@@ -22,7 +22,7 @@ import * as minimax from './lib/tts/minimax.mjs';
 import * as mock from './lib/tts/mock.mjs';
 import * as volcengine from './lib/tts/volcengine.mjs';
 import {DUCK, LEAD_SEC, TAIL_SEC, VOICE_RMS_DB, normalizeWav, runVoiceStep, voiceIntervals} from './lib/tts/pipeline.mjs';
-import {estimateWords, flattenSubtitle, markHot, paginate, tokenize, wordsFromSubtitle} from './lib/tts/timing.mjs';
+import {estimateWords, flattenSubtitle, markHot, paginate, shiftWordsToSpeech, tokenize, wordsFromSubtitle} from './lib/tts/timing.mjs';
 import {decodeWav, encodeWav, mp3DurationMs, wavInfo} from './lib/tts/wav.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -144,6 +144,56 @@ test('字幕 JSON：字级（timestamped_words）→ char 粒度，时间来自�
   assert.equal(r.words[0].startMs, 60);
   assert.equal(r.words[5].endMs, 1380);
   assert.equal(r.words[5].text, '酿。');
+});
+
+test('字幕 JSON：同一原文按音节重复（27 出现三次）不是逐字，改走句内估算', () => {
+  const plain = '第三周才到 27 人。';
+  const head = [...'第三周才到'].map((ch, i) => ({text: ch, time_begin: i * 160, time_end: (i + 1) * 160}));
+  const words = head.concat([
+    {text: '27', time_begin: 800, time_end: 960},
+    {text: '27', time_begin: 960, time_end: 1120},
+    {text: '27', time_begin: 1120, time_end: 1280},
+    {text: '人', time_begin: 1280, time_end: 1440},
+  ]);
+  const r = wordsFromSubtitle(plain, 'zh', 1600, [{text: plain, time_begin: 0, time_end: 1500, timestamped_words: words}]);
+  assert.equal(r.granularity, 'sentence-interp');
+  assert.equal(r.words.map((w) => w.text).join(''), plain);
+  assert.ok(r.words[r.words.length - 1].endMs <= 1500);
+});
+
+test('字时间落在静音里时，整句平移到人声起点；已经对齐或偏差过大则不动', () => {
+  const rate = 48000;
+  const late = new Float32Array(rate);
+  for (let i = Math.round(rate * 0.2); i < Math.round(rate * 0.6); i++) late[i] = 0.25;
+  const shifted = shiftWordsToSpeech(
+    [{text: '你', startMs: 0, endMs: 200}, {text: '好', startMs: 200, endMs: 400}],
+    late,
+    rate,
+  );
+  assert.ok(Math.abs(shifted[0].startMs - 200) <= 20, `起点 ${shifted[0].startMs}`);
+  assert.equal(shifted[1].startMs - shifted[0].startMs, 200);
+  const live = new Float32Array(rate);
+  for (let i = 0; i < Math.round(rate * 0.4); i++) live[i] = 0.25;
+  const kept = shiftWordsToSpeech([{text: '你', startMs: 0, endMs: 200, hot: true}], live, rate);
+  assert.equal(kept[0].startMs, 0);
+  assert.equal(kept[0].hot, true);
+  const far = new Float32Array(rate);
+  for (let i = Math.round(rate * 0.5); i < far.length; i++) far[i] = 0.25;
+  const held = shiftWordsToSpeech([{text: '你', startMs: 0, endMs: 100}], far, rate);
+  assert.equal(held[0].startMs, 0);
+});
+
+test('字幕 JSON：数字拆成 2 和 7 各一次仍是逐字', () => {
+  const plain = '到 27 人';
+  const words = [
+    {text: '到', time_begin: 0, time_end: 200},
+    {text: '2', time_begin: 200, time_end: 350},
+    {text: '7', time_begin: 350, time_end: 500},
+    {text: '人', time_begin: 500, time_end: 700},
+  ];
+  const r = wordsFromSubtitle(plain, 'zh', 900, [{text: plain, time_begin: 0, time_end: 700, timestamped_words: words}]);
+  assert.equal(r.granularity, 'char');
+  assert.equal(r.words.find((w) => w.text.startsWith('27')).startMs, 200);
 });
 
 test('字幕 JSON：只有句级 → 句内按字数与标点估算（sentence-interp）', () => {
