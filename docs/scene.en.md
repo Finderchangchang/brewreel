@@ -66,6 +66,12 @@ Render a `scene.json`:
 node scripts/scene/make-scene.mjs <scene.json> --out <directory outside the repo> [--style name] [--motion name] [--voice-provider minimax|aliyun|volcengine|mock] [--no-voice] [--no-bgm]
 ```
 
+Convert an old storyboard or lesson file:
+
+```
+node scripts/scene/from-legacy.mjs <storyboard.json|lesson.json> --out <scene.json> [--skip-unsupported]
+```
+
 From a brief to a film (write the scene, then render):
 
 ```
@@ -93,6 +99,26 @@ Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/s
 ## Relation to the old format
 
 The old storyboard is still the regular promo path. `scene.json` is an experimental entrance on that same path, not a new row in the routing table. The old command is `scripts/make.mjs`. The new one is `scripts/scene/make-scene.mjs`.
+
+## Migrating from an old storyboard
+
+Old storyboards keep rendering. This round only adds. It does not delete old components, and it does not rename `SHOT_TYPES`, `lessonLayouts`, or the five talk templates.
+
+The preset table is `template/src/scene/presets.json`. Each row is the old name, the content role, the layout prototype (one of nine, or “not expandable”), the default style source, the default motion character, the exit, and how the old component differs. It covers the 19 promo shots, the 20 lesson layouts, the 5 talk templates, plus `quiz` and `journey` as not expandable. A new shot that is missing from the table fails `node tests/scene/run.mjs`.
+
+Convert an old file:
+
+```
+node scripts/scene/from-legacy.mjs <storyboard.json|lesson.json> --out <scene.json>
+```
+
+Unsupported shots stop the command and are listed. Pass `--skip-unsupported` to skip them. Copy, facts, and asset paths are left unchanged.
+
+This round converts promo `features`, `steps`, `quickList`, `compare`, `counter`, a text-only `hook` (`visual=icon`), and `endCard`; lesson `steps`, `points`, `compare`, and `bignumber`. The result must pass `validateScene` and the geometry audit. Render with `make-scene.mjs`.
+
+Converted films are plainer than the old components for now: no sequential spotlight, no step dot and tick, no stamps or price chips, no VS badge or verdict pill, no selling-point chips on the end card. Use the converter to try the new path; old storyboards still look better through `scripts/make.mjs`.
+
+Still on the old components: `quiz` and `journey` (whole-film flows, not expandable); `chat`, `phone`, `mockApp`, `dataChart`, `meter`, and `photoShot` (media frames, charts, and gauges are outside this round’s prototypes); and later migrations such as `priceCard`, `factSheet`, and `credCard`. The five talk templates stay as they are. The old `counter` still computes a drop percentage; the new engine does not.
 
 ## Landscape, lesson, and talk
 

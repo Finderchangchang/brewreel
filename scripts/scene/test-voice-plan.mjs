@@ -108,6 +108,8 @@ assert.equal(captionRemainder('关键是，它不会乱编数字', ['它不会�
 assert.equal(captionRemainder('规格先摆到第一屏，顾客不用再点开展开。', ['规格先摆到第一屏', '不用再点开展开']), '顾客');
 assert.equal(captionRemainder('容量写清，价格相邻，原料可见，配送单独。', ['容量写清', '价格相邻', '原料可见', '配送单独']), '');
 assert.equal(captionRemainder('复购还没过半，第三周才到 27 人。', ['复购还没过半', '27 人', '第三周才到 27 人', '第三周复购']), '');
+assert.equal(captionRemainder('数得清就行，留下的痕一共 3 道', ['留下的痕', '3 道']), '数得清就行');
+assert.equal(captionRemainder('数得清就行，就是 3 道', ['3 道']), '数得清就行');
 const pages = pagesForCaption('规格先摆到第一屏，顾客不用再点开展开。', [...'规格先摆到第一屏，顾客不用再点开展开。'].map((ch, index) => ({text: ch, startMs: index * 120, endMs: (index + 1) * 120})), '顾客', 720, 40, 5);
 assert.equal(pages.length, 0, '孤字「顾客」没有邻段，不显示');
 

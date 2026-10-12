@@ -4,6 +4,8 @@ import {captionMinusKeyword} from '../talk/layout.ts';
 import {contrastRatio} from './contrast.ts';
 
 const SOFT = /[\s，。、！？：；,.!?:;“”"'‘’（）()【】…—\-–·~～《》「」『』]/u;
+/** 扣重之后挂在碎片末尾的虚词、量词。不成句，丢掉。 */
+const TRAILING_PARTICLES = new Set(['一共', '就是', '才是', '还有', '只是', '还是', '只剩']);
 
 export function plainChars(text: string): string {
   return Array.from(String(text ?? '')).filter((ch) => !SOFT.test(ch)).join('');
@@ -48,6 +50,20 @@ export function onScreenPhrases(screen: {
  * 每一段都走口播剪纸的 captionMinusKeyword：整截删掉，剩下不到两个字也整句不显示。
  * 长的先删，避免短数字先挖掉、后面的整句对不上。
  */
+function keepLongestCaptionFragment(text: string): string {
+  const raw = String(text ?? '').trim();
+  if (!raw) return '';
+  const fragments = raw.split(/[\s，。、！？：；,.!?:;]+/u).map((part) => part.trim()).filter(Boolean);
+  if (fragments.length <= 1) return raw;
+  const candidates = fragments.filter((part) => {
+    const plain = plainChars(part);
+    if (!plain || TRAILING_PARTICLES.has(plain)) return false;
+    return plain.length >= 4;
+  });
+  if (!candidates.length) return '';
+  return [...candidates].sort((a, b) => plainChars(b).length - plainChars(a).length)[0];
+}
+
 export function captionRemainder(narration: string, phrases: string[]): string {
   let text = String(narration ?? '');
   const ranked = [...phrases].sort((a, b) => plainChars(b).length - plainChars(a).length);
@@ -55,7 +71,7 @@ export function captionRemainder(narration: string, phrases: string[]): string {
     if (!text) break;
     text = captionMinusKeyword(text, phrase);
   }
-  return text.trim();
+  return keepLongestCaptionFragment(text.trim());
 }
 
 function channel(hex: string, shift: number): number {

@@ -68,6 +68,12 @@
 node scripts/scene/make-scene.mjs <scene.json> --out <仓库外目录> [--style 名字] [--motion 性格] [--voice-provider minimax|aliyun|volcengine|mock] [--no-voice] [--no-bgm]
 ```
 
+从旧分镜转成 scene.json：
+
+```
+node scripts/scene/from-legacy.mjs <storyboard.json|lesson.json> --out <scene.json> [--skip-unsupported]
+```
+
 从简报到成片（先写场景，再出片）：
 
 ```
@@ -95,6 +101,26 @@ node scripts/revise.mjs <scene.json> "一句话"
 ## 和旧写法的关系
 
 旧分镜仍然是宣传片的正式写法。`scene.json` 是同一条宣传片里的实验入口，不另占分流表的一行。出片命令不同：旧的走 `scripts/make.mjs`，新的走 `scripts/scene/make-scene.mjs`。
+
+## 从旧分镜迁移
+
+原则：旧分镜始终能渲染。这一轮只做加法，不删旧组件，不改 `SHOT_TYPES`、`lessonLayouts` 的键，也不改口播五个模板名。
+
+预设表在 `template/src/scene/presets.json`。每一行是旧名、内容种类、版式原型（九种之一，或「不可展开」）、默认风格来源、默认性格、退场，以及和旧组件的行为差异。覆盖宣传片 19 个镜头、讲课 20 个版式、口播 5 个模板，外加 `quiz`、`journey` 两行「不可展开」。以后新增镜头忘了登记，`node tests/scene/run.mjs` 会失败。
+
+把旧分镜转成 scene.json：
+
+```
+node scripts/scene/from-legacy.mjs <storyboard.json|lesson.json> --out <scene.json>
+```
+
+遇到不能转的镜头，命令停下并列出是哪几个。加 `--skip-unsupported` 才跳过。原文案、事实、素材路径原样带过去。
+
+这一轮能转的：宣传片 `features`、`steps`、`quickList`、`compare`、`counter`、纯文字的 `hook`（`visual=icon`）、`endCard`；讲课 `steps`、`points`、`compare`、`bignumber`。转出来的文件要再跑 `validateScene` 和几何审计，出片仍用 `make-scene.mjs`。
+
+现在转出来的片子比旧组件素：聚光逐张弹出、步骤光点打勾、盖章和价格角标、VS 徽章和结论胶囊、片尾卖点胶囊都还没有。转换器用来试新写法；旧分镜照旧用 `scripts/make.mjs` 出片，效果更好。
+
+还没迁、继续走旧组件的：`quiz`、`journey`（整片流程，不可展开）；`chat`、`phone`、`mockApp`、`dataChart`、`meter`、`photoShot`（媒体框、图表、仪表不是这一轮原型能画的）；以及 `priceCard`、`factSheet`、`credCard` 等设计第 6 步以后再迁的镜头。口播五个模板也仍走旧组件。旧 `counter` 会算降幅，新引擎默认不算。
 
 ## 横版、讲课和口播
 

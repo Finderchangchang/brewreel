@@ -220,9 +220,10 @@ metadata:
 
 什么时候用：想用版式原型（主张、条目、截图板、大数字、片尾），并且接受这一版标成实验。拿不准就继续写 `storyboard.json`。
 
-怎么写：一份 `scene.json`。顶层写 `product`、`aspect`（`9:16` 或 `16:9`；不写时宣传片是 `9:16`，讲课是 `16:9`）、`style`、`motion`、`facts`、`screens`。讲课可以再写 `presenter`（`cartoon` / `real` / `video` / `none`）和 `domain`（只有 `legal` 出普法声明）。每一屏写 `role`、`layout`、`narration` 和这一屏的文案。不写坐标、像素、帧号、毫秒。版式名用 `hero`、`stack`、`grid`、`split`、`sequence`、`media`、`chart`、`end`、`board`。风格：宣传片主题名见 `template/src/core/themes.json`（示例 `fresh-light`，渐变卡片），讲课用 `template/src/lesson/style-tokens.json` 里的主题名，资讯板用 `techbrief`。性格用 `crisp`、`bounce`、`soft`、`paper`、`push`。`editorial` 不要配 `bounce`，宣传片不要配 `paper`。口播的某一段也可以把一屏场景当 B-roll：`broll.json` 里写 `"template": "scene"`。说明和限制见 `<SKILL>/docs/scene.md`。给便宜模型的提示词用 `scripts/scene/deepseek-layouts.mjs` 导出的 `prompt`，不要改写。
+怎么写：一份 `scene.json`。顶层写 `product`、`aspect`（`9:16` 或 `16:9`；不写时宣传片是 `9:16`，讲课是 `16:9`）、`style`、`motion`、`facts`、`screens`。讲课可以再写 `presenter`（`cartoon` / `real` / `video` / `none`）和 `domain`（只有 `legal` 出普法声明）。每一屏写 `role`、`layout`、`narration` 和这一屏的文案。不写坐标、像素、帧号、毫秒。版式名用 `hero`、`stack`、`grid`、`split`、`sequence`、`media`、`chart`、`end`、`board`。风格：宣传片主题名见 `template/src/core/themes.json`（示例 `fresh-light`，渐变卡片），讲课用 `template/src/lesson/style-tokens.json` 里的主题名，资讯板用 `techbrief`。性格用 `crisp`、`bounce`、`soft`、`paper`、`push`。`editorial` 不要配 `bounce`，宣传片不要配 `paper`。口播的某一段也可以把一屏场景当 B-roll：`broll.json` 里写 `"template": "scene"`。已有的 `storyboard.json` / `lesson.json` 用 `from-legacy.mjs` 转成 scene.json（不能转的镜头默认停下，加 `--skip-unsupported` 才跳过）。说明和限制见 `<SKILL>/docs/scene.md`。给便宜模型的提示词用 `scripts/scene/deepseek-layouts.mjs` 导出的 `prompt`，不要改写。
 
 ```
+node <SKILL>/scripts/scene/from-legacy.mjs <storyboard.json|lesson.json> --out <scene.json> [--skip-unsupported]
 node <SKILL>/scripts/scene/make-scene.mjs <scene.json> --out <仓库外目录> [--voice-provider minimax|aliyun|volcengine|mock] [--no-voice] [--no-bgm]
 node <SKILL>/scripts/scene/brief-to-video.mjs <brief.md|json> --out <仓库外目录> [--assets <素材清单>]
 ```
