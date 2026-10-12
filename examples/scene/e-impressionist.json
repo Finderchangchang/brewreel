@@ -34,7 +34,7 @@
     {
       "role": "compare",
       "layout": "split",
-      "narration": "近处闪一下就停一停，远处只是慢慢走。",
+      "narration": "近处闪一下，停一停。远处慢慢走，不回头。",
       "winner": "none",
       "left": {"label": "近处", "items": ["闪一下", "停一停"]},
       "right": {"label": "远处", "items": ["慢慢走", "不回头"]}
@@ -42,7 +42,7 @@
     {
       "role": "number",
       "layout": "number",
-      "narration": "记录里这一面留下 3 道痕，数得清就行。",
+      "narration": "数得清就行，留下的痕一共 3 道。",
       "number": {"text": "3 道", "fact": "f-marks", "label": "留下的痕"}
     },
     {

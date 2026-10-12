@@ -45,8 +45,8 @@ The six used in the examples:
 | `editorial` | `lesson` | B. Magazine. Radius 0, heavy type |
 | `techbrief` | `promo` | Info board. The judgment sits on the stage; evidence and items stay on cards. Pair it with `push` |
 | `cutpaper-collage` | `promo` | A whole cut-paper collage. One color card changes shape from scene to scene, with no fades. Pair it with `crisp`. Fits one object walking through the film (a ticket, old clothes, a place). Does not fit tutorials, dashboards, data compares, live people, or a chain of sentences |
-| `impressionist` | `promo` | Water in short strokes. Dabs of light and ripples keep moving. Type sits on a calm band of water, with no small plate. Pair it with `soft`. Fits culture, art, festivals, and mood. Does not fit a data-heavy explanation |
-| `mural` | `promo` | An old wall painting. Horizontal registers, ochre with blue and gold, flat shapes and outlined patterns. Type sits on the inscription band, with no small plate. Pair it with `soft`. Fits culture, art, festivals, and mood. Does not fit a data-heavy explanation |
+| `impressionist` | `promo` | Water in short strokes across the whole frame, with hanging branches, an arch, lilies, and flecks of light. Type sits on a flatter stretch of water, behind a small mist that fades out. Pair it with `soft`. Fits culture, art, festivals, and mood. Does not fit a data-heavy explanation |
+| `mural` | `promo` | An old wall painting. Every register stays filled: reeds, birds, a sun disk, profile figures, and pattern columns. Type sits on an inscription band only as wide as the line. Pair it with `soft`. Fits culture, art, festivals, and mood. Does not fit a data-heavy explanation |
 
 Other promo themes are the names in `template/src/core/themes.json`, plus `techbrief`, `cutpaper-collage`, `impressionist`, and `mural`. Lesson styles are the names in `template/src/lesson/style-tokens.json`; the example uses `editorial`.
 

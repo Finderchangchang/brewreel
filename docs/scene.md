@@ -47,8 +47,8 @@
 | `editorial` | `lesson` | B。杂志。零圆角，重字重 |
 | `techbrief` | `promo` | 资讯板。判断句直接写在舞台上，证据和条目仍是卡片。配 `push` |
 | `cutpaper-collage` | `promo` | 整支剪纸拼贴。一块色卡在几处场景之间换形接力，不靠淡化。配 `crisp`。适合一件东西走完整支片（一张票、旧衣服、一处地方）。不适合教程、仪表盘、数据对照、真人出镜、一句接一句的说明 |
-| `impressionist` | `promo` | 印象派水面。短笔触、光斑和涟漪一直在缓动，字落在水面的平静带上，不铺小底板。配 `soft`。适合文化、艺术、节日、情绪。不适合数据密集的讲解 |
-| `mural` | `promo` | 古代壁画。横带分格、赭石青金、平涂描边纹样，字落在题记横带上，不铺小底板。配 `soft`。适合文化、艺术、节日、情绪。不适合数据密集的讲解 |
+| `impressionist` | `promo` | 印象派水面。满屏短笔触、垂枝、拱桥、睡莲和光斑一直在缓动。字落在水面较平的一段，后面只有一小片融开的雾。配 `soft`。适合文化、艺术、节日、情绪。不适合数据密集的讲解 |
+| `mural` | `promo` | 古代壁画。横带分格都画满，芦苇、飞鸟、日轮、侧身人物和纹样一直在缓动。字写在只包住字行的题记横带上。配 `soft`。适合文化、艺术、节日、情绪。不适合数据密集的讲解 |
 
 宣传片还可以用 `template/src/core/themes.json` 里的主题名，另加 `techbrief`、`cutpaper-collage`、`impressionist`、`mural`。讲课可以用 `template/src/lesson/style-tokens.json` 里的名字，示例用 `editorial`。
 

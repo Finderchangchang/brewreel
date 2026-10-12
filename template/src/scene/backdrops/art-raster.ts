@@ -1,12 +1,17 @@
-// 两种程序化背景。印象派是水面短笔触，壁画是横带平涂。
-// 种子固定，同一时刻画两次，像素一致。字落在安静区，安静区里不放深色笔触。
+// 两种程序化背景。印象派是满屏短笔触，壁画是三格都画满的横带。
+// 种子固定，同一时刻画两次，像素一致。
+// 字只在字形背后融进画面：印象派是一小片羽化的雾，壁画是题记横带。不再整屏抬成底色。
+
+import {contrastRatio} from '../contrast.ts';
+import {fitSceneCopy} from '../wrap.ts';
+import {textEm} from '../../talk/motion/measure.ts';
 
 export const ART_INK = {
   impressionist: '#10241C',
   mural: '#2A160E',
 } as const;
 
-/** 安静区里允许的最深底色。再深就被抬回这个颜色，保证深字能读。 */
+/** 雾和题记的底色。风格令牌的 bg 仍用它，字幕对比度按这块算。 */
 export const ART_FLOOR = {
   impressionist: '#A8C4B8',
   mural: '#D4C098',
@@ -20,7 +25,7 @@ export function isArtStyle(style: string): style is ArtStyleName {
 
 export type QuietRect = {x: number; y: number; w: number; h: number};
 
-/** 9:16 正文和底部字幕带都落在这里。左右留出纹样，上下留出母题。 */
+/** 正文和底部字幕仍落在这块里。只用来核对文字没有跑出中段，不再清成一块底板。 */
 export function quietRect(w: number, h: number): QuietRect {
   const sx = w / 1080;
   const sy = h / 1920;
@@ -30,6 +35,164 @@ export function quietRect(w: number, h: number): QuietRect {
     w: Math.round(800 * sx),
     h: Math.round(1180 * sy),
   };
+}
+
+/** 8×8 小格。纯色方差是 0，高于这个值算「画」。 */
+export const PAINT_CELL = 8;
+export const PAINT_VARIANCE = 4;
+
+export function paintShare(pixels: Uint8ClampedArray, w: number, h: number): number {
+  const cw = Math.floor(w / PAINT_CELL);
+  const ch = Math.floor(h / PAINT_CELL);
+  if (cw < 1 || ch < 1) return 0;
+  let hit = 0;
+  const n = PAINT_CELL * PAINT_CELL;
+  for (let cy = 0; cy < ch; cy++) {
+    for (let cx = 0; cx < cw; cx++) {
+      let sum = 0;
+      let sum2 = 0;
+      for (let yy = 0; yy < PAINT_CELL; yy++) {
+        let i = ((cy * PAINT_CELL + yy) * w + cx * PAINT_CELL) * 4;
+        for (let xx = 0; xx < PAINT_CELL; xx++) {
+          const l = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
+          sum += l;
+          sum2 += l * l;
+          i += 4;
+        }
+      }
+      const mean = sum / n;
+      if (sum2 / n - mean * mean > PAINT_VARIANCE) hit += 1;
+    }
+  }
+  return hit / (cw * ch);
+}
+
+/** 字形包围盒里的背景像素对字色的最低对比度。矩形可以落在画面外，超出的部分不量。 */
+export function inkContrastIn(pixels: Uint8ClampedArray, w: number, h: number, rect: QuietRect, ink: string): number {
+  const x0 = Math.max(0, Math.floor(rect.x));
+  const y0 = Math.max(0, Math.floor(rect.y));
+  const x1 = Math.min(w, Math.ceil(rect.x + rect.w));
+  const y1 = Math.min(h, Math.ceil(rect.y + rect.h));
+  let worst = 99;
+  let seen = 0;
+  for (let y = y0; y < y1; y++) {
+    let i = (y * w + x0) * 4;
+    for (let x = x0; x < x1; x++) {
+      const hex = `#${[pixels[i], pixels[i + 1], pixels[i + 2]].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+      const ratio = contrastRatio(ink, hex);
+      if (ratio < worst) worst = ratio;
+      seen += 1;
+      i += 4;
+    }
+  }
+  return seen ? worst : 0;
+}
+
+export type ArtBand = {x: number; y: number; w: number; h: number; role: 'glyph' | 'seam'};
+
+export type BandSource = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  text: string;
+  font: number;
+  minFont?: number;
+  textAlign?: string;
+  kind?: string;
+  lineHeight?: number;
+};
+
+function roundBand(x: number, y: number, w: number, h: number, role: ArtBand['role']): ArtBand {
+  const x0 = Math.round(x);
+  const y0 = Math.round(y);
+  const x1 = Math.round(x + w);
+  const y1 = Math.round(y + h);
+  return {x: x0, y: y0, w: Math.max(1, x1 - x0), h: Math.max(1, y1 - y0), role};
+}
+
+function centerBand(block: BandSource, tw: number, th: number): ArtBand {
+  const w = Math.max(1, Math.min(block.w, tw));
+  const h = Math.max(1, Math.min(block.h, th));
+  const start = block.textAlign === 'left' || block.textAlign === 'start';
+  const x = start ? block.x : block.x + (block.w - w) / 2;
+  const y = block.y + (block.h - h) / 2;
+  return roundBand(x, y, w, h, 'glyph');
+}
+
+function glyphBands(block: BandSource): ArtBand[] {
+  const raw = String(block.text ?? '').replace(/[ \t]+/gu, ' ').trim();
+  if (!raw) return [];
+  const font0 = Math.max(1, block.font || 1);
+  const minFont = Math.max(1, Math.min(font0, block.minFont ?? font0));
+  const lh = block.lineHeight ?? (block.kind === 'stage' ? 1 : 1.15);
+  const lock = block.kind === 'stage' ? raw.match(/^(\d+(?:\.\d+)?)(?:\s+)(\S+)$/) : null;
+  if (lock) {
+    const numW = textEm(lock[1]) * font0;
+    const unitW = textEm(lock[2]) * font0 * 0.75;
+    const tw = (numW + font0 * 0.18 + unitW) * 1.06 + 4;
+    return [centerBand(block, tw, font0)];
+  }
+  const preset = raw.includes('\n') ? raw.split('\n').map((line) => line.trim()).filter(Boolean) : null;
+  const fitted = preset ? {font: font0, lines: preset} : fitSceneCopy(raw, Math.max(8, block.w), font0, minFont);
+  const lines = fitted.lines.length ? fitted.lines : [raw];
+  const font = fitted.font;
+  const lineH = font * lh;
+  const inkH = font * 0.96;
+  const usedH = Math.min(block.h, lines.length * lineH);
+  const top = block.y + (block.h - usedH) / 2;
+  const startLeft = block.textAlign === 'left' || block.textAlign === 'start';
+  const out: ArtBand[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const tw = Math.min(block.w, textEm(lines[i]) * font * 1.08 + 6);
+    const x = startLeft ? block.x : block.x + (block.w - tw) / 2;
+    const y = top + i * lineH + (lineH - inkH) / 2;
+    out.push(roundBand(x, y, tw, inkH, 'glyph'));
+  }
+  return out;
+}
+
+function seamOf(blocks: BandSource[]): ArtBand | null {
+  if (blocks.length < 2) return null;
+  const n = Math.ceil(blocks.length / 2);
+  const rest = blocks.slice(n);
+  if (!rest.length) return null;
+  const bounds = (list: BandSource[]) => {
+    let x = Infinity;
+    let y = Infinity;
+    let r = -Infinity;
+    let b = -Infinity;
+    for (const item of list) {
+      x = Math.min(x, item.x);
+      y = Math.min(y, item.y);
+      r = Math.max(r, item.x + item.w);
+      b = Math.max(b, item.y + item.h);
+    }
+    return {x, y, r, b};
+  };
+  const top = bounds(blocks.slice(0, n));
+  const bot = bounds(rest);
+  if (bot.y >= top.b - 1) {
+    const gap = bot.y - top.b;
+    return roundBand(Math.min(top.x, bot.x), top.b, Math.max(top.r, bot.r) - Math.min(top.x, bot.x), Math.max(8, gap), 'seam');
+  }
+  if (bot.x >= top.r - 1) {
+    const gap = bot.x - top.r;
+    return roundBand(top.r, Math.min(top.y, bot.y), Math.max(8, gap), Math.max(top.b, bot.b) - Math.min(top.y, bot.y), 'seam');
+  }
+  return null;
+}
+
+/** 每个文字块一条字形带。split 再加一条组分隔。字幕带传入时同样只包住字行。 */
+export function bandsForScreen(layout: string, blocks: BandSource[], caption?: BandSource | null): ArtBand[] {
+  const out: ArtBand[] = [];
+  for (const block of blocks) out.push(...glyphBands(block));
+  if (caption) out.push(...glyphBands(caption));
+  if (layout === 'split') {
+    const seam = seamOf(blocks);
+    if (seam) out.push(seam);
+  }
+  return out;
 }
 
 const LE = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1;
@@ -43,9 +206,9 @@ const hexRgb = (hex: string): RGB => [
 ];
 
 const pack = (r: number, g: number, b: number) => {
-  const R = r & 255;
-  const G = g & 255;
-  const B = b & 255;
+  const R = Math.max(0, Math.min(255, Math.round(r))) & 255;
+  const G = Math.max(0, Math.min(255, Math.round(g))) & 255;
+  const B = Math.max(0, Math.min(255, Math.round(b))) & 255;
   return LE ? ((255 << 24) | (B << 16) | (G << 8) | R) >>> 0 : ((R << 24) | (G << 16) | (B << 8) | 255) >>> 0;
 };
 
@@ -173,34 +336,125 @@ function fillGradient(pen: Pen, y0: number, y1: number, top: RGB, bot: RGB) {
   }
 }
 
-function liftFloor(buf: Uint8ClampedArray, w: number, h: number, rect: QuietRect, floor: RGB) {
-  const score = floor[0] * 2 + floor[1] * 5 + floor[2];
-  const x0 = Math.max(0, rect.x);
-  const y0 = Math.max(0, rect.y);
-  const x1 = Math.min(w, rect.x + rect.w);
-  const y1 = Math.min(h, rect.y + rect.h);
-  for (let y = y0; y < y1; y++) {
-    let i = (y * w + x0) * 4;
-    for (let x = x0; x < x1; x++) {
-      if (buf[i] * 2 + buf[i + 1] * 5 + buf[i + 2] < score) {
-        buf[i] = floor[0];
-        buf[i + 1] = floor[1];
-        buf[i + 2] = floor[2];
-        buf[i + 3] = 255;
+function outside(px: number, py: number, rect: QuietRect): number {
+  const dx = Math.max(rect.x - px, px - (rect.x + rect.w), 0);
+  const dy = Math.max(rect.y - py, py - (rect.y + rect.h), 0);
+  return Math.hypot(dx, dy);
+}
+
+function fade(d: number, feather: number): number {
+  if (d <= 0) return 1;
+  if (d >= feather) return 0;
+  const u = d / feather;
+  const s = u * u * (3 - 2 * u);
+  return 1 - s;
+}
+
+function hash2(x: number, y: number): number {
+  let n = Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263);
+  n = Math.imul(n ^ (n >>> 13), 1274126177);
+  return (n ^ (n >>> 16)) >>> 0;
+}
+
+/** 雾只盖住字形外扩 12px 的核，再往外羽化。壁画的核里带一点墙面颗粒。 */
+function applyVeils(buf: Uint8ClampedArray, w: number, h: number, bands: ArtBand[], target: RGB, speckle: boolean, strength: number, featherPx: number) {
+  const feather = Math.max(18, Math.round(featherPx * (w / 1080)));
+  const pad = Math.max(8, Math.round(12 * (w / 1080)));
+  for (const band of bands) {
+    if (band.role !== 'glyph') continue;
+    const core: QuietRect = {x: band.x - pad, y: band.y - pad, w: band.w + pad * 2, h: band.h + pad * 2};
+    const x0 = Math.max(0, Math.floor(core.x - feather));
+    const y0 = Math.max(0, Math.floor(core.y - feather));
+    const x1 = Math.min(w, Math.ceil(core.x + core.w + feather));
+    const y1 = Math.min(h, Math.ceil(core.y + core.h + feather));
+    for (let y = y0; y < y1; y++) {
+      let i = (y * w + x0) * 4;
+      for (let x = x0; x < x1; x++) {
+        const f = fade(outside(x + 0.5, y + 0.5, core), feather);
+        if (f > 0.004) {
+          const a = f * strength;
+          let tr = target[0];
+          let tg = target[1];
+          let tb = target[2];
+          if (speckle && f > 0.82) {
+            const n = (hash2(x, y) % 13) - 6;
+            tr += n;
+            tg += n;
+            tb += n * 0.6;
+          }
+          // 按亮度差来抬。接近雾色的水面、墙面不动，只有明显更暗的笔触被抬起来。
+          const luma = buf[i] * 0.299 + buf[i + 1] * 0.587 + buf[i + 2] * 0.114;
+          const goalL = tr * 0.299 + tg * 0.587 + tb * 0.114;
+          const gap = goalL <= luma ? 0 : (goalL - luma) / goalL;
+          const a2 = Math.min(0.9, a * gap * 2.2);
+          if (a2 > 0.004) {
+            const inv = 1 - a2;
+            buf[i] = buf[i] * inv + tr * a2;
+            buf[i + 1] = buf[i + 1] * inv + tg * a2;
+            buf[i + 2] = buf[i + 2] * inv + tb * a2;
+          }
+        }
+        i += 4;
       }
-      i += 4;
     }
   }
 }
 
-const bases = new Map<string, Uint8ClampedArray>();
+function hatch(pen: Pen, y0: number, y1: number, seed: number, colors: RGB[], x0 = 0, x1 = pen.w, stepScale = 1) {
+  const rand = rng(seed);
+  const stepY = Math.max(7, Math.round(11 * stepScale * (pen.h / 1920)));
+  const stepX = Math.max(14, Math.round(24 * stepScale * (pen.w / 1080)));
+  const th = Math.max(3, Math.round(4 * stepScale * (pen.h / 1920)));
+  for (let y = y0; y < y1; y += stepY) {
+    const shift = rand() * stepX;
+    const wobble = (rand() - 0.5) * stepY * 0.35;
+    for (let x = x0 - stepX; x < x1; x += stepX) {
+      const col = colors[(rand() * colors.length) | 0];
+      const len = stepX * (0.45 + rand() * 0.55);
+      pen.rect(x + shift, y + wobble, len, th, pack(col[0], col[1], col[2]));
+    }
+  }
+}
 
 function paintImpressionBase(pen: Pen) {
-  const {h} = pen;
-  fillGradient(pen, 0, h * 0.12, [79, 116, 79], [106, 144, 90]);
-  fillGradient(pen, h * 0.12, h * 0.42, [168, 196, 184], [214, 230, 222]);
-  fillGradient(pen, h * 0.42, h * 0.74, [214, 230, 222], [168, 196, 184]);
-  fillGradient(pen, h * 0.74, h, [94, 132, 118], [58, 96, 82]);
+  const {w, h} = pen;
+  fillGradient(pen, 0, h * 0.34, [58, 104, 54], [98, 140, 72]);
+  fillGradient(pen, h * 0.28, h * 0.62, [92, 158, 162], [132, 184, 176]);
+  fillGradient(pen, h * 0.56, h, [78, 146, 154], [42, 96, 118]);
+  const leaf: RGB[] = [
+    [48, 96, 46],
+    [78, 128, 58],
+    [36, 78, 42],
+    [112, 154, 68],
+    [64, 112, 52],
+  ];
+  const water: RGB[] = [
+    [150, 198, 186],
+    [96, 164, 168],
+    [188, 216, 202],
+    [72, 138, 148],
+    [206, 224, 210],
+    [110, 170, 160],
+  ];
+  const gap = Math.max(10, Math.round(16 * (w / 1080)));
+  const th = Math.max(4, Math.round(6 * (w / 1080)));
+  const rand = rng(0x11a0);
+  for (let x = -gap; x < w + gap; x += gap) {
+    const len = h * (0.16 + rand() * 0.2);
+    const col = leaf[(rand() * leaf.length) | 0];
+    const lean = (rand() - 0.5) * gap;
+    const steps = 9;
+    for (let i = 0; i < steps; i++) {
+      const u = i / steps;
+      const xx = x + lean * u + Math.sin(u * 5.2 + x * 0.01) * 5;
+      pen.rect(xx, u * len, th, len / steps + 3, pack(col[0], col[1], col[2]));
+    }
+  }
+  hatch(pen, h * 0.2, h, 0x51a7, water, 0, w, 1.35);
+}
+
+function dab(pen: Pen, x: number, y: number, len: number, th: number, col: RGB) {
+  pen.rect(x, y, len, th, pack(col[0], col[1], col[2]));
 }
 
 function paintImpressionMove(pen: Pen, t: number) {
@@ -210,106 +464,95 @@ function paintImpressionMove(pen: Pen, t: number) {
   const X = (n: number) => n * sx;
   const Y = (n: number) => n * sy;
   const greens: RGB[] = [
-    [106, 144, 90],
-    [79, 116, 79],
-    [143, 173, 106],
-    [62, 98, 72],
+    [72, 124, 58],
+    [108, 156, 70],
+    [54, 102, 48],
+    [136, 172, 78],
+    [84, 136, 62],
   ];
   const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
-  for (let k = 0; k < 9; k++) {
-    const x0 = X(8 + k * 122);
-    const phase = t * 2.4 + k * 0.7;
-    const breathe = 14 * Math.sin(t * 2.1 + k);
-    const col = greens[k % greens.length];
-    const ink = pack(clamp(col[0] + breathe), clamp(col[1] + breathe), col[2]);
-    for (let j = 0; j < 5; j++) {
-      const sway = Math.sin(phase + j * 0.4) * X(26);
-      const x = x0 + j * X(14);
-      const y1 = Y(64 + j * 26);
-      pen.line(x, 0, x + sway, y1, X(6), ink);
-      pen.ellipse(x + sway * 0.7, y1 * 0.45, X(18), Y(6), clamp(col[0] + breathe), clamp(col[1] + breathe), col[2]);
+  for (let k = 0; k < 26; k++) {
+    const x0 = X(8 + k * 42);
+    const reach = Y(260 + ((k * 53) % 200));
+    const breathe = 16 * Math.sin(t * 1.5 + k * 0.4);
+    const lean = Math.sin(k * 1.7) * X(18);
+    for (let j = 0; j < 12; j++) {
+      const u = j / 11;
+      const sway = Math.sin(t * 1.35 + k * 0.45) * X(30) * u * u + lean * u;
+      const col = greens[(k + j) % greens.length];
+      pen.ellipse(x0 + sway, u * reach, X(6), Y(22), clamp(col[0] + breathe), clamp(col[1] + breathe * 0.4), col[2]);
     }
   }
-  const sway = Math.sin(t * 1.6) * X(10);
-  const deck = pack(76, 130, 104);
-  const rail = pack(92, 158, 128);
-  let prevX = 0;
-  let prevY = 0;
-  for (let i = 0; i <= 28; i++) {
-    const u = i / 28;
-    const x = X(150 + u * 780) + sway;
-    const y = Y(186 - Math.sin(u * Math.PI) * 72);
-    if (i > 0) pen.line(prevX, prevY, x, y, Y(11), deck);
-    prevX = x;
-    prevY = y;
-    if (i % 4 === 0) pen.line(x, y, x, Math.min(y + Y(20), Y(216)), X(5), deck);
+  const sway = Math.sin(t * 0.9) * X(10);
+  const rail = pack(214, 232, 220);
+  const post = pack(186, 214, 200);
+  const deck = pack(36, 96, 90);
+  for (let i = 0; i <= 36; i++) {
+    const u = i / 36;
+    const arch = Math.sin(u * Math.PI);
+    const x = X(100 + u * 880) + sway;
+    const y = Y(490 - arch * 150);
+    pen.rect(x, y, X(28), Y(22), deck);
+    pen.rect(x + X(10), y - Y(52), X(5), Y(52), post);
+    pen.rect(x, y - Y(54), X(28), Y(8), rail);
+    const ry = Y(528 + arch * 42);
+    pen.rect(x + X(2), ry, X(22), Y(6), pack(150, 196, 186));
   }
-  pen.line(X(160) + sway, Y(184), X(920) + sway, Y(184), Y(5), rail);
-
-  const water = rng(0x51a7c0de);
-  const dabs: RGB[] = [
-    [126, 168, 156],
-    [158, 184, 196],
-    [112, 154, 112],
-    [90, 132, 120],
+  const lily = (x: number, y: number, s: number, i: number) => {
+    const bob = Math.sin(t * 1.2 + i) * Y(7);
+    const drift = Math.sin(t * 0.75 + i * 0.5) * X(12);
+    const xx = x + drift;
+    const yy = y + bob;
+    pen.ellipse(xx, yy, s * 1.15, s * 0.48, 36, 118, 72);
+    pen.ellipse(xx - s * 0.3, yy - s * 0.04, s * 0.7, s * 0.3, 78, 150, 86);
+    pen.ellipse(xx + s * 0.28, yy - s * 0.08, s * 0.36, s * 0.26, 244, 240, 228);
+    pen.ellipse(xx + s * 0.36, yy - s * 0.1, s * 0.12, s * 0.1, 196, 92, 118);
+  };
+  const clusters: [number, number][] = [
+    [200, 760], [860, 820], [140, 1180], [940, 1240],
+    [260, 1560], [560, 1680], [860, 1600], [480, 1480],
   ];
-  const calm: RGB[] = [
-    [214, 230, 222],
-    [196, 220, 210],
-    [232, 240, 232],
+  const offs: [number, number, number][] = [
+    [0, 0, 54], [48, -16, 42], [-44, 18, 46], [16, 38, 36], [-18, -34, 34], [58, 26, 30],
   ];
-  const quiet = quietRect(w, h);
-  for (let i = 0; i < 150; i++) {
-    const x = water() * w;
-    const y = Y(240) + water() * (h - Y(240));
-    const len = X(16 + water() * 42);
-    const xx = x + Math.sin(t * 2.2 + i * 0.31) * X(18);
-    const yy = y + Math.sin(t * 1.8 + i * 0.17) * Y(6);
-    const inside = xx > quiet.x && xx < quiet.x + quiet.w && yy > quiet.y && yy < quiet.y + quiet.h;
-    const col = inside ? calm[i % calm.length] : dabs[i % dabs.length];
-    pen.ellipse(xx, yy, len, Y(4.5), col[0], col[1], col[2], inside ? 170 : 220);
+  for (let c = 0; c < clusters.length; c++) {
+    for (let k = 0; k < offs.length; k++) {
+      lily(X(clusters[c][0] + offs[k][0]), Y(clusters[c][1] + offs[k][1]), X(offs[k][2]), c * 6 + k);
+    }
   }
-  const leaf = rng(0x1eaf11);
-  for (let i = 0; i < 11; i++) {
-    const x = X(80 + leaf() * 920) + Math.sin(t * 1.7 + i) * X(26);
-    const y = Y(1500 + leaf() * 340) + Math.sin(t * 1.4 + i * 1.3) * Y(8);
-    pen.ellipse(x, y, X(46 + leaf() * 24), Y(16), 90, 140, 78);
-    if (leaf() > 0.45) pen.ellipse(x + X(6), y - Y(2), X(14), Y(8), 240, 214, 214);
-  }
-  for (let i = 0; i < 3; i++) {
-    const cx = X(260 + i * 280);
-    const cy = Y(1580 + i * 70);
-    const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + i * 1.7);
-    const rx = X(26 + pulse * 34);
-    const ry = Y(8 + pulse * 8);
-    pen.ellipse(cx, cy, rx, ry, 210, 228, 220, 90);
-  }
-  const drift = rng(0xb0a7);
-  const marks: {y: number; len: number; th: number; ph: number; sp: number; light: number}[] = [];
-  for (let i = 0; i < 86; i++) {
-    marks.push({
-      y: 1508 + drift() * 380,
-      len: 26 + drift() * 70,
-      th: 3.5 + drift() * 4,
-      ph: drift() * 1400,
-      sp: 78 + drift() * 64,
-      light: drift(),
-    });
-  }
-  for (const m of marks) {
-    const span = w + X(m.len + 40);
-    const x = ((m.ph * sx + t * m.sp * sx) % span) - X(16);
-    const y = Y(m.y) + Math.sin(t * 1.6 + m.ph) * Y(5);
-    const light = m.light > 0.58;
-    pen.line(x, y, x + X(m.len), y + Y((m.light - 0.5) * 12), Y(m.th), pack(light ? 224 : 146, light ? 234 : 178, light ? 216 : 156));
+  // 同一行笔触等长，按间距取模漂移，出画从另一头接上。
+  const rowH = Y(36);
+  const yStart = Y(520);
+  const gap = X(56);
+  const rowCount = Math.ceil((h - yStart) / rowH) + 1;
+  const across = Math.ceil(w / gap) + 2;
+  const inks: RGB[] = [
+    [64, 132, 128],
+    [226, 236, 220],
+    [96, 164, 156],
+    [52, 112, 120],
+    [186, 214, 196],
+    [118, 176, 160],
+  ];
+  for (let r = 0; r < rowCount; r++) {
+    const bob = Math.sin(t * 1.15 + r * 0.45) * Y(3);
+    const y = yStart + r * rowH + bob;
+    const dir = r % 2 === 0 ? 1 : -1;
+    const speed = X(150 + (r % 4) * 36);
+    const shift = (((t * speed * dir) % gap) + gap) % gap;
+    const len = X(20 + (r % 3) * 8);
+    const th = Math.max(6, Y(7));
+    const col = inks[r % inks.length];
+    const yJ = ((r % 5) - 2) * sy;
+    for (let i = -1; i < across; i++) dab(pen, i * gap + shift, y + yJ, len, th, col);
   }
   const spark = rng(0xdaab);
   for (let i = 0; i < 36; i++) {
-    const y0 = spark() > 0.5 ? Y(12 + spark() * 180) : Y(1500 + spark() * 340);
-    const x = spark() * w + Math.sin(t * 2.5 + i) * X(22);
-    const y = y0 + Math.sin(t * 2.1 + i * 0.4) * Y(7);
-    const hot = 180 + Math.round(50 * (0.5 + 0.5 * Math.sin(t * 2.8 + i)));
-    pen.ellipse(x, y, X(14), Y(4), hot, hot - 8, 200, 210);
+    const y0 = Y(340 + spark() * 1500);
+    const x = spark() * w + Math.sin(t * 1.6 + i) * X(14);
+    const y = y0 + Math.sin(t * 2 + i * 0.4) * Y(4);
+    const hot = 200 + Math.round(30 * (0.5 + 0.5 * Math.sin(t * 2.1 + i)));
+    pen.ellipse(x, y, X(10), Y(3.4), hot, hot - 10, 198, 200);
   }
 }
 
@@ -326,9 +569,9 @@ function beads(pen: Pen, x: number, y: number, across: boolean, count: number, s
     const c = colors[i % colors.length];
     const px0 = across ? x + i * step : x;
     const py0 = across ? y : y + i * step;
-    pen.rect(px0, py0, across ? size : size, across ? size : size, pack(c[0], c[1], c[2]));
-    if (across) pen.rect(px0 + size, py0, step - size, size, gap);
-    else pen.rect(px0, py0 + size, size, step - size, gap);
+    pen.rect(px0, py0, size, size, pack(c[0], c[1], c[2]));
+    if (across) pen.rect(px0 + size, py0, Math.max(0, step - size), size, gap);
+    else pen.rect(px0, py0 + size, size, Math.max(0, step - size), gap);
     pen.rect(px0, py0, across ? step : 2, across ? 2 : step, seam);
   }
 }
@@ -369,61 +612,71 @@ function glyph(pen: Pen, kind: number, x: number, y: number, s: number, phase: n
 
 function paintMuralBase(pen: Pen) {
   const {w, h} = pen;
-  const sx = w / 1080;
-  const sy = h / 1920;
-  pen.rect(0, 0, w, h, pack(228, 208, 160));
-  const spot = rng(0xc0a1);
-  for (let i = 0; i < 18; i++) {
-    pen.ellipse(spot() * w, spot() * h, 30 * sx + spot() * 40 * sx, 16 * sy + spot() * 18 * sy, 196, 174, 122, 80);
-  }
-  const rule = pack(90, 42, 32);
-  pen.rect(64 * sx, 220 * sy, w - 128 * sx, 4 * sy, rule);
-  pen.rect(64 * sx, 1410 * sy, w - 128 * sx, 4 * sy, rule);
-  pen.rect(72 * sx, 226 * sy, w - 144 * sx, 2 * sy, pack(242, 226, 190));
-  pen.rect(72 * sx, 1416 * sy, w - 144 * sx, 2 * sy, pack(242, 226, 190));
+  pen.rect(0, 0, w, h, pack(216, 196, 154));
+  const tooth: RGB[] = [
+    [196, 168, 118],
+    [232, 214, 176],
+    [176, 148, 102],
+    [210, 186, 140],
+  ];
+  hatch(pen, 0, h, 0xc0a1, tooth);
+}
 
-  const skin = [230, 176, 140] as RGB;
-  const cloth = [244, 232, 206] as RGB;
-  const ink = pack(42, 24, 16);
-  const gx = 210 * sx;
-  const gy = 92 * sy;
-  pen.ellipse(gx, gy, 22 * sx, 26 * sy, skin[0], skin[1], skin[2]);
-  pen.ellipse(gx + 6 * sx, gy - 2 * sy, 6 * sx, 7 * sy, 244, 236, 220);
-  pen.ellipse(gx + 7 * sx, gy, 3 * sx, 3 * sy, 30, 20, 16);
+function figure(pen: Pen, x: number, y: number, s: number, phase: number) {
+  const skin = pack(214, 146, 96);
+  const kilt = pack(232, 214, 176);
+  const sash = pack(178, 58, 46);
+  const ink = pack(48, 28, 20);
+  const step = Math.sin(phase) * s * 0.07;
+  pen.ellipse(x, y - s * 0.36, s * 0.09, s * 0.11, 214, 146, 96);
+  pen.ellipse(x - s * 0.01, y - s * 0.42, s * 0.1, s * 0.06, 36, 24, 18);
+  pen.ellipse(x + s * 0.045, y - s * 0.36, s * 0.016, s * 0.016, 30, 20, 16);
   pen.quad(
     [
-      [gx - 46 * sx, gy + 22 * sy],
-      [gx + 50 * sx, gy + 22 * sy],
-      [gx + 32 * sx, gy + 100 * sy],
-      [gx - 28 * sx, gy + 100 * sy],
+      [x - s * 0.07, y - s * 0.26],
+      [x + s * 0.11, y - s * 0.26],
+      [x + s * 0.08, y],
+      [x - s * 0.04, y],
     ],
-    pack(skin[0], skin[1], skin[2]),
+    skin,
   );
   pen.quad(
     [
-      [gx - 24 * sx, gy + 40 * sy],
-      [gx + 26 * sx, gy + 40 * sy],
-      [gx + 34 * sx, gy + 108 * sy],
-      [gx - 30 * sx, gy + 108 * sy],
+      [x - s * 0.08, y - s * 0.02],
+      [x + s * 0.13, y - s * 0.02],
+      [x + s * 0.1, y + s * 0.16],
+      [x - s * 0.02, y + s * 0.16],
     ],
-    pack(cloth[0], cloth[1], cloth[2]),
+    kilt,
   );
-  pen.line(gx - 46 * sx, gy + 22 * sy, gx + 50 * sx, gy + 22 * sy, 2 * sy, ink);
-  for (let i = 0; i < 3; i++) {
-    pen.ellipse(gx, gy + (46 + i * 12) * sy, (34 - i * 4) * sx, 7 * sy, i % 2 ? 42 : 176, i % 2 ? 78 : 56, i % 2 ? 154 : 42);
+  pen.rect(x - s * 0.02, y - s * 0.02, s * 0.14, s * 0.04, sash);
+  pen.line(x + s * 0.06, y - s * 0.2, x + s * 0.24, y - s * 0.06, Math.max(2, s * 0.035), skin);
+  pen.line(x - s * 0.02, y - s * 0.18, x - s * 0.16, y - s * 0.02, Math.max(2, s * 0.03), skin);
+  pen.line(x + s * 0.03, y + s * 0.14, x + s * 0.12 + step, y + s * 0.42, Math.max(2, s * 0.04), skin);
+  pen.line(x - s * 0.01, y + s * 0.14, x - s * 0.1 - step, y + s * 0.42, Math.max(2, s * 0.04), skin);
+  pen.line(x - s * 0.07, y - s * 0.26, x - s * 0.04, y, Math.max(1.4, s * 0.018), ink);
+}
+
+function bird(pen: Pen, x: number, y: number, s: number, flap: number) {
+  const body = pack(186, 184, 170);
+  const ink = pack(48, 32, 24);
+  pen.ellipse(x, y, s * 0.5, s * 0.26, 186, 184, 170);
+  pen.line(x + s * 0.35, y - s * 0.04, x + s * 0.8, y - s * 0.26, Math.max(2, s * 0.1), body);
+  pen.ellipse(x + s * 0.86, y - s * 0.3, s * 0.14, s * 0.1, 186, 184, 170);
+  pen.line(x + s * 0.96, y - s * 0.3, x + s * 1.2, y - s * 0.22, Math.max(1.5, s * 0.05), pack(196, 112, 48));
+  pen.line(x - s * 0.05, y, x - s * 0.62, y - s * flap, Math.max(2, s * 0.07), ink);
+  pen.line(x, y + s * 0.04, x - s * 0.4, y + s * 0.18, Math.max(1.6, s * 0.05), body);
+}
+
+function papyrus(pen: Pen, x: number, yTop: number, yBot: number, sway: number, sx: number, sy: number) {
+  const stem = pack(32, 118, 70);
+  pen.line(x, yBot, x + sway, yTop, Math.max(2, 3.2 * sx), stem);
+  for (let i = -2; i <= 2; i++) {
+    const ang = i * 0.42;
+    const len = 34 * sy;
+    pen.line(x + sway, yTop, x + sway + Math.sin(ang) * len * 1.4, yTop - Math.cos(ang) * len * 0.45, Math.max(1.6, 2.6 * sx), pack(46, 142, 78));
   }
-
-  pen.ellipse(820 * sx, 118 * sy, 34 * sx, 34 * sy, 226, 177, 58);
-  pen.ellipse(820 * sx, 118 * sy, 24 * sx, 24 * sy, 196, 56, 44);
-
-  const goose = (x: number, y: number) => {
-    pen.ellipse(x, y, 22 * sx, 12 * sy, 150, 148, 136);
-    pen.line(x + 16 * sx, y - 2 * sy, x + 28 * sx, y - 16 * sy, 4 * sy, pack(150, 148, 136));
-    pen.ellipse(x + 30 * sx, y - 18 * sy, 7 * sx, 5 * sy, 150, 148, 136);
-    pen.line(x + 34 * sx, y - 18 * sy, x + 44 * sx, y - 14 * sy, 2 * sy, pack(196, 120, 58));
-  };
-  goose(430 * sx, 150 * sy);
-  goose(520 * sx, 176 * sy);
+  pen.ellipse(x + sway, yTop - 8 * sy, 6 * sx, 8 * sy, 186, 64, 52);
 }
 
 function paintMuralMove(pen: Pen, t: number) {
@@ -432,78 +685,196 @@ function paintMuralMove(pen: Pen, t: number) {
   const sy = h / 1920;
   const X = (n: number) => n * sx;
   const Y = (n: number) => n * sy;
-  const sideCount = Math.ceil((1520 * sy) / (36 * sy));
-  beads(pen, 0, 0, true, Math.ceil(w / (36 * sx)) + 1, 36 * sx, 28 * sx);
-  beads(pen, 0, 0, false, sideCount, 36 * sy, 28 * sx);
-  beads(pen, w - 28 * sx, 0, false, sideCount, 36 * sy, 28 * sx);
+  const sideCount = Math.ceil(h / (32 * sy));
+  beads(pen, 0, 0, true, Math.ceil(w / (32 * sx)) + 1, 32 * sx, 24 * sx);
+  beads(pen, 0, 0, false, sideCount, 32 * sy, 24 * sx);
+  beads(pen, w - 24 * sx, 0, false, sideCount, 32 * sy, 24 * sx);
 
-  const sway = Math.sin(t * 2.2) * X(12);
+  for (let i = 0; i < 18; i++) {
+    const x = X(70 + i * 56);
+    const sway = Math.sin(t * 1.6 + i * 0.45) * X(10);
+    papyrus(pen, x, Y(78 + (i % 3) * 10), Y(430), sway, sx, sy);
+  }
+  for (let i = 0; i < 10; i++) {
+    const x = X(160 + i * 86);
+    const sway = Math.sin(t * 1.4 + i) * X(8);
+    papyrus(pen, x, Y(560 + (i % 2) * 16), Y(860), sway, sx, sy);
+  }
   for (let i = 0; i < 7; i++) {
-    const x = X(560 + i * 26) + sway * Math.sin(i);
-    const stem = pack(30, 110, 70);
-    pen.line(x, Y(210), x + Math.sin(t * 2.3 + i) * X(8), Y(96), X(3), stem);
-    pen.ellipse(x, Y(88 + (i % 3) * 8), X(12), Y(18), 46, 140, 78);
-    pen.ellipse(x, Y(78), X(6), Y(7), 196, 72, 56);
-  }
-
-  const sunX = X(820);
-  const sunY = Y(118);
-  for (let i = 0; i < 9; i++) {
-    const ang = -Math.PI * 0.85 + (i / 8) * Math.PI * 0.7;
-    const len = Y(36 + 14 * Math.sin(t * 2.2 + i * 0.55));
-    const x1 = sunX + Math.cos(ang) * len;
-    const y1 = sunY + Math.sin(ang) * len * 0.55;
-    pen.line(sunX, sunY, x1, y1, X(3.2), pack(194, 58, 42));
-    const open = 0.35 + 0.35 * Math.sin(t * 2.6 + i * 0.8);
-    pen.line(x1, y1, x1 + Math.cos(ang - open) * X(14), y1 + Y(12), X(2), pack(180, 70, 48));
-    pen.line(x1, y1, x1 + Math.cos(ang + open) * X(14), y1 + Y(12), X(2), pack(180, 70, 48));
-  }
-
-  const order = [0, 2, 4, 5, 3, 1, 2, 0, 5, 4, 1, 3];
-  for (let i = 0; i < order.length; i++) {
-    const col = i < 6 ? X(92) : X(994);
-    const y = Y(600 + (i % 6) * 120);
-    const phase = order[i] === 1 ? t : 0;
-    glyph(pen, order[i], col, y, X(52), phase);
-  }
-
-  const waterTop = Y(1520);
-  pen.rect(0, waterTop, w, h - waterTop, pack(40, 80, 140));
-  beads(pen, 0, waterTop - 30 * sy, true, Math.ceil(w / (36 * sx)) + 1, 36 * sx, 26 * sx);
-  const drift = (t * 140 * sx) % (48 * sx);
-  for (let row = 0; row < 6; row++) {
-    const y = waterTop + Y(28) + row * Y(52);
-    const shift = drift + row * 16 * sx;
-    for (let i = -1; i < 26; i++) {
-      const x = i * X(48) + shift;
-      pen.line(x, y, x + X(24), y - Y(12), X(4), pack(150, 190, 220));
-      pen.line(x + X(24), y - Y(12), x + X(48), y, X(4), pack(186, 214, 232));
-    }
+    const x = X(220 + i * 100);
+    const sway = Math.sin(t * 1.3 + i * 0.6) * X(8);
+    papyrus(pen, x, Y(980 + (i % 3) * 18), Y(1280), sway, sx, sy);
   }
   for (let i = 0; i < 4; i++) {
-    const span = w + X(80);
-    const x = ((t * X(110 + i * 16) + i * X(220)) % span + span) % span - X(40);
-    const y = waterTop + Y(50 + (i % 3) * 48);
-    pen.ellipse(x, y, X(16), Y(8), 232, 214, 170);
-    pen.ellipse(x + X(14), y, X(5), Y(4), 196, 120, 58);
+    const span = w + X(120);
+    const x = ((t * X(28 + i * 8) + i * X(260)) % span + span) % span - X(30);
+    const y = Y(640 + i * 90) + Math.sin(t * 1.6 + i) * Y(5);
+    bird(pen, x, y, X(22), 0.3 + 0.35 * (0.5 + 0.5 * Math.sin(t * 2.1 + i)));
   }
 
-  const span = w + X(120);
-  const bx = ((t * X(160)) % span + span) % span - X(60);
+  pen.ellipse(X(860), Y(168), X(42), Y(42), 226, 176, 64);
+  pen.ellipse(X(860), Y(168), X(24), Y(24), 186, 52, 40);
+  for (let i = 0; i < 11; i++) {
+    const ang = -Math.PI * 0.15 + (i / 10) * Math.PI * 1.3;
+    const len = Y(34 + 16 * Math.sin(t * 1.8 + i * 0.5));
+    const x1 = X(860) + Math.cos(ang) * len;
+    const y1 = Y(168) + Math.sin(ang) * len * 0.7;
+    pen.line(X(860), Y(168), x1, y1, X(3), pack(194, 58, 42));
+  }
+
+  for (let i = 0; i < 5; i++) {
+    const span = w + X(100);
+    const x = ((t * X(36 + i * 10) + i * X(230)) % span + span) % span - X(40);
+    const y = Y(120 + (i % 3) * 78) + Math.sin(t * 1.8 + i) * Y(6);
+    bird(pen, x, y, X(26), 0.35 + 0.4 * (0.5 + 0.5 * Math.sin(t * 2.4 + i)));
+  }
+
+  const order = [0, 3, 1, 4, 2, 5, 0, 1];
+  for (let col = 0; col < 4; col++) {
+    const x = X([86, 210, 870, 1000][col]);
+    for (let row = 0; row < order.length; row++) {
+      const kind = order[(row + col) % order.length];
+      const phase = kind === 1 ? t : 0;
+      glyph(pen, kind, x, Y(500 + row * 108), X(40), phase);
+    }
+  }
+
+  const people: [number, number, number][] = [
+    [340, 250, 150],
+    [620, 300, 130],
+    [260, 1040, 150],
+    [480, 1120, 170],
+    [760, 1000, 150],
+    [560, 1320, 120],
+  ];
+  for (let i = 0; i < people.length; i++) {
+    figure(pen, X(people[i][0]), Y(people[i][1]), Y(people[i][2]), t * 1.7 + i);
+  }
+
+  const rule = pack(92, 52, 36);
+  pen.rect(0, Y(458), w, Y(4), rule);
+  pen.rect(0, Y(464), w, Y(2), pack(226, 186, 96));
+  pen.rect(0, Y(1468), w, Y(4), rule);
+
+  const waterTop = Y(1508);
+  pen.rect(0, waterTop, w, h - waterTop, pack(36, 74, 132));
+  const tri = Math.ceil(w / X(28));
+  for (let i = 0; i < tri; i++) {
+    const x = i * X(28);
+    const up = i % 2 === 0;
+    const c = up ? pack(178, 58, 46) : pack(36, 28, 22);
+    pen.quad(
+      [
+        [x, waterTop],
+        [x + X(28), waterTop],
+        [x + X(14), waterTop - (up ? Y(16) : Y(8))],
+      ],
+      c,
+    );
+  }
+  const period = X(48);
+  const drift = (t * X(42)) % period;
+  for (let row = 0; row < 8; row++) {
+    const y = waterTop + Y(24) + row * Y(46);
+    const shift = drift + row * X(10);
+    for (let i = -1; i < 28; i++) {
+      const x = i * X(48) + shift;
+      pen.line(x, y, x + X(24), y - Y(10), X(4), pack(150, 196, 220));
+      pen.line(x + X(24), y - Y(10), x + X(48), y, X(4), pack(196, 220, 232));
+    }
+  }
+  for (let i = 0; i < 6; i++) {
+    const span = w + X(90);
+    const x = ((t * X(70 + i * 14) + i * X(180)) % span + span) % span - X(30);
+    const y = waterTop + Y(36 + (i % 4) * 40);
+    const drawFish = (fx: number) => {
+      pen.ellipse(fx, y, X(16), Y(7), 232, 210, 160);
+      pen.quad(
+        [
+          [fx - X(14), y],
+          [fx - X(26), y - Y(7)],
+          [fx - X(26), y + Y(7)],
+        ],
+        pack(196, 150, 90),
+      );
+      pen.ellipse(fx + X(8), y - Y(1), X(2), Y(2), 36, 24, 18);
+    };
+    drawFish(x);
+    drawFish(x - span);
+  }
+
+  const span = w + X(140);
+  const bx = ((t * X(90)) % span + span) % span - X(40);
   const drawBug = (x: number) => {
-    const y = Y(1460);
-    pen.ellipse(x + X(36), y - Y(8), X(22), Y(22), 226, 176, 64);
-    pen.ellipse(x, y, X(28), Y(16), 44, 86, 176);
-    pen.ellipse(x + X(22), y - Y(2), X(12), Y(10), 62, 166, 150);
+    const y = Y(1446);
+    pen.ellipse(x + X(30), y - Y(10), X(16), Y(16), 226, 176, 64);
+    pen.ellipse(x, y, X(22), Y(12), 44, 86, 176);
+    pen.ellipse(x + X(16), y - Y(1), X(8), Y(7), 62, 166, 150);
     for (let leg = 0; leg < 3; leg++) {
-      const ly = y - Y(8) + leg * Y(8);
-      const kick = Math.sin(t * 6 + leg + x * 0.01) * X(8);
-      pen.line(x - X(8), ly, x - X(28) + kick, ly + Y(10), X(2.4), pack(36, 28, 22));
-      pen.line(x + X(8), ly, x + X(26) - kick, ly + Y(8), X(2.4), pack(36, 28, 22));
+      const ly = y - Y(6) + leg * Y(6);
+      const kick = Math.sin(t * 4 + leg + x * 0.01) * X(6);
+      pen.line(x - X(6), ly, x - X(20) + kick, ly + Y(8), X(2), pack(36, 28, 22));
     }
   };
   drawBug(bx);
   drawBug(bx - span);
+}
+
+function inscription(pen: Pen, band: ArtBand) {
+  const sx = pen.w / 1080;
+  const sy = pen.h / 1920;
+  const y0 = band.y - 22 * sy;
+  const y1 = band.y + band.h + 22 * sy;
+  const x0 = band.x - 16 * sx;
+  const x1 = band.x + band.w + 16 * sx;
+  // 横线可能贴进相邻字行的测量区，颜色仍要对字色过 4.5，所以用浅赭而不是深褐。
+  const ink = pack(186, 140, 78);
+  const gold = pack(232, 204, 140);
+  pen.line(x0, y0, x1, y0, Math.max(1.5, 2.4 * sy), ink);
+  pen.line(x0, y0 - 5 * sy, x1, y0 - 5 * sy, Math.max(1.2, 1.6 * sy), gold);
+  pen.line(x0, y1, x1, y1, Math.max(1.5, 2.4 * sy), ink);
+  pen.line(x0, y1 + 5 * sy, x1, y1 + 5 * sy, Math.max(1.2, 1.6 * sy), gold);
+  const s = 7 * sx;
+  for (const x of [x0, x1]) {
+    for (const y of [y0, y1]) {
+      pen.quad(
+        [
+          [x, y - s],
+          [x + s, y],
+          [x, y + s],
+          [x - s, y],
+        ],
+        gold,
+      );
+    }
+  }
+}
+
+function paintSeam(pen: Pen, style: string, seam: ArtBand, t: number) {
+  const sx = pen.w / 1080;
+  const sy = pen.h / 1920;
+  const mid = seam.y + seam.h / 2;
+  if (style === 'mural') {
+    const size = Math.min(seam.h * 0.7, 20 * sy);
+    if (size >= 8) {
+      const step = size + 6 * sx;
+      beads(pen, 0, mid - size / 2, true, Math.ceil(pen.w / step) + 1, step, size);
+    }
+    pen.line(0, mid, pen.w, mid, Math.max(2, 3 * sy), pack(72, 40, 28));
+    return;
+  }
+  const step = Math.max(36 * sx, pen.w / 16);
+  for (let i = 0; i < Math.ceil(pen.w / step); i++) {
+    const x = i * step + Math.sin(t * 1.2 + i) * 4 * sx;
+    const bob = Math.sin(t * 1.5 + i * 0.8) * Math.min(3 * sy, seam.h * 0.15);
+    const s = Math.min(18 * sx, seam.h * 0.42);
+    dab(pen, x, mid + bob - s * 0.2, s * 1.5, Math.max(3, s * 0.35), [48, 112, 74]);
+    dab(pen, x + s * 0.45, mid + bob - s * 0.35, s * 0.45, Math.max(2, s * 0.2), [236, 226, 206]);
+  }
+  const shift = (t * 20 * sx) % (28 * sx);
+  for (let x = -20 * sx; x < pen.w; x += 28 * sx) {
+    pen.line(x + shift, mid + seam.h * 0.28, x + shift + 14 * sx, mid + seam.h * 0.28 - 3 * sy, Math.max(1.4, 2 * sy), pack(230, 240, 226));
+  }
 }
 
 function paintBase(style: string, w: number, h: number) {
@@ -514,7 +885,9 @@ function paintBase(style: string, w: number, h: number) {
   return buf;
 }
 
-export function paintArt(style: string, w: number, h: number, t: number): Uint8ClampedArray {
+const bases = new Map<string, Uint8ClampedArray>();
+
+export function paintArt(style: string, w: number, h: number, t: number, bands?: ArtBand[]): Uint8ClampedArray {
   const key = `${style}:${w}x${h}`;
   let base = bases.get(key);
   if (!base) {
@@ -526,7 +899,16 @@ export function paintArt(style: string, w: number, h: number, t: number): Uint8C
   const time = Number.isFinite(t) ? t : 0;
   if (style === 'mural') paintMuralMove(pen, time);
   else paintImpressionMove(pen, time);
-  const floor = hexRgb(style === 'mural' ? ART_FLOOR.mural : ART_FLOOR.impressionist);
-  liftFloor(buf, w, h, quietRect(w, h), floor);
+  const list = bands ?? [];
+  if (list.length) {
+    const floor = hexRgb(style === 'mural' ? ART_FLOOR.mural : ART_FLOOR.impressionist);
+    const mist: RGB = style === 'mural' ? floor : [154, 196, 186];
+    const muralVeil = style === 'mural';
+    applyVeils(buf, w, h, list, mist, muralVeil, muralVeil ? 0.8 : 0.64, muralVeil ? 24 : 48);
+    if (style === 'mural') {
+      for (const band of list) if (band.role === 'glyph') inscription(pen, band);
+    }
+    for (const band of list) if (band.role === 'seam') paintSeam(pen, style, band, time);
+  }
   return buf;
 }

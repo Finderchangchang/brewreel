@@ -12,7 +12,7 @@ import {fontFloorOf, holdPose, poseAt, type PlanBlock, type PlanScreen, type Sce
 import {fitSceneCopy} from './wrap.ts';
 import {CollageFilm} from './backdrops/CollageFilm.tsx';
 import {ArtFilm} from './backdrops/ArtFilm.tsx';
-import {isArtStyle} from './backdrops/art-raster.ts';
+import {bandsForScreen, isArtStyle, type BandSource} from './backdrops/art-raster.ts';
 
 export type SceneProps = {
   plan?: ScenePlan;
@@ -189,6 +189,7 @@ function Copy({
   weight,
   lineHeight,
   emphasis,
+  shadow,
 }: {
   plan: ScenePlan;
   text: string;
@@ -201,6 +202,7 @@ function Copy({
   weight: number;
   lineHeight: number;
   emphasis?: string[];
+  shadow?: string;
 }) {
   const fitted = fitSceneCopy(text, Math.max(8, width), font, minFont);
   const lines = fitted.lines.length ? fitted.lines : text ? [text] : [];
@@ -215,6 +217,7 @@ function Copy({
         color,
         textAlign: align,
         wordBreak: 'normal',
+        textShadow: shadow,
       }}
     >
       {lines.map((line, index) => (
@@ -337,9 +340,16 @@ function Card({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen
   );
 }
 
+function artHalo(style: string): string | undefined {
+  if (style === 'impressionist') return '0 0 16px rgba(232,244,238,0.96), 0 0 3px rgba(232,244,238,0.94)';
+  if (style === 'mural') return '0 0 12px rgba(244,234,214,0.94), 0 0 2px rgba(244,234,214,0.9)';
+  return undefined;
+}
+
 function StageLine({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
   const lock = block.kind === 'stage' ? block.text.trim().match(NUMBER_LOCK) : null;
   const unitFont = Math.max(plan.floor.aux, Math.round(block.font * 0.75));
+  const halo = artHalo(plan.style);
   return (
     <div
       style={{
@@ -367,6 +377,7 @@ function StageLine({plan, screen, block, local}: {plan: ScenePlan; screen: PlanS
             fontWeight: plan.roles.weight,
             color: plan.paint.stage,
             lineHeight: 1,
+            textShadow: halo,
           }}
         >
           <span style={{fontSize: block.font}}>{lock[1]}</span>
@@ -385,6 +396,7 @@ function StageLine({plan, screen, block, local}: {plan: ScenePlan; screen: PlanS
           weight={block.kind === 'kicker' ? 500 : plan.roles.weight}
           lineHeight={block.kind === 'stage' ? 1 : 1.15}
           emphasis={block.emphasis}
+          shadow={halo}
         />
       )}
     </div>
@@ -822,6 +834,31 @@ function SoundBed({plan}: {plan: ScenePlan}) {
   );
 }
 
+function artCaption(plan: ScenePlan, screen: PlanScreen, local: number): BandSource | null {
+  const cap = plan.captions?.screens.find((item) => item.index === screen.index);
+  if (!cap) return null;
+  let page = cap.pages[0];
+  for (const item of cap.pages) {
+    if (local + 1e-6 >= item.startSec) page = item;
+  }
+  if (!page || local + 1e-6 < page.startSec) return null;
+  const text = page.chars.map((item) => item.ch).join('');
+  if (!text.trim()) return null;
+  const font = page.font || 48;
+  return {
+    x: cap.box.x,
+    y: cap.box.y,
+    w: cap.box.w,
+    h: cap.box.h,
+    text,
+    font,
+    minFont: font,
+    textAlign: 'center',
+    kind: 'caption',
+    lineHeight: 1.25,
+  };
+}
+
 function Karaoke({plan, screen, local}: {plan: ScenePlan; screen: PlanScreen; local: number}) {
   const cap = plan.captions?.screens.find((item) => item.index === screen.index);
   if (!cap) return null;
@@ -856,7 +893,7 @@ function Karaoke({plan, screen, local}: {plan: ScenePlan; screen: PlanScreen; lo
           lineHeight: 1.25,
           textAlign: 'center',
           color: ink,
-          textShadow: plan.caption?.shadow && plan.caption.shadow !== 'none' ? plan.caption.shadow : undefined,
+          textShadow: artHalo(plan.style) || (plan.caption?.shadow && plan.caption.shadow !== 'none' ? plan.caption.shadow : undefined),
         }}
       >
         {page.chars.map((item, index) =>
@@ -901,7 +938,28 @@ export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {
   return (
     <LayoutProbe frames={__probe}>
       <AbsoluteFill>
-        {isArtStyle(plan.style) ? <ArtFilm style={plan.style} /> : <Backdrop plan={plan} />}
+        {isArtStyle(plan.style) ? (
+          <ArtFilm
+            style={plan.style}
+            bands={bandsForScreen(
+              screen.layout,
+              screen.blocks.map((block) => ({
+                x: block.x,
+                y: block.y,
+                w: block.w,
+                h: block.h,
+                text: block.text,
+                font: block.font,
+                minFont: fontFloorOf(plan, screen, block),
+                textAlign: block.textAlign,
+                kind: block.kind,
+              })),
+              artCaption(plan, screen, local),
+            )}
+          />
+        ) : (
+          <Backdrop plan={plan} />
+        )}
         <SoundBed plan={plan} />
         {screen.links?.length ? <Links plan={plan} links={screen.links} /> : null}
         {screen.blocks.map((block) => (
