@@ -2,6 +2,35 @@
 
 [中文 → CHANGELOG.md](CHANGELOG.md)
 
+## v0.16.0 · 2026-10-12 · Scene path: six styles, 16:9 and lessons, real voice, legacy shot presets
+
+The v0.15 scene path (the model says what each screen is about, the engine decides how it looks) grows. Still experimental; the old paths work as before.
+
+### Styles
+- `fresh-light` and `editorial` are fully dressed: stage, title weight, emphasis, big numbers, step markers, evidence cards, comparison columns and end cards follow the style (`template/src/scene/styles/look.json`). `techbrief` looks the same.
+- New `cutpaper-collage`: one anchor card carries the whole film, shrinking into a patch, becoming a postcard and a round window, then returning to its spot; paper grain, hard shadows, a toss-and-settle landing, confetti. Hills, grass and clouds are drawn in code; products use a cut-out slot. Cross-screen relays use the optional `relay` field.
+- New art styles `impressionist` (water garden) and `mural` (ancient wall painting). The painting fills the frame and text sits inside it (a feathered lift, or an inscription band) instead of on a small plate. Seeded, so a given frame renders identically every time.
+
+### Formats and uses
+- `aspect: "16:9"`: all nine layouts have landscape geometry; safe areas and the caption bar follow the lesson canvas. The same copy renders both ways.
+- `product: "lesson"`: lesson films, landscape by default, lesson themes, an optional presenter (reusing the lesson engine, `presenter.kind` includes `none`), an AIGC mark at the start, and the legal disclaimer only in the legal domain.
+- Talk `broll.json` gains `template: "scene"`: a title plus 2-4 points drawn in the B-roll area with the talk palette.
+- Vertical split screens now show two labelled groups with a divider.
+
+### Voice and captions
+- Tested with real MiniMax voice: sentence starts within 40 ms of the voice, music ducked 9-12 dB under speech, final loudness about -16 LUFS with peaks at or below -1.5 dBTP.
+- When MiniMax repeats numbers, percent signs or version strings per syllable, that sentence uses interpolated sentence timing instead of claiming per-word timing. Promo captions benefit too.
+- Caption pages under 4 characters or shorter than 0.6 s fold into a neighbour or are dropped; dangling fragments such as 一共 or 就是 left after removing on-screen text are dropped too.
+
+### Legacy presets and conversion
+- Preset table `template/src/scene/presets.json`: 19 promo shots, 20 lesson layouts, 5 talk templates, plus `quiz`/`journey`, each mapped to layout + style + motion with notes on how the old component differs. A new shot missing from the table fails the tests.
+- `node scripts/scene/from-legacy.mjs <storyboard.json|lesson.json> --out <scene.json>` converts the first batch: promo `features`, `steps`, `quickList`, `compare`, `counter`, text-only `hook`, `endCard`; lesson `steps`, `points`, `compare`, `bignumber`.
+- Note: converted films are plainer than the old components for now (no spotlight, stamps, VS badge or end-card chips); old storyboards still look better through `scripts/make.mjs`.
+
+### Notes
+- The `storyboard.json` / `lesson.json` / `broll.json` flows are unchanged: promo, lesson and talk stills are byte-identical before and after.
+- Docs: [docs/scene.en.md](docs/scene.en.md); examples in `examples/scene/`.
+
 ## v0.15.0 · 2026-10-11 · New authoring path (experimental): the model says what each screen is about, the engine decides how it looks
 
 Feedback said BrewReel felt like a few fixed templates, because each template fused content, layout, style, motion and rhythm. This release splits them and adds a new path alongside the old ones.
