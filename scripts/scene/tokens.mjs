@@ -38,7 +38,7 @@ const MATERIAL_CHROME = {
 };
 
 const extraReaders = [];
-const EXTRA_STYLES = {promo: ['techbrief', 'cutpaper-collage'], lesson: [], talk: []};
+const EXTRA_STYLES = {promo: ['techbrief', 'cutpaper-collage', 'impressionist', 'mural'], lesson: [], talk: []};
 
 /** T12b 之后加新风格时注册到这里，不必改三份旧文件。 */
 export function registerStyleReader(reader) {
@@ -185,6 +185,21 @@ function cutpaperCollageReader(product, style) {
 }
 
 registerStyleReader(cutpaperCollageReader);
+
+function artStyleReader(product, style) {
+  if (product !== 'promo' || (style !== 'impressionist' && style !== 'mural')) return null;
+  const doc = readJson(`template/src/scene/styles/${style}.json`);
+  return {
+    family: 'scene',
+    product: 'promo',
+    id: style,
+    source: `template/src/scene/styles/${style}.json`,
+    roles: doc.roles,
+    extra: doc.extra,
+  };
+}
+
+registerStyleReader(artStyleReader);
 
 export function missingRoles(roles) {
   return TOKEN_ROLES.filter((key) => roles?.[key] === undefined || roles?.[key] === null || roles?.[key] === '');

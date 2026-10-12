@@ -1,0 +1,21 @@
+{
+  "id": "mural",
+  "$doc": "古代壁画。横带分格、赭石青金、平涂描边。字落在中段题记横带上，不铺小底板。",
+  "roles": {
+    "bg": "#D4C098",
+    "surface": "#F6EDD8",
+    "ink": "#2A160E",
+    "muted": "#5C4030",
+    "accent": "#7A2218",
+    "line": "#2A160E",
+    "radius": 0,
+    "weight": 800,
+    "shadow": "none",
+    "texture": "mural"
+  },
+  "extra": {
+    "bgTop": "#D4C098",
+    "bgBot": "#D4C098",
+    "headlinePlate": "none"
+  }
+}

@@ -356,7 +356,7 @@ function rewriteScreen(screen, index, rewrites) {
 
 function allowed(role, layout, n) {
   if (role === 'claim' || role === 'quote') return layout === 'hero' || layout === 'board';
-  if (role === 'number') return layout === 'hero' || layout === 'board';
+  if (role === 'number') return layout === 'hero' || layout === 'board' || layout === 'number';
   if (role === 'action') return layout === 'end' || layout === 'hero';
   if (role === 'compare') return layout === 'split' || layout === 'stack';
   if (role === 'chart') return layout === 'chart' || layout === 'board';

@@ -4,7 +4,7 @@
 export const PRODUCTS = ['promo', 'lesson', 'talk'] as const;
 export const ASPECTS = ['9:16', '16:9', '4:5'] as const;
 export const ROLES = ['claim', 'points', 'number', 'quote', 'compare', 'chart', 'media', 'action', 'dialogue'] as const;
-export const LAYOUTS = ['hero', 'stack', 'grid', 'split', 'sequence', 'media', 'chart', 'end', 'board'] as const;
+export const LAYOUTS = ['hero', 'stack', 'grid', 'split', 'sequence', 'media', 'chart', 'end', 'board', 'number'] as const;
 export const MOTIONS = ['crisp', 'bounce', 'soft', 'paper', 'push'] as const;
 export const ACTIONS = ['enter', 'emphasize', 'count', 'reveal', 'exit'] as const;
 export const DENSITIES = ['tight', 'regular', 'loose'] as const;

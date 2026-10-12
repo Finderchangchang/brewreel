@@ -11,6 +11,8 @@ import {emphasisLook} from './motion.ts';
 import {fontFloorOf, holdPose, poseAt, type PlanBlock, type PlanScreen, type ScenePlan} from './prepare.ts';
 import {fitSceneCopy} from './wrap.ts';
 import {CollageFilm} from './backdrops/CollageFilm.tsx';
+import {ArtFilm} from './backdrops/ArtFilm.tsx';
+import {isArtStyle} from './backdrops/art-raster.ts';
 
 export type SceneProps = {
   plan?: ScenePlan;
@@ -873,6 +875,7 @@ function Karaoke({plan, screen, local}: {plan: ScenePlan; screen: PlanScreen; lo
 
 function BlockView({plan, screen, block, local}: {plan: ScenePlan; screen: PlanScreen; block: PlanBlock; local: number}) {
   if (plan.captions?.coverScreens.includes(screen.index) && block.kind === 'caption') return null;
+  if (isArtStyle(plan.style) && block.kind !== 'evidence' && block.kind !== 'plot') return <StageLine plan={plan} screen={screen} block={block} local={local} />;
   if (bareJudgment(plan, screen, block) || block.kind === 'stage' || block.kind === 'kicker' || block.kind === 'caption') return <StageLine plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'evidence') return <Evidence plan={plan} screen={screen} block={block} local={local} />;
   if (block.kind === 'plot') return <Plot plan={plan} screen={screen} block={block} local={local} />;
@@ -898,7 +901,7 @@ export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {
   return (
     <LayoutProbe frames={__probe}>
       <AbsoluteFill>
-        <Backdrop plan={plan} />
+        {isArtStyle(plan.style) ? <ArtFilm style={plan.style} /> : <Backdrop plan={plan} />}
         <SoundBed plan={plan} />
         {screen.links?.length ? <Links plan={plan} links={screen.links} /> : null}
         {screen.blocks.map((block) => (

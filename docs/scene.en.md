@@ -37,7 +37,7 @@ Roles and layouts are not a free mix. A screenshot is `role: "media"` and `layou
 
 ## Styles
 
-The four used in the examples:
+The six used in the examples:
 
 | Name | Product | Look |
 |---|---|---|
@@ -45,8 +45,10 @@ The four used in the examples:
 | `editorial` | `lesson` | B. Magazine. Radius 0, heavy type |
 | `techbrief` | `promo` | Info board. The judgment sits on the stage; evidence and items stay on cards. Pair it with `push` |
 | `cutpaper-collage` | `promo` | A whole cut-paper collage. One color card changes shape from scene to scene, with no fades. Pair it with `crisp`. Fits one object walking through the film (a ticket, old clothes, a place). Does not fit tutorials, dashboards, data compares, live people, or a chain of sentences |
+| `impressionist` | `promo` | Water in short strokes. Dabs of light and ripples keep moving. Type sits on a calm band of water, with no small plate. Pair it with `soft`. Fits culture, art, festivals, and mood. Does not fit a data-heavy explanation |
+| `mural` | `promo` | An old wall painting. Horizontal registers, ochre with blue and gold, flat shapes and outlined patterns. Type sits on the inscription band, with no small plate. Pair it with `soft`. Fits culture, art, festivals, and mood. Does not fit a data-heavy explanation |
 
-Other promo themes are the names in `template/src/core/themes.json`, plus `techbrief` and `cutpaper-collage`. Lesson styles are the names in `template/src/lesson/style-tokens.json`; the example uses `editorial`.
+Other promo themes are the names in `template/src/core/themes.json`, plus `techbrief`, `cutpaper-collage`, `impressionist`, and `mural`. Lesson styles are the names in `template/src/lesson/style-tokens.json`; the example uses `editorial`.
 
 Do not pair `editorial` with `bounce`. Do not pair a promo style with `paper`. `paper` is the talking-head paper character.
 
@@ -86,7 +88,7 @@ You can change on-screen copy, emphasis, the layout name, the style name, the mo
 
 The prompt for a cheap model is the `prompt` export in `scripts/scene/deepseek-layouts.mjs`. Do not rewrite it.
 
-Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/scene/b-editorial.json`, `examples/scene/c-techbrief.json`, `examples/scene/d-cutpaper.json`.
+Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/scene/b-editorial.json`, `examples/scene/c-techbrief.json`, `examples/scene/d-cutpaper.json`, `examples/scene/e-impressionist.json`, `examples/scene/f-mural.json`.
 
 ## Relation to the old format
 

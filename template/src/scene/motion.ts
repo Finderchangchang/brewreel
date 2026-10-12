@@ -202,6 +202,7 @@ export type MotionDefaults = Record<string, MotionName>;
 export function defaultMotion(product: 'promo' | 'lesson' | 'talk', style: string, dark = false): MotionName {
   if (style === 'techbrief') return 'push';
   if (style === 'cutpaper-collage') return 'crisp';
+  if (style === 'impressionist' || style === 'mural') return 'soft';
   if (product === 'lesson') {
     if (style === 'paper' || style === 'lecture') return 'soft';
     return 'crisp';
