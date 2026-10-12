@@ -1,0 +1,21 @@
+{
+  "id": "mural",
+  "$doc": "古代壁画。上中下三格都画满，芦苇、飞鸟、日轮、侧身人物、纹样柱和水里的鱼。字写在只包住字行的题记横带上，不铺整屏底板。",
+  "roles": {
+    "bg": "#D4C098",
+    "surface": "#F6EDD8",
+    "ink": "#2A160E",
+    "muted": "#5C4030",
+    "accent": "#7A2218",
+    "line": "#2A160E",
+    "radius": 0,
+    "weight": 800,
+    "shadow": "none",
+    "texture": "mural"
+  },
+  "extra": {
+    "bgTop": "#D4C098",
+    "bgBot": "#D4C098",
+    "headlinePlate": "none"
+  }
+}

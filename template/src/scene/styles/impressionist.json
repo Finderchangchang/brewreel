@@ -1,0 +1,21 @@
+{
+  "id": "impressionist",
+  "$doc": "印象派水面。满屏短笔触、垂枝、拱桥、睡莲和光斑。字落在水面较平的一段，后面只有一小片融开的雾，不铺整屏底板。",
+  "roles": {
+    "bg": "#A8C4B8",
+    "surface": "#F4F7F2",
+    "ink": "#10241C",
+    "muted": "#24382E",
+    "accent": "#6E2048",
+    "line": "#2A4034",
+    "radius": 0,
+    "weight": 800,
+    "shadow": "none",
+    "texture": "impressionist"
+  },
+  "extra": {
+    "bgTop": "#A8C4B8",
+    "bgBot": "#A8C4B8",
+    "headlinePlate": "none"
+  }
+}

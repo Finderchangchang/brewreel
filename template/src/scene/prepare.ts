@@ -10,7 +10,8 @@ import {curveOf} from './motion.ts';
 import {revealFromBeats, revealFromSentenceInterp, revealFromWords} from './time.ts';
 import {captionBox, layoutSafe, screenSafe, type SceneFrame} from './safe-box.ts';
 import type {RevealPlan} from './time.ts';
-import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, SceneFile, ScenePresenter, SceneScreen, TokenRoles} from './types.ts';
+import {collageDurations, relayOf} from './backdrops/collage-time.ts';
+import type {Align, BlockKind, CalloutBox, ChartPoint, FontFloor, MotionName, RelayName, SceneFile, ScenePresenter, SceneScreen, TokenRoles} from './types.ts';
 
 const FPS = 30;
 const FONT_STACK = '"PSans", "Noto Sans SC", "Microsoft YaHei UI", sans-serif';
@@ -77,6 +78,8 @@ export type PlanScreen = {
   /** 这一屏实际用的安全框。资讯板在 9:16 上是讲课竖版 safe，其它屏是宣传片主体区。 */
   safe?: {x: number; y: number; w: number; h: number};
   overflow?: boolean;
+  /** 剪纸拼贴的接力名。其它风格不写。 */
+  relay?: RelayName;
 };
 
 export type ContrastRow = {
@@ -501,6 +504,8 @@ export function prepareScene(input: {
     {pair: 'captionHot/bg', fg: spokenColor.hot, bg: spokenColor.bg, ratio: spokenColor.hotRatio, painted: true, adjusted: spokenColor.hotAdjusted},
   );
   let frameCursor = 0;
+  const collage = scene.style === 'cutpaper-collage' ? collageDurations(scene.screens ?? []) : null;
+  const screenCount = scene.screens?.length ?? 0;
   const screens: PlanScreen[] = (scene.screens ?? []).map((screen, index) => {
     const built = compose(screen);
     const pieces = built.pieces.length ? built.pieces : [{text: ' ', role: 'main' as const}];
@@ -520,7 +525,8 @@ export function prepareScene(input: {
         count: pieces.length,
         motion,
       });
-      seconds = Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
+      // 剪纸拼贴的时长跟接力走，不跟拍点。有逐字时钟时仍用配音时长，不进这个分支。
+      seconds = collage ? collage[index] : Math.max(reveal.duration, (reveal.at[reveal.at.length - 1] ?? 0) + slow + 0.35);
     }
     const durationFrames = Math.max(1, Math.round(seconds * fps));
     const full = screenSafe(frame, built.geom);
@@ -604,6 +610,7 @@ export function prepareScene(input: {
       ...(screen.code ? {code: screen.code} : {}),
       safe: {x: full.x, y: full.y, w: full.w, h: full.h},
       overflow: placed.overflow,
+      ...(collage ? {relay: relayOf(screen, index, screenCount)} : {}),
     };
   });
   return {

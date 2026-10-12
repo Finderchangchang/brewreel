@@ -1,0 +1,49 @@
+{
+  "id": "cutpaper-collage",
+  "$doc": "整支剪纸拼贴。浅紫纸底、洋红锚点、深褐墨。底色按镜头换，锚点色不换。色值按原创性检查拉开，不沿用参考片的纸底和锚点。",
+  "$originality": {
+    "primary": "bg",
+    "accent": "accent",
+    "background": ["bg", "bg_plaster", "bg_meadow", "bg_cream", "bg_swap", "bg_drum"],
+    "outline": ["ink", "line"]
+  },
+  "roles": {
+    "bg": "#E8B4D8",
+    "surface": "#F7F1F4",
+    "ink": "#241820",
+    "muted": "#6A4A58",
+    "accent": "#A01878",
+    "line": "#3A2430",
+    "radius": 4,
+    "weight": 900,
+    "shadow": "none",
+    "texture": "cutpaper"
+  },
+  "palette": {
+    "bg": "#E8B4D8",
+    "accent": "#A01878",
+    "bg_plaster": "#F0D0E4",
+    "bg_meadow": "#4E7A28",
+    "bg_cream": "#F6E4F0",
+    "bg_swap": "#C46AA8",
+    "bg_drum": "#9080A0",
+    "onAccent": "#F7F1F6",
+    "scrapA": "#806010",
+    "scrapB": "#4E7A28",
+    "scrapC": "#5A3818",
+    "hillFar": "#8A78A0",
+    "hillNear": "#3E4A28",
+    "grass": "#5A8A30",
+    "grassDark": "#2E5018",
+    "sun": "#F6F0F2",
+    "cloud": "#F8F4F6",
+    "path": "#806020",
+    "moth": "#2A4030",
+    "mothWing": "#E0C0D8",
+    "garment": "#A06090",
+    "garmentAlt": "#701850",
+    "garmentDark": "#24141C",
+    "mark": "#F4E4F0",
+    "stitch": "#F0D8E6"
+  }
+}

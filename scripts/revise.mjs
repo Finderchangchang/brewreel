@@ -148,7 +148,7 @@ const allowed = (kindName, parts) => {
 };
 
 const SCENE_TOP = new Set(['style', 'motion', 'density']);
-const SCENE_SCREEN = new Set(['text', 'title', 'support', 'narration', 'kicker', 'line', 'brand', 'cta', 'emphasis', 'layout']);
+const SCENE_SCREEN = new Set(['text', 'title', 'support', 'narration', 'kicker', 'line', 'brand', 'cta', 'emphasis', 'layout', 'relay']);
 
 const allowedScene = (p) => {
   if (p.length === 1 && SCENE_TOP.has(p[0])) return true;
@@ -677,7 +677,7 @@ const allowHint = {
   storyboard: '宣传片可改：meta 的 title、product、theme、bpm、disclaimer、cta、action、brandColor、durationRange、notices、facts 的 text/source/quote、tweak.pace、tweak.textScale、tweak.headingFont、voice 的 speed/emotion/subtitles/voiceId；每一镜的 type、dur、beats、caption、mood、note、vo、bg、params、slots。不能改 component，不能改 meta.assets，不能写 .. 或绝对路径。',
   lesson: '讲课可改：meta.title、meta.theme；章的 title；页的 title、subtitle、smallText 和旁白 narration[].text / pose；steps、points、items、left、right 里的文字。不能改 layout、domain、voice、brand、mascot、图片路径。',
   broll: '口播可改：thread、style、styleAlt、motionTheme、captions、budgetYuan、quality、keepFace；每一段的 plain、place、subject、action、end、camera、mode、job、from、to、look、link、template、source、slots、beats。不能改 provider、file、version、id。',
-  scene: '场景可改：顶层 style、motion、density；每一屏的 text、title、support、narration、kicker、line、brand、cta、emphasis、layout；条目的 text、note、emphasis；number 的 text、label；左右栏的 label 和条目文字；callouts 的 label。不能改 src、facts、product、aspect、role、坐标、图表数值，也不能整屏替换。',
+  scene: '场景可改：顶层 style、motion、density；每一屏的 text、title、support、narration、kicker、line、brand、cta、emphasis、layout、relay；条目的 text、note、emphasis；number 的 text、label；左右栏的 label 和条目文字；callouts 的 label。不能改 src、facts、product、aspect、role、坐标、图表数值，也不能整屏替换。',
 };
 
 const placeLine = (kindName, doc) => {

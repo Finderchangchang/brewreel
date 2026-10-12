@@ -1,0 +1,57 @@
+{
+  "product": "promo",
+  "aspect": "9:16",
+  "style": "impressionist",
+  "motion": "soft",
+  "density": "regular",
+  "align": "center",
+  "facts": [
+    {
+      "id": "f-marks",
+      "text": "记录里这一面留下 3 道痕。",
+      "source": "午后笔记"
+    }
+  ],
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "narration": "光还停着，你不用追，它自己会挪。",
+      "text": "光还停着",
+      "emphasis": ["停着"],
+      "support": "不必去追"
+    },
+    {
+      "role": "points",
+      "layout": "stack",
+      "narration": "亮处先动，暗处跟着，中间留白，三处要一起看。",
+      "items": [
+        {"text": "亮处先动"},
+        {"text": "暗处跟着"},
+        {"text": "中间留白"}
+      ]
+    },
+    {
+      "role": "compare",
+      "layout": "split",
+      "narration": "近处闪一下，停一停。远处慢慢走，不回头。",
+      "winner": "none",
+      "left": {"label": "近处", "items": ["闪一下", "停一停"]},
+      "right": {"label": "远处", "items": ["慢慢走", "不回头"]}
+    },
+    {
+      "role": "number",
+      "layout": "number",
+      "narration": "数得清就行，留下的痕一共 3 道。",
+      "number": {"text": "3 道", "fact": "f-marks", "label": "留下的痕"}
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "narration": "慢光就停在这一句，光还在，再看一眼。",
+      "brand": "慢光",
+      "line": "光还在",
+      "cta": "再看一眼"
+    }
+  ]
+}

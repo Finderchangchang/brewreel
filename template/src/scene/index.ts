@@ -1,6 +1,6 @@
 // 准备函数从这里出。Remotion 组件在 Scene.tsx，合成名 Scene，不接 make / make-lesson / talk。
 // 新风格加在令牌读取的 registerStyleReader，不改这三支原型的公式。
-export {TOKEN_ROLES, PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, ACTIONS, DENSITIES, ALIGNS, PROTO_LAYOUTS} from './types.ts';
+export {TOKEN_ROLES, PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, ACTIONS, DENSITIES, ALIGNS, PROTO_LAYOUTS, RELAYS} from './types.ts';
 export type {
   ActionName,
   Align,
@@ -11,6 +11,7 @@ export type {
   MotionName,
   Product,
   ProtoLayout,
+  RelayName,
   Role,
   SafeFrame,
   SceneBlock,

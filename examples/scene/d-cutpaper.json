@@ -1,0 +1,61 @@
+{
+  "product": "promo",
+  "aspect": "9:16",
+  "style": "cutpaper-collage",
+  "motion": "crisp",
+  "density": "regular",
+  "align": "center",
+  "screens": [
+    {
+      "role": "claim",
+      "layout": "hero",
+      "relay": "card",
+      "text": "补好再穿"
+    },
+    {
+      "role": "points",
+      "layout": "stack",
+      "relay": "patch",
+      "items": [{"text": "补在袖上"}]
+    },
+    {
+      "role": "points",
+      "layout": "sequence",
+      "relay": "guide",
+      "items": [{"text": "线头带路"}, {"text": "落到袖上"}]
+    },
+    {
+      "role": "claim",
+      "layout": "board",
+      "relay": "tumble",
+      "text": "还是这张",
+      "title": "还是这张"
+    },
+    {
+      "role": "claim",
+      "layout": "hero",
+      "relay": "postcard",
+      "text": "山路还在"
+    },
+    {
+      "role": "claim",
+      "layout": "board",
+      "relay": "window",
+      "text": "转一圈",
+      "title": "转一圈"
+    },
+    {
+      "role": "points",
+      "layout": "stack",
+      "relay": "patch",
+      "items": [{"text": "推近看补丁"}]
+    },
+    {
+      "role": "action",
+      "layout": "end",
+      "relay": "card",
+      "brand": "回针",
+      "line": "补好再穿"
+    }
+  ]
+}

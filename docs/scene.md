@@ -39,17 +39,22 @@
 
 ## 风格
 
-示例里用到的三套：
+示例里用到的六套：
 
 | 名字 | 产品 | 样子 |
 |---|---|---|
 | `fresh-light` | `promo` | A。渐变底，圆角卡片 |
 | `editorial` | `lesson` | B。杂志。零圆角，重字重 |
 | `techbrief` | `promo` | 资讯板。判断句直接写在舞台上，证据和条目仍是卡片。配 `push` |
+| `cutpaper-collage` | `promo` | 整支剪纸拼贴。一块色卡在几处场景之间换形接力，不靠淡化。配 `crisp`。适合一件东西走完整支片（一张票、旧衣服、一处地方）。不适合教程、仪表盘、数据对照、真人出镜、一句接一句的说明 |
+| `impressionist` | `promo` | 印象派水面。满屏短笔触、垂枝、拱桥、睡莲和光斑一直在缓动。字落在水面较平的一段，后面只有一小片融开的雾。配 `soft`。适合文化、艺术、节日、情绪。不适合数据密集的讲解 |
+| `mural` | `promo` | 古代壁画。横带分格都画满，芦苇、飞鸟、日轮、侧身人物和纹样一直在缓动。字写在只包住字行的题记横带上。配 `soft`。适合文化、艺术、节日、情绪。不适合数据密集的讲解 |
 
-宣传片还可以用 `template/src/core/themes.json` 里的主题名，另加 `techbrief`。讲课可以用 `template/src/lesson/style-tokens.json` 里的名字，示例用 `editorial`。
+宣传片还可以用 `template/src/core/themes.json` 里的主题名，另加 `techbrief`、`cutpaper-collage`、`impressionist`、`mural`。讲课可以用 `template/src/lesson/style-tokens.json` 里的名字，示例用 `editorial`。
 
 `editorial` 不要配 `bounce`。宣传片风格不要配 `paper`。`paper` 是口播纸片的性格。
+
+`cutpaper-collage` 的可选字段是 `relay`：`card`、`patch`、`guide`、`tumble`、`postcard`、`window`。不写就按版式推导。模型仍不写坐标和秒数。某一屏写了 `src` 时，图会裁进衣身；不写就用一块纯色剪影。
 
 ## 动效性格
 
@@ -81,11 +86,11 @@ node scripts/scene/brief-to-video.mjs <brief.md|json> --out <仓库外目录> [-
 node scripts/revise.mjs <scene.json> "一句话"
 ```
 
-能改屏上的文案、强调、版式名、风格名、性格名、疏密。不能改素材路径、事实原文、角色、画幅，也不能写坐标。改完会再跑校验和几何审计。
+能改屏上的文案、强调、版式名、风格名、性格名、疏密、剪纸拼贴的接力名。不能改素材路径、事实原文、角色、画幅，也不能写坐标。改完会再跑校验和几何审计。
 
 给便宜模型写场景的提示词，用 `scripts/scene/deepseek-layouts.mjs` 里导出的 `prompt`，不要另写一份。
 
-可直接出片的示例：`examples/scene/a-fresh.json`、`examples/scene/b-editorial.json`、`examples/scene/c-techbrief.json`。横版宣传是 `examples/scene/wide-promo.json`，带讲解员的横版讲课是 `examples/scene/lesson-presenter.json`，口播里用一屏场景画面的是 `examples/scene/talk-scene-broll.json`。
+可直接出片的示例：`examples/scene/a-fresh.json`、`examples/scene/b-editorial.json`、`examples/scene/c-techbrief.json`、`examples/scene/d-cutpaper.json`、`examples/scene/e-impressionist.json`、`examples/scene/f-mural.json`。横版宣传是 `examples/scene/wide-promo.json`，带讲解员的横版讲课是 `examples/scene/lesson-presenter.json`，口播里用一屏场景画面的是 `examples/scene/talk-scene-broll.json`。
 
 ## 和旧写法的关系
 
