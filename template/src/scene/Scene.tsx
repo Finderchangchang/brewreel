@@ -10,6 +10,7 @@ import {Icon} from '../core/icons';
 import {emphasisLook} from './motion.ts';
 import {fontFloorOf, holdPose, poseAt, type PlanBlock, type PlanScreen, type ScenePlan} from './prepare.ts';
 import {fitSceneCopy} from './wrap.ts';
+import {CollageFilm} from './backdrops/CollageFilm.tsx';
 
 export type SceneProps = {
   plan?: ScenePlan;
@@ -884,6 +885,16 @@ export const Scene: React.FC<SceneProps> = ({plan, __probe}) => {
   if (!plan?.screens?.length) return <AbsoluteFill style={{background: '#FFFFFF'}} />;
   const screen = plan.screens.find((item) => frame >= item.startFrame && frame < item.startFrame + item.durationFrames) ?? plan.screens[plan.screens.length - 1];
   const local = (frame - screen.startFrame) / plan.fps;
+  if (plan.style === 'cutpaper-collage') {
+    return (
+      <LayoutProbe frames={__probe}>
+        <AbsoluteFill>
+          <CollageFilm plan={plan} screen={screen} local={local} />
+          <SoundBed plan={plan} />
+        </AbsoluteFill>
+      </LayoutProbe>
+    );
+  }
   return (
     <LayoutProbe frames={__probe}>
       <AbsoluteFill>

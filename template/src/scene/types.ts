@@ -10,6 +10,8 @@ export const ACTIONS = ['enter', 'emphasize', 'count', 'reveal', 'exit'] as cons
 export const DENSITIES = ['tight', 'regular', 'loose'] as const;
 export const ALIGNS = ['start', 'center'] as const;
 export const PROTO_LAYOUTS = ['hero', 'stack', 'split'] as const;
+/** 剪纸拼贴的跨屏接力。只有 cutpaper-collage 使用。 */
+export const RELAYS = ['card', 'patch', 'guide', 'tumble', 'postcard', 'window'] as const;
 
 export type Product = (typeof PRODUCTS)[number];
 export type Aspect = (typeof ASPECTS)[number];
@@ -20,6 +22,7 @@ export type ActionName = (typeof ACTIONS)[number];
 export type Density = (typeof DENSITIES)[number];
 export type Align = (typeof ALIGNS)[number];
 export type ProtoLayout = (typeof PROTO_LAYOUTS)[number];
+export type RelayName = (typeof RELAYS)[number];
 
 /** 统一角色名。值按家族分文件，不合成一份调色板。 */
 export const TOKEN_ROLES = ['bg', 'surface', 'ink', 'muted', 'accent', 'line', 'radius', 'weight', 'shadow', 'texture'] as const;
@@ -83,6 +86,11 @@ export type SceneScreen = {
   /** 代码证据。整段当原件，不逐行套字号下限。 */
   code?: string;
   icon?: string;
+  /**
+   * 剪纸拼贴里这一屏的色卡怎么接上。不写坐标、不写秒。
+   * 只有 style 为 cutpaper-collage 时可以写；不写则按版式推导。
+   */
+  relay?: RelayName;
 };
 
 export type SceneFile = {

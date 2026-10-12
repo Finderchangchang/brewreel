@@ -2,7 +2,7 @@
 // 禁止组合要么拒绝，要么改写，报告里都写原因。quiz / journey 不拆。
 import {readFileSync} from 'node:fs';
 import ICONS from '../../template/src/core/icons.json' with {type: 'json'};
-import {PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, DENSITIES, ALIGNS} from '../../template/src/scene/types.ts';
+import {PRODUCTS, ASPECTS, ROLES, LAYOUTS, MOTIONS, DENSITIES, ALIGNS, RELAYS} from '../../template/src/scene/types.ts';
 import {defaultMotion} from '../../template/src/scene/motion.ts';
 import {inspectCallouts, inspectChart} from '../../template/src/scene/rules.ts';
 import {stylesFor, themeIsDark} from './tokens.mjs';
@@ -405,6 +405,18 @@ export function validateScene(scene) {
 
   const facts = checkFacts(scene, errors);
   if (Array.isArray(scene.screens)) scene.screens.forEach((screen, index) => checkScreen(screen, index, facts, errors));
+  if (Array.isArray(scene.screens)) {
+    scene.screens.forEach((screen, index) => {
+      if (!isObject(screen) || screen.relay === undefined) return;
+      if (typeof screen.relay !== 'string' || !RELAYS.includes(screen.relay)) {
+        errors.push(enumError(`screens[${index}].relay`, screen.relay, RELAYS, '接力'));
+        return;
+      }
+      if (scene.style !== 'cutpaper-collage') {
+        errors.push(issue(`screens[${index}].relay`, '只有剪纸拼贴能写接力', '删掉 relay，或把 style 改成 cutpaper-collage', '接力是色卡跨屏换形，不给别的风格用'));
+      }
+    });
+  }
 
   let motion = scene.motion;
   if (motion === undefined && PRODUCTS.includes(scene.product) && styles.includes(scene.style)) {

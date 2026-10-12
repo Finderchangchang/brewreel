@@ -37,17 +37,20 @@ Roles and layouts are not a free mix. A screenshot is `role: "media"` and `layou
 
 ## Styles
 
-The three used in the examples:
+The four used in the examples:
 
 | Name | Product | Look |
 |---|---|---|
 | `fresh-light` | `promo` | A. Gradient, rounded cards |
 | `editorial` | `lesson` | B. Magazine. Radius 0, heavy type |
 | `techbrief` | `promo` | Info board. The judgment sits on the stage; evidence and items stay on cards. Pair it with `push` |
+| `cutpaper-collage` | `promo` | A whole cut-paper collage. One color card changes shape from scene to scene, with no fades. Pair it with `crisp`. Fits one object walking through the film (a ticket, old clothes, a place). Does not fit tutorials, dashboards, data compares, live people, or a chain of sentences |
 
-Other promo themes are the names in `template/src/core/themes.json`, plus `techbrief`. Lesson styles are the names in `template/src/lesson/style-tokens.json`; the example uses `editorial`.
+Other promo themes are the names in `template/src/core/themes.json`, plus `techbrief` and `cutpaper-collage`. Lesson styles are the names in `template/src/lesson/style-tokens.json`; the example uses `editorial`.
 
 Do not pair `editorial` with `bounce`. Do not pair a promo style with `paper`. `paper` is the talking-head paper character.
+
+`cutpaper-collage` may set `relay` to `card`, `patch`, `guide`, `tumble`, `postcard`, or `window`. Omit it and the layout picks one. The model still writes no coordinates and no seconds. A `src` on a screen is cropped into the garment; omit it for a flat silhouette.
 
 ## Motion characters
 
@@ -79,11 +82,11 @@ One-sentence revise:
 node scripts/revise.mjs <scene.json> "one sentence"
 ```
 
-You can change on-screen copy, emphasis, the layout name, the style name, the motion-character name, and density. You cannot change asset paths, fact text, role, aspect, or coordinates. The edit is checked again, including geometry.
+You can change on-screen copy, emphasis, the layout name, the style name, the motion-character name, density, and the collage relay name. You cannot change asset paths, fact text, role, aspect, or coordinates. The edit is checked again, including geometry.
 
 The prompt for a cheap model is the `prompt` export in `scripts/scene/deepseek-layouts.mjs`. Do not rewrite it.
 
-Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/scene/b-editorial.json`, `examples/scene/c-techbrief.json`.
+Examples that can render as they are: `examples/scene/a-fresh.json`, `examples/scene/b-editorial.json`, `examples/scene/c-techbrief.json`, `examples/scene/d-cutpaper.json`.
 
 ## Relation to the old format
 
