@@ -1,4 +1,4 @@
-// 两种程序化背景。印象派是满屏短笔触，壁画是三格都画满的横带。
+// 两种程序化背景。印象派是满屏短弧笔触叠三层，壁画是三格都画满的横带。
 // 种子固定，同一时刻画两次，像素一致。
 // 字只在字形背后融进画面：印象派是一小片羽化的雾，壁画是题记横带。不再整屏抬成底色。
 
@@ -416,45 +416,211 @@ function hatch(pen: Pen, y0: number, y1: number, seed: number, colors: RGB[], x0
   }
 }
 
-function paintImpressionBase(pen: Pen) {
-  const {w, h} = pen;
-  fillGradient(pen, 0, h * 0.34, [58, 104, 54], [98, 140, 72]);
-  fillGradient(pen, h * 0.28, h * 0.62, [92, 158, 162], [132, 184, 176]);
-  fillGradient(pen, h * 0.56, h, [78, 146, 154], [42, 96, 118]);
-  const leaf: RGB[] = [
-    [48, 96, 46],
-    [78, 128, 58],
-    [36, 78, 42],
-    [112, 154, 68],
-    [64, 112, 52],
-  ];
-  const water: RGB[] = [
-    [150, 198, 186],
-    [96, 164, 168],
-    [188, 216, 202],
-    [72, 138, 148],
-    [206, 224, 210],
-    [110, 170, 160],
-  ];
-  const gap = Math.max(10, Math.round(16 * (w / 1080)));
-  const th = Math.max(4, Math.round(6 * (w / 1080)));
-  const rand = rng(0x11a0);
-  for (let x = -gap; x < w + gap; x += gap) {
-    const len = h * (0.16 + rand() * 0.2);
-    const col = leaf[(rand() * leaf.length) | 0];
-    const lean = (rand() - 0.5) * gap;
-    const steps = 9;
-    for (let i = 0; i < steps; i++) {
-      const u = i / steps;
-      const xx = x + lean * u + Math.sin(u * 5.2 + x * 0.01) * 5;
-      pen.rect(xx, u * len, th, len / steps + 3, pack(col[0], col[1], col[2]));
-    }
+function jumpColor(rand: () => number, palette: RGB[], prev: RGB | null): RGB {
+  let col = palette[(rand() * palette.length) | 0];
+  if (prev) {
+    const d = Math.abs((col[0] - prev[0]) * 0.299 + (col[1] - prev[1]) * 0.587 + (col[2] - prev[2]) * 0.114);
+    if (d < 18) col = palette[(rand() * palette.length) | 0];
   }
-  hatch(pen, h * 0.2, h, 0x51a7, water, 0, w, 1.35);
+  return col;
 }
 
-function dab(pen: Pen, x: number, y: number, len: number, th: number, col: RGB) {
-  pen.rect(x, y, len, th, pack(col[0], col[1], col[2]));
+/** 一端略细的短笔。水面用横笔，柳用竖笔。 */
+function brush(pen: Pen, cx: number, cy: number, len: number, th: number, ang: number, rgb: RGB, caps = false) {
+  if (len < 1.2 || th < 0.8) return;
+  const c = Math.cos(ang);
+  const s = Math.sin(ang);
+  const hx = c * len * 0.5;
+  const hy = s * len * 0.5;
+  const nx = -s;
+  const ny = c;
+  const w0 = th * 0.5;
+  const w1 = th * 0.3;
+  pen.quad(
+    [
+      [cx - hx + nx * w0, cy - hy + ny * w0],
+      [cx + hx + nx * w1, cy + hy + ny * w1],
+      [cx + hx - nx * w1, cy + hy - ny * w1],
+      [cx - hx - nx * w0, cy - hy - ny * w0],
+    ],
+    pack(rgb[0], rgb[1], rgb[2]),
+  );
+  if (caps) {
+    pen.ellipse(cx - hx, cy - hy, Math.max(1.2, w0), Math.max(1.1, w0 * 0.82), rgb[0], rgb[1], rgb[2]);
+    pen.ellipse(cx + hx, cy + hy, Math.max(1, w1), Math.max(0.9, w1 * 0.82), rgb[0], rgb[1], rgb[2]);
+  }
+}
+
+function waterField(
+  pen: Pen,
+  y0: number,
+  y1: number,
+  seed: number,
+  palette: RGB[],
+  stepX: number,
+  stepY: number,
+  t: number,
+  motion: number,
+  skip = 0.2,
+) {
+  const {w} = pen;
+  const rand = rng(seed);
+  const rows = Math.ceil((y1 - y0) / stepY) + 2;
+  const cols = Math.ceil(w / stepX) + 2;
+  let prev: RGB | null = null;
+  for (let j = -1; j < rows; j++) {
+    for (let i = -1; i < cols; i++) {
+      const drop = rand();
+      const jx = rand();
+      const jy = rand();
+      const jl = rand();
+      const jt = rand();
+      const ja = rand() + rand();
+      const jp = rand();
+      if (drop < skip) continue;
+      const x = i * stepX + (jx - 0.5) * stepX * 1.75;
+      const y = y0 + j * stepY + (jy - 0.5) * stepY * 1.65;
+      if (y < y0 - stepY || y > y1 + stepY) continue;
+      const len = stepX * (0.28 + jl * 1.7);
+      const th = stepY * (0.16 + jt * 0.95);
+      const ang = (ja - 1) * 0.36;
+      const col = jumpColor(rand, palette, prev);
+      prev = col;
+      const dx = motion * Math.sin(t * 1.12 + jp * 6.2832);
+      const dy = motion * 0.38 * Math.cos(t * 0.93 + jp * 4.17);
+      brush(pen, x + dx, y + dy, len, th, ang, col, false);
+    }
+  }
+}
+
+function willowLayer(
+  pen: Pen,
+  seed: number,
+  clumps: number,
+  palette: RGB[],
+  y0: number,
+  y1: number,
+  t: number,
+  swayAmp: number,
+  openCenter: boolean,
+) {
+  const {w} = pen;
+  const sx = w / 1080;
+  const rand = rng(seed);
+  let prev: RGB | null = null;
+  for (let k = 0; k < clumps; k++) {
+    const u = (k + rand() * 0.7) / clumps;
+    const keep = !openCenter || Math.abs(u - 0.5) > 0.2 || rand() > 0.7;
+    const cx = u * w + (rand() - 0.5) * 48 * sx;
+    const cy = y0 + rand() * Math.max(8, y1 - y0);
+    const rw = (26 + rand() * 54) * sx;
+    const rh = (32 + rand() * 72) * sx;
+    const n = 12 + ((rand() * 14) | 0);
+    const phase = rand() * 6.2832;
+    const lean = (rand() - 0.5) * 0.28;
+    if (!keep) continue;
+    for (let j = 0; j < n; j++) {
+      const ox = (rand() - 0.5) * 2;
+      const oy = (rand() - 0.5) * 2;
+      if (ox * ox + oy * oy > 1) continue;
+      const xx0 = cx + ox * rw;
+      const yy = cy + oy * rh;
+      const len = (14 + rand() * 32) * sx;
+      const th = (5 + rand() * 9) * sx;
+      const ang = Math.PI * 0.5 + lean + (rand() - 0.5) * 0.4;
+      const col = jumpColor(rand, palette, prev);
+      prev = col;
+      const fall = Math.max(0, (yy - y0) / Math.max(1, y1 - y0));
+      const sway = Math.sin(t * 1.28 + phase + j * 0.15) * swayAmp * (0.25 + fall);
+      brush(pen, xx0 + sway, yy, len, th, ang, col, true);
+    }
+    const drips = 2 + ((rand() * 4) | 0);
+    const side = Math.abs(u - 0.5) > 0.22;
+    if (!side) continue;
+    for (let d = 0; d < drips; d++) {
+      const v = 0.55 + rand() * 0.55;
+      const xx = cx + (rand() - 0.5) * rw * 1.1;
+      const yy = cy + rh * 0.4 + v * rh * 1.3;
+      const col = jumpColor(rand, palette, prev);
+      prev = col;
+      const sway = Math.sin(t * 1.22 + phase + d) * swayAmp * v;
+      brush(pen, xx + sway, yy, (16 + rand() * 28) * sx, (4.5 + rand() * 7) * sx, Math.PI * 0.5 + (rand() - 0.5) * 0.35, col, true);
+    }
+  }
+}
+
+function paintImpressionBase(pen: Pen) {
+  const {w, h} = pen;
+  const sx = w / 1080;
+  const sy = h / 1920;
+  fillGradient(pen, 0, h * 0.3, [46, 92, 48], [92, 138, 70]);
+  fillGradient(pen, h * 0.22, h * 0.58, [88, 148, 142], [142, 186, 178]);
+  fillGradient(pen, h * 0.5, h, [96, 156, 164], [48, 104, 128]);
+  const underWater: RGB[] = [
+    [64, 108, 126],
+    [110, 156, 132],
+    [148, 176, 186],
+    [72, 128, 118],
+    [186, 196, 168],
+    [92, 122, 158],
+  ];
+  const underLeaf: RGB[] = [
+    [70, 118, 58],
+    [118, 158, 78],
+    [48, 92, 50],
+    [156, 184, 102],
+    [88, 132, 64],
+  ];
+  const blob = rng(0x4b11);
+  for (let i = 0; i < 90; i++) {
+    const col = underLeaf[(blob() * underLeaf.length) | 0];
+    pen.ellipse(blob() * w, blob() * h * 0.32, (10 + blob() * 22) * sx, (16 + blob() * 28) * sy, col[0], col[1], col[2]);
+  }
+  for (let i = 0; i < 110; i++) {
+    const col = underWater[(blob() * underWater.length) | 0];
+    pen.ellipse(blob() * w, h * 0.26 + blob() * h * 0.74, (14 + blob() * 32) * sx, (7 + blob() * 14) * sy, col[0], col[1], col[2]);
+  }
+  const backLeaf: RGB[] = [
+    [132, 168, 88],
+    [156, 186, 110],
+    [110, 150, 72],
+    [176, 198, 128],
+    [96, 140, 78],
+    [148, 176, 96],
+  ];
+  const midLeaf: RGB[] = [
+    [72, 124, 58],
+    [98, 146, 68],
+    [54, 104, 50],
+    [120, 160, 74],
+    [84, 132, 62],
+  ];
+  willowLayer(pen, 0x61c2, 48, backLeaf, 0, h * 0.3, 0, 0, false);
+  willowLayer(pen, 0x62a9, 38, midLeaf, h * 0.02, h * 0.34, 0, 0, false);
+  const deepWater: RGB[] = [
+    [48, 96, 118],
+    [62, 118, 112],
+    [86, 132, 96],
+    [40, 84, 104],
+    [108, 148, 126],
+    [72, 108, 142],
+    [96, 86, 140],
+    [120, 148, 88],
+  ];
+  const midWater: RGB[] = [
+    [96, 156, 152],
+    [128, 176, 168],
+    [74, 138, 148],
+    [156, 188, 176],
+    [110, 150, 118],
+    [88, 128, 166],
+    [170, 186, 154],
+    [64, 120, 130],
+    [186, 176, 210],
+    [210, 200, 150],
+  ];
+  waterField(pen, h * 0.22, h, 0x51a1, deepWater, 34 * sx, 24 * sy, 0, 0, 0.22);
+  waterField(pen, h * 0.24, h, 0x52c8, midWater, 43 * sx, 29 * sy, 0, 0, 0.28);
 }
 
 function paintImpressionMove(pen: Pen, t: number) {
@@ -463,96 +629,194 @@ function paintImpressionMove(pen: Pen, t: number) {
   const sy = h / 1920;
   const X = (n: number) => n * sx;
   const Y = (n: number) => n * sy;
-  const greens: RGB[] = [
-    [72, 124, 58],
-    [108, 156, 70],
-    [54, 102, 48],
-    [136, 172, 78],
-    [84, 136, 62],
+  const hiWater: RGB[] = [
+    [214, 226, 210],
+    [186, 206, 198],
+    [168, 196, 214],
+    [232, 230, 214],
+    [148, 186, 176],
+    [196, 184, 168],
+    [126, 170, 188],
+    [176, 204, 164],
+    [210, 198, 150],
+    [152, 132, 186],
   ];
-  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
-  for (let k = 0; k < 26; k++) {
-    const x0 = X(8 + k * 42);
-    const reach = Y(260 + ((k * 53) % 200));
-    const breathe = 16 * Math.sin(t * 1.5 + k * 0.4);
-    const lean = Math.sin(k * 1.7) * X(18);
-    for (let j = 0; j < 12; j++) {
-      const u = j / 11;
-      const sway = Math.sin(t * 1.35 + k * 0.45) * X(30) * u * u + lean * u;
-      const col = greens[(k + j) % greens.length];
-      pen.ellipse(x0 + sway, u * reach, X(6), Y(22), clamp(col[0] + breathe), clamp(col[1] + breathe * 0.4), col[2]);
-    }
-  }
-  const sway = Math.sin(t * 0.9) * X(10);
-  const rail = pack(214, 232, 220);
-  const post = pack(186, 214, 200);
-  const deck = pack(36, 96, 90);
-  for (let i = 0; i <= 36; i++) {
-    const u = i / 36;
-    const arch = Math.sin(u * Math.PI);
-    const x = X(100 + u * 880) + sway;
-    const y = Y(490 - arch * 150);
-    pen.rect(x, y, X(28), Y(22), deck);
-    pen.rect(x + X(10), y - Y(52), X(5), Y(52), post);
-    pen.rect(x, y - Y(54), X(28), Y(8), rail);
-    const ry = Y(528 + arch * 42);
-    pen.rect(x + X(2), ry, X(22), Y(6), pack(150, 196, 186));
-  }
-  const lily = (x: number, y: number, s: number, i: number) => {
-    const bob = Math.sin(t * 1.2 + i) * Y(7);
-    const drift = Math.sin(t * 0.75 + i * 0.5) * X(12);
-    const xx = x + drift;
-    const yy = y + bob;
-    pen.ellipse(xx, yy, s * 1.15, s * 0.48, 36, 118, 72);
-    pen.ellipse(xx - s * 0.3, yy - s * 0.04, s * 0.7, s * 0.3, 78, 150, 86);
-    pen.ellipse(xx + s * 0.28, yy - s * 0.08, s * 0.36, s * 0.26, 244, 240, 228);
-    pen.ellipse(xx + s * 0.36, yy - s * 0.1, s * 0.12, s * 0.1, 196, 92, 118);
+  waterField(pen, h * 0.26, h, 0x53e2, hiWater, 38 * sx, 26 * sy, t, X(11), 0.3);
+
+  const frontLeaf: RGB[] = [
+    [36, 78, 40],
+    [52, 98, 46],
+    [28, 64, 36],
+    [68, 112, 52],
+    [44, 88, 42],
+    [84, 128, 58],
+  ];
+  const hangLeaf: RGB[] = [
+    [48, 96, 46],
+    [72, 120, 54],
+    [38, 82, 42],
+    [96, 140, 64],
+    [58, 106, 50],
+  ];
+  willowLayer(pen, 0x63d4, 28, hangLeaf, h * 0.04, h * 0.32, t, X(18), true);
+  willowLayer(pen, 0x64b7, 20, frontLeaf, h * 0.08, h * 0.38, t, X(28), true);
+
+  const x0 = X(80);
+  const x1 = X(1000);
+  const deckY = Y(548);
+  const rise = Y(188);
+  const sway = Math.sin(t * 0.72) * X(5);
+  const archAt = (u: number, lift: number) => {
+    const x = x0 + (x1 - x0) * u + sway;
+    const y = deckY - Math.sin(u * Math.PI) * lift;
+    return [x, y] as const;
   };
-  const clusters: [number, number][] = [
-    [200, 760], [860, 820], [140, 1180], [940, 1240],
-    [260, 1560], [560, 1680], [860, 1600], [480, 1480],
+  const tanAt = (u: number, lift: number) => {
+    const dx = x1 - x0;
+    const dy = -Math.PI * Math.cos(u * Math.PI) * lift;
+    return Math.atan2(dy, dx);
+  };
+  const deckCols: RGB[] = [
+    [48, 108, 92],
+    [72, 136, 112],
+    [40, 92, 82],
+    [96, 154, 124],
+    [58, 118, 100],
   ];
-  const offs: [number, number, number][] = [
-    [0, 0, 54], [48, -16, 42], [-44, 18, 46], [16, 38, 36], [-18, -34, 34], [58, 26, 30],
+  const railCols: RGB[] = [
+    [206, 228, 210],
+    [232, 240, 224],
+    [176, 210, 190],
+    [244, 246, 232],
   ];
-  for (let c = 0; c < clusters.length; c++) {
-    for (let k = 0; k < offs.length; k++) {
-      lily(X(clusters[c][0] + offs[k][0]), Y(clusters[c][1] + offs[k][1]), X(offs[k][2]), c * 6 + k);
+  const shadeCols: RGB[] = [
+    [28, 70, 78],
+    [46, 96, 92],
+    [64, 112, 108],
+    [38, 82, 90],
+  ];
+  let prev: RGB | null = null;
+  const randR = rng(0x71a4);
+  for (let i = 0; i <= 72; i++) {
+    const u = i / 72;
+    const [x, y] = archAt(u, rise);
+    const ang = tanAt(u, rise);
+    const nx = Math.cos(ang + Math.PI * 0.5);
+    const ny = Math.sin(ang + Math.PI * 0.5);
+    for (let k = 0; k < 4; k++) {
+      const col = jumpColor(randR, deckCols, prev);
+      prev = col;
+      brush(pen, x + nx * Y(8 * k - 6), y + ny * Y(8 * k - 6), X(34), Y(14), ang, col, false);
+    }
+    const ry2 = deckY + (deckY - y) * 0.62 + Y(28);
+    brush(pen, x, ry2, X(22 + randR() * 14), Y(7), (randR() - 0.5) * 0.4, jumpColor(randR, shadeCols, prev), false);
+    if (i % 2 === 0) {
+      brush(pen, x + X((randR() - 0.5) * 10), ry2 + Y(10), X(16 + randR() * 12), Y(5), (randR() - 0.5) * 0.45, jumpColor(randR, shadeCols, prev), false);
     }
   }
-  // 同一行笔触等长，按间距取模漂移，出画从另一头接上。
-  const rowH = Y(36);
-  const yStart = Y(520);
-  const gap = X(56);
-  const rowCount = Math.ceil((h - yStart) / rowH) + 1;
-  const across = Math.ceil(w / gap) + 2;
-  const inks: RGB[] = [
-    [64, 132, 128],
-    [226, 236, 220],
-    [96, 164, 156],
-    [52, 112, 120],
-    [186, 214, 196],
-    [118, 176, 160],
-  ];
-  for (let r = 0; r < rowCount; r++) {
-    const bob = Math.sin(t * 1.15 + r * 0.45) * Y(3);
-    const y = yStart + r * rowH + bob;
-    const dir = r % 2 === 0 ? 1 : -1;
-    const speed = X(150 + (r % 4) * 36);
-    const shift = (((t * speed * dir) % gap) + gap) % gap;
-    const len = X(20 + (r % 3) * 8);
-    const th = Math.max(6, Y(7));
-    const col = inks[r % inks.length];
-    const yJ = ((r % 5) - 2) * sy;
-    for (let i = -1; i < across; i++) dab(pen, i * gap + shift, y + yJ, len, th, col);
+  for (let i = 0; i <= 64; i++) {
+    const u = i / 64;
+    const [x, y] = archAt(u, rise * 1.22);
+    const ang = tanAt(u, rise * 1.22);
+    brush(pen, x, y, X(30), Y(9), ang, jumpColor(randR, railCols, prev), true);
   }
+  for (let i = 1; i < 20; i++) {
+    const u = i / 20;
+    const [dx, dy] = archAt(u, rise);
+    const [rx, ry] = archAt(u, rise * 1.22);
+    const post = jumpColor(randR, railCols, prev);
+    prev = post;
+    brush(pen, (dx + rx) * 0.5, (dy + ry) * 0.5 - Y(4), Math.hypot(rx - dx, ry - dy) + Y(8), X(7), Math.atan2(ry - dy, rx - dx), post, false);
+    if (i < 19) {
+      const [nx, ny] = archAt((i + 0.5) / 20, rise * 1.08);
+      brush(pen, nx, ny, Y(22), X(4.2), tanAt((i + 0.5) / 20, rise) + 1.15, jumpColor(randR, deckCols, post), false);
+    }
+  }
+
+  const padCols: RGB[] = [
+    [36, 110, 64],
+    [58, 136, 74],
+    [28, 92, 56],
+    [78, 150, 82],
+    [46, 122, 68],
+    [96, 158, 90],
+  ];
+  const padHi: RGB[] = [
+    [110, 168, 96],
+    [86, 150, 82],
+    [128, 176, 108],
+  ];
+  const petal: RGB[] = [
+    [244, 240, 226],
+    [232, 226, 208],
+    [252, 246, 236],
+  ];
+  const blush: RGB[] = [
+    [214, 118, 132],
+    [232, 168, 176],
+    [196, 92, 118],
+  ];
+  const pads: [number, number, number, number, number, number][] = [
+    [168, 708, 26, 0.4, 4, 1],
+    [312, 746, 22, -0.25, 3, 0],
+    [470, 690, 28, 0.18, 4, 1],
+    [820, 730, 24, -0.4, 3, 1],
+    [960, 780, 30, 0.3, 4, 1],
+    [240, 860, 34, -0.15, 4, 1],
+    [880, 900, 32, 0.5, 3, 0],
+    [130, 1040, 32, 0.22, 4, 1],
+    [940, 1100, 30, -0.33, 4, 1],
+    [200, 1220, 36, 0.45, 4, 1],
+    [860, 1280, 34, -0.2, 3, 1],
+    [120, 1380, 42, 0.1, 4, 2],
+    [980, 1420, 38, -0.48, 4, 1],
+    [250, 1520, 58, 0.28, 5, 2],
+    [210, 1588, 36, -0.4, 3, 1],
+    [320, 1610, 48, 0.12, 4, 1],
+    [520, 1688, 72, -0.18, 5, 2],
+    [580, 1740, 44, 0.5, 4, 1],
+    [470, 1780, 32, -0.3, 3, 1],
+    [780, 1620, 64, 0.22, 5, 2],
+    [840, 1690, 40, -0.36, 4, 1],
+    [900, 1760, 52, 0.08, 4, 1],
+    [160, 1760, 46, 0.4, 4, 1],
+    [640, 1540, 28, -0.22, 3, 1],
+    [400, 1480, 24, 0.35, 3, 0],
+  ];
+  const lilyRand = rng(0x81c0);
+  for (let i = 0; i < pads.length; i++) {
+    const [px, py, s0, rot, leaves, flowers] = pads[i];
+    const bob = Math.sin(t * 1.18 + i * 0.73) * Y(6);
+    const drift = Math.sin(t * 0.7 + i * 0.51) * X(10);
+    const cx = X(px) + drift;
+    const cy = Y(py) + bob;
+    const s = X(s0);
+    for (let k = 0; k < leaves; k++) {
+      const a = rot + k * (Math.PI / Math.max(2.2, leaves)) + (lilyRand() - 0.5) * 0.35;
+      const col = jumpColor(lilyRand, k % 2 ? padHi : padCols, prev);
+      prev = col;
+      brush(pen, cx + Math.cos(a) * s * 0.22, cy + Math.sin(a) * s * 0.12, s * (1.15 + lilyRand() * 0.4), s * (0.42 + lilyRand() * 0.22), a, col, true);
+    }
+    for (let f = 0; f < flowers; f++) {
+      const fx = cx + X((f - 0.3) * 10) + (lilyRand() - 0.5) * s * 0.35;
+      const fy = cy - s * (0.12 + f * 0.08) + (lilyRand() - 0.5) * s * 0.12;
+      for (let p = 0; p < 3; p++) {
+        const a = rot + p * 0.85 + f;
+        brush(pen, fx + Math.cos(a) * s * 0.08, fy + Math.sin(a) * s * 0.05, s * 0.34, s * 0.14, a, jumpColor(lilyRand, petal, prev), true);
+      }
+      brush(pen, fx + s * 0.06, fy - s * 0.04, s * 0.16, s * 0.1, rot + 0.4, jumpColor(lilyRand, blush, prev), true);
+    }
+  }
+
   const spark = rng(0xdaab);
-  for (let i = 0; i < 36; i++) {
-    const y0 = Y(340 + spark() * 1500);
-    const x = spark() * w + Math.sin(t * 1.6 + i) * X(14);
-    const y = y0 + Math.sin(t * 2 + i * 0.4) * Y(4);
-    const hot = 200 + Math.round(30 * (0.5 + 0.5 * Math.sin(t * 2.1 + i)));
-    pen.ellipse(x, y, X(10), Y(3.4), hot, hot - 10, 198, 200);
+  for (let i = 0; i < 42; i++) {
+    const x0 = spark() * w;
+    const y0 = Y(360 + spark() * 1500);
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.85 + i * 1.17);
+    const x = x0 + Math.sin(t * 1.4 + i) * X(6);
+    const y = y0 + Math.cos(t * 1.1 + i * 0.6) * Y(3);
+    const hot = 188 + Math.round(48 * pulse);
+    pen.ellipse(x, y, X(7 + pulse * 5), Y(2.6 + pulse * 1.4), hot, hot - 8, 196, 190 + Math.round(40 * pulse));
   }
 }
 
@@ -868,12 +1132,9 @@ function paintSeam(pen: Pen, style: string, seam: ArtBand, t: number) {
     const x = i * step + Math.sin(t * 1.2 + i) * 4 * sx;
     const bob = Math.sin(t * 1.5 + i * 0.8) * Math.min(3 * sy, seam.h * 0.15);
     const s = Math.min(18 * sx, seam.h * 0.42);
-    dab(pen, x, mid + bob - s * 0.2, s * 1.5, Math.max(3, s * 0.35), [48, 112, 74]);
-    dab(pen, x + s * 0.45, mid + bob - s * 0.35, s * 0.45, Math.max(2, s * 0.2), [236, 226, 206]);
-  }
-  const shift = (t * 20 * sx) % (28 * sx);
-  for (let x = -20 * sx; x < pen.w; x += 28 * sx) {
-    pen.line(x + shift, mid + seam.h * 0.28, x + shift + 14 * sx, mid + seam.h * 0.28 - 3 * sy, Math.max(1.4, 2 * sy), pack(230, 240, 226));
+    const y = mid + bob;
+    brush(pen, x, y, s * 1.6, Math.max(3, s * 0.4), 0.15 * Math.sin(i), [48, 112, 74], true);
+    brush(pen, x + s * 0.4, y - s * 0.2, s * 0.5, Math.max(2, s * 0.22), 0.6 + 0.2 * Math.sin(i), [236, 226, 206], true);
   }
 }
 
